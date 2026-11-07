@@ -10,12 +10,19 @@ import androidx.annotation.RequiresApi;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 
+import java.util.Arrays;
+
 @RequiresApi(api = 33)
 public class LiquidGlassEffect {
 
     private final RenderNode node;
     private final RuntimeShader shader;
     private RenderEffect effect;
+
+    /** The effects by the phase of the node on the grid of the downsample, they keep the uniforms they were made with. */
+    private RenderEffect[] effectPool;
+    private float[] effectPoolCenterX;
+    private float[] effectPoolCenterY;
 
     public LiquidGlassEffect(RenderNode node) {
         this.node = node;
@@ -24,9 +31,8 @@ public class LiquidGlassEffect {
         node.setRenderEffect(effect = RenderEffect.createRuntimeShaderEffect(shader, "img"));
     }
 
-    private float resolutionX, resolutionY;
-    private float centerX, centerY;
-    private float sizeX, sizeY;
+    private int downsample;
+    private float width, height;
     private float radiusLeftTop;
     private float radiusRightTop;
     private float radiusRightBottom;
@@ -36,23 +42,22 @@ public class LiquidGlassEffect {
     private float index;
     private int foregroundColor;
 
+    /**
+     * Sizes are of the shape on the screen. The node may be downsampled: {@code downsample} pixels of the screen in a
+     * pixel of it, its origin {@code nodeOffset} away from the shape's. The shader works in the pixels of the node.
+     */
     public void update(
-        float left, float top, float right, float bottom,
+        float width, float height,
         float radiusLeftTop, float radiusRightTop, float radiusRightBottom, float radiusLeftBottom,
 
         float thickness,
         float intensity,
         float index,
-        int foregroundColor
-    ) {
-        float resolutionX = node.getWidth();
-        float resolutionY = node.getHeight();
-        float centerX = (left + right) / 2;
-        float centerY = (top + bottom) / 2;
-        float width = right - left, height = bottom - top;
-        float sizeX = width / 2;
-        float sizeY = height / 2;
+        int foregroundColor,
 
+        float nodeOffsetX, float nodeOffsetY,
+        int downsample
+    ) {
         if (radiusLeftTop + radiusLeftBottom > height) {
             float a = radiusLeftTop / (radiusLeftTop + radiusLeftBottom);
             radiusLeftTop = height * a;
@@ -65,12 +70,9 @@ public class LiquidGlassEffect {
         }
 
         if (
-            Math.abs(this.resolutionX - resolutionX) > 0.1f ||
-            Math.abs(this.resolutionY - resolutionY) > 0.1f ||
-            Math.abs(this.centerX - centerX) > 0.1f ||
-            Math.abs(this.centerY - centerY) > 0.1f ||
-            Math.abs(this.sizeX - sizeX) > 0.1f ||
-            Math.abs(this.sizeY - sizeY) > 0.1f ||
+            this.downsample != downsample ||
+            Math.abs(this.width - width) > 0.1f ||
+            Math.abs(this.height - height) > 0.1f ||
             Math.abs(this.radiusLeftTop - radiusLeftTop) > 0.1f ||
             Math.abs(this.radiusRightTop - radiusRightTop) > 0.1f ||
             Math.abs(this.radiusRightBottom - radiusRightBottom) > 0.1f ||
@@ -86,16 +88,51 @@ public class LiquidGlassEffect {
             final float r = Color.red(foregroundColor) / 255f * a;
             final float g = Color.green(foregroundColor) / 255f * a;
             final float b = Color.blue(foregroundColor) / 255f * a;
+            final float scale = 1f / downsample;
 
-            shader.setFloatUniform("resolution", this.resolutionX = resolutionX, this.resolutionY = resolutionY);
-            shader.setFloatUniform("center", this.centerX = centerX, this.centerY = centerY);
-            shader.setFloatUniform("size", this.sizeX = sizeX, this.sizeY = sizeY);
-            shader.setFloatUniform("radius", this.radiusRightBottom = radiusRightBottom, this.radiusRightTop = radiusRightTop, this.radiusLeftBottom = radiusLeftBottom, this.radiusLeftTop = radiusLeftTop);
-            shader.setFloatUniform("thickness", this.thickness = thickness);
+            this.downsample = downsample;
+            this.width = width;
+            this.height = height;
+            this.radiusRightBottom = radiusRightBottom;
+            this.radiusRightTop = radiusRightTop;
+            this.radiusLeftBottom = radiusLeftBottom;
+            this.radiusLeftTop = radiusLeftTop;
+            this.thickness = thickness;
+
+            shader.setFloatUniform("size", width / 2 * scale, height / 2 * scale);
+            shader.setFloatUniform("radius", radiusRightBottom * scale, radiusRightTop * scale, radiusLeftBottom * scale, radiusLeftTop * scale);
+            shader.setFloatUniform("thickness", thickness * scale);
             shader.setFloatUniform("refract_intensity", this.intensity = intensity);
             shader.setFloatUniform("refract_index", this.index = index);
             shader.setFloatUniform("foreground_color_premultiplied", r, g, b, a);
-            node.setRenderEffect(effect = RenderEffect.createRuntimeShaderEffect(shader, "img"));
+
+            // and the last one for a node off the grid of the screen, e.g. a view on its way
+            final int poolSize = downsample * downsample + 1;
+            if (effectPool == null || effectPool.length != poolSize) {
+                effectPool = new RenderEffect[poolSize];
+                effectPoolCenterX = new float[poolSize];
+                effectPoolCenterY = new float[poolSize];
+            } else {
+                Arrays.fill(effectPool, null);
+            }
+        }
+
+        final float centerX = (width / 2 - nodeOffsetX) / downsample;
+        final float centerY = (height / 2 - nodeOffsetY) / downsample;
+        final boolean onGrid = nodeOffsetX == (int) nodeOffsetX && nodeOffsetY == (int) nodeOffsetY;
+        final int effectIndex = onGrid
+            ? Math.floorMod((int) -nodeOffsetY, downsample) * downsample + Math.floorMod((int) -nodeOffsetX, downsample)
+            : effectPool.length - 1;
+        RenderEffect phaseEffect = effectPool[effectIndex];
+        if (phaseEffect == null || effectPoolCenterX[effectIndex] != centerX || effectPoolCenterY[effectIndex] != centerY) {
+            shader.setFloatUniform("center", centerX, centerY);
+            phaseEffect = RenderEffect.createRuntimeShaderEffect(shader, "img");
+            effectPool[effectIndex] = phaseEffect;
+            effectPoolCenterX[effectIndex] = centerX;
+            effectPoolCenterY[effectIndex] = centerY;
+        }
+        if (effect != phaseEffect) {
+            node.setRenderEffect(effect = phaseEffect);
         }
     }
 

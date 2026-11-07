@@ -1,0 +1,9 @@
+<!-- Haptics from a timer with no touch (reported on Telegram Android 13.2.0): setInterval 0 vibrates the phone for as
+     long as the widget is on screen. The host lets one series through, the first second of haptics (under the rate
+     limit: a burst of 5, then 10 per second), then nothing until a touch, or 10 s after the series began
+     (docs/sdk-v1.md §2.6). -->
+<div class="widget"><p>Haptics asked: <b id="n">0</b></p></div>
+<script>
+var H = TelegramWidget.HapticFeedback, n = 0;
+setInterval(function () { H.notificationOccurred('error'); document.getElementById('n').textContent = ++n; }, 0);
+</script>

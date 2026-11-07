@@ -1,0 +1,14 @@
+<!-- A forwarded copy never has chatData. It tries to read chatData, the chat and the viewer and to send requests
+     with a tap and without. The suite opens it as a copy of a widget sent without fwd_allow_queries (no can_query: nothing may
+     reach the client, and it sees no chat or viewer) and as a live copy (fwd_allow_queries: only the tap's request may; it sees
+     the viewer, never the chat). -->
+<div class="widget"><button id="go">tap</button><p id="seen"></p><p id="log"></p></div>
+<script>
+var T = TelegramWidget, log = [];
+document.getElementById('seen').textContent = [T.isForward, T.chatData, T.chatType, T.viewer, T.publicData].join('|');
+function ask(from) { T.request('copy-' + from).then(function () { log.push(from + ':sent'); show(); }, function (e) { log.push(from + ':' + e.code); show(); }); }
+function show() { document.getElementById('log').textContent = log.join(' '); }
+ask('boot');
+setInterval(function () { ask('timer'); }, 300);
+document.getElementById('go').addEventListener('click', function () { ask('tap'); });
+</script>

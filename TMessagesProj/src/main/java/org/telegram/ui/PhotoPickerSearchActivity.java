@@ -32,6 +32,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.EditTextEmoji;
@@ -41,6 +42,7 @@ import org.telegram.ui.Components.ScrollSlidingTextTabStrip;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 
 public class PhotoPickerSearchActivity extends BaseFragment {
@@ -92,10 +94,10 @@ public class PhotoPickerSearchActivity extends BaseFragment {
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
-        actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_dialogButtonSelector), false);
+        ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_dialogTextBlack);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_dialogTextBlack, false);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_dialogButtonSelector, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (parentLayout != null && parentLayout.isLayersLayout()) {
             actionBar.setOccupyStatusBar(false);
@@ -143,9 +145,9 @@ public class PhotoPickerSearchActivity extends BaseFragment {
         });
         searchItem.setSearchFieldHint(LocaleController.getString(R.string.SearchImagesTitle));
         EditTextBoldCursor editText = searchItem.getSearchField();
-        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        editText.setCursorColor(Theme.getColor(Theme.key_dialogTextBlack));
-        editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+        ThemeBind.textColor(editText, Theme.key_dialogTextBlack);
+        ThemeBind.cursorColor(editText, Theme.key_dialogTextBlack);
+        ThemeBind.hintTextColor(editText, Theme.key_chat_messagePanelHint);
 
         scrollSlidingTextTabStrip = new ScrollSlidingTextTabStrip(context);
         scrollSlidingTextTabStrip.setUseSameWidth(true);
@@ -805,15 +807,55 @@ public class PhotoPickerSearchActivity extends BaseFragment {
     }
 
     @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (searchItem != null && searchItem.getSearchField() != null) {
+                searchItem.getSearchField().setCursorColor(Theme.getColor(Theme.key_dialogTextBlack));
+            }
+            if (fragmentView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                final boolean light = AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_dialogBackground)) >= 0.721f;
+                final int flags = fragmentView.getSystemUiVisibility();
+                final int newFlags = light ? flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : flags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                if (newFlags != flags) {
+                    fragmentView.setSystemUiVisibility(newFlags);
+                }
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+        try {
+            if (imagesSearch != null && imagesSearch.fragmentView != null) {
+                imagesSearch.onThemeColorsChanged();
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+        try {
+            if (gifsSearch != null && gifsSearch.fragmentView != null) {
+                gifsSearch.onThemeColorsChanged();
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addThemeColorKeys(java.util.HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        if (imagesSearch != null) {
+            imagesSearch.addThemeColorKeys(keys);
+        }
+        if (gifsSearch != null) {
+            gifsSearch.addThemeColorKeys(keys);
+        }
+    }
+
+    @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
         arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_dialogTextBlack));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_dialogButtonSelector));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_dialogTextBlack));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_chat_messagePanelHint));
         arrayList.add(new ThemeDescription(searchItem.getSearchField(), ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
 

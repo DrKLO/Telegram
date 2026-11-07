@@ -83,6 +83,7 @@ import org.telegram.ui.Components.RoundStatusDrawable;
 import org.telegram.ui.Components.SendingFileDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.StatusDrawable;
 import org.telegram.ui.Components.TypingDotsDrawable;
 import org.telegram.ui.Components.inset.InAppKeyboardInsetView;
@@ -181,11 +182,11 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         AndroidUtilities.fillStatusBarHeight(this, false);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.appDidLogout);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidReset);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.contactsDidLoad);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.appDidLogout);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.updateInterfaces);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.messagePlayingDidReset);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.contactsDidLoad);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);

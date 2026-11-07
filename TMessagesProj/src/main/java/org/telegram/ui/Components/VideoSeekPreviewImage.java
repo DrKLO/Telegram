@@ -402,8 +402,8 @@ public class VideoSeekPreviewImage extends View implements NotificationCenter.No
             NotificationCenter.getInstance(listeningCurrentAccount).removeObserver(this, NotificationCenter.fileLoaded);
             NotificationCenter.getInstance(listeningCurrentAccount).removeObserver(this, NotificationCenter.fileLoadFailed);
         } else {
-            NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.fileLoaded);
-            NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.fileLoadFailed);
+            NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.fileLoadFailed);
         }
         listeningCurrentAccount = account;
     }

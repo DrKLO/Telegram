@@ -1071,6 +1071,9 @@ public class TL_iv {
         public static final int constructor = 0xc070d93e;
 
         public String language;
+        public boolean diff, continuesPrev, continuesNext; //custom
+        public int codeLength = -1; //custom
+        public int diffColumns; //custom
 
         public void readParams(InputSerializedData stream, boolean exception) {
             text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);

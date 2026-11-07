@@ -1,0 +1,42 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 15
+  author: pixel 10:18 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+  The hang is kept (it is the demo) but only behind the "Hang" button; nothing spins at load.
+  In twidget the click handler is interrupted after 500 ms, the runtime is stopped for good and
+  the card stays as it was rendered last (frozen).
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #fff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+</style>
+<div class="card pad" style="width: 330px; max-width: 100%">
+  <div class="row between"><b>🧨 Don't press</b><span class="small muted">pressed <span id="presses">0</span>×</span></div>
+  <p class="small muted" style="margin: 6px 0 8px 0">“Safe” counts up. “Hang” runs <code>for (;;) {}</code> inside the click handler.</p>
+  <button id="safe">Safe</button> <button class="primary" id="hang" style="background-color: #ff3b30">Hang</button>
+</div>
+<script>
+let presses = 0;
+const pressesEl = document.getElementById('presses');
+function handleAction(name) {
+  presses++;
+  pressesEl.textContent = String(presses);
+  if (name === 'hang') for (;;) {}
+}
+document.getElementById('safe').addEventListener('click', () => handleAction('safe'));
+document.getElementById('hang').addEventListener('click', () => handleAction('hang'));
+</script>

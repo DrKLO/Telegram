@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Currency Converter</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111827; --muted: #6b7280; --line: #d1d5db; --accent: #2563eb; --soft: #dbeafe; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --accent: #60a5fa; --soft: #1e3a8a; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { margin: 0 0 12px; font-size: 17px; }
+  .box { border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+  .amt { display: flex; align-items: center; gap: 6px; }
+  .amt span { flex: 1; text-align: center; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 4px 0; }
+  .amt button { padding: 0 9px; height: 30px; border: none; border-radius: 6px; background: var(--soft); color: var(--fg); font-size: 13px; cursor: pointer; }
+  .cur { display: flex; gap: 4px; margin-top: 6px; }
+  .cur button { flex: 1; padding: 5px 0; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; font-size: 13px; cursor: pointer; }
+  .cur button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .swap { text-align: center; margin: 6px 0; }
+  .swap button { background: var(--soft); color: var(--fg); border: none; border-radius: 50%; width: 36px; height: 36px; padding: 0; font-size: 18px; cursor: pointer; }
+  .rate { font-size: 13px; color: var(--muted); text-align: center; margin-top: 8px; }
+  details { margin-top: 12px; font-size: 13px; }
+  summary { cursor: pointer; color: var(--accent); }
+  .rates { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .rates .lbl { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  .rates .step { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 6px; }
+  .rates .step span { flex: 1; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .rates .step button { width: 24px; height: 26px; padding: 0; border: none; border-radius: 5px; background: transparent; color: var(--accent); font-size: 15px; cursor: pointer; }
+  .note { font-size: 11px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<h2>💱 Currency Converter</h2>
+<div class="box">
+  <div class="amt" id="amtSteps"><button data-d="-10">−10</button><button data-d="-1">−1</button><span id="amt">100</span><button data-d="1">+1</button><button data-d="10">+10</button></div>
+  <div class="cur" id="from"></div>
+</div>
+<div class="swap"><button id="swap" title="Swap">⇅</button></div>
+<div class="box">
+  <div class="amt"><span id="out"></span></div>
+  <div class="cur" id="to"></div>
+</div>
+<div class="rate" id="rate"></div>
+<details>
+  <summary>Edit rates (per 1 USD)</summary>
+  <div class="rates" id="rates"></div>
+  <div class="note">Rates are indicative and edited locally — the widget has no live data. Edited rates are kept on this device.</div>
+</details>
+<script>
+  // Taps only: steppers for the amount and the rates, a row of buttons per currency
+  // (no text fields or <select> in a widget). Edited rates stay in this message's localStorage.
+  var codes = ['USD', 'EUR', 'GBP', 'JPY'];
+  var steps = { EUR: 0.01, GBP: 0.01, JPY: 0.5 };
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var rates = { USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149.5 };
+  var savedRates = store.get('fx-rates');
+  if (savedRates) codes.forEach(function (c) { if (savedRates[c] > 0) rates[c] = savedRates[c]; });
+  var amt = 100, f = 'USD', t = 'EUR';
+  var $ = function (id) { return document.getElementById(id); };
+  function chips(el, sel) { el.innerHTML = codes.map(function (c) { return '<button data-c="' + c + '"' + (c === sel ? ' class="on"' : '') + '>' + c + '</button>'; }).join(''); }
+  function convert() {
+    chips($('from'), f); chips($('to'), t);
+    var r = rates[t] / rates[f], v = amt * r;
+    $('amt').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: f }).format(amt);
+    $('out').textContent = new Intl.NumberFormat('en-US', { style: 'currency', currency: t }).format(v);
+    $('rate').textContent = '1 ' + f + ' = ' + r.toFixed(4) + ' ' + t;
+    $('rates').innerHTML = ['EUR', 'GBP', 'JPY'].map(function (c) {
+      return '<div><span class="lbl">' + c + '</span><div class="step" data-c="' + c + '"><button data-d="-1">−</button><span>' + rates[c].toFixed(c === 'JPY' ? 1 : 2) + '</span><button data-d="1">+</button></div></div>';
+    }).join('');
+  }
+  $('amtSteps').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { amt = Math.max(0, amt + +b.getAttribute('data-d')); convert(); } });
+  $('from').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { f = b.getAttribute('data-c'); convert(); } });
+  $('to').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { t = b.getAttribute('data-c'); convert(); } });
+  $('rates').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var c = b.closest('.step').getAttribute('data-c');
+    rates[c] = Math.max(steps[c], Math.round((rates[c] + steps[c] * +b.getAttribute('data-d')) * 100) / 100);
+    store.set('fx-rates', rates);
+    convert();
+  });
+  $('swap').onclick = function () { var x = f; f = t; t = x; convert(); };
+  convert();
+</script>
+</body>
+</html>

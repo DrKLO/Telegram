@@ -10,6 +10,7 @@ import android.os.Looper;
 import android.view.View;
 import android.view.ViewOutlineProvider;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 
@@ -74,6 +75,27 @@ public class ViewOutlineProviderImpl {
                 outline.setRoundRect(padding, padding,
                     view.getWidth() - padding,
                     view.getHeight() - padding, r);
+            }
+        };
+    }
+
+    @Nullable
+    public static ViewOutlineProvider boundsWithRound(int radius, boolean left, boolean top, boolean right, boolean bottom) {
+        if (!left && !right || !top && !bottom) {
+            return null;
+        }
+
+        return new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                final int w = view.getWidth();
+                final int h = view.getHeight();
+
+                outline.setRoundRect(
+                    - (left ? 0 : radius),
+                    - (top ? 0 : radius),
+                    w + (right ? 0 : radius),
+                    h + (bottom ? 0 : radius), radius);
             }
         };
     }

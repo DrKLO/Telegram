@@ -1,0 +1,94 @@
+<!-- bot-demos/06, reaction test (tw-bot reaction): the protocol is in README.md -->
+<meta name="tw-bot" content="reaction">
+<style>
+:root{--h:var(--tg-theme-hint-color);--b:var(--tg-theme-button-color);--bt:var(--tg-theme-button-text-color);--ok:light-dark(#1f9d4a,#3cc56b);--bad:var(--tg-theme-destructive-text-color)}
+body{margin:0;padding:12px 14px 14px;font:15px/1.3 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.hd,.row,.lh,li{display:flex;align-items:center;gap:10px}
+.hd{gap:6px;font-size:17px;font-weight:600}
+.hd svg{color:#ff9500}
+.hd span,.lh span{margin-left:auto;font-size:13px;font-weight:400;color:var(--h)}
+.pw{display:grid;place-items:center;padding:14px 0}
+.pad{width:156px;height:156px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--b);color:var(--bt);box-shadow:0 6px 20px -6px var(--b);touch-action:none;cursor:pointer;transition:background .25s,transform .12s,box-shadow .25s}
+.pad:active{transform:scale(.96)}
+.pad b{font-size:30px;letter-spacing:-.02em;line-height:1.05}
+.pad span{font-size:13px;font-weight:500;opacity:.85;margin-top:3px}
+.n b{font-size:52px}
+.wait{background:#ff9500;box-shadow:0 0 0 0 rgba(255,149,0,.45);animation:ring 1.3s ease-out infinite}
+@keyframes ring{to{box-shadow:0 0 0 24px rgba(255,149,0,0)}}
+.go{background:#22b35e;box-shadow:0 0 0 12px rgba(34,179,94,.2);transition:none}
+.soon{background:var(--bad);box-shadow:none;animation:sh .35s}
+@keyframes sh{25%,75%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
+.row{min-height:38px}
+#st{flex:1;font-size:13px;color:var(--h)}
+#st.ok{color:var(--ok)}#st.bad{color:var(--bad)}
+#sb{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:10px;background:var(--b);color:var(--bt);font:600 14px system-ui,sans-serif;white-space:nowrap;animation:pop .25s}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+#sb.off{display:none}
+#sb[disabled]{opacity:.7}
+#sb[disabled]::before{content:'';width:12px;height:12px;border:2px solid;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lb{margin-top:10px;padding:10px 12px 6px;border-radius:14px;background:var(--tg-theme-secondary-bg-color)}
+.lh{font-size:13px;font-weight:600;color:var(--h)}
+ol{margin:0;padding:0;list-style:none}
+li{position:relative;height:29px;padding:0 6px;margin:0 -6px;border-radius:8px}
+li i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 12px system-ui,sans-serif;color:var(--h)}
+li:nth-child(-n+3) i{color:#fff;background:#f2b600}
+li:nth-child(2) i{background:#a3adb8}
+li:nth-child(3) i{background:#d0884a}
+li span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+li em{display:none;font:600 12px system-ui,sans-serif;color:var(--b);margin-left:-4px}
+li.me em{display:inline}
+li u{margin-left:auto;text-decoration:none;font-weight:600}
+li small{font-size:13px;font-weight:400;color:var(--h)}
+.me::before,.nw::after{content:'';position:absolute;inset:0;border-radius:8px;background:var(--b);opacity:.12}
+.nw::after{opacity:0;animation:nw 1.6s ease-out}
+@keyframes nw{from{opacity:.4}}
+.no{justify-content:center;height:40px;color:var(--h)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div class="hd"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M13.5 2 4 13.5h6.5L9.5 22 20 9.5h-6.5z" fill="currentColor"/></svg>Reaction test<span id="pl"></span></div>
+<div class="pw"><div class="pad" id="pad"><b id="big"></b><span id="sub"></span></div></div>
+<div class="row"><div id="st"></div><button id="sb" class="off"></button></div>
+<div class="lb"><div class="lh">Best times<span id="yb"></span></div><ol id="lb"></ol></div>
+<script>
+const T=window.TelegramWidget,$=i=>document.getElementById(i),pad=$('pad'),sb=$('sb'),ol=$('lb'),
+J=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}},
+H=(k,v)=>{try{T.HapticFeedback[k](v)}catch(e){}},RM=matchMedia('(prefers-reduced-motion: reduce)').matches,
+E={NOT_ALLOWED:'Can’t submit from here',BUSY:'Still sending…',RATE_LIMITED:'Too fast. Wait a bit',TIMEOUT:'The bot didn’t answer. Try again',FAILED:'Couldn’t reach the bot. Try again',INVALID_ANSWER:'Bad answer from the bot'};
+let ss={},best,sent,rank=0,st,t0=0,tm=0,busy=0,prev=null,L=null,can=!!(T&&T.viewer&&!T.isPreview);
+const pub=p=>{if(p&&(!L||(p.r|0)>=(L.r|0)))L=p};
+try{ss=J(sessionStorage.getItem('rt'),{})}catch(e){}best=ss.b|0;sent=ss.s|0;
+function save(){try{sessionStorage.setItem('rt',JSON.stringify({b:best,s:sent}))}catch(e){}}
+function say(t,c){$('st').textContent=t;$('st').className=c||''}
+function face(k,b,s){pad.className='pad '+k;$('big').textContent=b;$('sub').textContent=s;btn()}
+function btn(){sb.classList.toggle('off',!busy&&!(can&&best>99&&best<2001&&best!=sent&&st!='wait'&&st!='go'));if(!busy)sb.textContent='Submit '+best+' ms'}
+function idle(){st='idle';face('',best?'Again':'Start','tap to play');say(best?'Session best '+best+' ms':'Tap when the circle turns green')}
+function go(){st='wait';t0=0;face('wait','Wait…','for green');say('Tap the moment it turns green');H('impactOccurred','light');
+  tm=setTimeout(()=>requestAnimationFrame(()=>{if(st=='wait'){st='go';face('go','Tap!','now');requestAnimationFrame(()=>{if(st=='go')t0=performance.now()})}}),1200+Math.random()*2300)}
+function stop(){if(st=='wait'||st=='go'){clearTimeout(tm);idle()}}
+function soon(){clearTimeout(tm);st='soon';face('soon','Too soon','tap to retry');say('Wait for green, then tap','bad');H('notificationOccurred','error')}
+function done(ms){const nb=ms<2001&&(!best||ms<best),a=performance.now();if(nb){best=ms;save()}
+  st='res';face('n',0,'ms');H('impactOccurred','medium');
+  say((ms>2000?'Over 2 s. Try again':nb?'New session best!':'Session best '+best+' ms')+(can||!T?'':' · not submitted here'),nb?'ok':'');
+  (function f(){const k=RM?1:Math.min(1,(performance.now()-a)/320);$('big').textContent=Math.round(ms*(1-Math.pow(1-k,3)));if(k<1&&st=='res')requestAnimationFrame(f)})()}
+pad.onpointerdown=()=>{if(T&&T.isPreview)return;const ms=Math.round(performance.now()-t0);
+  st=='wait'?soon():st=='go'?(t0&&ms>99?done(ms):soon()):go()};
+pad.onpointercancel=stop;
+sb.onclick=()=>{if(busy||!can)return;busy=1;const n=best;sb.disabled=true;sb.textContent='Sending';say('');H('impactOccurred','light');
+  T.request('score:'+n).then(a=>{const r=J(a.result,{});if(r.rank>=0){sent=n;rank=r.rank;save();r.top&&pub(r);st=='soon'&&idle();say(rank?'Submitted: #'+rank+' on the board':'Submitted. Not in the top yet','ok');H('notificationOccurred','success')}else throw{m:String(r.err||'The bot didn’t take it').slice(0,32)}})
+  .catch(e=>{if(e.code=='NOT_ALLOWED')can=false;say(e.m||E[e.code]||E.FAILED,'bad');H('notificationOccurred','error')})
+  .finally(()=>{busy=0;sb.disabled=false;draw();btn()})};
+function mark(){const me=T&&T.viewer&&T.viewer.first_name;for(const li of ol.children){const[n,r,m]=li.k||[];li.classList.toggle('me',!!n&&(n==me||rank==r&&m<=sent))}}
+function draw(){
+  T&&pub(J(T.publicData,null));const p=T?L:{top:[['Max',171],['Eve',188],['Bob',203]],plays:42},c=T&&J(T.chatData,null),
+  top=(p&&Array.isArray(p.top)?p.top:[]).filter(r=>Array.isArray(r)&&r[1]>0).slice(0,8),n=p&&p.plays|0,was=prev;
+  $('pl').textContent=n?n+(n>1?' plays':' play'):'';
+  $('yb').textContent=c&&c.best>0?'This chat '+c.best+' ms':'';
+  prev={};ol.replaceChildren(...top.map((r,i)=>{const li=document.createElement('li'),nm=String(r[0]).slice(0,32),ms=Math.round(r[1]);
+    prev[nm]=ms;li.className=was&&!(was[nm]<=ms)?'nw':'';li.k=[nm,i+1,ms];
+    li.innerHTML='<i>'+(i+1)+'</i><span></span><em>you</em><u>'+ms+'<small> ms</small></u>';li.children[1].textContent=nm;return li}));
+  if(!top.length)ol.innerHTML='<li class="no">No scores yet. Be the first</li>';
+  mark()}
+draw();idle();
+if(T){T.onEvent('publicDataChanged',draw);T.onEvent('chatDataChanged',draw);T.onEvent('deactivated',stop);T.isPreview||T.watchPublicData();T.ready&&T.ready()}
+</script>

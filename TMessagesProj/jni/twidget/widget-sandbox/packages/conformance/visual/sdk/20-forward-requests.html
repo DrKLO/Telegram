@@ -1,0 +1,60 @@
+<!doctype html>
+<html data-test="visual/sdk/20-forward-requests">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- conformance {"title": "A forward asks the bot only if the widget was sent with fwd_allow_queries", "hint": "The bot sends this twice: “live forward” (fwd_allow_queries) and “plain forward”. Forward both to another chat. In the forwards: Ask on the live one is answered; on the plain one it says NOT_ALLOWED. Neither shows chatData or a chat type; only the live one shows a viewer (your name).", "expect": "A copy gets is_copy; can_query only for a fwd_allow_queries widget, taps only. The client passes the flags from the media; the widget of a copy gets no chatData and no chatType, and the viewer only with can_query; the bot gets only from, data and widget_id.", "contract": "docs/sdk-v1.md §2.13, §2.14; docs/tgw-format.md", "covers": ["behaviour.forward-copy", "tw.context"], "message": [{"kind": "live-copy", "allow_queries": true, "fwd_allow_queries": true, "chat_data": "secret", "public_data": "live forward", "forward": true}, {"kind": "copy", "allow_queries": true, "chat_data": "secret", "public_data": "plain forward", "forward": true}], "bot": {"conf:20:ask": {"result": "answered for {from}"}}} -->
+<!-- conformance:mini --><style>html,body{margin:0;padding:0}body{font:14px/1.4 system-ui,sans-serif;color:var(--tg-theme-text-color,#111)}@media (prefers-color-scheme:dark){body{color:var(--tg-theme-text-color,#eee)}}.h{font-weight:600;font-size:15px;margin:10px 12px 2px}.i{margin:0 12px 8px;font-size:13px;color:var(--tg-theme-hint-color,#888)}.r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 12px}.big{font-size:22px;font-weight:600;margin:4px 12px}#log{margin:8px 12px 10px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><script>var S = (function () {
+  var r = document.documentElement, c = [], tg = {}, st = 'running';
+  function rc(e) { var b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map(function (v) { return Math.round(v * 10) / 10; }); }
+  function pub() {
+    var t = {};
+    for (var k in tg) { var e = document.getElementById(tg[k]); if (e) t[k] = rc(e); }
+    r.setAttribute('data-conformance', JSON.stringify({ v: 1, id: r.getAttribute('data-test'), status: st, checks: c, targets: t }));
+  }
+  function log(m, ok) {
+    var l = document.getElementById('log');
+    if (!l) return;
+    var d = document.createElement('div');
+    d.textContent = (ok === true ? '✓ ' : ok === false ? '✗ ' : '· ') + m;
+    l.appendChild(d);
+  }
+  return {
+    TW: typeof TelegramWidget !== 'undefined' ? TelegramWidget : null,
+    check: function (id, name, ok, d) { c.push([id, name, ok ? 'pass' : 'fail', d || '']); log(name + (d ? ' (' + d + ')' : ''), !!ok); pub(); },
+    log: log,
+    target: function (n, id) { tg[n] = id; },
+    start: function () { st = 'awaiting'; pub(); },
+    done: function () { st = 'done'; pub(); },
+  };
+})();</script><!-- /conformance:mini -->
+<style>
+.v{margin:2px 12px;font-size:14px}.v b{font-weight:600}
+</style>
+</head>
+<body>
+<div class="h">SDK 20 · <span id="t"></span></div>
+<div class="i">Forward this message, then tap Ask in the forward.</div>
+<div class="v">isForward <b id="f"></b> · chatType <b id="ct"></b></div>
+<div class="v">chatData <b id="c"></b> · viewer <b id="vw"></b></div>
+<div class="v">Ask: <b id="a">–</b></div>
+<div class="r"><button id="ask">Ask</button></div>
+<div id="log"></div>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var TW = S.TW;
+function err(e) { return e && e.code ? e.code : String(e); }
+if (TW) {
+  $('t').textContent = String(TW.publicData);
+  $('f').textContent = TW.isForward ? 'yes' : 'no';
+  $('ct').textContent = String(TW.chatType);
+  $('c').textContent = String(TW.chatData);
+  $('vw').textContent = TW.viewer ? (TW.viewer.first_name || TW.viewer.id) : 'none';
+}
+$('ask').onclick = function () { if (!TW) return; $('a').textContent = 'sending…'; TW.request('conf:20:ask').then(function (x) { $('a').textContent = x.result; }, function (e) { $('a').textContent = err(e); }); };
+S.check('tw.context', 'isForward and chatType are there', !!TW && 'isForward' in TW && 'chatType' in TW, '');
+S.target('ask', 'ask');
+S.done();
+</script>
+</body>
+</html>

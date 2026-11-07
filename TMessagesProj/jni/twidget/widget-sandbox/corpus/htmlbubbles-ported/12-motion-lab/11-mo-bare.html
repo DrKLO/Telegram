@@ -1,0 +1,211 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 11
+  author: mo 14:13 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.red { background-color: rgba(255,59,48,0.16); color: var(--red); }
+  [data-action] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .rx { width: 360px; max-width: 100%; box-sizing: border-box; }
+  .rx .tab { display: inline-block; padding: 2px 10px; margin-left: 3px; border-radius: 7px; font-size: 12px; font-weight: 600; }
+  .rx .tab:hover { background-color: rgba(127,127,127,0.16); }
+  .rx .tab.on { background-color: rgba(255,45,85,0.14); color: #ff2d55; }
+  .rx .stage { position: relative; height: 170px; overflow: hidden; margin-top: 8px; border-radius: 12px; background: linear-gradient(180deg, rgba(127,127,127,0.04), rgba(127,127,127,0.14)); }
+  .rx .live { position: absolute; left: 10px; top: 10px; }
+  .rx .combo { position: absolute; right: 12px; top: 6px; font-weight: 900; font-size: 20px; color: #ff2d55; transform-origin: top right; }
+  /* combo: tween(combo, {s: 1}, 380, ease.outBack) from 1.7, then alpha(#ff2d55, fade) — opaque for 600 ms after the tap, gone 400 ms later */
+  .rx .combo.show { animation: combo-pop 380ms cubic-bezier(.34,1.56,.64,1), combo-fade 1000ms linear forwards; }
+  @keyframes combo-pop { from { transform: scale(1.7); } to { transform: scale(1); } }
+  @keyframes combo-fade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+  /* floats: y = 150 − 175·a, size ramps in with outBack over the first 15 %, shrinks over the last 20 % (a = age / life) */
+  .rx .fl { position: absolute; top: 150px; line-height: 1; pointer-events: none; }
+  .rx .fl span { display: inline-block; transform-origin: top center; animation: rise linear forwards; }
+  @keyframes rise { 0% { transform: translateY(0) scale(0); } 5% { transform: translateY(-8.75px) scale(.956); } 10% { transform: translateY(-17.5px) scale(1.089); }
+    15% { transform: translateY(-26.25px) scale(1); } 80% { transform: translateY(-140px) scale(1); } 100% { transform: translateY(-175px) scale(.05); } }
+  /* x = x0 + sin(7·a + phase)·wobble·a, sampled every 5 % for six phases; --w is the wobble amplitude */
+  @keyframes wob-0 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * 0.017px)); } 10% { transform: translateX(calc(var(--w) * 0.064px)); } 15% { transform: translateX(calc(var(--w) * 0.130px)); } 20% { transform: translateX(calc(var(--w) * 0.197px)); } 25% { transform: translateX(calc(var(--w) * 0.246px)); } 30% { transform: translateX(calc(var(--w) * 0.259px)); } 35% { transform: translateX(calc(var(--w) * 0.223px)); } 40% { transform: translateX(calc(var(--w) * 0.134px)); } 45% { transform: translateX(calc(var(--w) * -0.004px)); } 50% { transform: translateX(calc(var(--w) * -0.175px)); } 55% { transform: translateX(calc(var(--w) * -0.358px)); } 60% { transform: translateX(calc(var(--w) * -0.523px)); } 65% { transform: translateX(calc(var(--w) * -0.641px)); } 70% { transform: translateX(calc(var(--w) * -0.688px)); } 75% { transform: translateX(calc(var(--w) * -0.644px)); } 80% { transform: translateX(calc(var(--w) * -0.505px)); } 85% { transform: translateX(calc(var(--w) * -0.278px)); } 90% { transform: translateX(calc(var(--w) * 0.015px)); } 95% { transform: translateX(calc(var(--w) * 0.341px)); } 100% { transform: translateX(calc(var(--w) * 0.657px)); } }
+  @keyframes wob-1 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * 0.049px)); } 10% { transform: translateX(calc(var(--w) * 0.098px)); } 15% { transform: translateX(calc(var(--w) * 0.130px)); } 20% { transform: translateX(calc(var(--w) * 0.128px)); } 25% { transform: translateX(calc(var(--w) * 0.084px)); } 30% { transform: translateX(calc(var(--w) * -0.002px)); } 35% { transform: translateX(calc(var(--w) * -0.122px)); } 40% { transform: translateX(calc(var(--w) * -0.259px)); } 45% { transform: translateX(calc(var(--w) * -0.392px)); } 50% { transform: translateX(calc(var(--w) * -0.493px)); } 55% { transform: translateX(calc(var(--w) * -0.541px)); } 60% { transform: translateX(calc(var(--w) * -0.516px)); } 65% { transform: translateX(calc(var(--w) * -0.412px)); } 70% { transform: translateX(calc(var(--w) * -0.231px)); } 75% { transform: translateX(calc(var(--w) * 0.011px)); } 80% { transform: translateX(calc(var(--w) * 0.285px)); } 85% { transform: translateX(calc(var(--w) * 0.557px)); } 90% { transform: translateX(calc(var(--w) * 0.787px)); } 95% { transform: translateX(calc(var(--w) * 0.938px)); } 100% { transform: translateX(calc(var(--w) * 0.981px)); } }
+  @keyframes wob-2 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * 0.032px)); } 10% { transform: translateX(calc(var(--w) * 0.034px)); } 15% { transform: translateX(calc(var(--w) * 0.000px)); } 20% { transform: translateX(calc(var(--w) * -0.069px)); } 25% { transform: translateX(calc(var(--w) * -0.162px)); } 30% { transform: translateX(calc(var(--w) * -0.261px)); } 35% { transform: translateX(calc(var(--w) * -0.345px)); } 40% { transform: translateX(calc(var(--w) * -0.393px)); } 45% { transform: translateX(calc(var(--w) * -0.388px)); } 50% { transform: translateX(calc(var(--w) * -0.318px)); } 55% { transform: translateX(calc(var(--w) * -0.183px)); } 60% { transform: translateX(calc(var(--w) * 0.007px)); } 65% { transform: translateX(calc(var(--w) * 0.230px)); } 70% { transform: translateX(calc(var(--w) * 0.457px)); } 75% { transform: translateX(calc(var(--w) * 0.655px)); } 80% { transform: translateX(calc(var(--w) * 0.790px)); } 85% { transform: translateX(calc(var(--w) * 0.835px)); } 90% { transform: translateX(calc(var(--w) * 0.772px)); } 95% { transform: translateX(calc(var(--w) * 0.598px)); } 100% { transform: translateX(calc(var(--w) * 0.324px)); } }
+  @keyframes wob-3 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * -0.017px)); } 10% { transform: translateX(calc(var(--w) * -0.064px)); } 15% { transform: translateX(calc(var(--w) * -0.130px)); } 20% { transform: translateX(calc(var(--w) * -0.197px)); } 25% { transform: translateX(calc(var(--w) * -0.246px)); } 30% { transform: translateX(calc(var(--w) * -0.259px)); } 35% { transform: translateX(calc(var(--w) * -0.223px)); } 40% { transform: translateX(calc(var(--w) * -0.134px)); } 45% { transform: translateX(calc(var(--w) * 0.004px)); } 50% { transform: translateX(calc(var(--w) * 0.175px)); } 55% { transform: translateX(calc(var(--w) * 0.358px)); } 60% { transform: translateX(calc(var(--w) * 0.523px)); } 65% { transform: translateX(calc(var(--w) * 0.641px)); } 70% { transform: translateX(calc(var(--w) * 0.688px)); } 75% { transform: translateX(calc(var(--w) * 0.644px)); } 80% { transform: translateX(calc(var(--w) * 0.505px)); } 85% { transform: translateX(calc(var(--w) * 0.278px)); } 90% { transform: translateX(calc(var(--w) * -0.015px)); } 95% { transform: translateX(calc(var(--w) * -0.341px)); } 100% { transform: translateX(calc(var(--w) * -0.657px)); } }
+  @keyframes wob-4 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * -0.049px)); } 10% { transform: translateX(calc(var(--w) * -0.098px)); } 15% { transform: translateX(calc(var(--w) * -0.130px)); } 20% { transform: translateX(calc(var(--w) * -0.128px)); } 25% { transform: translateX(calc(var(--w) * -0.084px)); } 30% { transform: translateX(calc(var(--w) * 0.002px)); } 35% { transform: translateX(calc(var(--w) * 0.122px)); } 40% { transform: translateX(calc(var(--w) * 0.259px)); } 45% { transform: translateX(calc(var(--w) * 0.392px)); } 50% { transform: translateX(calc(var(--w) * 0.493px)); } 55% { transform: translateX(calc(var(--w) * 0.541px)); } 60% { transform: translateX(calc(var(--w) * 0.516px)); } 65% { transform: translateX(calc(var(--w) * 0.412px)); } 70% { transform: translateX(calc(var(--w) * 0.231px)); } 75% { transform: translateX(calc(var(--w) * -0.011px)); } 80% { transform: translateX(calc(var(--w) * -0.285px)); } 85% { transform: translateX(calc(var(--w) * -0.557px)); } 90% { transform: translateX(calc(var(--w) * -0.787px)); } 95% { transform: translateX(calc(var(--w) * -0.938px)); } 100% { transform: translateX(calc(var(--w) * -0.981px)); } }
+  @keyframes wob-5 { 0% { transform: translateX(calc(var(--w) * 0.000px)); } 5% { transform: translateX(calc(var(--w) * -0.032px)); } 10% { transform: translateX(calc(var(--w) * -0.034px)); } 15% { transform: translateX(calc(var(--w) * 0.000px)); } 20% { transform: translateX(calc(var(--w) * 0.069px)); } 25% { transform: translateX(calc(var(--w) * 0.162px)); } 30% { transform: translateX(calc(var(--w) * 0.261px)); } 35% { transform: translateX(calc(var(--w) * 0.345px)); } 40% { transform: translateX(calc(var(--w) * 0.393px)); } 45% { transform: translateX(calc(var(--w) * 0.388px)); } 50% { transform: translateX(calc(var(--w) * 0.318px)); } 55% { transform: translateX(calc(var(--w) * 0.183px)); } 60% { transform: translateX(calc(var(--w) * -0.007px)); } 65% { transform: translateX(calc(var(--w) * -0.230px)); } 70% { transform: translateX(calc(var(--w) * -0.457px)); } 75% { transform: translateX(calc(var(--w) * -0.655px)); } 80% { transform: translateX(calc(var(--w) * -0.790px)); } 85% { transform: translateX(calc(var(--w) * -0.835px)); } 90% { transform: translateX(calc(var(--w) * -0.772px)); } 95% { transform: translateX(calc(var(--w) * -0.598px)); } 100% { transform: translateX(calc(var(--w) * -0.324px)); } }
+  .rx .btns { display: flex; justify-content: space-between; margin-top: 8px; }
+  .rx .btns span.r { display: inline-block; width: 60px; text-align: center; padding: 5px 0; border-radius: 16px; background-color: rgba(127,127,127,0.14); font-size: 13px; font-weight: 700; }
+  .rx .btns span.r:hover { background-color: rgba(127,127,127,0.26); }
+  .rx .btns span.hype { width: 70px; background-color: rgba(255,45,85,0.14); color: #ff2d55; }
+  .rx .btns span.hype:hover { background-color: rgba(255,45,85,0.26); }
+  .rx .btns .em { display: inline-block; }
+  /* tween(pops[i], {s: 1}, 320, ease.outBack) from 1.45 on the tapped emoji */
+  .rx .btns .em.pop { animation: pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(1.45); } to { transform: scale(1); } }
+  .rx .st { display: flex; align-items: center; height: 32px; }
+  .rx .st .em { width: 30px; font-size: 18px; }
+  .rx .st .tr { width: 214px; height: 16px; margin-left: 6px; border-radius: 6px; background-color: rgba(127,127,127,0.12); }
+  /* grow(): tween(bars[rank], {w: 1}, 600, ease.outCubic) after 60 + rank * 70 ms */
+  .rx .st .fill { height: 16px; border-radius: 6px; transition: width 600ms cubic-bezier(.33,1,.68,1); }
+  .rx .st .num { width: 82px; text-align: right; font-size: 12px; font-weight: 700; }
+  .rx .sum { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; }
+  /* transition('slide-left' | 'slide-right') on the bubble */
+  .tr-slide-left { animation: tr-slide-left 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 300ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(28px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-28px); } }
+</style>
+<div class="card pad rx" id="w">
+  <div class="row between"><b>Live reactions</b><span id="tabs"><span class="tab on" data-action="tab" data-value="live">Live</span><span class="tab" data-action="tab" data-value="stats">Stats</span></span></div>
+  <div id="live">
+    <div class="stage" id="stage"><span class="live badge red">● LIVE · <span id="watch">1.2</span>k watching<span id="hype"></span></span><div class="combo" id="combo" hidden></div></div>
+    <div class="btns" id="btns"></div>
+  </div>
+  <div id="stats" hidden>
+    <div style="margin-top: 8px" id="rows"></div>
+    <div class="sum muted"><span id="sum-l"></span><span id="sum-r"></span></div>
+  </div>
+</div>
+<script>
+const KINDS = ['❤️', '😂', '🔥', '👏'], TINT = ['255,45,85', '255,204,0', '255,149,0', '94,92,230'];
+const counts = [128, 41, 77, 63];
+let floats = [], pending = [], flying = false, tab = 'live', taps = 0, lastTap = -9999, streak = 0, bestStreak = 0, hypeUntil = 0, hypes = 0;
+const watchers = { v: 1200 };
+let statsOrder = '';
+
+const root = document.getElementById('w');
+const $ = id => document.getElementById(id);
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3) };
+function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function bubble(kind) {
+  for (const c of [...root.classList]) if (c.startsWith('tr-')) root.classList.remove(c);
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+function tween(obj, key, to, duration, easing, onFrame) {
+  const from = obj[key], start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    obj[key] = from + (to - from) * easing(t);
+    onFrame();
+    if (t < 1) requestAnimationFrame(step);
+  };
+  step();
+}
+
+$('btns').innerHTML = KINDS.map((k, i) => `<span class="r" data-action="react" data-value="${i}"><span class="em">${k}</span> <span class="n">${counts[i]}</span></span>`).join('')
+  + '<span class="r hype" data-action="hype">📣 Hype</span>';
+const nums = Array.from($('btns').querySelectorAll('.n')), ems = Array.from($('btns').querySelectorAll('.em'));
+
+function bump(i) { counts[i]++; nums[i].textContent = counts[i]; if (tab === 'stats') stats(false); }
+function spawn(i, t) {
+  const size = 22 + Math.random() * 10, x0 = 40 + i * 84 + (Math.random() - 0.5) * 30, life = 1700 + Math.random() * 700;
+  const el = document.createElement('div');
+  el.className = 'fl';
+  el.style.cssText = `left: ${(x0 - size / 2).toFixed(0)}px; font-size: ${size.toFixed(0)}px; --w: ${(14 + Math.random() * 14).toFixed(1)}; animation: wob-${Math.floor(Math.random() * 6)} ${life.toFixed(0)}ms linear forwards`;
+  el.innerHTML = `<span style="animation-duration: ${life.toFixed(0)}ms">${KINDS[i]}</span>`;
+  $('stage').appendChild(el);
+  floats.push({ el, born: t, life });
+  if (floats.length > 60) floats.shift().el.remove();
+}
+function sweep(t) {
+  floats = floats.filter(f => { if (t - f.born < f.life) return true; f.el.remove(); return false; });
+}
+function fly(t) {
+  pending = pending.filter(p => { if (p.at > t) return true; bump(p.i); spawn(p.i, t); return false; });
+  if (t < hypeUntil && Math.random() < 0.35) { const k = Math.floor(Math.random() * 4); bump(k); spawn(k, t); }
+  sweep(t);
+  if (floats.length || pending.length || t < hypeUntil) requestAnimationFrame(fly); else flying = false;
+}
+function wake() { if (!flying) { flying = true; requestAnimationFrame(fly); } }
+function crowd(i, n) {
+  let at = performance.now();
+  for (let k = 0; k < n; k++) { at += 180 + Math.random() * 380; pending.push({ at, i: Math.random() < 0.6 ? i : Math.floor(Math.random() * 4) }); }
+  if (pending.length > 24) pending.splice(0, pending.length - 24);
+  wake();
+}
+setTimeout(() => crowd(0, 4), 250);
+
+function watching() { $('watch').textContent = (watchers.v / 1000).toFixed(1); }
+function hypeLabel() { $('hype').textContent = performance.now() < hypeUntil ? ' · 📣 hype!' : ''; }
+
+function stats(grow) {
+  const total = counts.reduce((s, c) => s + c, 0), max = Math.max(...counts);
+  const order = KINDS.map((_, i) => i).sort((a, b) => counts[b] - counts[a]);
+  const key = order.join('');
+  if (grow || key !== statsOrder) {
+    statsOrder = key;
+    $('rows').innerHTML = order.map((i, rank) => `<div class="st"><span class="em">${KINDS[i]}</span>
+      <div class="tr"><div class="fill" style="width: 0px; background-color: rgba(${TINT[i]},0.750); transition-delay: ${grow ? 60 + rank * 70 : 0}ms"></div></div>
+      <span class="num"></span></div>`).join('');
+    void root.offsetWidth;
+  }
+  const rows = Array.from($('rows').children);
+  order.forEach((i, rank) => {
+    const row = rows[rank], fill = row.querySelector('.fill');
+    if (!grow) fill.style.transitionDelay = '0ms';
+    fill.style.width = (214 * counts[i] / max).toFixed(1) + 'px';
+    row.querySelector('.num').textContent = `${counts[i]} · ${Math.round(counts[i] / total * 100)}%${rank === 0 ? ' 👑' : ''}`;
+  });
+  $('sum-l').textContent = `${total} reactions · ${hypes} hype${hypes === 1 ? '' : 's'}`;
+  $('sum-r').textContent = `You tapped ${taps}× · best streak ×${bestStreak}`;
+}
+
+function showTab(id) {
+  tab = id;
+  for (const t of $('tabs').children) t.classList.toggle('on', t.dataset.value === id);
+  $('live').hidden = id !== 'live';
+  $('stats').hidden = id !== 'stats';
+  if (id === 'stats') stats(true);
+  else {
+    // floats kept flying while the stage was hidden: resume each one at its current age
+    const now = performance.now();
+    sweep(now);
+    for (const f of floats) { const d = `${(f.born - now).toFixed(0)}ms`; f.el.style.animationDelay = d; f.el.firstChild.style.animationDelay = d; }
+  }
+}
+
+$('combo').addEventListener('animationend', e => { if (e.animationName === 'combo-fade') $('combo').hidden = true; });
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  e.preventDefault();
+  const name = el.dataset.action, value = el.dataset.value, now = performance.now();
+  if (name === 'tab') {
+    if (value === tab) return;
+    bubble(value === 'stats' ? 'slide-left' : 'slide-right');
+    showTab(value);
+    return;
+  }
+  if (name === 'hype') {
+    hypes++;
+    hypeUntil = now + 3500;
+    hypeLabel();
+    setTimeout(hypeLabel, 3510);
+    tween(watchers, 'v', 1300 + Math.random() * 700, 1400, ease.outCubic, watching);
+    if (tab === 'stats') stats(false);
+    return wake();
+  }
+  const i = Number(value);
+  bump(i); taps++;
+  streak = now - lastTap < 700 ? streak + 1 : 1;
+  lastTap = now;
+  bestStreak = Math.max(bestStreak, streak);
+  const combo = $('combo');
+  if (streak >= 3) { combo.textContent = `×${streak}`; combo.hidden = false; restart(combo, 'show'); }
+  else { combo.hidden = true; combo.classList.remove('show'); }
+  spawn(i, now);
+  crowd(i, 2);
+  restart(ems[i], 'pop');
+});
+</script>

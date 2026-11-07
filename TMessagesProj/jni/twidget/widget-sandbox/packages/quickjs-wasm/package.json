@@ -1,0 +1,38 @@
+{
+  "name": "@telegram/widget-sandbox-quickjs",
+  "private": true,
+  "license": "MIT",
+  "version": "0.32.0-fork",
+  "description": "quickjs-emscripten sync wasm variant built from the TelegramMessenger/quickjs fork (build.sh); drop-in for @jitl/quickjs-ng-wasmfile-release-sync.",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "browser": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json",
+    "./ffi": {
+      "types": "./dist/ffi.d.ts",
+      "import": "./dist/ffi.mjs",
+      "require": "./dist/ffi.js",
+      "default": "./dist/ffi.js"
+    },
+    "./wasm": "./dist/emscripten-module.wasm",
+    "./emscripten-module": {
+      "types": "./dist/emscripten-module.browser.d.ts",
+      "browser": "./dist/emscripten-module.browser.mjs",
+      "import": "./dist/emscripten-module.mjs",
+      "require": "./dist/emscripten-module.cjs",
+      "default": "./dist/emscripten-module.cjs"
+    }
+  },
+  "dependencies": {
+    "@jitl/quickjs-ffi-types": "0.32.0"
+  }
+}

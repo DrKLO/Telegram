@@ -1,0 +1,54 @@
+<!doctype html>
+<html data-test="auto/05-colour-backgrounds-b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: colour and backgrounds (2/2)</title>
+<!-- conformance {"title":"Colour and backgrounds (2/2): backgrounds and data: images, gradients, box-shadow, outline, object-fit"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages>:nth-child(n+5){top:76px}.conf-stages{height:144px}</style><script>var T=function(){var u=document,m=u.documentElement,k=typeof TelegramWidget!="undefined",C=window.__conformanceMode||(k?"sandbox":"native"),a=[],y={},l=[];var D,c,p,f,M,d,b,g,O=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),q=()=>{g=g||setTimeout(T,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),q(),s}function A(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>A(t,e,[n,o],r),B=(t,e,n,o,r)=>A(t,e,[n===o,"got "+w(n)+", want "+w(o)],r);var E=(t,e,n)=>getComputedStyle(O(t),n).getPropertyValue(e).trim();var I=t=>{l.push(t)};var F=()=>{},J=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function T(){g=0,p&&!f&&F();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&M?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:C,status:n,n:t,checks:a,targets:D,stages:c})),x&&x(n,t)}var x;function S(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function j(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=J(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),q();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(j,t||0)}function N(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,T();let e=()=>{e=()=>{},setTimeout(j,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}S();return{cs:E,eq:B,ok:R,run:N,step:I}}();</script><!-- /conformance:harness -->
+<style>
+.s-bg{position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.5),rgba(255,255,255,0)) 0 0/100% 30px no-repeat,url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAARElEQVR4AaXBQQGAMBDAsK6WThSasIAFLKABLSgYnybrmWHvmJM9CSSQQIIJJJBAAgnWXMPe/fJDAgkkkEACCSSQQIIPxdUFNX2dZRwAAAAASUVORK5CYII=) 5px 5px/20px 20px repeat}
+.s-clip{position:absolute;left:4px;top:-8px;font:900 64px/76px sans-serif;background:linear-gradient(90deg,#c33,#36c);-webkit-background-clip:text;background-clip:text;color:transparent}
+.s-lin{position:absolute;left:0;top:0;width:80px;height:30px;background:linear-gradient(90deg,#c33,#36c)}
+.s-rlin{position:absolute;left:0;top:30px;width:80px;height:30px;background:repeating-linear-gradient(45deg,#3a3 0 6px,#fff 6px 12px)}
+.s-rad{position:absolute;left:0;top:0;width:40px;height:60px;background:radial-gradient(circle at 50% 50%,#e83 0,#e83 8px,#36c 20px)}
+.s-rrad{position:absolute;left:40px;top:0;width:40px;height:60px;background:repeating-radial-gradient(circle,#c33 0 4px,#fff 4px 8px)}
+.s-conic{position:absolute;left:10px;top:0;width:60px;height:60px;border-radius:50%;background:conic-gradient(#c33 0 25%,#e83 0 50%,#3a3 0 75%,#36c 0)}
+.s-shadow{position:absolute;left:14px;top:12px;width:30px;height:24px;background:#fff;box-shadow:16px 12px 0 2px #36c,inset 0 0 0 4px #c33}
+.s-outline{position:absolute;left:18px;top:16px;width:44px;height:28px;background:#ddd;outline:3px dashed #c33;outline-offset:4px}
+.s-of{position:absolute;top:10px;width:34px;height:40px;background:#eee}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="background" data-covers="css.background.basic"><div class="s-bg"></div></div>
+  <div data-stage="clip-text" data-covers="css.background.clip-text" data-max-diff="0.5" data-colors="#c33 #36c"><div class="s-clip">W</div></div>
+  <div data-stage="linear" data-covers="css.gradient.linear"><div class="s-lin"></div><div class="s-rlin"></div></div>
+  <div data-stage="radial" data-covers="css.gradient.radial"><div class="s-rad"></div><div class="s-rrad"></div></div>
+  <div data-stage="conic" data-covers="css.gradient.conic"><div class="s-conic"></div></div>
+  <div data-stage="shadow" data-covers="css.box.shadow"><div class="s-shadow"></div></div>
+  <div data-stage="outline" data-covers="css.box.outline"><div class="s-outline"></div></div>
+  <div data-stage="object-fit" data-covers="css.box.object-fit"><img class="s-of" style="left:4px;object-fit:cover" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAPElEQVR4AcXBQQEAIBCAMKTShTKTnQxlBz9s687wa8/hl0QkIhGJSEQiEpGIRCQiEYlIRCISkYhEJCKRBx5KAo1ZaufhAAAAAElFTkSuQmCC"><img class="s-of" style="left:42px;object-fit:contain;object-position:0 100%" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAPElEQVR4AcXBQQEAIBCAMKTShTKTnQxlBz9s687wa8/hl0QkIhGJSEQiEpGIRCQiEYlIRCISkYhEJCKRBx5KAo1ZaufhAAAAAElFTkSuQmCC"></div>
+</div>
+<div class="conf-head">05b · Colour and backgrounds (2/2)</div>
+<div class="conf-probes">
+  <div id="bg" style="background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAARElEQVR4AaXBQQGAMBDAsK6WThSasIAFLKABLSgYnybrmWHvmJM9CSSQQIIJJJBAAgnWXMPe/fJDAgkkkEACCSSQQIIPxdUFNX2dZRwAAAAASUVORK5CYII=) 1px 2px/10px 12px no-repeat;width:4px;height:4px"></div>
+  <div id="bg-remote" style="background-image:url(https://example.org/x.png);width:4px;height:4px"></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var CS = T.cs;
+T.step(function () {
+  T.ok('css.background.basic', 'background-image keeps the data: image', /url\(["']?data:image\/png/.test(CS('#bg', 'background-image')), CS('#bg', 'background-image').slice(0, 40));
+  T.eq('css.background.basic', 'background-size', CS('#bg', 'background-size'), '10px 12px');
+  T.eq('css.background.basic', 'background-position', CS('#bg', 'background-position'), '1px 2px');
+  T.eq('css.background.basic', 'background-repeat', CS('#bg', 'background-repeat'), 'no-repeat');
+  T.eq('css.url.remote', 'a remote url() never reaches the renderer', CS('#bg-remote', 'background-image'), 'none', { sandboxOnly: true });
+});
+T.run();
+</script>
+<template data-ref="object-fit"><div style="position:absolute;left:4px;top:10px;width:34px;height:40px;background:#eee"><div style="position:absolute;left:0;top:0;width:17px;height:40px;background:#cc3333"></div><div style="position:absolute;left:17px;top:0;width:17px;height:40px;background:#3366cc"></div></div><div style="position:absolute;left:42px;top:10px;width:34px;height:40px;background:#eee"><div style="position:absolute;left:0;top:23px;width:17px;height:17px;background:#cc3333"></div><div style="position:absolute;left:17px;top:23px;width:17px;height:17px;background:#3366cc"></div></div></template>
+<template data-ref="clip-text"><div style="position:absolute;left:4px;top:-8px;font:900 64px/76px sans-serif;background:linear-gradient(90deg,#c33,#36c);color:transparent">W</div></template>
+</body>
+</html>

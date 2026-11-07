@@ -1,0 +1,224 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 10-game-night.chat, message 5
+  author: sam 19:30 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  table { border-collapse: collapse; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  .t-red { color: var(--red); }
+
+  .cal { width: 392px; max-width: 100%; }
+  .cal .hd { display: flex; align-items: center; margin-bottom: 6px; }
+  .cal .nav { display: inline-block; width: 28px; height: 26px; line-height: 25px; text-align: center; border-radius: 8px; font-size: 19px; font-weight: 700; color: #007aff; margin-left: 2px; cursor: pointer; }
+  .cal .nav:hover { background-color: rgba(0,122,255,0.12); }
+  .cal .tdy { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; color: #007aff; border: 1px solid rgba(0,122,255,0.5); margin-right: 4px; cursor: pointer; }
+  .cal .tdy:hover { background-color: rgba(0,122,255,0.1); }
+  .cal table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .cal th { width: 14.28%; font-size: 10px; color: #8e8e93; text-transform: uppercase; padding: 3px 0; font-weight: 700; }
+  .cal td { width: 14.28%; height: 47px; vertical-align: top; border: 1px solid rgba(127,127,127,0.15); padding: 2px 3px; transition: background-color 380ms cubic-bezier(.34,1.56,.64,1); }
+  .cal td.we { background-color: rgba(127,127,127,0.05); }
+  .cal td.empty { background-color: transparent; border-color: transparent; }
+  .cal td.d { cursor: pointer; }
+  .cal td.d:hover { background-color: rgba(0,122,255,0.08); }
+  .cal td.d.sel { background-color: rgba(0,122,255,0.11); }
+  .cal .dn { display: inline-block; width: 19px; height: 19px; line-height: 19px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 10px; margin-bottom: 1px; transition: background-color 380ms cubic-bezier(.34,1.56,.64,1); }
+  .cal td.sel .dn { background-color: #007aff; color: #ffffff; }
+  .cal td.today .dn { background-color: #ff3b30; color: #ffffff; }
+  .cal .ev { font-size: 9px; line-height: 13px; height: 13px; color: #ffffff; border-radius: 3px; padding: 0 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; width: 42px; box-sizing: border-box; }
+  .cal table.pre .ev { width: 0; padding: 0; }
+  .cal table.in .ev { animation: ev-in 500ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes ev-in { from { width: 0; } to { width: 42px; } }
+  .cal .ev.new { animation: ev-grow 520ms cubic-bezier(.33,1,.68,1) both, ev-flash 900ms cubic-bezier(.11,0,.5,0) both; }
+  @keyframes ev-grow { from { width: 0; } to { width: 42px; } }
+  @keyframes ev-flash { from { box-shadow: inset 0 0 0 20px rgba(255,255,255,0.55); } to { box-shadow: inset 0 0 0 20px rgba(255,255,255,0); } }
+  .cal .more { font-size: 9px; line-height: 12px; color: #8e8e93; font-weight: 700; }
+  .cal .day { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background-color: rgba(127,127,127,0.09); }
+  .cal .er { display: flex; align-items: center; padding: 4px 0; }
+  .cal .er .bar { width: 4px; height: 28px; border-radius: 2px; margin-right: 9px; }
+  .cal .x { width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 11px; color: #8e8e93; cursor: pointer; }
+  .cal .x:hover { background-color: rgba(255,59,48,0.14); color: #ff3b30; }
+  .cal .pre { display: inline-block; padding: 3px 10px; margin: 6px 6px 0 0; border-radius: 13px; font-size: 12px; font-weight: 600; border: 1px solid rgba(127,127,127,0.3); cursor: pointer; }
+  .cal .pre:hover { background-color: rgba(0,122,255,0.1); border-color: #007aff; }
+  .fx-fade { animation: fx-fade 220ms ease-out; }
+  .fx-pop { animation: fx-pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  .fx-slide-left { animation: fx-slide-left 260ms cubic-bezier(.33,1,.68,1); }
+  .fx-slide-right { animation: fx-slide-right 260ms cubic-bezier(.33,1,.68,1); }
+  @keyframes fx-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fx-pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-left { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-right { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+</style>
+<div class="card pad cal" id="root">
+  <div class="hd"><b class="grow" style="font-size: 18px"><span id="mname">October</span> <span class="muted" id="yname">2026</span></b>
+    <span class="tdy" id="todayBtn">Today</span><span class="nav" id="prevBtn">‹</span><span class="nav" id="nextBtn">›</span></div>
+  <table class="pre" id="grid"></table>
+  <div class="day" id="day"></div>
+  <div class="tiny muted" id="foot" style="margin-top: 6px"></div>
+</div>
+<script>
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TODAY = { y: 2026, m: 9, d: 7 };
+const PRESETS = [
+  { t: '🎲 Game night', c: '#af52de', time: '19:00 · at Sam’s' },
+  { t: '🍕 Dinner', c: '#ff9500', time: '20:00' },
+  { t: '🏃 Morning run', c: '#34c759', time: '07:30' },
+];
+const key = (y, m, d) => `${y}-${m}-${d}`;
+const events = {};
+const seed = (y, m, days, t, c, time) => { for (const d of days) (events[key(y, m, d)] = events[key(y, m, d)] || []).push({ t, c, time, mine: false }); };
+seed(2026, 8, [5, 19], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 8, [12], 'Design review', '#007aff', '14:00');
+seed(2026, 8, [24], 'Release 0.2', '#34c759', '16:00');
+seed(2026, 9, [3, 24], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 9, [9, 10, 11], '✈️ Lisbon', '#ff9500', 'All day · TP 1351');
+seed(2026, 9, [14], 'Sprint review', '#007aff', '11:00');
+seed(2026, 9, [17], 'Kai’s 🎂', '#ff2d55', 'All day');
+seed(2026, 9, [21], 'Dentist', '#8e8e93', '09:30');
+seed(2026, 9, [21], 'Release 0.3', '#34c759', '16:00');
+seed(2026, 9, [28, 29], 'Offsite', '#30b0c7', 'All day · Sintra');
+seed(2026, 9, [31], '🎃 Party', '#ff9500', '20:00 · costumes!');
+seed(2026, 10, [7, 21], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 10, [11], 'Sprint review', '#007aff', '11:00');
+seed(2026, 10, [18], 'Release 0.4', '#34c759', '16:00');
+
+let view = { y: 2026, m: 9 }, sel = { y: 2026, m: 9, d: 7 }, added = 0, entered = false;
+
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const $ = id => document.getElementById(id);
+const root = $('root'), grid = $('grid');
+function fxRoot(kind) {
+  root.classList.remove('fx-fade', 'fx-pop', 'fx-slide-left', 'fx-slide-right');
+  void root.offsetWidth;
+  root.classList.add('fx-' + kind);
+}
+
+// ---- grid: rebuilt on month change; selection and single cells updated in place ----
+function pills(d, newest) {
+  const evs = events[key(view.y, view.m, d)] || [];
+  const shown = evs.length > 2 ? evs.slice(0, 1) : evs;
+  return shown.map((e, i) => `<div class="ev${newest && e === newest ? ' new' : ''}" style="background-color: ${e.c}">${esc(e.t)}</div>`).join('')
+    + (evs.length > 2 ? `<div class="more">+${evs.length - 1} more</div>` : '');
+}
+function buildGrid() {
+  const offset = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
+  const days = new Date(view.y, view.m + 1, 0).getDate();
+  const rows = Math.ceil((offset + days) / 7);
+  let html = '<tr>' + DOW.map(d => `<th>${d}</th>`).join('') + '</tr>';
+  for (let r = 0; r < rows; r++) {
+    html += '<tr>';
+    for (let c = 0; c < 7; c++) {
+      const i = r * 7 + c, d = i - offset + 1;
+      if (d < 1 || d > days) { html += '<td class="empty">&nbsp;</td>'; continue; }
+      const isToday = view.y === TODAY.y && view.m === TODAY.m && d === TODAY.d;
+      // the entry stagger of the original: cell i starts at i/42 of the 850 ms enter tween and takes 500 ms
+      html += `<td class="d${c >= 5 ? ' we' : ''}${isToday ? ' today' : ''}" data-d="${d}" style="--i: ${i}"><div class="dn">${d}</div><div class="pl">${pills(d)}</div></td>`;
+    }
+    html += '</tr>';
+  }
+  grid.innerHTML = html;
+  for (const ev of grid.querySelectorAll('.ev')) ev.style.animationDelay = entered ? '0ms' : `${(Number(ev.closest('td').style.getPropertyValue('--i')) * 11.9).toFixed(0)}ms`;
+  $('mname').textContent = MONTHS[view.m];
+  $('yname').textContent = String(view.y);
+  syncSel();
+}
+function syncSel() {
+  for (const td of grid.querySelectorAll('td.d')) {
+    const d = Number(td.dataset.d);
+    td.classList.toggle('sel', !!(sel && sel.y === view.y && sel.m === view.m && sel.d === d));
+  }
+}
+function syncCell(d, newest) {
+  const td = grid.querySelector(`td.d[data-d="${d}"]`);
+  if (td) td.querySelector('.pl').innerHTML = pills(d, newest);
+}
+function syncDetails() {
+  const day = $('day');
+  if (!sel) { day.hidden = true; return; }
+  day.hidden = false;
+  const list = events[key(sel.y, sel.m, sel.d)] || [];
+  const wd = WEEKDAY[new Date(sel.y, sel.m, sel.d).getDay()];
+  const isToday = sel.y === TODAY.y && sel.m === TODAY.m && sel.d === TODAY.d;
+  const rows = list.map((e, i) => `<div class="er"><div class="bar" style="background-color: ${e.c}"></div>
+      <div class="grow"><b>${esc(e.t)}</b><div class="tiny muted">${esc(e.time)}${e.mine ? ' · added by you' : ''}</div></div>
+      ${e.mine ? `<span class="x" data-del="${i}">✕</span>` : ''}</div>`).join('');
+  const presets = list.length < 4 ? `<div class="caps" style="margin-top: 8px">Propose</div><div>${PRESETS.map((p, i) => `<span class="pre" data-add="${i}">${esc(p.t)}</span>`).join('')}</div>` : '';
+  day.innerHTML = `<div class="row"><b class="grow">${wd}, ${MONTHS[sel.m].slice(0, 3)} ${sel.d}${isToday ? ' · <span class="t-red">today</span>' : ''}</b><span class="small muted">${list.length ? `${list.length} event${list.length > 1 ? 's' : ''}` : 'Free'}</span></div>
+    ${rows || '<div class="small muted" style="padding: 4px 0">Nothing planned yet.</div>'}${presets}`;
+}
+function syncFoot() {
+  const total = Object.keys(events).filter(k => k.startsWith(`${view.y}-${view.m}-`)).reduce((n, k) => n + events[k].length, 0);
+  $('foot').textContent = `${total} event${total === 1 ? '' : 's'} this month${added ? ` · ${added} proposed by you` : ''} · tap a day for details`;
+}
+
+function shift(dir) {
+  fxRoot(dir > 0 ? 'slide-left' : 'slide-right');
+  const m = view.m + dir;
+  view = { y: view.y + Math.floor(m / 12), m: (m + 12) % 12 };
+  buildGrid();
+  syncFoot();
+}
+
+$('prevBtn').addEventListener('click', () => shift(-1));
+$('nextBtn').addEventListener('click', () => shift(1));
+$('todayBtn').addEventListener('click', () => {
+  const dir = (TODAY.y - view.y) * 12 + TODAY.m - view.m;
+  fxRoot(dir > 0 ? 'slide-left' : dir < 0 ? 'slide-right' : 'fade');
+  view = { y: TODAY.y, m: TODAY.m };
+  sel = Object.assign({}, TODAY);
+  buildGrid();
+  syncDetails();
+  syncFoot();
+});
+grid.addEventListener('click', e => {
+  const td = e.target.closest('td.d');
+  if (!td) return;
+  const d = Number(td.dataset.d);
+  if (sel && sel.y === view.y && sel.m === view.m && sel.d === d) return;
+  fxRoot('fade');
+  sel = { y: view.y, m: view.m, d };
+  syncSel();
+  syncDetails();
+});
+$('day').addEventListener('click', e => {
+  if (!sel) return;
+  const k = key(sel.y, sel.m, sel.d), list = events[k] = events[k] || [];
+  const add = e.target.closest('[data-add]'), del = e.target.closest('[data-del]');
+  if (add) {
+    if (list.length >= 4) return;
+    const p = PRESETS[Number(add.dataset.add)];
+    const ev = { t: p.t, c: p.c, time: p.time, mine: true };
+    list.push(ev);
+    added++;
+    fxRoot('pop');
+    syncCell(sel.d, ev);
+  } else if (del) {
+    const i = Number(del.dataset.del);
+    if (!list[i] || !list[i].mine) return;
+    fxRoot('fade');
+    list.splice(i, 1);
+    added--;
+    syncCell(sel.d);
+  } else return;
+  syncDetails();
+  syncFoot();
+});
+
+buildGrid();
+syncDetails();
+syncFoot();
+setTimeout(() => { entered = true; grid.className = 'in'; setTimeout(() => { grid.className = ''; for (const ev of grid.querySelectorAll('.ev')) ev.style.animationDelay = ''; }, 1000); }, 250);
+</script>

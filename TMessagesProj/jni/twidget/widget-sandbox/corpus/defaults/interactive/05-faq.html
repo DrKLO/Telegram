@@ -1,0 +1,28 @@
+<!--
+  defaults: one CSS rule (full-width question buttons); the rest is the renderer's UA layer (corpus/defaults/README.md)
+  idea: a FAQ: each question is a <button> that shows or hides its answer
+-->
+<title>FAQ</title>
+<style>button { width: 100%; text-align: left }</style>
+<h3>Questions</h3>
+<div id="faq">
+  <p><button>What is a widget?</button></p>
+  <p hidden>A small interactive page inside a message. It runs in a sandbox with no network, so it cannot track you.</p>
+  <p><button>Who can see my answers?</button></p>
+  <p hidden>Nobody: what a widget remembers stays on your device, for this message only.</p>
+  <p><button>Does it work offline?</button></p>
+  <p hidden>Yes. Everything it needs comes with the message.</p>
+</div>
+<script>
+var buttons = document.querySelectorAll('#faq button');
+function label(b, open) { b.textContent = (open ? '▾ ' : '▸ ') + b.dataset.q; }
+buttons.forEach(function (b) {
+  b.dataset.q = b.textContent;
+  label(b, false);
+  b.addEventListener('click', function () {
+    var answer = b.parentNode.nextElementSibling;
+    answer.hidden = !answer.hidden;
+    label(b, !answer.hidden);
+  });
+});
+</script>

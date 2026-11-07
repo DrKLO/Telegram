@@ -1,0 +1,201 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 10
+  author: mo 14:11 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  a { color: var(--blue); text-decoration: none; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); } button:active { background-color: rgba(127,127,127,0.40); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  [data-action] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .lp { width: 340px; max-width: 100%; box-sizing: border-box; }
+  .lp .img { position: relative; height: 150px; border-radius: 12px; overflow: hidden; }
+  /* tween(reveal, {k: 1}, 650, ease.outCubic): pictures rise from 150 px below, text from 74 px */
+  .lp .lift { position: absolute; left: 0; top: 0; width: 312px; height: 150px; transition: transform 650ms cubic-bezier(.33,1,.68,1); }
+  /* tween(strip, {x: slide * W}, 480, ease.outCubic) */
+  .lp .strip { position: absolute; left: 0; top: 0; height: 150px; width: 936px; display: flex; transition: transform 480ms cubic-bezier(.33,1,.68,1); }
+  .lp .slide { width: 312px; height: 150px; flex-shrink: 0; }
+  /* app:ocean | sunset | map */
+  .art-ocean { background: linear-gradient(180deg, #64d2ff, #0a84ff 55%, #1d2b64); }
+  .art-sunset { background: linear-gradient(180deg, #ffd60a, #ff9f0a 35%, #ff2d55 70%, #5e2b6e); }
+  .art-map { background-color: #e9e4d6; background-image: linear-gradient(rgba(0,0,0,0.10) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.10) 1px, transparent 1px),
+    linear-gradient(25deg, transparent 48%, #ffffff 48%, #ffffff 52%, transparent 52%), linear-gradient(-35deg, transparent 47%, #ffffff 47%, #ffffff 53%, transparent 53%), radial-gradient(circle at 70% 60%, #9fd3ff 0, #9fd3ff 18%, transparent 19%);
+    background-size: 24px 24px, 24px 24px, 100% 100%, 100% 100%, 100% 100%; }
+  .lp .cap { position: absolute; left: 10px; top: 10px; padding: 1px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; color: #ffffff; background-color: rgba(0,0,0,0.4); }
+  .lp .dots { position: absolute; left: 0; top: 134px; width: 312px; text-align: center; line-height: 8px; }
+  .lp .dots span { display: inline-block; width: 7px; height: 7px; border-radius: 4px; margin: 0 3px; background-color: rgba(255,255,255,0.45); transition: background-color 480ms cubic-bezier(.33,1,.68,1); }
+  .lp .dots span.on { background-color: rgba(255,255,255,1); }
+  .lp .dots span:hover { background-color: rgba(255,255,255,0.95); }
+  .lp .arrow { position: absolute; top: 61px; width: 28px; height: 28px; line-height: 28px; border-radius: 14px; text-align: center; color: #ffffff; font-weight: 700; background-color: rgba(0,0,0,0.35); }
+  .lp .arrow:hover { background-color: rgba(0,0,0,0.6); }
+  .lp .txt { height: 74px; overflow: hidden; margin-top: 10px; }
+  .lp .txt > div { transition: transform 650ms cubic-bezier(.33,1,.68,1); }
+  /* skeleton shimmer: a 40 % wide highlight sweeping across every 1.1 s */
+  .lp .sk { border-radius: 6px; margin-bottom: 8px; background-color: rgba(127,127,127,0.16);
+    background-image: linear-gradient(90deg, rgba(127,127,127,0) 0%, rgba(127,127,127,0.22) 50%, rgba(127,127,127,0) 100%); background-size: 40% 100%; background-repeat: no-repeat;
+    animation: shimmer 1100ms linear infinite; }
+  @keyframes shimmer { from { background-position: -70% 0; } to { background-position: 170% 0; } }
+  .lp .acts { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .lp .acts button { margin-right: 4px; }
+  .lp .bm { display: inline-block; font-size: 13px; }
+  /* tween(pop, {s: 1}, 420, ease.outBack) from 1.6 (saved) or 0.7 (unsaved) */
+  .lp .bm.pop-big { animation: pop-big 420ms cubic-bezier(.34,1.56,.64,1); }
+  .lp .bm.pop-small { animation: pop-small 420ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop-big { from { transform: scale(1.6); } to { transform: scale(1); } }
+  @keyframes pop-small { from { transform: scale(0.7); } to { transform: scale(1); } }
+  .lp .lnk { font-size: 12px; }
+  .lp .lnk:hover { text-decoration: underline; }
+  .lp .mini { display: flex; align-items: center; padding: 4px; border-radius: 10px; }
+  .lp .mini:hover { background-color: rgba(127,127,127,0.10); }
+  .lp .mini .thumb { width: 56px; height: 56px; border-radius: 8px; margin-right: 10px; flex-shrink: 0; }
+  .lp .reader p { font-size: 13px; line-height: 1.45; margin: 6px 0 8px 0; }
+  .lp .rank { display: flex; align-items: center; padding: 5px 0; border-top: 1px solid rgba(127,127,127,0.16); font-size: 13px; }
+  .lp .rank .n { width: 24px; font-weight: 800; color: #ff9500; }
+  /* tween(row, {k: 1}, 380, ease.outCubic) after 120 + i * 70 ms: margin 18 → 0 */
+  .lp .rank { margin-left: 18px; transition: margin-left 380ms cubic-bezier(.33,1,.68,1); }
+  .lp .rank.in { margin-left: 0; }
+  /* transition('fade' | 'slide-*') on the bubble */
+  .tr-fade { animation: tr-fade 260ms ease-out; }
+  .tr-slide-left { animation: tr-slide-left 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-down { animation: tr-slide-down 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-up { animation: tr-slide-up 300ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(28px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-28px); } }
+  @keyframes tr-slide-down { from { opacity: 0; transform: translateY(-14px); } }
+  @keyframes tr-slide-up { from { opacity: 0; transform: translateY(14px); } }
+</style>
+<div class="card pad lp" id="w">
+  <div class="row between" style="margin-bottom: 8px"><span class="small muted">🔗 eatlisboa.example</span><span><span class="small muted" id="loading">loading… </span><a class="lnk" href="#" data-action="reload">↻ Reload</a></span></div>
+  <div id="p-loading">
+    <div class="sk" style="width: 100%; height: 150px"></div>
+    <div style="margin-top: 10px"><div class="sk" style="width: 85%; height: 16px"></div><div class="sk" style="width: 100%; height: 12px"></div><div class="sk" style="width: 60%; height: 12px"></div></div>
+  </div>
+  <div id="p-card" hidden>
+    <div class="img"><div class="lift" id="lift"><div class="strip" id="strip"><div class="slide art-ocean"></div><div class="slide art-sunset"></div><div class="slide art-map"></div></div></div>
+      <span class="cap" id="cap"></span>
+      <div class="arrow" id="arrow-l" data-action="step" data-value="-1" style="left: 8px">‹</div>
+      <div class="arrow" id="arrow-r" data-action="step" data-value="1" style="left: 276px">›</div>
+      <div class="dots" id="dots"></div></div>
+    <div class="txt"><div id="txtin"><b id="title-c"></b>
+      <div class="small muted" style="margin-top: 3px">We ate 61 custard tarts in four days so you don't have to. #1 is not where you think.</div></div></div>
+    <div class="acts"><span><button class="primary" data-action="open">Read article</button><button data-action="save" class="savebtn"><span class="bm">🔖</span> <span class="sv">Save</span></button></span><a class="lnk" href="#" data-action="collapse">▴ Collapse</a></div>
+  </div>
+  <div id="p-compact" hidden>
+    <div class="mini" data-action="expand"><div class="thumb" id="thumb"></div><div class="grow"><b class="small" id="title-m"></b>
+      <div class="tiny muted" id="cmeta">4 min read · 12 bakeries</div></div><span class="muted">▾</span></div>
+  </div>
+  <div id="p-reader" hidden>
+    <div class="reader"><a class="lnk" href="#" data-action="back">‹ Back to preview</a>
+      <div style="margin-top: 6px"><b id="title-r"></b></div><div class="tiny muted">By Inês Duarte · 4 min read</div>
+      <p>The perfect nata has a blistered, almost burnt top, a shell that shatters, and custard that is still a little warm. We rated each one on all three.</p>
+      <div class="caps" style="margin-bottom: 2px">Top 5</div><div id="ranks"></div>
+      <div class="acts"><button data-action="save" class="savebtn"><span class="bm">🔖</span> <span class="sv">Save</span></button><span class="tiny muted">7 more in the full list</span></div></div>
+  </div>
+</div>
+<script>
+const SLIDES = [['ocean', 'Belém at sunrise'], ['sunset', 'Miradouro de Santa Catarina'], ['map', 'All 12 bakeries on one map']];
+const RANKS = [['Manteigaria', 'Chiado', '€1.20'], ['Pastéis de Belém', 'Belém', '€1.40'], ['Aloma', 'Campo de Ourique', '€1.10'],
+               ['Fábrica da Nata', 'Baixa', '€1.30'], ['Confeitaria Nacional', 'Rossio', '€1.50']];
+const W = 312, TITLE = 'The 12 best pastéis de nata in Lisbon, ranked';
+let phase = 'loading', run = 0, slide = 0, saved = false;
+
+const root = document.getElementById('w');
+const $ = id => document.getElementById(id);
+function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function bubble(kind) {
+  for (const c of [...root.classList]) if (c.startsWith('tr-')) root.classList.remove(c);
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+for (const id of ['title-c', 'title-m', 'title-r']) $(id).textContent = TITLE;
+$('dots').innerHTML = SLIDES.map((_, i) => `<span data-action="go" data-value="${i}"></span>`).join('');
+$('ranks').innerHTML = RANKS.map(([n, area, price], i) => `<div class="rank" style="transition-delay: ${120 + i * 70}ms">
+      <span class="n">${i + 1}</span><span class="grow"><b>${n}</b> <span class="small muted">${area}</span></span><span class="small">${price}</span></div>`).join('');
+
+function showPhase(p) {
+  phase = p;
+  for (const id of ['loading', 'card', 'compact', 'reader']) $('p-' + id).hidden = id !== p;
+  $('loading').hidden = p !== 'loading';
+}
+function load() {
+  const me = ++run;
+  showPhase('loading');
+  setTimeout(() => {
+    if (me !== run) return;
+    showPhase('card');
+    // reveal: start below, then transition up
+    $('lift').style.transition = 'none'; $('lift').style.transform = `translateY(150px)`;
+    $('txtin').style.transition = 'none'; $('txtin').style.transform = `translateY(74px)`;
+    void root.offsetWidth;
+    $('lift').style.transition = ''; $('lift').style.transform = 'translateY(0)';
+    $('txtin').style.transition = ''; $('txtin').style.transform = 'translateY(0)';
+    slides();
+  }, 1700);
+}
+setTimeout(load, 250);
+
+function slides() {
+  $('strip').style.transform = `translateX(${-slide * W}px)`;
+  $('cap').textContent = SLIDES[slide][1];
+  Array.from($('dots').children).forEach((d, i) => d.classList.toggle('on', i === slide));
+  $('arrow-l').hidden = slide <= 0;
+  $('arrow-r').hidden = slide >= SLIDES.length - 1;
+  $('thumb').className = 'thumb art-' + SLIDES[slide][0];
+}
+function go(i) {
+  slide = (i + SLIDES.length) % SLIDES.length;
+  slides();
+}
+function saveState(pop) {
+  for (const b of root.querySelectorAll('.savebtn')) {
+    b.classList.toggle('primary', saved);
+    b.querySelector('.sv').textContent = saved ? 'Saved' : 'Save';
+    const bm = b.querySelector('.bm');
+    bm.classList.remove('pop-big', 'pop-small');
+    if (pop) restart(bm, saved ? 'pop-big' : 'pop-small');
+  }
+  $('cmeta').textContent = '4 min read · 12 bakeries' + (saved ? ' · 🔖 saved' : '');
+}
+saveState(false);
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  e.preventDefault();
+  const name = el.dataset.action, value = el.dataset.value;
+  if (name === 'reload') { bubble('fade'); return load(); }
+  if (phase === 'loading') return;
+  if (name === 'go') return go(Number(value));
+  if (name === 'step') return go(slide + Number(value));
+  if (name === 'save') { saved = !saved; saveState(true); return; }
+  const to = { collapse: ['compact', 'slide-up'], expand: ['card', 'slide-down'], open: ['reader', 'slide-left'], back: ['card', 'slide-right'] }[name];
+  if (!to || phase === to[0]) return;
+  bubble(to[1]);
+  showPhase(to[0]);
+  if (phase === 'card') slides();
+  if (phase === 'reader') {
+    const rows = Array.from($('ranks').children);
+    rows.forEach(r => r.classList.remove('in'));
+    void root.offsetWidth;
+    rows.forEach(r => r.classList.add('in'));
+  }
+});
+</script>

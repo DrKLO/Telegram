@@ -1,0 +1,83 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 07-shop.chat, message 2
+  author: shop 14:00 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; text-decoration: none; background-color: rgba(127,127,127,0.16); color: var(--fg); }
+  .btn:hover { background-color: rgba(127,127,127,0.28); text-decoration: none; }
+  .btn.primary { background-color: var(--blue); color: #ffffff; } .btn.primary:hover { background-color: var(--blue-h); }
+  .btn:active { background-color: rgba(127,127,127,0.40); } .btn.primary:active { background-color: var(--blue-h); }
+
+  .car { display: flex; width: 640px; max-width: 100%; }
+  .prod { flex-grow: 1; flex-basis: 0; margin-right: 10px; overflow: hidden; }
+  .prod:last-child { margin-right: 0; }
+  .prod .img { position: relative; height: 120px; background-size: cover; background-position: center; }
+  .prod .tag { position: absolute; left: 8px; top: 8px; }
+  .prod .body2 { padding: 9px 11px 11px 11px; }
+  .prod .name { font-weight: 700; font-size: 14px; }
+  .prod .price { font-size: 16px; font-weight: 800; margin-top: 4px; }
+  .prod .old { font-size: 12px; text-decoration: line-through; font-weight: 400; }
+  .prod .btn { display: block; margin-top: 8px; padding: 6px 0; font-size: 13px; }
+  .prod .btn.in { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .prod .more { margin-top: 4px; }
+  /* app:forest / app:dunes / app:ocean */
+  .img.forest { background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, #1b4332 0%, #2d6a4f 45%, #52b788 100%); }
+  .img.dunes { background: radial-gradient(ellipse at 70% 15%, rgba(255,255,255,0.45), transparent 50%), linear-gradient(170deg, #f6d5a2 0%, #e0a96d 55%, #b86f3a 100%); }
+  .img.ocean { background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.35), transparent 50%), linear-gradient(175deg, #a8dadc 0%, #457b9d 50%, #1d3557 100%); }
+</style>
+<div class="car">
+  <div class="card prod"><div class="img forest"><span class="badge green tag" style="background-color: #34c759; color: #ffffff">NEW</span></div><div class="body2"><div class="name">Trailhead Rain Jacket</div><div class="tiny muted">Waterproof · 3 colours</div><div class="small"><span class="t-orange">★★★★★</span> <span class="muted">4.9 (218)</span></div><div class="price">€129</div><a class="btn primary" href="#" data-run="jacket">View</a></div></div>
+  <div class="card prod"><div class="img dunes"><span class="badge tag" style="background-color: #ff3b30; color: #ffffff">−30%</span></div><div class="body2"><div class="name">Dune Daypack 22L</div><div class="tiny muted">Recycled nylon</div><div class="small"><span class="t-orange">★★★★☆</span> <span class="muted">4.4 (97)</span></div><div class="price">€62 <span class="old muted">€89</span></div><div class="more tiny muted" id="moreDaypack" hidden>22 litres · recycled nylon · you save €27</div><a class="btn" href="#" data-details="moreDaypack">Details</a></div></div>
+  <div class="card prod"><div class="img ocean"><span class="badge tag" style="background-color: rgba(0,0,0,0.55); color: #ffffff">2 LEFT</span></div><div class="body2"><div class="name">Tide Water Bottle</div><div class="tiny muted">Insulated · 750 ml</div><div class="small"><span class="t-orange">★★★★★</span> <span class="muted">4.8 (1.2k)</span></div><div class="price">€34</div><a class="btn" href="#" data-cart="bottle">Add</a></div></div>
+</div>
+<script>
+// The original's chat:send?text=… links ("Tell me about the daypack", "Add the water bottle") sent a message
+// as the user; SDK v1 has no sendMessage, so they became local state: Details expands the card, Add puts the
+// item in a cart kept in localStorage (per message, survives re-creation) and restored on load.
+// chat:run?id=jacket has no classic equivalent (it opens the next message in the demo chat).
+const CART_KEY = 'shop-cart';
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable or full: keep it in memory */ } },
+};
+let cart = [];
+try { cart = JSON.parse(store.get(CART_KEY) || '[]'); } catch (e) { cart = []; }
+if (!Array.isArray(cart)) cart = [];
+function syncCart() {
+  for (const a of document.querySelectorAll('[data-cart]')) {
+    const on = cart.includes(a.dataset.cart);
+    a.classList.toggle('in', on);
+    a.textContent = on ? '✓ In cart' : 'Add';
+  }
+}
+document.querySelector('.car').addEventListener('click', e => {
+  const a = e.target.closest('a');
+  if (!a) return;
+  e.preventDefault();
+  if (a.dataset.details) {
+    const more = document.getElementById(a.dataset.details);
+    more.hidden = !more.hidden;
+    a.textContent = more.hidden ? 'Details' : 'Hide details';
+  } else if (a.dataset.cart) {
+    const id = a.dataset.cart;
+    cart = cart.includes(id) ? cart.filter(x => x !== id) : [...cart, id];
+    store.set(CART_KEY, JSON.stringify(cart));
+    syncCart();
+  }
+});
+syncCart();
+</script>

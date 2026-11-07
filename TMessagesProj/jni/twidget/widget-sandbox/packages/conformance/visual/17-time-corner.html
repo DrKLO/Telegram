@@ -1,0 +1,44 @@
+<!doctype html>
+<html data-test="visual/17-time-corner">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: the time over the corner</title>
+<!-- conformance {"title":"The client's time over the bottom corner of a widget with no caption below it: the widget keeps clear of it with env(safe-area-inset-bottom) and --tg-content-safe-area-corner-*","hint":"No caption below this widget (none, or one above it): the time with its ticks sits over the bottom right corner (bottom left in a right-to-left interface) on a dark backing, inside the lighter corner box. The blue footer reaches the bubble's bottom edge; its last line runs beside the time, never under it. A tap on the time does nothing in the widget.","safeArea":{"bottom":24,"cornerRight":64},"covers":["css.value.env","tw.content-safe-area","behaviour.time-corner"]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}body{line-height:18px}.v-head{margin:6px 10px 2px;font-weight:600;font-size:15px;line-height:20px}.v-hint{margin:0 10px 4px;font-size:12px;line-height:16px}.v-row{display:flex;align-items:flex-start;margin:4px 10px 6px}.v-cap{margin-left:10px;font-size:12px;line-height:16px}[data-stage]{flex:none;width:150px;height:90px}</style><script>var T=function(){var m=document,g=m.documentElement,A=typeof TelegramWidget!="undefined",T=window.__conformanceMode||(A?"sandbox":"native"),i=[],x={},l=[];var q,s,u,c,b,f,h,d;var w=()=>{d=d||setTimeout(M,0)};function S(t,e,n,r,o){o=o||{};let a=n==null?"skip":n=="pending"?n:(o.xfail?"x":"")+(n?"pass":"fail"),p=x[t+"|"+e]||(x[t+"|"+e]=i[i.length]=[t,e]);return p[2]=a,p[3]=(r?(""+r).slice(0,160):"")+(o.xfail&&a[0]=="x"?" (expected to fail: "+o.xfail+")":""),w(),a}var j=()=>{},C=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function M(){d=0,u&&!c&&j();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let r of i)t[r[2]]++;let e=u&&!l.length,n=c||e&&!t.pending?"done":e&&b?"awaiting":"running";c=n=="done",g.setAttribute("data-conformance",JSON.stringify({v:1,id:g.getAttribute("data-test"),mode:T,status:n,n:t,checks:i,targets:q,stages:s})),y&&y(n,t)}var y;function k(){if(s||(s={},[].forEach.call(m.querySelectorAll("[data-stage]"),e=>{s[e.getAttribute("data-stage")]=C(e)})),!l.length)return u=1,f&&h&&setTimeout(h,f),w();let t;try{t=l.shift()()}catch(e){S("harness","step",!1,e)}setTimeout(k,t||0)}function D(t){t=t||{},b=t.awaitInput,f=t.awaitInput||t.deadline,M();let e=()=>{e=()=>{},setTimeout(k,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}return{run:D}}();</script><!-- /conformance:harness -->
+<style>
+.v-p{margin:0 10px 8px;font-size:13px;line-height:18px}
+.opt{display:flex;justify-content:space-between;margin:0 10px 6px;padding:6px 8px;border-radius:8px;background:#8882;font-size:13px}
+.foot{position:relative;margin-top:10px;background:#2b5278;color:#fff;font-size:13px;line-height:18px;
+  padding:8px max(10px,var(--tg-content-safe-area-corner-right)) 3px max(10px,var(--tg-content-safe-area-corner-left))}
+.foot p{margin:0}
+#sa{min-height:max(0px,calc(env(safe-area-inset-bottom) - 3px));display:flex;align-items:flex-end;font:12px/18px ui-monospace,monospace}
+.corner{position:absolute;bottom:0;height:env(safe-area-inset-bottom);background:#fff3}
+.corner.r{right:0;width:var(--tg-content-safe-area-corner-right)}
+.corner.l{left:0;width:var(--tg-content-safe-area-corner-left)}
+</style>
+</head>
+<body>
+<div class="v-head">17 · The time over the corner</div>
+<div class="v-p">With no caption below it, a client draws the message time over the widget, as over a photo. The widget gets the band at the bottom as <b>env(safe-area-inset-bottom)</b> and the corner the time takes in it.</div>
+<div class="opt"><span>Team lunch on Friday</span><b>12</b></div>
+<div class="opt"><span>Team lunch on Saturday</span><b>5</b></div>
+<div class="foot">
+  <p>The footer reaches the bubble's edge. Its last line may run into the band beside the time:</p>
+  <div id="sa">band ? · corner ?</div>
+  <div class="corner r"></div><div class="corner l"></div>
+</div>
+<script>
+// What the client passed: TelegramWidget.contentSafeAreaInset, or the same numbers from the root variables.
+function show() {
+  var a = typeof TelegramWidget != 'undefined' && TelegramWidget.contentSafeAreaInset, s = getComputedStyle(document.documentElement);
+  var n = function (k, v) { return a ? a[k] : parseFloat(s.getPropertyValue('--tg-content-safe-area-' + v)) || 0; };
+  var b = n('bottom', 'inset-bottom'), r = n('cornerRight', 'corner-right'), l = n('cornerLeft', 'corner-left');
+  document.getElementById('sa').textContent = 'band ' + b + ' px · corner ' + (r ? r + ' px right' : l ? l + ' px left' : 'none');
+}
+show();
+if (typeof TelegramWidget != 'undefined') TelegramWidget.onEvent('contentSafeAreaChanged', show);
+T.run();
+</script>
+</body>
+</html>

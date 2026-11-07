@@ -1,0 +1,47 @@
+<!doctype html>
+<html data-test="auto/37-paint-counted">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: sixteen heavy boxes draw; what is not counted</title>
+<!-- conformance {"title":"Paint limit: 16 heavy boxes (2 of them with backdrop-filter) draw; shadows without blur, a display: none subtree, a ::before without content, a pulse without blur and 20 disabled buttons dimmed by the client are not counted (display: contents is out of profile 1: the validator removes it)"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var u=document,m=u.documentElement,w=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(w?"sandbox":"native"),a=[],y={},l=[];var j,c,p,f,k,d,b,g,C=t=>typeof t=="string"?u.querySelector(t):t;var M=()=>{g=g||setTimeout(A,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function D(t,e,n,o){if(o&&o.sandboxOnly&&!w)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var O=(t,e,n,o,r)=>D(t,e,[n,o],r);var R=(t,e,n)=>getComputedStyle(C(t),n).getPropertyValue(e).trim();var B=t=>{l.push(t)};var E=()=>{},I=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function A(){g=0,p&&!f&&E();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&k?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:S,status:n,n:t,checks:a,targets:j,stages:c})),x&&x(n,t)}var x;function T(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=I(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),M();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(q,t||0)}function F(t){t=t||{},k=t.awaitInput,d=t.awaitInput||t.deadline,A();let e=()=>{e=()=>{},setTimeout(q,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}T();return{cs:R,ok:O,run:F,step:B}}();</script><!-- /conformance:harness -->
+<style>
+.bx{margin:0 8px;line-height:0}
+.bx i{display:inline-block;width:14px;height:14px;margin:3px;border-radius:3px;background:#4a90e2}
+.h{box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.bd{position:relative;margin:4px 8px;height:30px;background:repeating-linear-gradient(90deg,#e74c3c 0 8px,#f1c40f 8px 16px)}
+.bd b{position:absolute;top:5px;width:60px;height:20px;background:rgba(255,255,255,.3);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.r{box-shadow:0 0 0 2px #e67e22,inset 0 1px 0 #fff}
+.off{display:none}.off i{filter:blur(2px)}
+.n::before{content:none;opacity:.5}
+@keyframes sp{0%,100%{box-shadow:inset 0 0 0 7px rgba(255,255,255,0)}50%{box-shadow:inset 0 0 0 7px rgba(255,255,255,.6)}}
+.sp{animation:sp .8s linear infinite}
+.bt{margin:2px 8px}.bt button{margin:1px;padding:2px 5px;min-height:0;font:10px/1.2 system-ui,sans-serif}
+</style>
+</head>
+<body>
+<div class="conf-head">37 · Paint: 16 heavy boxes run</div>
+<div class="bx" id="heavy"><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h" id="last"></i></div>
+<div class="bd"><b style="left:20px"></b><b style="left:120px"></b></div>
+<div class="bx"><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i><i class="r"></i></div>
+<div class="bx off"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="bx"><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i><i class="n"></i></div>
+<div class="bx"><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i><i class="sp"></i></div>
+<div class="bt" id="bt"><button disabled>1</button><button disabled>2</button><button disabled>3</button><button disabled>4</button><button disabled>5</button><button disabled>6</button><button disabled>7</button><button disabled>8</button><button disabled>9</button><button disabled>10</button><button disabled>11</button><button disabled>12</button><button disabled>13</button><button disabled>14</button><button disabled>15</button><button disabled>16</button><button disabled>17</button><button disabled>18</button><button disabled>19</button><button disabled>20</button></div>
+<div id="conf-list"></div>
+<script>
+// In the sandbox the host would have stopped the widget before these steps if it counted any of the rest.
+T.step(function () { return 700; });
+T.step(function () {
+  var shadow = T.cs('#last', 'box-shadow');
+  T.ok('limit.paint-heavy', '14 boxes with a blurred shadow and 2 with backdrop-filter draw with their effects, and the widget runs', shadow != 'none' && shadow != '', 'box-shadow ' + shadow);
+  T.ok('limit.paint-heavy', 'shadows without blur, boxes under display: none, a ::before without content and a pulse of an inset fill without blur are not counted', true, 'the widget runs');
+  T.ok('limit.paint-backdrop', 'two boxes with backdrop-filter run', true, 'the widget runs');
+  T.ok('limit.paint-heavy', '20 disabled buttons dimmed by the client (its own opacity) are not counted', true, 'opacity ' + T.cs('#bt button', 'opacity'));
+});
+T.run();
+</script>
+</body>
+</html>

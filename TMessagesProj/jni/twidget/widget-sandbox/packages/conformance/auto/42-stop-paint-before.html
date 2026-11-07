@@ -1,0 +1,35 @@
+<!doctype html>
+<html data-test="auto/42-stop-paint-before">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: a ::before that makes the 17th heavy box stops the widget</title>
+<!-- conformance {"title":"Paint limit: a ::before with a filter is a heavy box of its own; next to 16 heavy elements it stops the widget","stops":"Paint limit exceeded: 17 boxes with shadows, filters or transparency","hint":"The host must stop this widget: its renderer counts heavy boxes (a blurred shadow, a filter, a backdrop-filter, opacity below 1, or an animation of one of them; packages/core/tests/fixtures/paint-policy.json) and reports the paint limit past 16 (2 with backdrop-filter). A browser has no such limit, so natively the check is skipped."} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var x=document,y=x.documentElement,h=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(h?"sandbox":"native"),a=[],b={},l=[];var j,c,f,u,k,d,w,p;var M=()=>{p=p||setTimeout(A,0)};function i(t,e,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),m=b[t+"|"+e]||(b[t+"|"+e]=a[a.length]=[t,e]);return m[2]=s,m[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function C(t,e,o,n){if(n&&n.sandboxOnly&&!h)return i(t,e,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(t,e,!1,"threw "+s,n)}return r==null?i(t,e,null,"not applicable",n):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],n)}var D=(t,e,o,n,r)=>C(t,e,[o,n],r);var O=t=>{l.push(t)};var R=()=>{},B=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(o=>Math.round(o*10)/10)};function A(){p=0,f&&!u&&R();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)t[n[2]]++;let e=f&&!l.length,o=u||e&&!t.pending?"done":e&&k?"awaiting":"running";u=o=="done",y.setAttribute("data-conformance",JSON.stringify({v:1,id:y.getAttribute("data-test"),mode:S,status:o,n:t,checks:a,targets:j,stages:c})),g&&g(o,t)}var g;function T(){g=(t,e)=>{let o=[t];for(let n in e)e[n]&&o.push(n+" "+e[n]);x.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(x.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=B(e)})),!l.length)return f=1,d&&w&&setTimeout(w,d),M();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(q,t||0)}function E(t){t=t||{},k=t.awaitInput,d=t.awaitInput||t.deadline,A();let e=()=>{e=()=>{},setTimeout(q,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(o){}setTimeout(()=>e(),400)}T();return{ok:D,run:E,sandbox:h,step:O}}();</script><!-- /conformance:harness -->
+<style>
+.bx{margin:0 8px;line-height:0}
+.bx i{display:inline-block;width:14px;height:14px;margin:3px;border-radius:3px;background:#4a90e2}
+.h{box-shadow:0 2px 6px rgba(0,0,0,.4)}.p::before{content:"";display:block;width:6px;height:6px;margin:4px;border-radius:3px;background:#fff;filter:blur(1px)}
+</style>
+</head>
+<body>
+<div class="conf-head">42 · Stop: a heavy ::before</div>
+<div class="bx"><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i class="h"></i><i id="x"></i></div>
+<div id="conf-list"></div>
+<script>
+var S = T.sandbox ? {} : { sandboxOnly: true };
+// The check is published first; the next step passes the limit and the host stops the widget. The runner judges the
+// stop by its reason (the manifest's "stops"), the widget cannot report after it.
+T.step(function () {
+  T.ok('limit.paint-heavy', 'a ::before with filter: blur() on a 17th element next to 16 with a blurred shadow stops the widget (the reason starts with \u201cPaint limit exceeded: 17 boxes\u201d)', true, 'judged by the stop', S);
+  return 60;
+});
+T.step(function () {
+  if (!T.sandbox) return;
+  document.getElementById('x').className = 'p';
+});
+T.run();
+</script>
+</body>
+</html>

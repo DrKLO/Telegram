@@ -54,6 +54,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.PollEditTextCell;
@@ -77,6 +78,7 @@ import org.telegram.ui.Components.SuggestEmojiView;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -338,11 +340,11 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), true);
-        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundWhite, getResourceProvider());
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), true);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, getResourceProvider(), false);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (todo) {
             actionBar.setTitle(getString(onlyAdding ? R.string.TodoAddTasksTitle : R.string.TodoEditTitle));
@@ -651,7 +653,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         sizeNotifierFrameLayout.setDelegate(this);
 
         fragmentView = sizeNotifierFrameLayout;
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundGray);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         listView = new RecyclerListView(context) {
@@ -758,9 +760,9 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                     }
                 }
                 if (hintShowed && !quizPoll) {
+                int count = listView.getChildCount();
                     hintView.hide();
                 }
-                int count = listView.getChildCount();
                 for (int a = answerStartRow; a < answerStartRow + answersCount; a++) {
                     RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(a);
                     if (holder != null && holder.itemView instanceof PollEditTextCell) {
@@ -820,7 +822,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
         frameLayout.addView(hintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
 
         if (isPremium) {
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+            NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
             suggestEmojiPanel = new SuggestEmojiView(context, currentAccount, null, resourceProvider);
             suggestEmojiPanel.forbidCopy();
             suggestEmojiPanel.forbidSetAsStatus();
@@ -884,9 +886,9 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             }
         }
     }
+        int count = listView.getChildCount();
 
     private void showQuizHint() {
-        int count = listView.getChildCount();
         for (int a = answerStartRow; a < answerStartRow + answersCount; a++) {
             RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(a);
             if (holder != null && holder.itemView instanceof PollEditTextCell) {
@@ -1073,7 +1075,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             textCell.setText2(String.format("%d", left));
             SimpleTextView textView = textCell.getTextView2();
             int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
-            textView.setTextColor(Theme.getColor(key));
+            ThemeBind.textColor(textView, key);
             textView.setTag(key);
         } else {
             textCell.setText2("");
@@ -1553,7 +1555,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 case 2: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     cell.setFixedSize(0);
-                    cell.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    ThemeBind.themedBackground(cell, mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                     if (position == solutionInfoRow) {
                         cell.setText(getString(R.string.AddAnExplanationInfo));
                     } else if (position == settingsSectionRow) {
@@ -1573,8 +1575,8 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                     textCell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
                     Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
                     Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
-                    drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));
-                    drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.drawableColorFilter(textCell, drawable1, Theme.key_switchTrackChecked, PorterDuff.Mode.MULTIPLY);
+                    ThemeBind.drawableColorFilter(textCell, drawable2, Theme.key_checkboxCheck, PorterDuff.Mode.MULTIPLY);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
                     textCell.setTextAndIcon(getString(todo ? R.string.TodoNewTask : R.string.AddAnOption), combinedDrawable, false);
                     break;
@@ -1613,7 +1615,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 textCell.setTag(null);
                 textCell.setEnabled(!onlyAdding);
                 textCell.textView.setEnabled(!onlyAdding);
-                textCell.textView.setTextColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), !onlyAdding ? 1.0f : 0.6f));
+                ThemeBind.textColor(textCell.textView, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, !onlyAdding ? 1.0f : 0.6f), getResourceProvider());
                 setTextLeft(holder.itemView, holder.getAdapterPosition());
             } else if (viewType == 5) {
                 int position = holder.getAdapterPosition();
@@ -1622,7 +1624,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 int index = position - answerStartRow;
                 final boolean enabled = !onlyAdding || index >= oldAnswersCount;
                 textCell.textView.setEnabled(enabled);
-                textCell.textView.setTextColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), enabled ? 1.0f : 0.6f));
+                ThemeBind.textColor(textCell.textView, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, enabled ? 1.0f : 0.6f), getResourceProvider());
                 textCell.setTextAndHint(answers[index], getString(todo ? R.string.TodoTaskPlaceholder : R.string.OptionHint), true);
                 textCell.setTag(null);
                 if (textCell.deleteImageView != null) {
@@ -1686,7 +1688,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             switch (viewType) {
                 case 0:
                     view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case 1:
                     view = new ShadowSectionCell(mContext);
@@ -1696,7 +1698,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                     break;
                 case 3:
                     view = new TextCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case 4: {
                     PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, null) {
@@ -1743,7 +1745,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                         }
                     };
                     cell.createErrorTextView();
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundWhite);
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -1787,7 +1789,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 }
                 case 6:
                     view = new TextCheckCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case 7: {
                     PollEditTextCell cell = new PollEditTextCell(mContext, false, isPremium ? PollEditTextCell.TYPE_EMOJI : PollEditTextCell.TYPE_DEFAULT, null) {
@@ -1813,7 +1815,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                         }
                     };
                     cell.createErrorTextView();
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundWhite);
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -1893,9 +1895,9 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
 
                         @Override
                         protected void onCheckBoxClick(PollEditTextCell editText, boolean checked) {
+                                int count = listView.getChildCount();
                             if (checked && quizPoll) {
                                 Arrays.fill(answersChecks, false);
-                                int count = listView.getChildCount();
                                 for (int a = answerStartRow; a < answerStartRow + answersCount; a++) {
                                     RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(a);
                                     if (holder != null && holder.itemView instanceof PollEditTextCell) {
@@ -1955,7 +1957,7 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                             return true;
                         }
                     };
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundWhite);
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -2088,46 +2090,33 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
-    public ArrayList<ThemeDescription> getThemeDescriptions() {
-        ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
-
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, TextCell.class, PollEditTextCell.class, TextCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
-
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
-
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_text_RedRegular));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
-
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteHintText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"deleteImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"moveImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{PollEditTextCell.class}, new String[]{"deleteImageView"}, null, null, null, Theme.key_stickers_menuSelector));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{PollEditTextCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_text_RedRegular));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{PollEditTextCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{PollEditTextCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_checkboxCheck));
-
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
-
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
-
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
-
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_switchTrackChecked));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_checkboxCheck));
-
-        return themeDescriptions;
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (listView == null) {
+                return;
+            }
+            final RecyclerListView list = listView;
+            for (int i = 0; i < list.getChildCount(); i++) {
+                final View view = list.getChildAt(i);
+                final RecyclerView.ViewHolder holder = list.getChildViewHolder(view);
+                if (holder == null) {
+                    continue;
+                }
+                final int viewType = holder.getItemViewType();
+                if ((viewType == 4 || viewType == 5) && view instanceof PollEditTextCell) {
+                    final PollEditTextCell cell = (PollEditTextCell) view;
+                    if (cell.textView != null) {
+                        cell.textView.setTextColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), cell.textView.isEnabled() ? 1.0f : 0.6f));
+                    }
+                }
+                // viewType 3 (TextCell add-option icon): recolored by its ThemeBind.drawableColorFilter bindings
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
+
 
     @Override
     protected boolean hideKeyboardOnShow() {
@@ -2187,5 +2176,22 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
                 listAdapter.notifyItemChanged(answerSectionRow);
             }
         }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText2);
+        keys.add(Theme.key_stickers_menuSelector);
+        keys.add(Theme.key_windowBackgroundWhiteHintText);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText3);
+        keys.add(Theme.key_windowBackgroundWhiteBlueHeader);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
     }
 }

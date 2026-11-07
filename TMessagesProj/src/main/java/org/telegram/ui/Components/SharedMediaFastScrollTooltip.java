@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -21,6 +22,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.util.Random;
 
@@ -32,9 +34,9 @@ public class SharedMediaFastScrollTooltip extends FrameLayout {
         textView.setText(LocaleController.getString(R.string.SharedMediaFastScrollHint));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(3);
-        textView.setTextColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
+        ThemeBind.textColor(textView, Theme.key_chat_gifSaveHintText);
 
-        setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_chat_gifSaveHintBackground)));
+        ThemeBind.fillBackground(this, Theme.createRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_chat_gifSaveHintBackground)), ThemeBind.of(Theme.key_chat_gifSaveHintBackground));
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 46, 8, 8, 8));
 
         TooltipDrawableView hintView = new TooltipDrawableView(context);
@@ -46,7 +48,7 @@ public class SharedMediaFastScrollTooltip extends FrameLayout {
         super.onMeasure(MeasureSpec.makeMeasureSpec(Math.min(AndroidUtilities.dp(300), MeasureSpec.getSize(widthMeasureSpec) - AndroidUtilities.dp(32)), MeasureSpec.AT_MOST), heightMeasureSpec);
     }
 
-    private class TooltipDrawableView extends View {
+    private class TooltipDrawableView extends View implements Theme.Colorable {
 
         Random random = new Random();
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -121,6 +123,17 @@ public class SharedMediaFastScrollTooltip extends FrameLayout {
                 this.progress = 0;
             }
             invalidate();
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                paint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_gifSaveHintText), (int) (255 * 0.3f)));
+                paint2.setColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
     }
 }

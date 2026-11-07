@@ -23,6 +23,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ProfileNotificationsActivity;
 
 import java.util.HashSet;
@@ -134,19 +135,19 @@ public class ChatNotificationsPopupWrapper {
         });
 
         gap = new FrameLayout(context);
-        gap.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider));
+        ThemeBind.backgroundColor(gap, Theme.key_actionBarDefaultSubmenuSeparator, resourcesProvider);
         windowLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
         topicsExceptionsTextView = new TextView(context);
         topicsExceptionsTextView.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(8), AndroidUtilities.dp(13), AndroidUtilities.dp(8));
         topicsExceptionsTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        topicsExceptionsTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+        ThemeBind.textColor(topicsExceptionsTextView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
 
         gap.setTag(R.id.fit_width_tag, 1);
         topicsExceptionsTextView.setTag(R.id.fit_width_tag, 1);
         windowLayout.addView(topicsExceptionsTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        topicsExceptionsTextView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0,6));
+        ThemeBind.selectorBackground(topicsExceptionsTextView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0,6), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
         topicsExceptionsTextView.setOnClickListener(v -> {
             if (callback != null) {
                 callback.openExceptions();
@@ -177,11 +178,11 @@ public class ChatNotificationsPopupWrapper {
         int color;
         if (muted) {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString(R.string.UnmuteNotifications), R.drawable.msg_unmute);
-            color = Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2);
+            color = Theme.key_windowBackgroundWhiteGreenText2;
             soundToggle.setVisibility(View.GONE);
         } else {
             muteUnmuteButton.setTextAndIcon(LocaleController.getString(R.string.MuteNotifications), R.drawable.msg_mute);
-            color = Theme.getColor(Theme.key_text_RedBold);
+            color = Theme.key_text_RedBold;
             soundToggle.setVisibility(View.VISIBLE);
             boolean soundOn = MessagesController.getInstance(currentAccount).isDialogNotificationsSoundEnabled(dialogId, topicId);
             if (soundOn) {
@@ -223,8 +224,7 @@ public class ChatNotificationsPopupWrapper {
             muteForLastSelected2.setVisibility(View.GONE);
         }
 
-        muteUnmuteButton.setColors(color, color);
-        muteUnmuteButton.setSelectorColor(Theme.multAlpha(color, .1f));
+        setMuteButtonColorKey(muteUnmuteButton, color);
 
         if (topicExceptions == null || topicExceptions.isEmpty()) {
             gap.setVisibility(View.GONE);
@@ -320,6 +320,17 @@ public class ChatNotificationsPopupWrapper {
         }
     }
 
+    // same as setColors(Theme.getColor(key)) + setSelectorColor(multAlpha(.1f)), following theme changes when the item resolves the same color
+    private static void setMuteButtonColorKey(ActionBarMenuSubItem item, int key) {
+        final int color = Theme.getColor(key);
+        item.setColorKeys(key, key);
+        item.setSelectorColorKey(key, .1f);
+        if (item.getTextView() == null || item.getTextView().getCurrentTextColor() != color) {
+            item.setColors(color, color);
+            item.setSelectorColor(Theme.multAlpha(color, .1f));
+        }
+    }
+
     public static ItemOptions addAsItemOptions(BaseFragment fragment, ItemOptions o, long dialogId, long topicId) {
         final int currentAccount = fragment.getCurrentAccount();
         final Theme.ResourcesProvider resourcesProvider = fragment.getResourceProvider();
@@ -399,11 +410,11 @@ public class ChatNotificationsPopupWrapper {
             int color;
             if (muted) {
                 muteUnmuteButton.setTextAndIcon(LocaleController.getString(R.string.UnmuteNotifications), R.drawable.msg_unmute);
-                color = Theme.getColor(Theme.key_windowBackgroundWhiteGreenText2);
+                color = Theme.key_windowBackgroundWhiteGreenText2;
                 soundToggle.setVisibility(View.GONE);
             } else {
                 muteUnmuteButton.setTextAndIcon(LocaleController.getString(R.string.MuteNotifications), R.drawable.msg_mute);
-                color = Theme.getColor(Theme.key_text_RedBold);
+                color = Theme.key_text_RedBold;
                 soundToggle.setVisibility(View.VISIBLE);
                 boolean soundOn = MessagesController.getInstance(currentAccount).isDialogNotificationsSoundEnabled(dialogId, topicId);
                 if (soundOn) {
@@ -413,8 +424,7 @@ public class ChatNotificationsPopupWrapper {
                 }
             }
 
-            muteUnmuteButton.setColors(color, color);
-            muteUnmuteButton.setSelectorColor(Theme.multAlpha(color, .1f));
+            setMuteButtonColorKey(muteUnmuteButton, color);
         };
         update.run();
 

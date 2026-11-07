@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!-- requestAnimationFrame loop burning 30 ms per frame (~1.8 s of CPU per second
+     at 60 Hz). The quota must throttle it: frames are deferred and collapse into
+     one, the widget is not killed. -->
+<html><head><meta charset="utf-8"></head><body>
+<p>frames: <span id="frames">0</span></p>
+<script>
+  var frames = 0;
+  function step() {
+    var t = performance.now();
+    while (performance.now() - t < 30) {}
+    document.getElementById('frames').textContent = ++frames;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+</script>
+</body></html>

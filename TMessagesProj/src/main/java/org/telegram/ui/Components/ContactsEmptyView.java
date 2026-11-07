@@ -27,6 +27,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 public class ContactsEmptyView extends LinearLayout {
@@ -55,7 +56,7 @@ public class ContactsEmptyView extends LinearLayout {
 
         titleTextView = new TextView(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setText(LocaleController.getString(R.string.NoContactsYet3));
         titleTextView.setTypeface(AndroidUtilities.bold());
@@ -63,7 +64,7 @@ public class ContactsEmptyView extends LinearLayout {
 
         subtitleTextView = new TextView(context);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+        ThemeBind.textColor(subtitleTextView, Theme.key_emptyListPlaceholder);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         subtitleTextView.setText(LocaleController.getString(R.string.NoContactsYet3Sub));
         subtitleTextView.setMaxWidth(dp(260));
@@ -93,8 +94,8 @@ public class ContactsEmptyView extends LinearLayout {
     }
 
     public void setColors() {
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.textColor(subtitleTextView, Theme.key_emptyListPlaceholder);
         button.updateColors();
     }
 

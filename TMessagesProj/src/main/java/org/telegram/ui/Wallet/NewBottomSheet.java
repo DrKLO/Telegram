@@ -18,6 +18,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class NewBottomSheet extends BottomSheetWithRecyclerListView implements Theme.Colorable {
 
@@ -54,6 +55,10 @@ public class NewBottomSheet extends BottomSheetWithRecyclerListView implements T
             this.container.invalidate();
         }
     }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundGray);
+    }
 
     @Override
     public void onSheetTop(float top) {
@@ -74,10 +79,14 @@ public class NewBottomSheet extends BottomSheetWithRecyclerListView implements T
         if (top >= bottom) {
             return;
         }
+        // only under the sheet: in landscape it is narrower than the screen
+        final boolean narrow = containerView.getWidth() < getContainer().getWidth();
+        final float left = narrow ? containerView.getX() + backgroundPaddingLeft : 0;
+        final float right = narrow ? containerView.getX() + containerView.getWidth() - backgroundPaddingLeft : getContainer().getWidth();
         canvas.drawRect(
-                0,
+                left,
                 top,
-                getContainer().getWidth(),
+                right,
                 bottom,
                 navigationBarPaint
         );

@@ -18,6 +18,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class PremiumNotAvailableBottomSheet extends BottomSheet {
@@ -30,7 +31,7 @@ public class PremiumNotAvailableBottomSheet extends BottomSheet {
 
         TextView title = new TextView(context);
         title.setGravity(Gravity.START);
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(title, Theme.key_dialogTextBlack);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setTypeface(AndroidUtilities.bold());
 
@@ -39,13 +40,13 @@ public class PremiumNotAvailableBottomSheet extends BottomSheet {
         TextView description = new TextView(context);
         description.setGravity(Gravity.START);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(description, Theme.key_dialogTextBlack);
         linearLayout.addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 15, 21, 16));
 
         TextView buttonTextView = new TextView(context);
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
@@ -60,7 +61,7 @@ public class PremiumNotAvailableBottomSheet extends BottomSheet {
 
         FrameLayout buttonContainer = new FrameLayout(context);
         buttonContainer.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
-        buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        ThemeBind.backgroundColor(buttonContainer, Theme.key_dialogBackground, resourcesProvider);
         linearLayout.addView(buttonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
 
         title.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.SubscribeToPremiumOfficialAppNeeded)));

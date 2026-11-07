@@ -1,0 +1,64 @@
+<!doctype html>
+<html data-test="auto/12-canvas-b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: canvas 2D (2/2)</title>
+<!-- conformance {"title":"Canvas 2D (2/2): patterns, transforms, clipping, text, alpha, compositing, shadows, ctx.filter, Path2D, drawImage, ImageData"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages>:nth-child(n+5){top:76px}.conf-stages>:nth-child(n+9){top:144px}.conf-stages{height:212px}</style><script>var T=function(){var f=document,w=f.documentElement,A=typeof TelegramWidget!="undefined",y=window.__conformanceMode||(A?"sandbox":"native"),a=[],M={},d=[];var C,c,p,l,T,g,x,h,k=t=>typeof t=="string"?f.querySelector(t):t;var q=()=>{h=h||setTimeout(b,0)};function u(t,e,n,o,s){s=s||{};let r=n==null?"skip":n=="pending"?n:(s.xfail?"x":"")+(n?"pass":"fail"),i=M[t+"|"+e]||(M[t+"|"+e]=a[a.length]=[t,e]);return i[2]=r,i[3]=(o?(""+o).slice(0,160):"")+(s.xfail&&r[0]=="x"?" (expected to fail: "+s.xfail+")":""),q(),r}function D(t,e,n){x=()=>{for(let r of a)r[2]=="pending"&&(r[2]="fail",r[3]+=" (timed out)");l=1,b()};let o=(r,i)=>{s.done||(s.done=u(t,e,r,i,n))},s={done:n&&n.sandboxOnly&&!A,pass:r=>o(!0,r),fail:r=>o(!1,r),skip:r=>o(null,r),result:(r,i)=>o(!!r,i)};return u(t,e,s.done?null:"pending",s.done?"sandbox only":n&&n.hint,n),s}function O(t,e){let n=k('[data-stage="'+t+'"]');if(n&&!(y=="ref"&&k('template[data-ref="'+t+'"]')))try{e(n)}catch(o){u("harness","stage "+t,!1,o)}}var R=()=>{},B=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function b(){h=0,p&&!l&&R();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!d.length,n=l||e&&!t.pending?"done":e&&T?"awaiting":"running";l=n=="done",w.setAttribute("data-conformance",JSON.stringify({v:1,id:w.getAttribute("data-test"),mode:y,status:n,n:t,checks:a,targets:C,stages:c})),m&&m(n,t)}var m;function S(){m=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);f.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function j(){if(c||(c={},[].forEach.call(f.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=B(e)})),!d.length)return p=1,g&&x&&setTimeout(x,g),q();let t;try{t=d.shift()()}catch(e){u("harness","step",!1,e)}setTimeout(j,t||0)}function E(t){t=t||{},T=t.awaitInput,g=t.awaitInput||t.deadline,b();let e=()=>{e=()=>{},setTimeout(j,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}S();return{mode:y,run:E,stage:O,wait:D}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+[data-stage] canvas{display:block;width:80px;height:60px}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="pattern" data-covers="canvas.pattern"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="transform" data-covers="canvas.transform"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="clip" data-covers="canvas.clip"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="text" data-covers="canvas.text" data-max-diff="0.5" data-colors="#222 #36c"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="alpha" data-covers="canvas.alpha"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="composite" data-covers="canvas.composite"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="shadow" data-covers="canvas.shadow" data-max-diff="0.1"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="filter" data-covers="canvas.filter" data-max-diff="0.1"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="path2d" data-covers="canvas.path2d"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="draw-image" data-covers="canvas.draw-image"><canvas width="160" height="120"></canvas></div>
+  <div data-stage="image-data" data-covers="canvas.image-data"><canvas width="160" height="120"></canvas></div>
+</div>
+<div class="conf-head">12b · Canvas 2D (2/2)</div>
+<div class="conf-probes">
+  <img id="src-img" width="20" height="10" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAPElEQVR4AcXBQQEAIBCAMKTShTKTnQxlBz9s687wa8/hl0QkIhGJSEQiEpGIRCQiEYlIRCISkYhEJCKRBx5KAo1ZaufhAAAAAElFTkSuQmCC">
+</div>
+<div id="conf-list"></div>
+<script>
+function ctx(name) { var c = document.querySelector('[data-stage="' + name + '"] canvas').getContext('2d'); c.scale(2, 2); return c; }
+var R = '#cc3333', B = '#3366cc', G = '#33aa33', O = '#ee8833';
+// Profile 1 (out): patterns draw nothing, composite operations, shadows and ctx.filter are not applied,
+// putImageData draws nothing. Reference mode draws exactly that.
+var OUT = T.mode === 'ref';
+T.stage('pattern', function () { if (OUT) return; var t = document.createElement('canvas'); t.width = 10; t.height = 10; var tc = t.getContext('2d'); tc.fillStyle = R; tc.fillRect(0, 0, 5, 5); tc.fillRect(5, 5, 5, 5); tc.fillStyle = '#fff'; tc.fillRect(5, 0, 5, 5); tc.fillRect(0, 5, 5, 5); var c = ctx('pattern'); var p = c.createPattern(t, 'repeat'); c.fillStyle = p; c.fillRect(0, 0, 80, 60); });
+T.stage('transform', function () { var c = ctx('transform'); c.save(); c.translate(40, 30); c.rotate(Math.PI / 6); c.fillStyle = R; c.fillRect(-15, -10, 30, 20); c.restore(); c.save(); c.setTransform(1.5 * 2, 0, 0, 1.5 * 2, 0, 0); c.fillStyle = B; c.fillRect(2, 2, 8, 8); c.restore(); c.save(); c.transform(1, 0, 0.5, 1, 0, 0); c.fillStyle = G; c.fillRect(40, 44, 16, 12); c.restore(); c.fillStyle = O; c.fillRect(66, 4, 10, 10); });
+T.stage('clip', function () { var c = ctx('clip'); c.beginPath(); c.arc(40, 30, 22, 0, Math.PI * 2); c.clip(); c.fillStyle = B; c.fillRect(0, 0, 80, 60); c.fillStyle = R; c.fillRect(0, 0, 40, 30); });
+T.stage('text', function () { var c = ctx('text'); c.fillStyle = '#222'; c.font = 'bold 22px sans-serif'; c.textBaseline = 'top'; c.textAlign = 'left'; c.fillText('Ag', 6, 6); c.strokeStyle = B; c.lineWidth = 1; c.font = '20px serif'; c.textAlign = 'right'; c.textBaseline = 'alphabetic'; c.strokeText('Wz', 74, 54); });
+T.stage('alpha', function () { var c = ctx('alpha'); c.fillStyle = R; c.fillRect(8, 8, 40, 30); c.globalAlpha = 0.5; c.fillStyle = B; c.fillRect(28, 20, 44, 32); });
+T.stage('composite', function () { var c = ctx('composite'); c.fillStyle = O; c.fillRect(8, 8, 44, 36); if (!OUT) c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(30, 26, 10, 0, Math.PI * 2); c.fill(); if (!OUT) c.globalCompositeOperation = 'multiply'; c.fillStyle = B; c.fillRect(36, 24, 36, 30); });
+T.stage('shadow', function () { var c = ctx('shadow'); if (!OUT) c.shadowColor = 'rgba(0,0,0,0.6)'; if (!OUT) { c.shadowBlur = 6; c.shadowOffsetX = 5; c.shadowOffsetY = 5; } c.fillStyle = G; c.fillRect(14, 12, 40, 28); });
+T.stage('filter', function () { var c = ctx('filter'); if (!OUT) c.filter = 'blur(2px)'; c.fillStyle = R; c.fillRect(16, 14, 48, 32); });
+T.stage('path2d', function () { var c = ctx('path2d'); var p = new Path2D('M10 50 L40 8 L70 50 Z'); c.fillStyle = B; c.fill(p); var q = new Path2D(); q.arc(40, 36, 8, 0, Math.PI * 2); c.fillStyle = O; c.fill(q); c.strokeStyle = R; c.lineWidth = 2; c.stroke(p); });
+var imgDrawn = T.wait('canvas.draw-image', 'drawImage of a loaded <img>');
+T.stage('draw-image', function () {
+  var c = ctx('draw-image');
+  var t = document.createElement('canvas'); t.width = 20; t.height = 20; var tc = t.getContext('2d'); tc.fillStyle = G; tc.fillRect(0, 0, 20, 20); tc.fillStyle = O; tc.fillRect(5, 5, 10, 10);
+  c.drawImage(t, 44, 26, 30, 30);
+  var img = document.getElementById('src-img');
+  var draw = function () { c.imageSmoothingEnabled = false; c.drawImage(img, 6, 6, 32, 16); c.drawImage(img, 0, 0, 20, 20, 6, 30, 16, 16); imgDrawn.pass(); };
+  if (img.complete && img.naturalWidth) draw(); else img.addEventListener('load', draw);
+});
+T.stage('image-data', function () { if (OUT) return; var c = document.querySelector('[data-stage="image-data"] canvas').getContext('2d'); var d = c.createImageData(60, 40); for (var i = 0; i < d.data.length; i += 4) { var x = (i / 4) % 60; d.data[i] = x < 30 ? 204 : 51; d.data[i + 1] = 51; d.data[i + 2] = x < 30 ? 51 : 204; d.data[i + 3] = 255; } c.putImageData(d, 40, 30); });
+if (T.mode === 'ref') imgDrawn.pass();
+
+T.run({ deadline: 3000 });
+</script>
+</body>
+</html>

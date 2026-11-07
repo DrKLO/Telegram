@@ -1,0 +1,88 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a mini kanban — drag a card between three columns with pointer events (the card follows the finger, columns highlight), counts update, "Add" appends a card with a pop-in; the board is kept locally
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff; --green: #34c759; --orange: #ff9500; --purple: #af52de; --red: #ff3b30;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; padding: 14px 12px 12px; position: relative; }
+  .hd { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 10px; } h3 { margin: 0; font-size: 17px; } .hd span { font-size: 12px; color: var(--muted); }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; touch-action: none; }
+  .col { background: var(--card2); border-radius: 14px; padding: 8px; min-height: 230px; transition: background .2s, box-shadow .2s; }
+  .col.over { background: light-dark(#e5f0ff, #15304f); box-shadow: inset 0 0 0 2px var(--blue); }
+  .col .t { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: flex; justify-content: space-between; padding: 2px 4px 8px; } .col .t b { background: var(--card); border-radius: 6px; padding: 0 6px; font-size: 10px; min-width: 10px; text-align: center; }
+  .col.done .t { color: var(--green); }
+  .item { background: var(--card); border-radius: 10px; padding: 8px 9px; margin-bottom: 6px; font-size: 12px; font-weight: 600; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.06); position: relative; transition: transform .2s, box-shadow .2s, opacity .2s; animation: in .3s cubic-bezier(.34,1.56,.64,1); line-height: 1.3; }
+  @keyframes in { from { transform: scale(.8); opacity: 0; } }
+  .item .tag { display: inline-block; font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 5px; color: #fff; margin-bottom: 4px; letter-spacing: .04em; }
+  .item .av { position: absolute; right: 7px; bottom: 7px; width: 16px; height: 16px; border-radius: 50%; font-size: 8px; color: #fff; display: grid; place-items: center; font-weight: 800; }
+  .item.ghost { opacity: .35; } .item.drag { position: fixed; z-index: 10; width: 108px; pointer-events: none; transform: rotate(3deg) scale(1.04); box-shadow: 0 12px 30px rgba(0,0,0,.25); animation: none; margin: 0; }
+  .done .item { text-decoration: line-through; color: var(--muted); }
+  .add { width: 100%; margin-top: 2px; padding: 6px; border: 1.5px dashed var(--border); border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; } .add:hover { border-color: var(--blue); color: var(--blue); }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 0 4px; font-size: 12px; color: var(--muted); }
+  .prog { flex: 1; height: 5px; background: var(--card2); border-radius: 3px; margin: 0 12px; overflow: hidden; } .prog i { display: block; height: 100%; background: var(--green); border-radius: 3px; transition: width .5s cubic-bezier(.22,1,.36,1); }
+</style>
+<div class="card">
+  <div class="hd"><h3>Launch · sprint 14</h3><span>drag cards between columns</span></div>
+  <div class="board" id="board">
+    <div class="col" data-c="0"><div class="t">To do <b>0</b></div><div class="items"></div><button class="add" role="button">+ Add</button></div>
+    <div class="col" data-c="1"><div class="t">Doing <b>0</b></div><div class="items"></div></div>
+    <div class="col done" data-c="2"><div class="t">Done <b>0</b></div><div class="items"></div></div>
+  </div>
+  <div class="foot"><span id="left">0 left</span><div class="prog"><i id="prog"></i></div><span id="pct">0%</span></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. The board (which card is in which column, the added cards) is local state in
+  // localStorage, kept by the client per message and restored on load.
+  const KEY = 'sprint-14-board';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const TAGS = { design: '#af52de', web: '#007aff', ios: '#ff9500', docs: '#30b0c7', bug: '#ff3b30' };
+  const PEOPLE = [['AK', '#ff9500'], ['NM', '#af52de'], ['DG', '#34c759'], ['MR', '#007aff']];
+  const cards = [
+    { t: 'Dark theme pass on the feed', tag: 'design', p: 1, c: 0 }, { t: 'Pool warm-up on first scroll', tag: 'web', p: 0, c: 1 }, { t: 'Release notes 1.4', tag: 'docs', p: 3, c: 0 },
+    { t: 'Fix flicker on renderer switch', tag: 'bug', p: 0, c: 1 }, { t: 'Snapshot-and-drop in the list', tag: 'ios', p: 2, c: 2 }, { t: 'Attack suite on shadow DOM', tag: 'web', p: 0, c: 2 }, { t: 'Metrics overlay copy', tag: 'docs', p: 3, c: 2 },
+  ];
+  const saved = store.get(KEY, null);
+  if (Array.isArray(saved) && saved.length >= cards.length && saved.length <= 40 && saved.every(k => k && typeof k.t === 'string' && TAGS[k.tag] && PEOPLE[k.p] && [0, 1, 2].includes(k.c))) cards.splice(0, cards.length, ...saved.map(k => ({ t: k.t.slice(0, 80), tag: k.tag, p: k.p, c: k.c })));
+  const save = () => store.set(KEY, cards);
+  const board = document.getElementById('board'), cols = [...board.querySelectorAll('.col')];
+  function render() {
+    cols.forEach((col, c) => {
+      const mine = cards.map((k, i) => [k, i]).filter(([k]) => k.c === c);
+      col.querySelector('.items').innerHTML = mine.map(([k, i]) => '<div class="item" data-i="' + i + '"><span class="tag" style="background:' + TAGS[k.tag] + '">' + k.tag + '</span><br>' + k.t + '<span class="av" style="background:' + PEOPLE[k.p][1] + '">' + PEOPLE[k.p][0][0] + '</span></div>').join('');
+      col.querySelector('.t b').textContent = mine.length;
+    });
+    const done = cards.filter(k => k.c === 2).length;
+    document.getElementById('left').textContent = (cards.length - done) + ' left'; document.getElementById('prog').style.width = (done / cards.length * 100) + '%'; document.getElementById('pct').textContent = Math.round(done / cards.length * 100) + '%';
+  }
+  // Drag: a fixed-position clone follows the pointer, the column under it highlights, drop moves the card.
+  let drag = null;
+  board.addEventListener('pointerdown', e => {
+    const it = e.target.closest('.item'); if (!it) return;
+    const r = it.getBoundingClientRect();
+    const ghost = it.cloneNode(true); ghost.classList.add('drag'); ghost.style.left = r.left + 'px'; ghost.style.top = r.top + 'px'; ghost.style.width = (r.width || 108) + 'px'; document.body.appendChild(ghost);
+    drag = { i: Number(it.dataset.i), ghost, dx: e.clientX - r.left, dy: e.clientY - r.top, over: null, src: it };
+    it.classList.add('ghost'); board.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  board.addEventListener('pointermove', e => {
+    if (!drag) return;
+    drag.ghost.style.left = (e.clientX - drag.dx) + 'px'; drag.ghost.style.top = (e.clientY - drag.dy) + 'px';
+    let over = null;
+    for (const col of cols) { const r = col.getBoundingClientRect(); if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top - 20 && e.clientY <= r.bottom + 20) over = col; }
+    if (over !== drag.over) { cols.forEach(c => c.classList.toggle('over', c === over)); drag.over = over; }
+  });
+  const drop = () => {
+    if (!drag) return;
+    drag.ghost.remove(); drag.src.classList.remove('ghost'); cols.forEach(c => c.classList.remove('over'));
+    if (drag.over) { const to = Number(drag.over.dataset.c); if (cards[drag.i].c !== to) { cards[drag.i].c = to; render(); save(); } }
+    drag = null;
+  };
+  board.addEventListener('pointerup', drop); board.addEventListener('pointercancel', drop);
+  const IDEAS = ['Blitz emoji on iOS', 'Android renderer pool', 'Perf budget for heavy/', 'Intl.formatToParts shim'];
+  let idea = cards.length - 7;
+  board.querySelector('.add').addEventListener('click', () => { if (cards.length >= 40) return; cards.push({ t: IDEAS[idea++ % IDEAS.length], tag: ['web', 'ios', 'docs', 'bug'][idea % 4], p: idea % 4, c: 0 }); render(); save(); });
+  render();
+</script>

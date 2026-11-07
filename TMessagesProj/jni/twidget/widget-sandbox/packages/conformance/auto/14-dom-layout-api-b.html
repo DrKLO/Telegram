@@ -1,0 +1,77 @@
+<!doctype html>
+<html data-test="auto/14-dom-layout-api-b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: DOM and layout APIs (2/2)</title>
+<!-- conformance {"title":"DOM and layout APIs (2/2): DOM queries; layout queries answered by the renderer: rects, boxes, computed style (incl. shorthands), matchMedia, ResizeObserver, IntersectionObserver, elementFromPoint, measureText"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var d=document,M=d.documentElement,b=typeof TelegramWidget!="undefined",D=window.__conformanceMode||(b?"sandbox":"native"),c=[],q={},f=[];var O,l,g,u,A,x,h,m,T=t=>typeof t=="string"?d.querySelector(t):t,p=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),S=()=>{m=m||setTimeout(k,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),a=q[t+"|"+e]||(q[t+"|"+e]=c[c.length]=[t,e]);return a[2]=s,a[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),S(),s}function w(t,e,n,o){if(o&&o.sandboxOnly&&!b)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>w(t,e,[n,o],r),B=(t,e,n,o,r)=>w(t,e,[n===o,"got "+p(n)+", want "+p(o)],r),E=(t,e,n,o,r,s)=>w(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+p(n)+", want "+p(o)+" ±"+r],s);function I(t,e,n){h=()=>{for(let s of c)s[2]=="pending"&&(s[2]="fail",s[3]+=" (timed out)");u=1,k()};let o=(s,a)=>{r.done||(r.done=i(t,e,s,a,n))},r={done:n&&n.sandboxOnly&&!b,pass:s=>o(!0,s),fail:s=>o(!1,s),skip:s=>o(null,s),result:(s,a)=>o(!!s,a)};return i(t,e,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}var F=(t,e,n)=>getComputedStyle(T(t),n).getPropertyValue(e).trim();function J(t){let e=T(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var N=t=>{f.push(t)};var _=()=>{},v=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function k(){m=0,g&&!u&&_();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of c)t[o[2]]++;let e=g&&!f.length,n=u||e&&!t.pending?"done":e&&A?"awaiting":"running";u=n=="done",M.setAttribute("data-conformance",JSON.stringify({v:1,id:M.getAttribute("data-test"),mode:D,status:n,n:t,checks:c,targets:O,stages:l})),y&&y(n,t)}var y;function j(){y=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);d.getElementById("conf-list").textContent=[n.join(" · ")].concat(c.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function C(){if(l||(l={},[].forEach.call(d.querySelectorAll("[data-stage]"),e=>{l[e.getAttribute("data-stage")]=v(e)})),!f.length)return g=1,x&&h&&setTimeout(h,x),S();let t;try{t=f.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(C,t||0)}function K(t){t=t||{},A=t.awaitInput,x=t.awaitInput||t.deadline,k();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}j();return{cs:F,eq:B,near:E,ok:R,rect:J,run:K,step:N,wait:I}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+#bx{position:relative;width:100px;height:20px;padding:5px;border:3px solid #333;margin:4px 0;overflow:hidden;white-space:nowrap}
+#bx-inner{height:60px}
+#wrapline{width:60px}
+#ro{width:50px;height:10px;background:#c33}
+#efp{position:relative;width:60px;height:20px;background:#9cf}
+.mt{font:16px sans-serif}
+</style>
+</head>
+<body>
+<div class="conf-head">14b · DOM and layout APIs (2/2)</div>
+<div class="conf-probes">
+  <div id="efp"></div>
+  <div id="host"></div>
+  <div id="bx"><div id="bx-inner"></div></div>
+  <div id="wrapline"><span id="inl">one two three four five</span></div>
+  <div id="ro"></div>
+  <span class="mt" id="mt">Measure me</span>
+  <div id="ev-outer"><button id="ev-btn">ev</button></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect, CS = T.cs;
+var roHit = T.wait('js.layout.resize-observer', 'ResizeObserver reports the new width');
+var ioHit = T.wait('js.layout.intersection-observer', 'IntersectionObserver reports the element (visible)');
+var ro = new ResizeObserver(function (entries) {
+  var e = entries[entries.length - 1];
+  if (e && Math.round(e.contentRect.width) === 90) { roHit.pass(String(e.contentRect.width)); ro.disconnect(); }
+});
+ro.observe(document.getElementById('ro'));
+new IntersectionObserver(function (es) { ioHit.result(es[0] && es[0].isIntersecting === true, es[0] && String(es[0].isIntersecting)); }).observe(document.getElementById('ro'));
+
+T.step(function () {
+  var host = document.getElementById('host');
+  T.eq('js.dom.query', 'querySelectorAll', document.querySelectorAll('.conf-probes > div').length, 6);
+  T.ok('js.dom.query', 'closest and matches', document.getElementById('ev-btn').closest('#ev-outer') !== null && document.getElementById('ev-btn').matches('#ev-outer > button'), '');
+  var live = document.getElementsByClassName('liveq');
+  var n0 = live.length; var l = document.createElement('i'); l.className = 'liveq'; host.appendChild(l);
+  T.ok('js.dom.query', 'getElementsByClassName is live', n0 === 0 && live.length === 1, n0 + ' → ' + live.length);
+
+  var rects = document.getElementById('inl').getClientRects();
+  T.ok('js.layout.rect', 'getClientRects of a wrapped inline gives one rect per line', rects.length >= 2, String(rects.length));
+  T.ok('js.layout.rect', 'getBoundingClientRect has DOMRect fields', typeof R('#bx').w === 'number' && (function () { var r = document.getElementById('bx').getBoundingClientRect(); return r.right - r.left === r.width && r.bottom === r.top + r.height; })(), '');
+  var bx = document.getElementById('bx');
+  T.eq('js.layout.box', 'offsetWidth includes padding and border', bx.offsetWidth, 116);
+  T.eq('js.layout.box', 'clientWidth excludes the border', bx.clientWidth, 110);
+  T.eq('js.layout.box', 'scrollHeight of overflowing content', bx.scrollHeight, 70);
+  T.eq('js.layout.box', 'offsetParent', bx.offsetParent === document.body || (bx.offsetParent && bx.offsetParent.tagName === 'BODY'), true);
+  T.eq('js.layout.computed-style', 'longhand (width)', CS('#bx', 'width'), '100px');
+  T.eq('js.layout.computed-style', 'shorthand white-space', CS('#bx', 'white-space'), 'nowrap');
+  T.eq('js.layout.computed-style', 'shorthand overflow', CS('#bx', 'overflow'), 'hidden');
+  T.eq('js.layout.computed-style', 'shorthand margin', CS('#bx', 'margin'), '4px 0px');
+  T.eq('js.layout.computed-style', 'camelCase property access', getComputedStyle(bx).borderTopWidth, '3px');
+  T.eq('js.layout.match-media', 'matchMedia evaluates a width query', matchMedia('(min-width: 1px)').matches, true);
+  T.eq('js.layout.match-media', 'matchMedia(…).media', matchMedia('(min-width: 1px)').media.replace(/\s/g, ''), '(min-width:1px)');
+  var e = R('#efp');
+  var hit = document.elementFromPoint(e.x + 5, e.y + 5);
+  T.ok('js.layout.element-from-point', 'elementFromPoint finds the element', !!hit && hit.id === 'efp', hit ? hit.id || hit.tagName : 'null');
+  var ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = '16px sans-serif';
+  T.near('js.layout.measure-text', 'measureText agrees with DOM text width', ctx.measureText('Measure me').width, R('#mt').w, 1.5);
+  document.getElementById('ro').style.width = '90px';
+});
+T.run({ deadline: 2500 });
+</script>
+</body>
+</html>

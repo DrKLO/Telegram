@@ -58,6 +58,7 @@ import org.telegram.ui.ActionBar.AlertDialogDecor;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.List;
@@ -81,6 +82,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
     private int lineCount;
     private boolean isInitLineCount;
     private final Theme.ResourcesProvider resourcesProvider;
+    private int themedQuoteColor;
     private AlertDialog creationLinkDialog;
     public boolean adaptiveCreateLinkDialog;
 
@@ -91,7 +93,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
     public EditTextCaption(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        quoteColor = Theme.getColor(Theme.key_chat_inQuote, resourcesProvider);
+        quoteColor = themedQuoteColor = Theme.getColor(Theme.key_chat_inQuote, resourcesProvider);
         addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -396,19 +398,19 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         final String def = initial == null ? "" : initial;
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         editText.setText(def);
-        editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(editText, Theme.key_dialogTextBlack, resourcesProvider);
         editText.setHintText(hint);
-        editText.setHeaderHintColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
+        ThemeBind.editHeaderHintColor(editText, Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
         editText.setSingleLine(true);
         editText.setFocusable(true);
         editText.setTransformHintToHeader(true);
-        editText.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
+        ThemeBind.lineColors(editText, Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular, resourcesProvider);
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         editText.setBackgroundDrawable(null);
         editText.requestFocus();
         editText.setPadding(0, 0, 0, 0);
-        editText.setHighlightColor(getThemedColor(Theme.key_chat_inTextSelectionHighlight));
-        editText.setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
+        ThemeBind.highlightColor(editText, Theme.key_chat_inTextSelectionHighlight, resourcesProvider);
+        ThemeBind.editHandlesColor(editText, Theme.key_chat_TextSelectionCursor, resourcesProvider);
         container.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         TextView pasteTextView = new TextView(getContext());
@@ -418,8 +420,8 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         pasteTextView.setPadding(dp(10), 0, dp(10), 0);
         pasteTextView.setGravity(Gravity.CENTER);
         int textColor = getThemedColor(Theme.key_windowBackgroundWhiteBlueText2);
-        pasteTextView.setTextColor(textColor);
-        pasteTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.multAlpha(textColor, .12f), Theme.multAlpha(textColor, .15f)));
+        ThemeBind.textColor(pasteTextView, Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider);
+        ThemeBind.selectorBackground(pasteTextView, Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.multAlpha(textColor, .12f), Theme.multAlpha(textColor, .15f)), ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueText2, .12f), ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueText2, .15f), resourcesProvider);
         ScaleStateListAnimator.apply(pasteTextView, .1f, 1.5f);
         container.addView(pasteTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 24, 3));
         pasteTextView.setVisibility(showPaste ? VISIBLE : GONE);
@@ -893,6 +895,10 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (quoteColor == themedQuoteColor) {
+            // follow theme changes unless a custom quote color was set
+            quoteColor = themedQuoteColor = Theme.getColor(Theme.key_chat_inQuote, resourcesProvider);
+        }
         canvas.save();
         canvas.translate(0, offsetY);
         super.onDraw(canvas);

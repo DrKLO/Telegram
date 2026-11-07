@@ -63,6 +63,7 @@ import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.Bulletin;
@@ -88,6 +89,34 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class StarsController {
+
+    /** Bulletin.TimerView remembering its color, so that a ThemeBind binding can follow theme changes */
+    private static class ThemedTimerView extends Bulletin.TimerView {
+        private int appliedColor; // no initializer: set from the super constructor
+
+        public ThemedTimerView(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context, resourcesProvider);
+        }
+
+        @Override
+        public void setColor(int color) {
+            super.setColor(color);
+            appliedColor = color;
+            invalidate();
+        }
+
+        private static int getAppliedColor(ThemedTimerView view) {
+            return view.appliedColor;
+        }
+
+        private static void setAppliedColor(ThemedTimerView view, int color) {
+            view.setColor(color);
+        }
+
+        public static void bindColor(ThemedTimerView view, int key, Theme.ResourcesProvider resourcesProvider) {
+            ThemeBind.custom(view, 101, key, resourcesProvider, ThemedTimerView::getAppliedColor, ThemedTimerView::setAppliedColor);
+        }
+    }
 
     public static final String currency = "XTR";
 
@@ -1892,9 +1921,9 @@ public class StarsController {
             bulletinButton = new Bulletin.UndoButton(context, true, false, chatActivity.themeDelegate);
             bulletinButton.setText(LocaleController.getString(R.string.StarsSentUndo));
             bulletinButton.setUndoAction(this::cancel);
-            timerView = new Bulletin.TimerView(context, chatActivity.themeDelegate);
+            timerView = new ThemedTimerView(context, chatActivity.themeDelegate);
             timerView.timeLeft = REACTIONS_TIMEOUT;
-            timerView.setColor(Theme.getColor(Theme.key_undo_cancelColor, chatActivity.themeDelegate));
+            ThemedTimerView.bindColor((ThemedTimerView) timerView, Theme.key_undo_cancelColor, chatActivity.themeDelegate);
             bulletinButton.addView(timerView, LayoutHelper.createFrame(20, 20, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
             bulletinButton.undoTextView.setPadding(dp(12), dp(8), dp(20 + 10), dp(8));
             bulletinLayout.setButton(bulletinButton);
@@ -3006,6 +3035,19 @@ public class StarsController {
         }
     }
 
+    // removes a deleted gift from the loaded lists without reloading them (which would reset the scroll)
+    public void removeProfileGiftLocally(long dialogId, TL_stars.SavedStarGift gift) {
+        if (gift == null) return;
+        final GiftsList list = getProfileGiftsList(dialogId, false);
+        if (list != null) {
+            list.removeGiftLocally(gift);
+        }
+        final GiftsCollections collections = giftCollections.get(dialogId);
+        if (collections != null) {
+            collections.removeGiftLocally(gift);
+        }
+    }
+
     public void invalidateProfileGifts(TLRPC.UserFull userFull) {
         if (userFull == null) return;
         long dialogId = userFull.id;
@@ -3076,6 +3118,28 @@ public class StarsController {
             }
             if (all != null) {
                 all.updateGiftsUnsaved(gift, unsaved);
+            }
+        }
+
+        public void removeGiftLocally(TL_stars.SavedStarGift gift) {
+            boolean changed = false;
+            for (final TL_stars.TL_starGiftCollection collection : collections) {
+                final GiftsList list = getListById(collection.collection_id);
+                final boolean removed = list != null && list.removeGiftLocally(gift);
+                if (removed || gift.collection_id.contains(collection.collection_id)) {
+                    collection.gifts_count = Math.max(0, collection.gifts_count - 1);
+                    changed = true;
+                }
+                if (removed) {
+                    updateIcon(collection.collection_id);
+                }
+            }
+            if (all != null) {
+                all.removeGiftLocally(gift);
+            }
+            if (changed) {
+                refilterCollections();
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starUserGiftCollectionsLoaded, dialogId, this);
             }
         }
 
@@ -3443,6 +3507,18 @@ public class StarsController {
                     }
                 }
             }
+        }
+
+        public boolean removeGiftLocally(TL_stars.SavedStarGift gift) {
+            for (int i = 0; i < gifts.size(); ++i) {
+                if (StarsController.eq(gifts.get(i), gift)) {
+                    gifts.remove(i);
+                    totalCount = Math.max(0, totalCount - 1);
+                    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.starUserGiftsLoaded, dialogId, GiftsList.this);
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void updateGiftsUnsaved(TL_stars.SavedStarGift gift, boolean unsaved) {
@@ -4066,9 +4142,9 @@ public class StarsController {
             bulletinLayout = new Bulletin.TwoLineAnimatedLottieLayout(context, fragment.getResourceProvider());
             bulletinLayout.setAnimation(R.raw.stars_topup);
 
-            timerView = new Bulletin.TimerView(context, fragment.getResourceProvider());
+            timerView = new ThemedTimerView(context, fragment.getResourceProvider());
             timerView.timeLeft = PAID_MESSAGES_TIMEOUT;
-            timerView.setColor(Theme.getColor(Theme.key_undo_cancelColor, fragment.getResourceProvider()));
+            ThemedTimerView.bindColor((ThemedTimerView) timerView, Theme.key_undo_cancelColor, fragment.getResourceProvider());
             bulletinButton = new Bulletin.UndoButton(context, true, false, fragment.getResourceProvider());
             bulletinButton.setText(LocaleController.getString(R.string.StarsSentUndo));
             bulletinButton.setUndoAction(this::undo);

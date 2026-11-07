@@ -35,10 +35,12 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.MessagesSearchAdapter;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatActivityContainer;
 import org.telegram.ui.Stories.StoriesController;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 
 public class HashtagActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -77,8 +79,8 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
     @Override
     public boolean onFragmentCreate() {
         getMessagesController().getStoriesController().attachedSearchLists.add(storiesList);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.hashtagSearchUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesListUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.hashtagSearchUpdated);
         storiesList.load(true, 18);
         return super.onFragmentCreate();
     }
@@ -126,16 +128,20 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
 
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    /** The glass header: the posts start below it, the stories slide under it. */
+    private int getHeaderHeight() {
+        return (simpleActionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(query);
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarWhiteSelector), false);
-        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setCastShadows(true);
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(query);
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -146,7 +152,8 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(frameLayout, Theme.key_windowBackgroundWhite, getResourceProvider());
+        frameLayout.setClipChildren(false);
 
         contentView = new FrameLayout(context) {
             @Override
@@ -155,7 +162,9 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
                 setPadding(0, 0, (int) translationY, 0);
             }
         };
+        contentView.setClipChildren(false);
         frameLayout.addView(contentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        AndroidUtilities.setViewLayoutMargins(contentView, 0, getHeaderHeight(), 0, 0);
 
         HashtagSearchController.getInstance(currentAccount).clearSearchResults(ChatActivity.SEARCH_CHANNEL_POSTS);
         Bundle args = new Bundle();
@@ -216,10 +225,6 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
             @Override
             protected void onSearchStateChanged(boolean expanded) {}
             @Override
-            protected void drawBackgroundWithBlur(Canvas canvas, float y, Rect rectTmp2, Paint backgroundPaint) {}
-            @Override
-            protected void invalidateBlur() {}
-            @Override
             protected boolean isStoriesView() {
                 return false;
             }
@@ -260,34 +265,35 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
             }
         };
         if (sharedMediaLayout.getSearchOptionsItem() != null) {
-            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(sharedMediaLayout.getSearchOptionsItem(), Theme.key_windowBackgroundWhiteBlackText, resourceProvider, PorterDuff.Mode.SRC_IN);
         }
         sharedMediaLayout.setPinnedToTop(true);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);
         if (sharedMediaLayout.getSearchOptionsItem() != null) {
             sharedMediaLayout.getSearchOptionsItem().setTranslationY(0);
         }
-        sharedMediaLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
         sharedMediaLayout.updateStoriesList(storiesList);
+        // the stories go on under the banner and the glass header, the pages draw their own background
+        sharedMediaLayout.setPagesInsets(0, getHeaderHeight() + dp(48) + BaseFragmentSimpleGlass.getOverscan(AndroidUtilities.statusBarHeight), dp(8), 0);
         sharedMediaLayoutContainer = new FrameLayout(context);
-        sharedMediaLayoutContainer.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        sharedMediaLayoutContainer.setClipChildren(false);
         sharedMediaLayoutContainer.addView(sharedMediaLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 0, 49));
         storiesTotal = new FrameLayout(context);
-        storiesTotal.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(storiesTotal, Theme.key_windowBackgroundWhite, getResourceProvider());
         storiesTotalTextView = new TextView(context);
         storiesTotalTextView.setTypeface(AndroidUtilities.bold());
         storiesTotalTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        storiesTotalTextView.setTextColor(getThemedColor(Theme.key_chat_searchPanelText));
+        ThemeBind.textColor(storiesTotalTextView, Theme.key_chat_searchPanelText, getResourceProvider());
         storiesTotalTextView.setText(LocaleController.formatPluralString("FoundStories", storiesList.getCount()));
         storiesTotal.addView(storiesTotalTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 18, 0, 18, 0));
         View shadow = new View(context);
-        shadow.setBackgroundColor(Theme.getColor(Theme.key_divider, resourceProvider));
+        ThemeBind.backgroundColor(shadow, Theme.key_divider, resourceProvider);
         storiesTotal.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.TOP));
         sharedMediaLayoutContainer.addView(storiesTotal, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 49, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
         contentView.addView(sharedMediaLayoutContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         storiesView = new MessagesSearchAdapter.StoriesView(context, resourceProvider);
-        storiesView.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)));
+        ThemeBind.selectorBackground(storiesView, Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), getResourceProvider());
         storiesView.setOnClickListener(v -> {
             transit(!storiesVisible, true);
             storiesView.transition(storiesVisible);
@@ -295,6 +301,13 @@ public class HashtagActivity extends BaseFragment implements NotificationCenter.
         updateStoriesVisible(storiesView.set(storiesList), false);
         storiesView.setMessages(HashtagSearchController.getInstance(currentAccount).getCount(ChatActivity.SEARCH_CHANNEL_POSTS), hashtag, username);
         frameLayout.addView(storiesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.TOP));
+        AndroidUtilities.setViewLayoutMargins(storiesView, 0, getHeaderHeight(), 0, 0);
+
+        final BaseFragmentSimpleGlass glass = getBaseSimpleGlass();
+        glass.setViews(frameLayout, simpleActionBar, getResourceProvider());
+        glass.setCapture((canvas, position) -> sharedMediaLayout.capturePages(canvas, position, frameLayout));
+        sharedMediaLayout.setPagesGlassEngine(glassEngine);
+        simpleActionBar.setBackground(glass.createActionBarFadeDrawable(simpleActionBar));
 
         transit(false, false);
 

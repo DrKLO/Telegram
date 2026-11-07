@@ -33,8 +33,10 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.HashtagsSearchAdapter;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -69,28 +71,28 @@ public class PublicStoriesList extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        ThemeBind.backgroundColor(this, Theme.key_windowBackgroundWhite, resourcesProvider);
 
         setPadding(0, AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight() + dp(tabs ? 40 : 0), 0, dp(51));
         topView = new FrameLayout(context);
-        topView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL));
+        ThemeBind.selectorBackground(topView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         topView.setOnClickListener(view -> {
             onMessagesClick();
         });
 
         topTitleView = new TextView(context);
-        topTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(topTitleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         topTitleView.setTypeface(AndroidUtilities.bold());
         topTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         topView.addView(topTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 13.66f, 6.66f, 13.66f, 0));
 
         textTitleView = new TextView(context);
-        textTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(textTitleView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         textTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         topView.addView(textTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 13.66f, 25, 13.66f, 0));
 
         View shadow = new View(context);
-        shadow.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        ThemeBind.backgroundColor(shadow, Theme.key_divider, resourcesProvider);
         topView.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM));
 
         addView(topView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL | Gravity.TOP));
@@ -162,16 +164,6 @@ public class PublicStoriesList extends FrameLayout {
             }
 
             @Override
-            protected void drawBackgroundWithBlur(Canvas canvas, float y, Rect rectTmp2, Paint backgroundPaint) {
-//                fragmentView.drawBlurRect(canvas, getY() + y, rectTmp2, backgroundPaint, true);
-            }
-
-            @Override
-            protected void invalidateBlur() {
-//                fragmentView.invalidateBlur();
-            }
-
-            @Override
             protected boolean isStoriesView() {
                 return false;
             }
@@ -233,7 +225,7 @@ public class PublicStoriesList extends FrameLayout {
             }
         };
         if (sharedMediaLayout.getSearchOptionsItem() != null) {
-            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(sharedMediaLayout.getSearchOptionsItem(), Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         }
         sharedMediaLayout.setPinnedToTop(true);
         sharedMediaLayout.photoVideoOptionsItem.setTranslationY(0);
@@ -277,7 +269,7 @@ public class PublicStoriesList extends FrameLayout {
                 SpannableStringBuilder title = new SpannableStringBuilder(searchResult.count + " messages in ");
                 int start = title.length();
                 title.append("@").append(username);
-                title.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), start, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                title.setSpan(new ForegroundColorSpanThemable(Theme.key_featuredStickers_addButton, resourcesProvider), start, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 topTitleView.setText(title);
             } else {
                 topTitleView.setText(searchResult.count + " messages");

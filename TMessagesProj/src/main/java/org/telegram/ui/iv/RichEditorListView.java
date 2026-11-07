@@ -50,6 +50,7 @@ import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ItemOptions;
@@ -3226,7 +3227,7 @@ public class RichEditorListView extends UniversalRecyclerView {
         alignTitle.setText(getString(R.string.ArticleAlignment));
         alignTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         alignTitle.setGravity(Gravity.CENTER);
-        alignTitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(alignTitle, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         alignContainer.addView(alignTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 5, 0, 4));
         LinearLayout alignLayout = new LinearLayout(getContext());
         alignLayout.setPadding(dp(4), dp(4), dp(4), dp(4));

@@ -29,6 +29,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
@@ -69,6 +70,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
     private final ButtonBounce groupsBounce = new ButtonBounce(this);
     private final AvatarsDrawable groupsAvatars = new AvatarsDrawable(this, false);
     private final Drawable groupsArrow;
+    private int groupsArrowColor = Color.WHITE;
     private MessagesController.CommonChatsList commonChats;
 
     private float height;
@@ -255,8 +257,8 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.commonChatsLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.userInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.commonChatsLoaded);
         groupsAvatars.onAttachedToWindow();
     }
 
@@ -282,6 +284,11 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
 
+        final int textColor = Theme.isCompactMode(resourcesProvider) ? Theme.getColor(Theme.key_chat_compact_actionText, resourcesProvider) : Color.WHITE;
+        if (groupsArrowColor != textColor) {
+            groupsArrow.setColorFilter(new PorterDuffColorFilter(groupsArrowColor = textColor, PorterDuff.Mode.SRC_IN));
+        }
+
         canvas.save();
 
         float Y = 0;
@@ -304,12 +311,12 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         Y += dp(14);
         title
             .ellipsize(width - dp(32))
-            .draw(canvas, cx - title.getWidth() / 2.0f, title.getHeight() / 2.0f, Color.WHITE, 1.0f);
+            .draw(canvas, cx - title.getWidth() / 2.0f, title.getHeight() / 2.0f, textColor, 1.0f);
         canvas.translate(0, title.getHeight() + dp(3));
         Y += title.getHeight() + dp(3);
         subtitle
             .ellipsize(width - dp(32))
-            .draw(canvas, cx - subtitle.getWidth() / 2.0f, subtitle.getHeight() / 2.0f, Color.WHITE, 0.7f);
+            .draw(canvas, cx - subtitle.getWidth() / 2.0f, subtitle.getHeight() / 2.0f, textColor, 0.7f);
         canvas.translate(0, subtitle.getHeight() + dp(11));
         Y += subtitle.getHeight() + dp(11);
 
@@ -324,7 +331,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
             final float valueX = cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f);
             row.key
                 .ellipsize(valueX - keyX - dp(7.66f))
-                .draw(canvas, keyX, row.key.getHeight() / 2.0f, Color.WHITE, 0.7f);
+                .draw(canvas, keyX, row.key.getHeight() / 2.0f, textColor, 0.7f);
             row.bounds.set(
                 cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f),
                 Y,
@@ -343,7 +350,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
             }
             row.value
                 .ellipsize(cx + width / 2.0f - dp(8) - valueX)
-                .draw(canvas, valueX, row.value.getHeight() / 2.0f, Color.WHITE, 1.0f);
+                .draw(canvas, valueX, row.value.getHeight() / 2.0f, textColor, 1.0f);
             if (row.avatars) {
                 canvas.save();
                 canvas.translate(cx - width / 2.0f + dp(16) + rowsKeysWidth + dp(7.66f) + row.value.getCurrentWidth() + dp(4), dp(1));
@@ -362,11 +369,11 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         if (footer != null) {
             canvas.translate(0, dp(12));
             if (footer.isMultiline()) {
-                footer.draw(canvas, cx - footer.getWidth() / 2.0f, 0, Color.WHITE, 0.7f);
+                footer.draw(canvas, cx - footer.getWidth() / 2.0f, 0, textColor, 0.7f);
             } else {
                 footer
                     .ellipsize(width - dp(32))
-                    .draw(canvas, cx - footer.getWidth() / 2.0f, footer.getHeight() / 2.0f, Color.WHITE, 0.7f);
+                    .draw(canvas, cx - footer.getWidth() / 2.0f, footer.getHeight() / 2.0f, textColor, 0.7f);
             }
         }
 

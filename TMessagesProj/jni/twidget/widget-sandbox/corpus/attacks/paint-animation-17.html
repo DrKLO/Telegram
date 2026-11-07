@@ -1,0 +1,8 @@
+<!-- Paint limit (docs/decisions.md, "Heavy boxes"): a CSS animation of opacity and a blurred glow on 17 boxes; a box is
+     heavy for the whole time such an animation runs, whatever its value at a given frame. Stopped at the first count
+     after the animations start ("Paint limit exceeded: 17 boxes …"), the animations paused, drawn without the effects. -->
+<style>
+@keyframes glow{from{opacity:1;box-shadow:0 0 0 rgba(255,200,0,0)}to{opacity:.4;box-shadow:0 0 18px rgba(255,200,0,.9)}}
+.b{display:inline-block;width:40px;height:40px;margin:6px;border-radius:50%;background:#f5a623;animation:glow .6s ease-in-out infinite alternate}
+</style>
+<div id="r"><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div></div>

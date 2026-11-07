@@ -1,0 +1,76 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a market ticker — six rows re-priced every 500 ms for 40 s from a seeded generator (text + colour class + a bar width per row), then idle; Resume
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .live { display: inline-block; width: 8px; height: 8px; border-radius: 4px; background-color: var(--red); margin-right: 5px; }
+  .live.off { background-color: var(--fill2); }
+  .tk { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .tk .sym { width: 56px; font-weight: 800; font-family: ui-monospace, monospace; }
+  .tk .nm { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+  .tk .rng { width: 90px; height: 6px; border-radius: 3px; background-color: var(--fill); overflow: hidden; margin: 0 10px; }
+  .tk .rng i { display: block; height: 6px; width: 50%; background-color: var(--fill2); }
+  .tk .px { width: 76px; text-align: right; font-family: ui-monospace, monospace; font-weight: 700; }
+  .tk .ch { width: 62px; text-align: right; font-size: 12px; font-weight: 700; padding: 1px 0; border-radius: 6px; }
+  .tk.up .ch { color: var(--green); } .tk.down .ch { color: var(--red); }
+  .tk.up .rng i { background-color: var(--green); } .tk.down .rng i { background-color: var(--red); }
+  .tk.flash.up .px { color: var(--green); } .tk.flash.down .px { color: var(--red); }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px"><span class="live" id="dot"></span>Watchlist</span><span class="tiny muted" id="clock">tick 0</span></div>
+  <div id="rows"></div>
+  <div class="row between" style="margin-top: 10px"><span class="tiny muted" id="note">Updates every 500 ms for 40 s</span><span class="btn" role="button" id="resume" hidden>Resume</span></div>
+</div>
+<script>
+const SYMS = [['NWND', 'Northwind', 142.18], ['LITE', 'Litehtml', 18.42], ['BLTZ', 'Blitz Labs', 97.05], ['QJS', 'QuickJS', 61.77], ['WKIT', 'WebKit Co', 240.6], ['TAFY', 'Taffy', 7.91]];
+let seed = 41;
+const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+const rows = document.getElementById('rows');
+rows.innerHTML = SYMS.map(([s, n]) => `<div class="tk"><div class="sym">${s}</div><div class="grow nm">${n}</div><div class="rng"><i></i></div><div class="px">0.00</div><div class="ch">0.00%</div></div>`).join('');
+const els = [...rows.children];
+const state = SYMS.map(([, , p]) => ({ open: p, px: p, lo: p, hi: p }));
+let tick = 0, timer = 0;
+function update() {
+  tick++;
+  state.forEach((s, i) => {
+    const d = (rnd() - 0.5) * s.open * 0.012;
+    const prev = s.px;
+    s.px = Math.max(0.5, s.px + d); s.lo = Math.min(s.lo, s.px); s.hi = Math.max(s.hi, s.px);
+    const ch = (s.px - s.open) / s.open * 100;
+    const el = els[i];
+    el.className = 'tk ' + (ch >= 0 ? 'up' : 'down') + (Math.abs(s.px - prev) > s.open * 0.004 ? ' flash' : '');
+    el.querySelector('.px').textContent = s.px.toFixed(2);
+    el.querySelector('.ch').textContent = (ch >= 0 ? '+' : '') + ch.toFixed(2) + '%';
+    const span = s.hi - s.lo || 1;
+    el.querySelector('.rng i').style.width = (10 + (s.px - s.lo) / span * 90).toFixed(0) + '%';
+  });
+  document.getElementById('clock').textContent = 'tick ' + tick;
+  if (tick % 80 === 0) stop(); else timer = setTimeout(update, 500);
+}
+function stop() {
+  clearTimeout(timer);
+  document.getElementById('dot').classList.add('off');
+  document.getElementById('note').textContent = 'Paused after ' + tick + ' ticks';
+  document.getElementById('resume').hidden = false;
+}
+function go() {
+  document.getElementById('dot').classList.remove('off');
+  document.getElementById('note').textContent = 'Updates every 500 ms for 40 s';
+  document.getElementById('resume').hidden = true;
+  timer = setTimeout(update, 500);
+}
+document.getElementById('resume').addEventListener('click', go);
+update(); go();
+</script>

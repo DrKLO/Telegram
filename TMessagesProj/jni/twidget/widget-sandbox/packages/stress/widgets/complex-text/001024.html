@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>stress: Complex scripts · 1024 chars</title>
+<!-- stress {"id":"complex-text/1024","load":"complex-text","level":1,"param":"characters","value":1024,"unit":"chars"} -->
+<style>body{margin:0;font:12px system-ui,sans-serif}#h{padding:5px 8px;color:var(--tg-theme-hint-color);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}#f{position:relative;height:300px;overflow:hidden}p{margin:0 0 2px;font:11px/1.3 system-ui,sans-serif}</style>
+</head><body><div id="h">Complex scripts · 1024 chars</div><div id="f"></div>
+<script>
+var ID="complex-text/1024",LV=1,N=1024,F=document.getElementById('f'),W=F.clientWidth||300;
+function mk(n,c){for(var a=[],i=0;i<n;i++){var d=document.createElement('div');d.className=c;F.appendChild(d);a.push(d)}return a}
+var S=['مرحبا بكم في الدردشة ','שלום לכולם בצ׳אט ','नमस्ते चैट में आपका स्वागत है ','สวัสดีทุกคนในแชท ','欢迎来到聊天窗口文字排版测试'].join(''),ps=[];for(var j=0;j*128<N;j++){var p=document.createElement('p');p.textContent=(S+S+S).substr((j*37)%S.length,Math.min(128,N-j*128));F.appendChild(p);ps.push(p)};
+function step(t){var k=(t/50|0)%S.length;ps[0].firstChild.data=(S+S+S).substr(k,Math.min(128,N))}
+(function(){var de=document.documentElement,h=document.getElementById('h'),lb=h.textContent,n=0,t0=0,lt=0,lp=0,mx=0,j=0,fs=0,fc=0,fps=0;
+function pub(st,t){de.setAttribute('data-stress',JSON.stringify({v:1,id:ID,level:LV,value:N,status:st,t:Math.round(t),frames:n,fps:fps,maxGap:Math.round(mx),jank:j}));mx=0}
+function loop(t){if(!t0)t0=lt=lp=fs=t;var g=t-lt;lt=t;if(g>mx)mx=g;if(g>50)j++;n++;fc++;if(t-fs>=1000){fps=Math.round(fc*1000/(t-fs));fc=0;fs=t}
+if(typeof step=='function')step(t-t0);
+if(t-lp>=500){lp=t;h.firstChild.data=lb+' \u00b7 '+fps+' fps';pub('running',t-t0)}requestAnimationFrame(loop)}
+pub('setup',0);requestAnimationFrame(loop)})();
+</script>
+</body></html>

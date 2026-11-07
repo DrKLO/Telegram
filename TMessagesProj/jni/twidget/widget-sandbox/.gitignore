@@ -1,0 +1,26 @@
+node_modules
+dist
+.DS_Store
+test-results
+playwright-report
+.cache
+reports
+.build
+.swiftpm
+apps/ios/DemoApp/Corpus
+*.xcuserdata
+xcuserdata
+DerivedData
+packages/desktop/Corpus
+packages/desktop/build*
+apps/renderer-litehtml/target
+apps/renderer-litehtml/build
+apps/renderer-litehtml/pkg-web
+.chat-export/
+apps/web/bench/ops/
+.claude/worktrees/
+# the private pre-publication history (bare mirror); never tracked, never pushed
+.archive/
+!packages/quickjs-wasm/dist/
+# Working-process documents (reviews, briefs, discussions) live outside the repository
+/notes/

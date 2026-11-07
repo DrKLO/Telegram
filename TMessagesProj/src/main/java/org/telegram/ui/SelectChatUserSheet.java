@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
@@ -46,6 +47,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BackupImageView;
@@ -110,11 +112,11 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
 
         searchContainer = new FrameLayout(context);
         searchBox = new FrameLayout(context);
-        searchBox.setBackground(Theme.createRoundRectDrawable(dp(20), getThemedColor(Theme.key_dialogSearchBackground)));
+        ThemeBind.fillBackground(searchBox, Theme.createRoundRectDrawable(dp(20), getThemedColor(Theme.key_dialogSearchBackground)), ThemeBind.of(Theme.key_dialogSearchBackground), resourcesProvider);
         final ImageView searchImageView = new ImageView(context);
         searchImageView.setScaleType(ImageView.ScaleType.CENTER);
         searchImageView.setImageResource(R.drawable.smiles_inputsearch);
-        searchImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogSearchHint), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(searchImageView, Theme.key_dialogSearchHint, resourcesProvider, PorterDuff.Mode.SRC_IN);
         searchBox.addView(searchImageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 11, 0, 0, 0));
         searchEdit = new EditTextBoldCursor(context) {
             @Override
@@ -128,8 +130,8 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                 return super.onTouchEvent(event);
             }
         };
-        searchEdit.setTextColor(getThemedColor(Theme.key_dialogSearchText));
-        searchEdit.setHintTextColor(getThemedColor(Theme.key_dialogSearchHint));
+        ThemeBind.textColor(searchEdit, Theme.key_dialogSearchText, resourcesProvider);
+        ThemeBind.hintTextColor(searchEdit, Theme.key_dialogSearchHint, resourcesProvider);
         searchEdit.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         searchEdit.setSingleLine(true);
         searchEdit.setBackground(null);
@@ -235,12 +237,21 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
 
         bottomGradient = new View(getContext()) {
             private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private final LinearGradient gradient = new LinearGradient(0, 0, 0, dp(10 + 48 + 10), new int[] {
-                Theme.multAlpha(getThemedColor(Theme.key_dialogBackground), 0.0f),
-                getThemedColor(Theme.key_dialogBackground)
+            private int gradientColor = getThemedColor(Theme.key_dialogBackground);
+            private LinearGradient gradient = new LinearGradient(0, 0, 0, dp(10 + 48 + 10), new int[] {
+                Theme.multAlpha(gradientColor, 0.0f),
+                gradientColor
             }, new float[] {0, 0.2f}, Shader.TileMode.CLAMP);
             @Override
             protected void onDraw(@NonNull Canvas canvas) {
+                final int color = getThemedColor(Theme.key_dialogBackground);
+                if (color != gradientColor) {
+                    gradientColor = color;
+                    gradient = new LinearGradient(0, 0, 0, dp(10 + 48 + 10), new int[] {
+                        Theme.multAlpha(color, 0.0f),
+                        color
+                    }, new float[] {0, 0.2f}, Shader.TileMode.CLAMP);
+                }
                 paint.setShader(gradient);
                 canvas.drawRect(0, 0, getWidth(), getHeight(), paint);
             }
@@ -523,10 +534,10 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
         public void attach() {
             if (attached) return;
             attached = true;
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
         }
         public void detach() {
-            if (attached) return;
+            if (!attached) return;
             attached = false;
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.chatInfoDidLoad);
 
@@ -600,7 +611,7 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                     builder.setView(linearLayout);
 
                     TextView messageTextView = new TextView(context);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     if (ChatObject.isChannelAndNotMegaGroup(chat)) {
@@ -617,10 +628,10 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                     ImageView dotImageView = new ImageView(context);
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? dp(11) : 0, dp(9), LocaleController.isRTL ? 0 : dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(context);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
@@ -639,10 +650,10 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                     dotImageView = new ImageView(context);
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? dp(11) : 0, dp(9), LocaleController.isRTL ? 0 : dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(context);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
@@ -667,7 +678,7 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                         });
                     } else {
                         messageTextView = new TextView(context);
-                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                         messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));
@@ -720,5 +731,17 @@ public class SelectChatUserSheet extends BottomSheetWithRecyclerListView {
                 }
             }
         }));
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (button != null) {
+                button.setColor(getThemedColor(Theme.key_fill_RedNormal));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

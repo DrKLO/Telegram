@@ -1,0 +1,61 @@
+<!doctype html>
+<html data-test="auto/15-js-runtime-b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: JS runtime (2/3)</title>
+<!-- conformance {"title":"JS runtime: Intl, locale, crypto, built-ins, eval, CSS.supports from the profile, visibility, bundled libraries"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var x=document,y=x.documentElement,h=typeof TelegramWidget!="undefined",C=window.__conformanceMode||(h?"sandbox":"native"),a=[],b={},l=[];var D,c,f,u,M,d,w,p;var k=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),q=()=>{p=p||setTimeout(T,0)};function i(t,e,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),m=b[t+"|"+e]||(b[t+"|"+e]=a[a.length]=[t,e]);return m[2]=s,m[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),q(),s}function A(t,e,o,n){if(n&&n.sandboxOnly&&!h)return i(t,e,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(t,e,!1,"threw "+s,n)}return r==null?i(t,e,null,"not applicable",n):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],n)}var O=(t,e,o,n,r)=>A(t,e,[o,n],r),R=(t,e,o,n,r)=>A(t,e,[o===n,"got "+k(o)+", want "+k(n)],r);var B=t=>{l.push(t)};var E=()=>{},I=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(o=>Math.round(o*10)/10)};function T(){p=0,f&&!u&&E();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)t[n[2]]++;let e=f&&!l.length,o=u||e&&!t.pending?"done":e&&M?"awaiting":"running";u=o=="done",y.setAttribute("data-conformance",JSON.stringify({v:1,id:y.getAttribute("data-test"),mode:C,status:o,n:t,checks:a,targets:D,stages:c})),g&&g(o,t)}var g;function S(){g=(t,e)=>{let o=[t];for(let n in e)e[n]&&o.push(n+" "+e[n]);x.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function j(){if(c||(c={},[].forEach.call(x.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=I(e)})),!l.length)return f=1,d&&w&&setTimeout(w,d),q();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(j,t||0)}function F(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,T();let e=()=>{e=()=>{},setTimeout(j,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(o){}setTimeout(()=>e(),400)}S();return{eq:R,ok:O,run:F,sandbox:h,step:B}}();</script><!-- /conformance:harness -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+<div class="conf-head">15b · JS runtime (2/3)</div>
+<div id="conf-list"></div>
+<script>
+var S = T.sandbox ? {} : { sandboxOnly: true };
+T.step(function () {
+  // ───── Intl
+  T.eq('js.intl', 'NumberFormat currency', new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(1234.5), '$1,234.50');
+  T.eq('js.intl', 'NumberFormat ru grouping', new Intl.NumberFormat('ru-RU').format(1234.5).replace(/\s/g, ' '), '1 234,5');
+  T.eq('js.intl', 'DateTimeFormat UTC', new Intl.DateTimeFormat('en-US', { timeZone: 'UTC' }).format(new Date(0)), '1/1/1970');
+  T.eq('js.intl', 'PluralRules', new Intl.PluralRules('en-US').select(1) + ',' + new Intl.PluralRules('ru-RU').select(3), 'one,few');
+  T.eq('js.intl', 'RelativeTimeFormat', new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(-1, 'day'), 'yesterday');
+  T.eq('js.intl', 'ListFormat', new Intl.ListFormat('en', { type: 'conjunction' }).format(['a', 'b', 'c']), 'a, b, and c');
+  T.ok('js.intl', 'Collator', new Intl.Collator('en').compare('a', 'B') < 0, '');
+  T.ok('js.intl', 'toLocaleString uses Intl', (1234.5).toLocaleString('en-US') === '1,234.5', (1234.5).toLocaleString('en-US'));
+  T.ok('js.intl.format-to-parts', 'NumberFormat.formatToParts', (function () { var p = new Intl.NumberFormat('en-US').formatToParts(1234.5); return Array.isArray(p) && p.some(function (x) { return x.type === 'group'; }); })(), '');
+  T.ok('js.intl.format-to-parts', 'DateTimeFormat.formatToParts', (function () { var p = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC' }).formatToParts(new Date(0)); return Array.isArray(p) && p.some(function (x) { return x.type === 'year' && x.value === '1970'; }); })(), '');
+  T.ok('js.locale', 'navigator.language is a BCP 47 tag', /^[a-z]{2,3}(-[A-Za-z0-9]+)*$/.test(navigator.language), navigator.language);
+  T.ok('js.locale', 'navigator.languages starts with navigator.language', navigator.languages && navigator.languages[0] === navigator.language, String(navigator.languages));
+  // ───── crypto, built-ins, eval
+  var bytes = crypto.getRandomValues(new Uint8Array(16));
+  T.ok('js.crypto-random', 'getRandomValues fills the array', Array.prototype.some.call(bytes, function (b) { return b !== 0; }), '');
+  T.ok('js.crypto-random', 'randomUUID is a v4 UUID', /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(crypto.randomUUID()), '');
+  T.ok('js.crypto-random', 'Math.random in [0, 1)', (function () { for (var i = 0; i < 100; i++) { var r = Math.random(); if (!(r >= 0 && r < 1)) return false; } return true; })(), '');
+  T.eq('js.builtins', 'TextEncoder', Array.prototype.join.call(new TextEncoder().encode('é'), ','), '195,169');
+  T.eq('js.builtins', 'TextDecoder', new TextDecoder().decode(new Uint8Array([0xd0, 0xaf])), 'Я');
+  var u = new URL('https://t.me/path?a=1&b=two#h');
+  T.ok('js.builtins', 'URL and URLSearchParams', u.hostname === 't.me' && u.searchParams.get('b') === 'two' && u.hash === '#h' && new URLSearchParams('x=1&y=2').toString() === 'x=1&y=2', u.hostname);
+  var src = { a: { b: [1, 2] } }, cl = structuredClone(src);
+  T.ok('js.builtins', 'structuredClone', cl.a.b[1] === 2 && cl.a !== src.a, '');
+  var ac = new AbortController(); ac.abort();
+  T.ok('js.builtins', 'AbortController', ac.signal.aborted === true, '');
+  T.eq('js.builtins', 'atob / btoa', atob(btoa('hi')), 'hi');
+  T.eq('js.eval', 'eval', eval('1 + 2'), 3);
+  T.eq('js.eval', 'new Function', new Function('a', 'return a * 2')(4), 8);
+  // ───── CSS.supports from the profile (D23)
+  T.eq('js.css-supports', 'CSS.supports("display", "flex")', CSS.supports('display', 'flex'), true);
+  T.eq('js.css-supports', 'CSS.supports rejects an invalid value', CSS.supports('display', 'no-such-value'), false);
+  T.eq('js.css-supports', 'CSS.supports("transform", "rotateY(10deg)") is false: 3D is out', CSS.supports('transform', 'rotateY(10deg)'), false, S);
+  T.eq('js.css-supports', 'CSS.supports("(display: flex) and (gap: 1px)")', CSS.supports('(display: flex) and (gap: 1px)'), true);
+  T.eq('js.css-supports', 'CSS.escape', CSS.escape('a b'), 'a\\ b');
+  T.ok('js.visibility', 'document is visible', document.hidden === false && document.visibilityState === 'visible', document.visibilityState);
+  T.ok('js.libraries', 'a Chart.js CDN script is an external script and is not run (profile 1: out)', typeof Chart === 'undefined', typeof Chart, S);
+  T.ok('js.libraries', 'a D3 CDN script is not run either', typeof d3 === 'undefined', typeof d3, S);
+});
+T.run({ deadline: 3000 });
+</script>
+</body>
+</html>

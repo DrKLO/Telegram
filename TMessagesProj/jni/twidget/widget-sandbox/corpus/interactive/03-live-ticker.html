@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="tw-bot" content="ticker">
+<style>
+  .row { display: flex; align-items: baseline; gap: 8px; }
+  #price { font: 600 28px/1.2 system-ui, sans-serif; }
+  #delta { font-weight: 600; }
+  .up { color: #2e9e5b; } .down { color: var(--tg-theme-destructive-text-color); }
+  #time { margin-left: auto; color: var(--tg-theme-hint-color); font-size: .87em; }
+  #spark { display: flex; align-items: flex-end; gap: 2px; height: 48px; margin: 8px 0; }
+  #spark div { flex: 1; background: var(--tg-theme-button-color); opacity: .5; border-radius: 2px 2px 0 0; transition: height .3s; }
+  #spark div:last-child { opacity: 1; }
+  .bar { display: flex; gap: 8px; align-items: center; }
+  #note { color: var(--tg-theme-hint-color); font-size: .87em; flex: 1; }
+</style></head>
+<body>
+<div class="row"><span id="price">—</span><span id="delta"></span><span id="time"></span></div>
+<div id="spark"></div>
+<div class="bar"><span id="note"></span><button id="refresh">Refresh</button><button id="like">♥ <span id="likes">0</span></button></div>
+<script>
+var T = TelegramWidget, points = [], timer = 0, inFlight = false;
+function $(id) { return document.getElementById(id); }
+function draw() {
+  var p = points[points.length - 1], prev = points[points.length - 2];
+  if (p) {
+    $('price').textContent = p.p.toFixed(2);
+    $('time').textContent = p.t;
+    var d = prev ? p.p - prev.p : 0;
+    $('delta').textContent = (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(2);
+    $('delta').className = d >= 0 ? 'up' : 'down';
+  }
+  var lo = Math.min.apply(null, points.map(function (q) { return q.p; })), hi = Math.max.apply(null, points.map(function (q) { return q.p; }));
+  $('spark').textContent = '';
+  points.forEach(function (q) { var b = document.createElement('div'); b.style.height = (hi > lo ? 8 + 40 * (q.p - lo) / (hi - lo) : 24) + 'px'; $('spark').appendChild(b); });
+  try { $('likes').textContent = (JSON.parse(T.chatData || '{}').likes || 0); } catch (e) {}
+}
+// Without a tap: only in the private chat with the bot, while on screen: at once when it appears, then at most every 5 s.
+// Elsewhere (a group, a forward of a live widget) a tap refreshes; a plain forward cannot ask at all.
+function tick(tapped) {
+  timer = 0;
+  if (inFlight) return;
+  inFlight = true;
+  T.request('tick').then(function (a) {
+    inFlight = false;
+    try { points.push(JSON.parse(a.result)); } catch (e) {}
+    if (points.length > 24) points.shift();
+    $('note').textContent = 'live: the bot every 5 s';
+    draw();
+    schedule();
+  }, function (e) {
+    inFlight = false;
+    $('note').textContent = e.code === 'NOT_ALLOWED' ? (tapped ? 'Live prices in the chat with the bot' : 'Tap Refresh for the latest price') : e.code === 'RATE_LIMITED' ? 'live: waiting…' : 'The bot did not answer';
+    if (e.code !== 'NOT_ALLOWED') schedule();
+  });
+}
+function schedule() { if (!timer && T.isActive) timer = setTimeout(tick, 5000); }
+T.onEvent('activated', function () { if (timer) { clearTimeout(timer); timer = 0; } tick(); });
+T.onEvent('chatDataChanged', draw);
+$('refresh').addEventListener('click', function () { if (timer) { clearTimeout(timer); timer = 0; } tick(true); });
+$('like').addEventListener('click', function () { if (!inFlight) T.request('like').catch(function () {}); });
+if (T.isForward) $('like').style.display = 'none';
+draw();
+tick();
+</script>
+</body></html>

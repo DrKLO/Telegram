@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- showcase: widget profile 1, SDK v1; idea: interactive projected 3D viewer, Pocket cat -->
+<html><head><meta charset="utf-8"><style>
+:root{color-scheme:light dark;--bg:light-dark(#f3f5f1,#152329);--fg:light-dark(#233b43,#edf4ee);--muted:light-dark(#536d70,#a4babc);--line:light-dark(#d4dfd9,#34484d);--accent:light-dark(#246e61,#8ed6bd)}
+*{box-sizing:border-box}body{margin:0;font:13px system-ui,sans-serif;background:var(--bg);color:var(--fg)}.card{padding:18px 20px 14px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--accent)}h2{font-size:21px;line-height:1.2;margin:5px 0 10px}p{margin:5px 0;color:var(--muted);font-size:12px;line-height:1.4}canvas{display:block;width:100%;height:240px;touch-action:pan-y;cursor:grab}.tools{display:flex;gap:5px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)}button{font:12px system-ui,sans-serif;min-height:32px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--fg);cursor:pointer}button:active{background:var(--line)}#special{background:var(--accent);color:var(--bg);border-color:var(--accent)}.hint{font-size:10px;margin-top:9px}.status{font:10px ui-monospace,monospace;color:var(--accent);margin-top:8px}
+@media(max-width:260px){.eyebrow{font-size:9px;letter-spacing:.5px}h2{font-size:18px}.card{padding:12px 20px}canvas{height:190px}}
+</style></head><body><div class="card"><div class="eyebrow">CAT STUDIO / 3D</div><h2>Pocket cat</h2><p>A sculpted 3D cat.</p><canvas id="view" role="img" aria-label="Pocket cat. Mouse drag rotates X/Y."></canvas><div class="tools"><button id="left" aria-label="Turn left">↶ Left</button><button id="right" aria-label="Turn right">Right ↷</button><button id="up">Raise</button><button id="down">Lower</button><button id="near" aria-label="Zoom in">＋</button><button id="far" aria-label="Zoom out">−</button><button id="reset">Reset</button><button id="special">Move tail</button></div><div class="status" id="status" aria-live="polite"></div><p class="hint">Mouse drag rotates X/Y · Vertical touch scrolls the chat</p></div>
+<script>
+const canvas=document.getElementById('view'),ctx=canvas.getContext('2d'),status=document.getElementById('status'),key='studio-pocket-cat',dark=matchMedia('(prefers-color-scheme: dark)');
+let darkMode=dark.matches,yaw=-.55,pitch=.28,zoom=1,variant=0,width=320,height=240,drag=null,wait=0,faces=[],last=-1000,size,cy=1,sy=0,cp=1,sp=0;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+try{const s=JSON.parse(localStorage.getItem(key));if(s){if(Number.isFinite(s.yaw))yaw=s.yaw;if(Number.isFinite(s.pitch))pitch=clamp(s.pitch,-1.3,1.3);if(Number.isFinite(s.zoom))zoom=clamp(s.zoom,.7,1.3);if(Number.isInteger(s.variant))variant=s.variant&1}}catch{}
+function save(){yaw-=Math.round(yaw/2/Math.PI)*2*Math.PI;try{localStorage.setItem(key,JSON.stringify({yaw,pitch,zoom,variant}))}catch{}}
+function camera(p){const x=p[0]*cy+p[2]*sy,z=p[2]*cy-p[0]*sy;return[x,p[1]*cp-z*sp,p[1]*sp+z*cp]}
+function project(p){const f=Math.min(width,340)*.8*zoom/(7-p[2]);return[width/2+p[0]*f,height/2+5-p[1]*f]}
+function face(points,color,cull){const p=points.map(camera),a=p[0],b=p[1],c=p[2],u=b.map((v,i)=>v-a[i]),v=c.map((n,i)=>n-a[i]),n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...n)||1;
+if(!cull||n[0]*a[0]+n[1]*a[1]+n[2]*(a[2]-7)<0){const o=[0,1,2].map(i=>p.reduce((s,v)=>s+v[i],0)/p.length);faces.push({p:p.map(v=>project(v.map((w,i)=>w+Math.sign(w-o[i])*.008))),z:o[2],c:'rgb('+color.map(v=>Math.round(v*(.54+.46*Math.abs((n[0]*-.4+n[1]*.8+n[2]*.6)/l))))+')'})}}
+function box(x,y,z,w,h,d,c){const p=[[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]].map(p=>[x+p[0]*w/2,y+p[1]*h/2,z+p[2]*d/2]);for(const f of [[0,3,2,1],[4,5,6,7],[0,1,5,4],[3,7,6,2],[1,2,6,5],[0,4,7,3]])face(f.map(i=>p[i]),c,1)}
+function rings(n,m,R,c,s=[1,1,1]){for(let j=0;j<m;j++)for(let i=0;i<n;i++){const p=[];for(const [a,b]of [[i,j],[i+1,j],[i+1,j+1],[i,j+1]]){const[x,y,z,r]=R(b),t=a*2*Math.PI/n;if(r>1e-9||a==i)p.push([x+r*Math.cos(t)*s[0],y,z+r*Math.sin(t)*s[2]])}face(p,c(j),1)}}
+function ball(x,y,z,r,c,s=[1,1,1]){const m=r>.5?5:r>.1?3:2;rings(2*m,m,b=>[x,y+r*Math.cos(b*Math.PI/m)*s[1],z,r*Math.sin(b*Math.PI/m)],()=>c,s)}
+function scene(){
+const fur=[216,146,72],cream=[245,220,176],stripe=[129,78,42],eye=[112,183,126],black=[35,43,39];
+box(0,-1.57,0,2.8,.12,2.2,[60,82,85]);
+ball(0,-.44,-.1,.85,fur,[.66,1.12,.72]);
+ball(0,-.36,.45,.57,cream,[.68,1.2,.3]);ball(0,.69,.05,.66,fur,[1,.94,.9]);
+for(const k of [-1,1]){
+ball(k*.46,-1.01,-.1,.4,fur,[.85,1,.95]);
+ball(k*.27,-.98,.39,.25,fur,[.65,1.4,.75]);
+ball(k*.28,-1.36,.53,.25,cream,[1,.5,1.3]);
+for(const x of [-.07,.04])box(k*.28+x,-1.34,.85,.018,.06,0,stripe);
+const a=[k*.18,1.05,.38],b=[k*.7,1.02,.26],tip=[k*.57,1.69,.03],back=[k*.43,1.02,-.34];
+face([a,b,tip],fur);face([b,back,tip],stripe);face([back,a,tip],fur);
+face([[k*.29,1.1,.36],[k*.58,1.09,.29],[k*.53,1.49,.13]],[215,151,143]);
+ball(k*.28,.8,.53,.17,cream,[1.18,.85,.45]);
+ball(k*.28,.81,.6,.126,eye,[1,.95,.28]);
+box(k*.28,.82,.65,.032,.17,0,black);
+ball(k*.25,.86,.66,.027,[255,255,238]);
+ball(k*.19,.48,.55,.23,cream,[1,.7,.6]);
+for(let j=0;j<3;j++){const y=.47+j*.055;face([[k*.23,y,.7],[k*.89,y+.09-j*.09,.54],[k*.89,y+.104-j*.09,.54],[k*.23,y+.014,.7]],cream)}
+}
+face([[-.09,.61,.704],[.09,.61,.704],[0,.51,.73]],[187,111,112]);
+box(0,.44,.7,.028,.13,0,stripe);
+for(const x of [-.14,0,.14])box(x,1.08,.57,.07,.2,0,stripe);
+rings(6,8,b=>{const t=1.1-.275*(b>>1)-(b&1)*.05;return[.48+Math.sin(t*2)*.7,-1.23+t*(variant?2.05:1.38),-.4+Math.sin(t*3)*.18,b&&.17]},j=>j%2||!j?fur:stripe);
+}
+function draw(){wait=0;last=performance.now();cy=Math.cos(yaw);sy=Math.sin(yaw);cp=Math.cos(pitch);sp=Math.sin(pitch);ctx.clearRect(0,0,width,height);faces=[];for(let i=-3;i<4;i++)for(const k of[0,1])face([[-3,i],[3,i],[3,i+.025],[-3,i+.025]].map(q=>[q[k],-1.75,q[1-k]]),darkMode?[58,84,88]:[199,213,205]);
+scene();faces.sort((a,b)=>a.z-b.z);
+for(const f of faces){ctx.beginPath();f.p.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.fillStyle=f.c;ctx.fill()}
+status.textContent=['Sitting pretty','Tail up'][variant]+' · '+Math.round(zoom*100)+'%';}
+function schedule(){if(!wait)wait=setTimeout(draw,Math.max(0,200-(performance.now()-last)))}
+function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2),k=[r.width,r.height,d]+'';if(k==size)return;size=k;width=Math.max(1,r.width);height=r.height;canvas.width=Math.round(width*d);canvas.height=Math.round(height*d);ctx.setTransform(d,0,0,d,0,0);draw()}
+function change(action){if(drag){yaw=drag.yaw;pitch=drag.pitch;drag=null}if(action=='left')yaw-=.35;if(action=='right')yaw+=.35;if(action=='up')pitch=clamp(pitch+.15,-.15,.95);if(action=='down')pitch=clamp(pitch-.15,-.15,.95);if(action=='near')zoom=clamp(zoom+.1,.7,1.3);if(action=='far')zoom=clamp(zoom-.1,.7,1.3);if(action=='special')variant^=1;if(action=='reset'){yaw=-.55;pitch=.28;zoom=1;variant=0}save();schedule()}
+for(const id of ['left','right','up','down','near','far','reset','special'])document.getElementById(id).addEventListener('click',()=>change(id));
+canvas.addEventListener('pointerdown',e=>{if(e.button!=0||drag)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY||0,yaw,pitch};canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drag||drag.id!=e.pointerId)return;yaw=drag.yaw+(e.clientX-drag.x)*.012;if(e.pointerType=='mouse')pitch=clamp(drag.pitch+((e.clientY||0)-drag.y)*.012,-1.3,1.3);schedule()});
+function end(e,cancel){if(!drag||drag.id!=e.pointerId)return;if(cancel){yaw=drag.yaw;pitch=drag.pitch}drag=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!cancel)save();schedule()}
+for(const t of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(t,e=>end(e,t!='pointerup'));
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&drag)end({pointerId:drag.id},true)});
+dark.addEventListener('change',e=>{darkMode=e.matches;schedule()});new ResizeObserver(resize).observe(canvas);resize();
+</script></body></html>

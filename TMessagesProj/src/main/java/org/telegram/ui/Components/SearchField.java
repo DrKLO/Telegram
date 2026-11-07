@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -17,12 +18,14 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 
 import java.util.List;
+import java.util.HashSet;
 
 @SuppressWarnings("FieldCanBeLocal")
-public class SearchField extends FrameLayout {
+public class SearchField extends FrameLayout implements Theme.Colorable {
 
     private View searchBackground;
     private ImageView searchIconImageView;
@@ -52,7 +55,7 @@ public class SearchField extends FrameLayout {
         searchIconImageView = new ImageView(context);
         searchIconImageView.setScaleType(ImageView.ScaleType.CENTER);
         searchIconImageView.setImageResource(R.drawable.smiles_inputsearch);
-        searchIconImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogSearchIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(searchIconImageView, Theme.key_dialogSearchIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         if (supportRtl) {
             lp = LayoutHelper.createFrameRelatively(36, 36, Gravity.START | Gravity.TOP, horizontalMargin + 2, 11, 0, 0);
         } else {
@@ -102,8 +105,8 @@ public class SearchField extends FrameLayout {
             }
         };
         searchEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        searchEditText.setHintTextColor(getThemedColor(Theme.key_dialogSearchHint));
-        searchEditText.setTextColor(getThemedColor(Theme.key_dialogSearchText));
+        ThemeBind.hintTextColor(searchEditText, Theme.key_dialogSearchHint, resourcesProvider);
+        ThemeBind.textColor(searchEditText, Theme.key_dialogSearchText, resourcesProvider);
         searchEditText.setBackgroundDrawable(null);
         searchEditText.setPadding(0, 0, 0, 0);
         searchEditText.setMaxLines(1);
@@ -111,7 +114,7 @@ public class SearchField extends FrameLayout {
         searchEditText.setSingleLine(true);
         searchEditText.setGravity((supportRtl ? LayoutHelper.getAbsoluteGravityStart() : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         searchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-        searchEditText.setCursorColor(getThemedColor(Theme.key_featuredStickers_addedIcon));
+        ThemeBind.cursorColor(searchEditText, Theme.key_featuredStickers_addedIcon, resourcesProvider);
         searchEditText.setCursorSize(AndroidUtilities.dp(20));
         searchEditText.setCursorWidth(1.5f);
         if (supportRtl) {
@@ -194,14 +197,25 @@ public class SearchField extends FrameLayout {
 
     public void getThemeDescriptions(List<ThemeDescription> descriptions) {
         descriptions.add(new ThemeDescription(searchBackground, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_dialogSearchBackground));
-        descriptions.add(new ThemeDescription(searchIconImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogSearchIcon));
         descriptions.add(new ThemeDescription(clearSearchImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_dialogSearchIcon));
-        descriptions.add(new ThemeDescription(searchEditText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_dialogSearchText));
-        descriptions.add(new ThemeDescription(searchEditText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_dialogSearchHint));
-        descriptions.add(new ThemeDescription(searchEditText, ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_featuredStickers_addedIcon));
     }
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            if (searchBackground != null) {
+                // recolor the round rect in place (ShapeDrawable): no new drawable per theme frame
+                Theme.setDrawableColor(searchBackground.getBackground(), getThemedColor(Theme.key_dialogSearchBackground));
+                searchBackground.invalidate();
+            }
+            // searchEditText cursor: kept by its ThemeBind.cursorColor binding
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

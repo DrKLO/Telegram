@@ -41,7 +41,7 @@ import java.util.concurrent.Semaphore;
  *
  * {@link #iterator()} will throw {@link IllegalStateException} if previous iteration has not been completed
  * {@link #iterator()} will wait until previous iteration finishes, when using {@code isThreadSafe} in constructor
- * {@link #iterator()} will throw {@link IllegalStateException} when {@link InterruptedException} gets caught
+ * {@link #iterator()} waits uninterruptibly, keeping the caller's interrupt status
  * {@link #iterator()} will cause deadlock or ANR if you try to iterate inside iteration
  *
  * {@link Iterator#next()} iterates from newer to older items
@@ -227,11 +227,9 @@ public final class ReferenceList<T> implements Iterable<T>, ReferenceCreator<T> 
   @Override
   public final Iterator<T> iterator () {
     if (semaphore != null) {
-      try {
-        semaphore.acquire();
-      } catch (InterruptedException t) {
-        throw new IllegalStateException();
-      }
+      // Uninterruptible: a pending interrupt on the caller (e.g. a cancelled ImageLoader task) must not
+      // fail the iteration; the interrupt status is preserved for the caller.
+      semaphore.acquireUninterruptibly();
     }
     synchronized (items) {
       if (cacheIterator) {

@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -60,13 +61,13 @@ public class EnterPrizeCell extends LinearLayout {
         editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         editText.setFilters(inputFilters);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        editText.setTextColor(Theme.getColor(Theme.key_chat_messagePanelText, resourcesProvider));
-        editText.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkOut, resourcesProvider));
-        editText.setHighlightColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight, resourcesProvider));
-        editText.setHintColor(Theme.getColor(Theme.key_chat_messagePanelHint, resourcesProvider));
-        editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint, resourcesProvider));
-        editText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor, resourcesProvider));
-        editText.setHandlesColor(Theme.getColor(Theme.key_chat_TextSelectionCursor, resourcesProvider));
+        ThemeBind.textColor(editText, Theme.key_chat_messagePanelText, resourcesProvider);
+        ThemeBind.linkTextColor(editText, Theme.key_chat_messageLinkOut, resourcesProvider);
+        ThemeBind.highlightColor(editText, Theme.key_chat_inTextSelectionHighlight, resourcesProvider);
+        ThemeBind.editHintColor(editText, Theme.key_chat_messagePanelHint, resourcesProvider);
+        ThemeBind.hintTextColor(editText, Theme.key_chat_messagePanelHint, resourcesProvider);
+        ThemeBind.cursorColor(editText, Theme.key_chat_messagePanelCursor, resourcesProvider);
+        ThemeBind.editHandlesColor(editText, Theme.key_chat_TextSelectionCursor, resourcesProvider);
         editText.setBackground(null);
         editText.setHint(LocaleController.getString(R.string.BoostingGiveawayEnterYourPrize));
         editText.addTextChangedListener(new TextWatcher() {
@@ -92,7 +93,7 @@ public class EnterPrizeCell extends LinearLayout {
 
         textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
 
         if (LocaleController.isRTL) {
             LinearLayout.LayoutParams lp = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 20, 0, 36, 0);

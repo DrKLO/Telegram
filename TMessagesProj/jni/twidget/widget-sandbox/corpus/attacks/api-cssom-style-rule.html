@@ -1,0 +1,4 @@
+<style>p { color: #333; }</style><p>cssRules[0].style</p><script>
+try { document.styleSheets[0].cssRules[0].style.background = 'url(http://127.0.0.1:9999/hit/api-cssom-rule)'; } catch (e) { console.log('blocked:', e.name); }
+try { document.styleSheets[0].cssRules[0].style.setProperty('cursor', 'url(http://127.0.0.1:9999/hit/api-cssom-rule-cursor), auto'); } catch (e) { console.log('blocked:', e.name); }
+</script>

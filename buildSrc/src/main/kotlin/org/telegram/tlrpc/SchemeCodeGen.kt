@@ -18,7 +18,7 @@ import org.telegram.tlrpc.schema.TlSchemaPrimitiveType
 object SchemeCodeGen {
     private val CLASS_OUTPUT = ClassName("org.telegram.tgnet", "OutputSerializedData")
 
-    fun generateDataClass(tl: TlObjectWithLayer, superclass: TypeName?): TypeSpec {
+    fun generateDataClass(tl: TlObjectWithLayer, superclass: TypeName?, usedAsBare: Boolean = false): TypeSpec {
         val className = tl.codegenDataClassName
         val params = tl.tl.params
 
@@ -46,7 +46,12 @@ object SchemeCodeGen {
 
         generateDataClassProperties(params).forEach(builder::addProperty)
         generateDataClassFlagGetters(params).forEach(builder::addProperty)
-        builder.addFunction(generateSerializeFunction(params))
+        if (usedAsBare) {
+            builder.addFunction(generateSerializeBoxedFunction())
+            builder.addFunction(generateSerializeParamsFunction(params))
+        } else {
+            builder.addFunction(generateSerializeFunction(params))
+        }
         superclass?.let { builder.superclass(it) }
 
         if (superclass == null) {
@@ -147,17 +152,17 @@ object SchemeCodeGen {
             if (optionalKey in params.multiFlags.keys) {
                 val fn = params.multiFlags[optionalKey]!!.filter { it.type is TlSchemaParamType.Flag.True }
                 if (fn.size == 1) {
-                    statements.put(optionalKey, "if (${fn.first().codegenName}) result = result or ${bit}U")
+                    statements.put(optionalKey, "if (${flagGetterRef(fn.first().codegenName)}) result = result or ${bit}U")
                 } else {
-                    statements.put(optionalKey, "if (${optionalKey.codegenMultiFlagFieldName} != null) result = result or ${bit}U")
+                    statements.put(optionalKey, "if (${flagGetterRef(optionalKey.codegenMultiFlagFieldName)} != null) result = result or ${bit}U")
                 }
             } else {
                 when (param.type) {
                     is TlSchemaParamType.Flag.Optional -> {
-                        statements.put(optionalKey, "if (${param.codegenName} != null) result = result or ${bit}U")
+                        statements.put(optionalKey, "if (${flagGetterRef(param.codegenName)} != null) result = result or ${bit}U")
                     }
                     is TlSchemaParamType.Flag.True -> {
-                        statements.put(optionalKey, "if (${param.codegenName}) result = result or ${bit}U")
+                        statements.put(optionalKey, "if (${flagGetterRef(param.codegenName)}) result = result or ${bit}U")
                     }
                     else -> {}
                 }
@@ -178,6 +183,11 @@ object SchemeCodeGen {
             .build()
     }
 
+    // the getter's local `result` shadows a param with the same name (messages.botWidgetQueryAnswer)
+    private fun flagGetterRef(name: String): String {
+        return if (name == "result") "this.$name" else name
+    }
+
     /* */
 
     private fun generateSerializeFunction(params: TlParams): FunSpec {
@@ -187,7 +197,38 @@ object SchemeCodeGen {
             .addParameter("stream", CLASS_OUTPUT)
 
         builder.addStatement("stream.writeInt32(MAGIC.toInt())")
-        val normalWrites = params.list.mapNotNull {
+        for (line in generateParamWrites(params)) {
+            builder.addStatement(line)
+        }
+
+        return builder.build()
+    }
+
+    // a constructor referenced as a bare type also writes its params without the constructor id
+    private fun generateSerializeBoxedFunction(): FunSpec {
+        return FunSpec.builder("serializeToStream")
+            .addModifiers(KModifier.PUBLIC)
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("stream", CLASS_OUTPUT)
+            .addStatement("stream.writeInt32(MAGIC.toInt())")
+            .addStatement("serializeParams(stream)")
+            .build()
+    }
+
+    private fun generateSerializeParamsFunction(params: TlParams): FunSpec {
+        val builder = FunSpec.builder("serializeParams")
+            .addModifiers(KModifier.PUBLIC)
+            .addParameter("stream", CLASS_OUTPUT)
+
+        for (line in generateParamWrites(params)) {
+            builder.addStatement(line)
+        }
+
+        return builder.build()
+    }
+
+    private fun generateParamWrites(params: TlParams): List<String> {
+        return params.list.mapNotNull {
             if (it.type is TlSchemaParamType.Flag.True) {
                 null
             } else if (it.optionalKey in params.multiParamsInOneFlag.keys) {
@@ -196,19 +237,15 @@ object SchemeCodeGen {
             } else {
                 generateWriteStatement("stream", it.codegenName, it.type)
             }
-
-
         }
-        for (line in normalWrites) {
-            builder.addStatement(line)
-        }
-
-        return builder.build()
     }
 
     private fun generateWriteVectorStatement(streamVar: String, paramName: String, type: TlSchemaParamType): String {
         return when (type) {
-            is TlSchemaParamType.Primary.Object -> "TlGen_Vector.serialize($streamVar, $paramName)"
+            is TlSchemaParamType.Primary.Object -> {
+                if (type.bareConstructor != null) throw NotImplementedError("vector of bare ${type.bareConstructor}")
+                "TlGen_Vector.serialize($streamVar, $paramName)"
+            }
             is TlSchemaParamType.Primary.Primitive -> when (type.type) {
                 TlSchemaPrimitiveType.INT -> "TlGen_Vector.serializeInt($streamVar, $paramName)"
                 TlSchemaPrimitiveType.LONG -> "TlGen_Vector.serializeLong($streamVar, $paramName)"
@@ -254,6 +291,8 @@ object SchemeCodeGen {
             is TlSchemaParamType.Primary.Object -> {
                 if (type.name == "Bool") {
                     "$streamVar.writeBool($paramName)"
+                } else if (type.bareConstructor != null) {
+                    "$paramName.serializeParams($streamVar)"
                 } else {
                     "$paramName.serializeToStream($streamVar)"
                 }
@@ -353,6 +392,8 @@ object SchemeCodeGen {
             is TlSchemaParamType.Primary.Object -> {
                 if (type.name == "Bool") {
                     com.squareup.kotlinpoet.BOOLEAN
+                } else if (type.bareConstructor != null) {
+                    ClassName("org.telegram.tgnet.model.generated", "TlGen_" + type.name.replace('.', '_'), "TL_" + type.bareConstructor.replace('.', '_'))
                 } else {
                     ClassName("org.telegram.tgnet.model.generated", "TlGen_" + type.name.replace('.', '_'))
                 }

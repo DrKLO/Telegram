@@ -1,0 +1,5 @@
+module CQuickJS {
+    header "qjs_shim.h"
+    header "../quickjs/quickjs.h"
+    export *
+}

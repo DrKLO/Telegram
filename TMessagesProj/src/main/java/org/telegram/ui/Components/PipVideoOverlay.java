@@ -55,6 +55,7 @@ import org.telegram.messenger.pip.PipSource;
 import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 
@@ -1006,7 +1007,7 @@ public class PipVideoOverlay implements IPipSourceDelegate {
         contentView.addView(contentFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         contentFrameLayout.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(ROUNDED_CORNERS_DP)));
         contentFrameLayout.setClipToOutline(true);
-        contentFrameLayout.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBar));
+        ThemeBind.backgroundColor(contentFrameLayout, Theme.key_voipgroup_actionBar);
 
         innerView = pipContentView;
         if (innerView.getParent() != null) {
@@ -1062,16 +1063,16 @@ public class PipVideoOverlay implements IPipSourceDelegate {
 
         ImageView closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.pip_video_close);
-        closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
-        closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+        ThemeBind.colorFilter(closeButton, Theme.key_voipgroup_actionBarItems, PorterDuff.Mode.MULTIPLY);
+        ThemeBind.selectorBackground(closeButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
         closeButton.setPadding(padding, padding, padding, padding);
         closeButton.setOnClickListener(v -> dismissAndDestroy());
         controlsView.addView(closeButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, margin, 0));
 
         ImageView expandButton = new ImageView(context);
         expandButton.setImageResource(R.drawable.pip_video_expand);
-        expandButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
-        expandButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+        ThemeBind.colorFilter(expandButton, Theme.key_voipgroup_actionBarItems, PorterDuff.Mode.MULTIPLY);
+        ThemeBind.selectorBackground(expandButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
         expandButton.setPadding(padding, padding, padding, padding);
         expandButton.setOnClickListener(v -> {
             boolean isResumedByActivityManager = true;
@@ -1100,8 +1101,8 @@ public class PipVideoOverlay implements IPipSourceDelegate {
         controlsView.addView(expandButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, buttonSize + margin + 6, 0));
 
         playPauseButton = new ImageView(context);
-        playPauseButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems), PorterDuff.Mode.MULTIPLY);
-        playPauseButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+        ThemeBind.colorFilter(playPauseButton, Theme.key_voipgroup_actionBarItems, PorterDuff.Mode.MULTIPLY);
+        ThemeBind.selectorBackground(playPauseButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
         playPauseButton.setOnClickListener(v -> {
             if (photoViewer == null) {
                 return;

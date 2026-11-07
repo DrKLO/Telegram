@@ -1,0 +1,88 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a month picker — six flex rows of seven cells (no grid), prev/next month, tap a day to pick a range of two
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .nav { width: 30px; height: 30px; border-radius: 15px; background-color: var(--fill); text-align: center; line-height: 30px; font-weight: 800; cursor: pointer; }
+  .wk { display: flex; margin-top: 10px; }
+  .wk span { flex-grow: 1; flex-basis: 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .w { display: flex; margin-top: 4px; }
+  .d { flex-grow: 1; flex-basis: 0; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+  .d span { width: 34px; height: 34px; border-radius: 17px; display: flex; align-items: center; justify-content: center; }
+  .d.out { color: var(--fill2); }
+  .d.today span { border: 1.5px solid var(--blue); color: var(--blue); font-weight: 700; box-sizing: border-box; }
+  .d.in { background-color: rgba(0,122,255,0.12); }
+  .d.a, .d.b { background-color: rgba(0,122,255,0.12); }
+  .d.a { border-radius: 20px 0 0 20px; } .d.b { border-radius: 0 20px 20px 0; } .d.a.b { border-radius: 20px; }
+  .d.a span, .d.b span { background-color: var(--blue); color: #fff; font-weight: 700; }
+  .d.dot span { position: relative; }
+  .d .m { position: absolute; bottom: 3px; left: 14px; width: 5px; height: 5px; border-radius: 3px; background-color: var(--orange); }
+  .sel { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background-color: var(--fill); font-size: 13px; }
+</style>
+<div class="card">
+  <div class="row between"><span class="nav" role="button" data-m="-1">‹</span><span class="bold" style="font-size: 16px" id="title"></span><span class="nav" role="button" data-m="1">›</span></div>
+  <div class="wk"><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span></div>
+  <div id="grid"></div>
+  <div class="sel" id="sel">Pick a start date</div>
+</div>
+<script>
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const TODAY = { y: 2026, m: 9, d: 10 };
+const BUSY = { '2026-9': [2, 7, 14, 22, 23], '2026-10': [5, 11, 19], '2026-8': [3, 18, 30] };
+let y = TODAY.y, m = TODAY.m, a = null, b = null;
+const key = (yy, mm, dd) => yy * 10000 + mm * 100 + dd;
+function fmt(k) { const dd = k % 100, mm = Math.floor(k / 100) % 100; return dd + ' ' + MONTHS[mm].slice(0, 3); }
+function render() {
+  document.getElementById('title').textContent = MONTHS[m] + ' ' + y;
+  const first = new Date(Date.UTC(y, m, 1)).getUTCDay(), lead = (first + 6) % 7;
+  const days = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(), prevDays = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const busy = BUSY[y + '-' + m] || [];
+  let html = '', cells = [];
+  for (let i = 0; i < 42; i++) {
+    const n = i - lead + 1;
+    let dd = n, mm = m, yy = y, out = false;
+    if (n < 1) { dd = prevDays + n; mm = m - 1; out = true; if (mm < 0) { mm = 11; yy--; } }
+    else if (n > days) { dd = n - days; mm = m + 1; out = true; if (mm > 11) { mm = 0; yy++; } }
+    const k = key(yy, mm, dd);
+    const cls = ['d'];
+    if (out) cls.push('out');
+    if (yy === TODAY.y && mm === TODAY.m && dd === TODAY.d) cls.push('today');
+    if (a !== null && k === a) cls.push('a');
+    if (b !== null && k === b) cls.push('b');
+    if (a !== null && b !== null && k > a && k < b) cls.push('in');
+    const dot = !out && busy.includes(dd);
+    if (dot) cls.push('dot');
+    cells.push(`<div class="${cls.join(' ')}" data-k="${k}" role="button"><span>${dd}${dot ? '<i class="m"></i>' : ''}</span></div>`);
+  }
+  for (let r = 0; r < 6; r++) html += '<div class="w">' + cells.slice(r * 7, r * 7 + 7).join('') + '</div>';
+  document.getElementById('grid').innerHTML = html;
+  const sel = document.getElementById('sel');
+  sel.textContent = a === null ? 'Pick a start date' : b === null ? fmt(a) + ' → pick an end date' : fmt(a) + ' – ' + fmt(b) + ' · ' + (daysBetween(a, b) + 1) + ' days';
+}
+function toDate(k) { return Date.UTC(Math.floor(k / 10000), Math.floor(k / 100) % 100, k % 100); }
+function daysBetween(k1, k2) { return Math.round((toDate(k2) - toDate(k1)) / 86400000); }
+document.querySelector('.card').addEventListener('click', e => {
+  const nav = e.target.closest('[data-m]'), d = e.target.closest('[data-k]');
+  if (nav) { m += Number(nav.dataset.m); if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } }
+  else if (d) {
+    const k = Number(d.dataset.k);
+    if (a === null || b !== null) { a = k; b = null; }
+    else if (k < a) { b = a; a = k; }
+    else b = k;
+  } else return;
+  render();
+});
+render();
+</script>

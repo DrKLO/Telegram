@@ -29,6 +29,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -61,7 +62,7 @@ public class LocationCell extends FrameLayout {
         nameTextView.setScaleProperty(.6f);
         nameTextView.setTextSize(AndroidUtilities.dp(16));
         nameTextView.setEllipsizeByGradient(true);
-        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         nameTextView.getDrawable().setOverrideFullWidth(AndroidUtilities.displaySize.x);
@@ -73,7 +74,7 @@ public class LocationCell extends FrameLayout {
         addressTextView.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         addressTextView.setTextSize(AndroidUtilities.dp(14));
         addressTextView.setEllipsizeByGradient(true);
-        addressTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+        ThemeBind.textColor(addressTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         addressTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(addressTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), (LocaleController.isRTL ? 16 : 73), 35, (LocaleController.isRTL ? 73 : 16), 0));
 
@@ -157,9 +158,10 @@ public class LocationCell extends FrameLayout {
         }
         int color = getColorForIndex(pos);
         if (location != null && location.icon != null) {
-            if ("pin".equals(location.icon) || location.icon.startsWith("emoji")) {
-                Drawable drawable = getResources().getDrawable(R.drawable.pin).mutate();
-                drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            if ("pin".equals(location.icon) || "city".equals(location.icon) || "country".equals(location.icon) || location.icon.startsWith("emoji")) {
+                final int iconRes = "city".equals(location.icon) ? R.drawable.location_city : "country".equals(location.icon) ? R.drawable.location_country : R.drawable.pin;
+                Drawable drawable = getResources().getDrawable(iconRes).mutate();
+                ThemeBind.drawableColorFilter(this, drawable, Theme.key_location_sendLocationIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 CombinedDrawable combinedDrawable = new CombinedDrawable(Theme.createCircleDrawable(AndroidUtilities.dp(42), 0), drawable);
                 combinedDrawable.setCustomSize(AndroidUtilities.dp(42), AndroidUtilities.dp(42));
                 combinedDrawable.setIconSize(AndroidUtilities.dp(24), AndroidUtilities.dp(24));

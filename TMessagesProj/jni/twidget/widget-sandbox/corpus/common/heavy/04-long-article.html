@@ -1,0 +1,75 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: text stress — a ~900-word article with headings, paragraphs, lists, a pull quote and a code block: pure inline layout and glyph measurement, no script
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .art { font-size: 15px; line-height: 1.5; }
+  .art h1 { font-size: 24px; line-height: 1.15; margin: 4px 0 6px 0; font-weight: 800; }
+  .art h2 { font-size: 18px; margin: 18px 0 6px 0; font-weight: 800; }
+  .art h3 { font-size: 15px; margin: 14px 0 4px 0; font-weight: 700; color: var(--muted); text-transform: uppercase; font-size: 12px; }
+  .art p { margin: 0 0 10px 0; }
+  .art ul, .art ol { margin: 0 0 10px 0; padding-left: 22px; }
+  .art li { margin: 3px 0; }
+  .art .lead { font-size: 16px; color: var(--muted); }
+  .art .quote { margin: 12px 0; padding: 10px 14px; border-left: 4px solid var(--blue); background-color: var(--fill); font-size: 16px; font-weight: 600; border-radius: 0 10px 10px 0; }
+  .art .quote span { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .art pre { margin: 0 0 10px 0; padding: 10px 12px; border-radius: 10px; background-color: #0f1117; color: #d6deeb; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: break-word; overflow: hidden; }
+  .art code { font-family: ui-monospace, monospace; font-size: 13px; background-color: var(--fill); padding: 1px 4px; border-radius: 4px; }
+  .art .meta { display: flex; align-items: center; margin-bottom: 12px; }
+  .art .av { width: 32px; height: 32px; border-radius: 16px; margin-right: 8px; background: linear-gradient(135deg, #5b8def, #8f5bff); }
+  .art .tags { display: flex; flex-wrap: wrap; margin-top: 12px; }
+  .art .tag { padding: 3px 9px; margin: 0 6px 6px 0; border-radius: 8px; font-size: 12px; font-weight: 600; background-color: var(--fill); }
+  .art hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .art b { font-weight: 700; }
+</style>
+<div class="card art">
+  <div class="tiny muted" style="text-transform: uppercase; font-weight: 700">Engineering notes</div>
+  <h1>One widget, three renderers: what a fair comparison needs</h1>
+  <div class="meta"><div class="av"></div><div><div class="bold" style="font-size: 13px">Leo Marin</div><div class="tiny muted">10 October 2026 · 6 min read</div></div></div>
+  <p class="lead">A system web view, a Rust layout engine and a C++ one all draw the same card. The numbers they produce are only comparable when the card is one they all draw the same way.</p>
+  <h2>The problem with the old corpora</h2>
+  <p>Our generated corpus was written for a browser. Seventeen of its forty widgets use <code>display: grid</code>, several draw their charts with inline SVG, one flips a flashcard with a 3D transform, and almost all of them lean on <code>box-shadow</code> for depth. Loading those files on litehtml or Blitz gives a time, but not a comparable one: an engine that skips the SVG does less work, an engine that collapses the grid into a column does more, and neither picture is what the user would see.</p>
+  <p>The Telegram demos are closer, since they were written against litehtml in the first place, but they also depend on a host stylesheet, an action prelude and a handful of image schemes that mean nothing outside that app.</p>
+  <div class="quote">A benchmark where one contestant quietly skips half the course is not a benchmark.<span>From the review of the first Blitz numbers</span></div>
+  <h2>What the common profile keeps</h2>
+  <p>The intersection is larger than it sounds. Every engine in the comparison lays out <b>block and inline</b> content, <b>flexbox</b> with wrapping and growth, <b>tables</b> with collapsed borders, lists, borders with radii, solid and gradient backgrounds, <code>var()</code> custom properties, <code>overflow: hidden</code>, and relative or absolute positioning. The theme switches through a media query, which the validator rewrites for every renderer.</p>
+  <h3>Kept out on purpose</h3>
+  <ul>
+    <li><b>Grid</b>, because litehtml has none; every grid in this corpus is a wrapping flex row or a table.</li>
+    <li><b>Inline SVG and canvas</b>; charts are bars made of divs, icons are letters in coloured circles.</li>
+    <li><b>Transforms, shadows, opacity, transitions and keyframes</b>; motion is JavaScript writing widths and text at 60 Hz, which is also the honest way to measure update cost.</li>
+    <li><b>Form controls</b>; neither native engine draws a value or a slider, so buttons are styled spans and toggles are two-state chips.</li>
+    <li><b>Emoji and symbol fonts</b>; Blitz on iOS and the web build fall back to tofu, so the text is ASCII plus a few punctuation marks every font carries.</li>
+    <li><b>Floats, counters, pseudo-element content, <code>gap</code>, <code>calc()</code>, <code>text-overflow</code></b>; some are missing on one side, some are untested, none is worth the risk.</li>
+  </ul>
+  <h2>What the files exercise</h2>
+  <p>Four groups, each aimed at a different cost. The <b>cards</b> are static layouts of realistic density: a profile, a receipt, a timetable, a dashboard. The <b>interactive</b> files change state on a tap: a tab swap, a poll bar growing, a calendar rebuilt from a string. The <b>live</b> files keep going without input: a clock at 1 Hz, bars filling with <code>requestAnimationFrame</code>, a ticker at 2 Hz, a log appending lines. The <b>heavy</b> files are the ones that make a layout engine sweat: a 60-row table, 300 chips, a deep tree, this article.</p>
+  <ol>
+    <li>Start-up: from host creation to the first frame with content.</li>
+    <li>A text-only update: the clock, the counters, the ticker.</li>
+    <li>A structural update: a rebuilt list, a swapped panel, an appended log line.</li>
+    <li>A full relayout under load: sorting the long table, expanding the whole tree.</li>
+  </ol>
+  <p>For litehtml every update is the fourth kind, because the engine rebuilds the document from a string; that is the real cost of its model and the corpus should make it visible rather than hide it.</p>
+  <h3>Reading the results</h3>
+  <pre>renderer   first paint   text update   rebuild
+webview        121 ms          n/a         n/a
+blitz           82 ms          ?            ?
+litehtml       107 ms          ?            ?</pre>
+  <p>The first column is from the Android bench on the old corpus; the other two are what this corpus is for. Judge the pictures by eye, then trust the timings.</p>
+  <hr>
+  <p class="small muted">Numbers above are illustrative placeholders. The measured tables live next to the bench scripts.</p>
+  <div class="tags"><span class="tag">rendering</span><span class="tag">benchmarks</span><span class="tag">litehtml</span><span class="tag">blitz</span><span class="tag">webview</span></div>
+</div>

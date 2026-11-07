@@ -135,6 +135,7 @@ public class PollAttachedMediaFile extends PollAttachedMedia {
 
         fileInfoDrawable.titlePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         fileInfoDrawable.subtitlePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        fileInfoDrawable.themedColors = true;
 
         fileInfoDrawable.radialProgress = new RadialProgress2(view);
         fileInfoDrawable.radialProgress.setCircleRadius(dp(21));
@@ -180,6 +181,7 @@ public class PollAttachedMediaFile extends PollAttachedMedia {
         private final TextPaint titlePaint;
         private final TextPaint subtitlePaint;
         public RadialProgress2 radialProgress;
+        private boolean themedColors;
 
         private CharSequence title = "";
         private CharSequence subtitle = "";
@@ -269,6 +271,14 @@ public class PollAttachedMediaFile extends PollAttachedMedia {
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            if (themedColors) {
+                // follow theme changes: same as the colors set in createMessagePreviewDrawable, keeping the drawable alpha
+                final int titleAlpha = titlePaint.getAlpha(), subtitleAlpha = subtitlePaint.getAlpha();
+                titlePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                titlePaint.setAlpha(titleAlpha);
+                subtitlePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                subtitlePaint.setAlpha(subtitleAlpha);
+            }
             ensureLayout();
 
             if (titleLayout == null || subtitleLayout == null) {

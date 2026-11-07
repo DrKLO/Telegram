@@ -30,7 +30,7 @@ import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 
-public class RichEditText extends EditTextCaption {
+public class RichEditText extends EditTextCaption implements Theme.Colorable {
 
     public interface Listener {
         default void onEnterPressed(RichEditText editText) {}
@@ -86,6 +86,7 @@ public class RichEditText extends EditTextCaption {
     public void setAccentHint(boolean enable) {
         if (accentHint == enable) return;
         accentHint = enable;
+        forceHintColor = true;
         updateColors();
     }
 
@@ -217,6 +218,8 @@ public class RichEditText extends EditTextCaption {
             }
         });
 
+        customTextColor = false;
+        forceHintColor = true;
         updateColors();
     }
 
@@ -333,17 +336,70 @@ public class RichEditText extends EditTextCaption {
     private int textColorKey = Theme.key_windowBackgroundWhiteBlackText;
     public void setTextColorKey(int textColorKey) {
         this.textColorKey = textColorKey;
+        customTextColor = false;
         updateColors();
     }
 
+    // text color set by callers (setTextColor from outside updateColors) is kept on theme updates;
+    // TextView.setHintTextColor(int) is final: the hint is refreshed only while it still is the last color applied here
+    private boolean customTextColor, forceHintColor, applyingColors;
+    private int lastAppliedHintColor;
+
+    @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        if (!applyingColors) {
+            customTextColor = true;
+        }
+    }
+
+    @Override
     public void updateColors() {
-        setTextColor(Theme.getColor(textColorKey, resourcesProvider));
-        setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        setHintTextColor(accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+        applyingColors = true;
+        try {
+            if (!customTextColor) {
+                final int textColor = Theme.getColor(textColorKey, resourcesProvider);
+                if (getCurrentTextColor() != textColor) {
+                    setTextColor(textColor);
+                }
+            }
+            if (forceHintColor || getCurrentHintTextColor() == lastAppliedHintColor) {
+                forceHintColor = false;
+                lastAppliedHintColor = accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
+                if (getCurrentHintTextColor() != lastAppliedHintColor) {
+                    setHintTextColor(lastAppliedHintColor);
+                }
+            }
+        } finally {
+            applyingColors = false;
+        }
+        final int linkColor = Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
+        if (getLinkTextColors() == null || getLinkTextColors().getDefaultColor() != linkColor) {
+            setLinkTextColor(linkColor);
+        }
         setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         setHandlesColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider));
-        bindInlineButtons();
+        // re-creating the inline button renderers is heavy: not on every frame of an animated theme switch,
+        // the update after the animation re-binds them
+        if (!Theme.isAnimatingColor()) {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            bindInlineButtons();
+        } else {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            postDelayed(rebindInlineButtonsWhenIdle, 100);
+        }
     }
+
+    private final Runnable rebindInlineButtonsWhenIdle = new Runnable() {
+        @Override
+        public void run() {
+            if (Theme.isAnimatingColor()) {
+                postDelayed(this, 100);
+            } else {
+                bindInlineButtons();
+            }
+        }
+    };
 
     public void setLocked(boolean locked) {
         if (this.locked == locked) return;

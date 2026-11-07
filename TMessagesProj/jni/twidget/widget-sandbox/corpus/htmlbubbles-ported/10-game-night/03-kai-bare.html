@@ -1,0 +1,241 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 10-game-night.chat, message 3
+  author: kai 19:20 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .grow { flex-grow: 1; } .center { text-align: center; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  button { font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; font-family: inherit; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+
+  .qz { width: 380px; max-width: 100%; }
+  .qz .hd { display: flex; align-items: center; }
+  .qz .hd svg { margin-right: 8px; flex-shrink: 0; }
+  .qz .segs { display: flex; margin: 10px 0 12px 0; }
+  .qz .segs div { height: 5px; border-radius: 3px; flex-grow: 1; flex-basis: 0; background-color: rgba(127,127,127,0.2); transition: background-color 450ms cubic-bezier(.33,1,.68,1); }
+  .qz .segs div.cur { background-color: #ff9500; }
+  .qz .segs div.ok { background-color: #34c759; }
+  .qz .segs div.bad { background-color: #ff3b30; }
+  .qz .qn { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ff9500; }
+  .qz .qt { font-size: 16px; font-weight: 700; margin: 3px 0 10px 0; line-height: 1.3; }
+  .qz .opts { overflow: hidden; }
+  .qz .opt { display: flex; align-items: center; padding: 7px 10px; margin-bottom: 7px; border-radius: 11px; border: 1px solid rgba(127,127,127,0.28); font-size: 14px;
+    transition: background-color 420ms cubic-bezier(.33,1,.68,1), border-color 420ms cubic-bezier(.33,1,.68,1); }
+  .qz .opt.live { cursor: pointer; }
+  .qz .opt.live:hover { background-color: rgba(255,149,0,0.09); border-color: rgba(255,149,0,0.75); }
+  .qz .opts.pre .opt { margin-left: 36px; margin-right: -36px; }
+  .qz .opts.in .opt { animation: opt-in 350ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes opt-in { from { margin-left: 36px; margin-right: -36px; } to { margin-left: 0; margin-right: 0; } }
+  .qz .opt.right { background-color: rgba(52,199,89,0.18); border-color: #34c759; }
+  .qz .opt.wrong { background-color: rgba(255,59,48,0.15); border-color: #ff3b30; animation: shake 520ms linear both; }
+  @keyframes shake { 0% { transform: none; } 8.3% { transform: translateX(8.3px); } 25% { transform: translateX(-6.8px); } 41.7% { transform: translateX(5.3px); } 58.3% { transform: translateX(-3.8px); } 75% { transform: translateX(2.3px); } 91.7% { transform: translateX(-0.8px); } 100% { transform: none; } }
+  .qz .lt { width: 24px; height: 24px; line-height: 24px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 800; margin-right: 10px; background-color: rgba(127,127,127,0.16); transition: background-color 420ms cubic-bezier(.33,1,.68,1); }
+  .qz .opt.right .lt { background-color: #34c759; color: #ffffff; }
+  .qz .opt.wrong .lt { background-color: #ff3b30; color: #ffffff; }
+  .qz .why { padding: 9px 11px; border-radius: 10px; font-size: 13px; background-color: rgba(255,149,0,0.12); }
+  .qz .foot { display: flex; align-items: center; margin-top: 10px; }
+  .qz .ring { position: relative; width: 120px; height: 120px; margin: 4px auto 6px auto; }
+  .qz .ring .arc { transition: stroke-dasharray 950ms cubic-bezier(.33,1,.68,1); }
+  .qz .ring .num { position: absolute; left: 0; top: 36px; width: 120px; text-align: center; font-size: 30px; font-weight: 800; line-height: 34px; }
+  .qz .ring .of { position: absolute; left: 0; top: 70px; width: 120px; text-align: center; font-size: 11px; color: #8e8e93; }
+  .qz .rv { display: flex; align-items: flex-start; padding: 7px 0; border-top: 1px solid rgba(127,127,127,0.16); font-size: 13px; }
+  .qz .rv .ic { width: 22px; font-weight: 800; }
+  .qz #score.pop { animation: score-pop 480ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes score-pop { from { font-size: 18.7px; } to { font-size: 11px; } }
+  .qz [hidden] { display: none !important; }
+  .fx-fade { animation: fx-fade 220ms ease-out; }
+  .fx-pop { animation: fx-pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  .fx-slide-left { animation: fx-slide-left 260ms cubic-bezier(.33,1,.68,1); }
+  .fx-slide-right { animation: fx-slide-right 260ms cubic-bezier(.33,1,.68,1); }
+  @keyframes fx-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fx-pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-left { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-right { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+</style>
+<div class="card pad qz" id="root">
+  <div class="hd"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#ff9500"/><text x="10" y="14.6" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" font-family="system-ui, sans-serif">?</text></svg><b class="grow" style="font-size: 16px">Nerd quiz: rendering edition</b>
+    <span class="badge" id="score">★ 0</span></div>
+  <div id="qview">
+    <div class="segs" id="segs"><div></div><div></div><div></div></div>
+    <div class="qn" id="qn"></div>
+    <div class="qt" id="qt"></div>
+    <div class="opts pre" id="opts"></div>
+    <div class="why" id="why" hidden></div>
+    <div class="foot"><span class="small muted grow" id="qfoot"></span><button class="primary" id="next" hidden>Next →</button></div>
+  </div>
+  <div id="rview" hidden>
+    <div class="ring"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(127,127,127,0.2)" stroke-width="12"/><circle class="arc" id="arc" cx="60" cy="60" r="50" fill="none" stroke="#ff9500" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 400" transform="rotate(-90 60 60)"/></svg>
+      <div class="num" id="num">0/3</div><div class="of">correct</div></div>
+    <div class="center" id="verdict" style="font-size: 15px; font-weight: 700; margin-bottom: 8px"></div>
+    <div id="rows"></div>
+    <div class="foot"><span class="small muted grow" id="rfoot"></span><button class="primary" id="restart">↻ Play again</button></div>
+  </div>
+</div>
+<script>
+const QS = [
+  { q: 'Which HTML5 parser does litehtml bundle?', opts: ['html5ever', 'gumbo', 'libxml2', 'Lexbor'], a: 1,
+    why: "Google's <b>gumbo</b>. It lives in <code>vendor/litehtml/src/gumbo</code>." },
+  { q: 'What does this app use to draw text?', opts: ['WebKit', 'Skia', 'CoreText', 'FreeType'], a: 2,
+    why: 'Every word becomes a <code>CTLine</code>, which also gives automatic emoji fallback.' },
+  { q: 'Which of these does litehtml NOT support?', opts: ['Flexbox', 'Conic gradients', 'CSS counters', 'CSS grid'], a: 3,
+    why: 'No grid (yet). Flexbox, all three gradient types and counters all work. You have seen them in this app.' },
+];
+const LETTERS = 'ABCD';
+const VERDICT = ['Try again 🙈', 'Read the source, Luke 📖', 'Solid! The grid one is a trap 😏', 'Rendering nerd 🤓 Zoe-level'];
+let phase = 'q', qi = 0, picked = null, answers = [], score = 0, streak = 0, order = [[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]], round = 0;
+let ringRaf = 0;
+
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const outCubic = t => 1 - Math.pow(1 - t, 3);
+const $ = id => document.getElementById(id);
+const root = $('root');
+function fxRoot(kind) {
+  root.classList.remove('fx-fade', 'fx-pop', 'fx-slide-left', 'fx-slide-right');
+  void root.offsetWidth;
+  root.classList.add('fx-' + kind);
+}
+
+function shuffle(a) {
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+  return b;
+}
+
+function syncHeader(pop) {
+  const s = $('score');
+  s.className = 'badge' + (score ? ' green' : '');
+  s.textContent = `★ ${score}`;
+  if (pop) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); }
+}
+
+function syncSegments() {
+  const segs = $('segs').children;
+  QS.forEach((Q, i) => {
+    const el = segs[i];
+    el.style.marginRight = i < QS.length - 1 ? '4px' : '0';
+    el.className = answers[i] !== undefined ? (answers[i] === Q.a ? 'ok' : 'bad') : i === qi ? 'cur' : '';
+  });
+}
+
+function renderOptions(entered) {
+  const Q = QS[qi], done = picked !== null;
+  const opts = $('opts');
+  opts.className = 'opts ' + (entered ? 'in' : 'pre');
+  opts.innerHTML = order[qi].map((j, k) => {
+    let cls = 'opt fg', mark = '';
+    if (!done) cls += ' live';
+    else if (j === Q.a) { cls += ' right'; mark = '<b class="t-green">✓</b>'; }
+    else if (j === picked) { cls += ' wrong'; mark = '<b class="t-red">✗</b>'; }
+    else cls = 'opt muted';
+    return `<div class="${cls}" data-j="${j}" style="animation-delay: ${k * 84}ms"><span class="lt">${LETTERS[k]}</span><span class="grow">${esc(Q.opts[j])}</span>${mark}</div>`;
+  }).join('');
+}
+
+function syncQuestion() {
+  const Q = QS[qi], done = picked !== null, ok = picked === Q.a, last = qi === QS.length - 1;
+  syncSegments();
+  $('qn').textContent = `Question ${qi + 1} of ${QS.length}`;
+  $('qt').textContent = Q.q;
+  const why = $('why');
+  why.hidden = !done;
+  if (done) why.innerHTML = `<b class="${ok ? 't-green' : 't-red'}">${ok ? 'Correct! +1' : `Not quite. It's ${LETTERS[order[qi].indexOf(Q.a)]}, ${esc(Q.opts[Q.a])}`}</b><div style="margin-top: 3px">💡 ${Q.why}</div>`;
+  $('qfoot').textContent = streak > 1 ? `🔥 ${streak} in a row` : done ? `Score ${score}/${qi + 1}` : 'Pick an answer';
+  const next = $('next');
+  next.hidden = !done;
+  next.textContent = last ? 'See results' : 'Next →';
+}
+
+function enter() {
+  renderOptions(true);
+  syncQuestion();
+}
+setTimeout(enter, 250);
+
+function showResults() {
+  $('qview').hidden = true;
+  $('rview').hidden = false;
+  $('rows').innerHTML = QS.map((Q, i) => {
+    const ok = answers[i] === Q.a;
+    return `<div class="rv"><span class="ic ${ok ? 't-green' : 't-red'}">${ok ? '✓' : '✗'}</span><div class="grow">${esc(Q.q)}
+      <div class="tiny muted">${ok ? 'You said' : `You said ${esc(Q.opts[answers[i]])} ·`} <b>${esc(Q.opts[Q.a])}</b></div></div></div>`;
+  }).join('');
+  $('verdict').textContent = VERDICT[score];
+  $('rfoot').textContent = round ? `Round ${round + 1} · answers shuffled` : 'Answers get shuffled next round';
+  // ring: 0 → score/3 over 950 ms, outCubic (the arc via a CSS transition, the counter via rAF with the same easing)
+  const p = score / QS.length, arc = $('arc'), target = `${(p * 314.16).toFixed(1)} 400`;
+  arc.style.transition = 'none';
+  arc.style.strokeDasharray = '0 400';
+  arc.setAttribute('stroke', p >= 0.99 ? '#34c759' : '#ff9500');
+  $('num').textContent = `0/${QS.length}`;
+  cancelAnimationFrame(ringRaf);
+  const t0 = performance.now();
+  let armed = false;
+  ringRaf = requestAnimationFrame(function tick(now) {
+    if (!armed) { armed = true; arc.style.transition = ''; arc.style.strokeDasharray = target; }
+    const t = Math.min(1, (now - t0) / 950);
+    $('num').textContent = `${Math.round(outCubic(t) * p * QS.length)}/${QS.length}`;
+    if (t < 1) ringRaf = requestAnimationFrame(tick);
+  });
+}
+
+$('opts').addEventListener('click', e => {
+  const t = e.target.closest('.opt.live');
+  if (!t || phase !== 'q' || picked !== null) return;
+  const Q = QS[qi];
+  picked = Number(t.dataset.j);
+  answers[qi] = picked;
+  const ok = picked === Q.a;
+  if (ok) { score++; streak++; } else streak = 0;
+  fxRoot('fade');
+  renderOptions(true);
+  // the rows are already in place: no re-entry animation, only the colour transition and the shake
+  for (const el of $('opts').children) el.style.animation = 'none';
+  const wrong = $('opts').querySelector('.opt.wrong');
+  if (wrong) wrong.style.animation = '';
+  syncQuestion();
+  syncHeader(ok);
+});
+
+$('next').addEventListener('click', () => {
+  if (phase !== 'q' || picked === null) return;
+  if (qi + 1 < QS.length) {
+    fxRoot('slide-left');
+    qi++; picked = null;
+    enter();
+  } else {
+    fxRoot('pop');
+    phase = 'done';
+    showResults();
+  }
+});
+
+$('restart').addEventListener('click', () => {
+  fxRoot('slide-right');
+  phase = 'q'; qi = 0; picked = null; answers = []; score = 0; streak = 0; round++;
+  order = QS.map(() => shuffle([0, 1, 2, 3]));
+  $('rview').hidden = true;
+  $('qview').hidden = false;
+  syncHeader(false);
+  enter();
+});
+
+renderOptions(false);
+syncQuestion();
+syncHeader(false);
+</script>

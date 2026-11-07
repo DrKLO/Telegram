@@ -88,6 +88,8 @@ public class ConnectionsManager extends BaseController {
     public final static int ConnectionTypeDownload2 = ConnectionTypeDownload | (1 << 16);
     // Keep in sync with DOWNLOAD_CONNECTIONS_COUNT in tgnet/Defines.h.
     public final static int DownloadConnectionsCount = 8;
+    // Keep in sync with UPLOAD_CONNECTIONS_COUNT in tgnet/Defines.h.
+    public final static int UploadConnectionsCountPremium = 8;
 
     public final static int FileTypePhoto = 0x01000000;
     public final static int FileTypeVideo = 0x02000000;

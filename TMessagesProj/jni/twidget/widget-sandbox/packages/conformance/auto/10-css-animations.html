@@ -1,0 +1,89 @@
+<!doctype html>
+<html data-test="auto/10-css-animations">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: CSS animations and transitions</title>
+<!-- conformance {"title":"CSS animations (@keyframes, timing, direction, iteration, fill-mode, play-state), transitions (incl. negative delay), steps() easing, animation and transition events"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages>:nth-child(n+5){top:76px}.conf-stages{height:144px}</style><script>var T=function(){var p=document,w=p.documentElement,y=typeof TelegramWidget!="undefined",D=window.__conformanceMode||(y?"sandbox":"native"),c=[],k={},f=[];var O,l,d,u,A,g,x,h,T=t=>typeof t=="string"?p.querySelector(t):t,M=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),q=()=>{h=h||setTimeout(b,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),a=k[t+"|"+e]||(k[t+"|"+e]=c[c.length]=[t,e]);return a[2]=s,a[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),q(),s}function S(t,e,n,o){if(o&&o.sandboxOnly&&!y)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>S(t,e,[n,o],r);var B=(t,e,n,o,r,s)=>S(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+M(n)+", want "+M(o)+" ±"+r],s);function E(t,e,n){x=()=>{for(let s of c)s[2]=="pending"&&(s[2]="fail",s[3]+=" (timed out)");u=1,b()};let o=(s,a)=>{r.done||(r.done=i(t,e,s,a,n))},r={done:n&&n.sandboxOnly&&!y,pass:s=>o(!0,s),fail:s=>o(!1,s),skip:s=>o(null,s),result:(s,a)=>o(!!s,a)};return i(t,e,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}var I=(t,e,n)=>getComputedStyle(T(t),n).getPropertyValue(e).trim();function F(t){let e=T(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var J=t=>{f.push(t)};var N=()=>{},_=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function b(){h=0,d&&!u&&N();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of c)t[o[2]]++;let e=d&&!f.length,n=u||e&&!t.pending?"done":e&&A?"awaiting":"running";u=n=="done",w.setAttribute("data-conformance",JSON.stringify({v:1,id:w.getAttribute("data-test"),mode:D,status:n,n:t,checks:c,targets:O,stages:l})),m&&m(n,t)}var m;function j(){m=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);p.getElementById("conf-list").textContent=[n.join(" · ")].concat(c.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function C(){if(l||(l={},[].forEach.call(p.querySelectorAll("[data-stage]"),e=>{l[e.getAttribute("data-stage")]=_(e)})),!f.length)return d=1,g&&x&&setTimeout(x,g),q();let t;try{t=f.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(C,t||0)}function v(t){t=t||{},A=t.awaitInput,g=t.awaitInput||t.deadline,b();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}j();return{cs:I,near:B,ok:R,rect:F,run:v,step:J,wait:E}}();</script><!-- /conformance:harness -->
+<style>
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(40px)}}
+@keyframes grow{from{width:10px}to{width:70px}}
+@keyframes tint{from{background:#c33}to{background:#36c}}
+@keyframes short{from{opacity:1}to{opacity:.5}}
+.conf-probes{font:13px/16px sans-serif}
+.box{position:absolute;left:10px;width:20px;height:20px;background:#c33}
+.s-kf{top:20px;animation:slide 10s linear -5s paused}
+.s-alt{top:20px;background:#36c;animation:slide 10s linear -13s 2 alternate paused}
+.s-steps{top:20px;height:20px;background:#3a3;animation:grow 8s steps(4,end) -3s paused}
+.s-tint{left:20px;top:15px;width:40px;height:30px;animation:tint 10s linear -5s paused}
+.s-fill{top:20px;background:#e83;animation:slide .1s linear forwards}
+.s-tr{top:20px;background:#a3a;transition:transform 10000s linear -5000s}
+.s-tr.go{transform:translateX(60px)}
+#p-kf{animation:slide 10s linear -2.5s paused}
+#p-steps{animation:grow 8s steps(4,end) -3s paused;height:4px;background:#3a3}
+#p-ease{animation:grow 10s ease-in -5s paused;height:4px;background:#36c}
+#p-tr{transition:width 10000s linear -2500s;width:10px;height:4px;background:#a3a}
+#p-tr.go{width:110px}
+#ev-anim{animation:short .2s linear 1}
+#ev-iter{animation:short .1s linear 3}
+#ev-tr{transition:opacity .15s linear;opacity:1;width:4px;height:4px}
+#ev-tr.go{opacity:.4}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="keyframes" data-covers="at.keyframes anim.keyframes anim.play-state"><div class="box s-kf"></div></div>
+  <div data-stage="alternate" data-covers="anim.keyframes"><div class="box s-alt"></div></div>
+  <div data-stage="steps" data-covers="anim.easing"><div class="box s-steps"></div></div>
+  <div data-stage="colour" data-covers="anim.keyframes"><div class="box s-tint"></div></div>
+  <div data-stage="fill-forwards" data-covers="anim.keyframes"><div class="box s-fill"></div></div>
+  <div data-stage="transition" data-covers="anim.transition"><div class="box s-tr" id="s-tr"></div></div>
+</div>
+<div class="conf-head">10 · CSS animations and transitions</div>
+<div class="conf-probes">
+  <div style="position:relative;height:30px"><div class="box" id="p-kf" style="left:0;top:0"></div></div>
+  <div id="p-steps"></div><div id="p-ease"></div><div id="p-tr"></div>
+  <div id="ev-anim" style="width:4px;height:4px;background:#c33"></div><div id="ev-iter" style="width:4px;height:4px;background:#c33"></div><div id="ev-tr" style="background:#c33"></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect;
+var tx = function (sel) { var m = /matrix\(([^)]*)\)/.exec(T.cs(sel, 'transform')); return m ? parseFloat(m[1].split(',')[4]) : T.cs(sel, 'transform'); };
+var evStart = T.wait('anim.events', 'animationstart fires');
+var evEnd = T.wait('anim.events', 'animationend fires');
+var evName = T.wait('anim.events', 'animation events carry animationName and elapsedTime');
+var evIter = T.wait('anim.events', 'animationiteration fires twice');
+var evTr = T.wait('anim.events', 'transitionend fires');
+var evProp = T.wait('anim.events', 'transitionend carries propertyName');
+var iters = 0;
+var a = document.getElementById('ev-anim');
+a.addEventListener('animationstart', function (e) { evStart.pass(); });
+a.addEventListener('animationend', function (e) { evEnd.pass(); evName.result(e.animationName === 'short' && Math.abs(e.elapsedTime - 0.2) < 0.01, JSON.stringify(e.animationName) + ' at ' + e.elapsedTime); });
+document.getElementById('ev-iter').addEventListener('animationiteration', function () { if (++iters === 2) evIter.pass('2 iterations'); });
+document.getElementById('ev-tr').addEventListener('transitionend', function (e) { evTr.pass(); evProp.result(e.propertyName === 'opacity', JSON.stringify(e.propertyName)); });
+
+T.step(function () {
+  // Transitions start from a rendered state: change the classes after the first frames.
+  document.getElementById('s-tr').classList.add('go');
+  document.getElementById('p-tr').classList.add('go');
+  document.getElementById('ev-tr').classList.add('go');
+  return 120;
+});
+T.step(function () {
+  T.near('anim.keyframes', 'a paused animation at -2.5s of 10s is at 25%', tx('#p-kf'), 10, 0.5);
+  T.near('anim.play-state', 'paused stays put', tx('#p-kf'), 10, 0.5);
+  T.near('anim.easing', 'steps(4, end) at 37.5% is the first step', R('#p-steps').w, 25, 0.5);
+  T.ok('anim.easing', 'ease-in at 50% lags behind linear', R('#p-ease').w > 10 && R('#p-ease').w < 36, R('#p-ease').w + '');
+  T.near('anim.transition', 'a transition with a negative delay starts part-way', R('#p-tr').w, 35, 1);
+});
+T.run({ deadline: 3000 });
+</script>
+<template data-ref="keyframes"><div style="position:absolute;left:30px;top:20px;width:20px;height:20px;background:#c33"></div></template>
+<template data-ref="alternate"><div style="position:absolute;left:38px;top:20px;width:20px;height:20px;background:#36c"></div></template>
+<template data-ref="steps"><div style="position:absolute;left:10px;top:20px;width:25px;height:20px;background:#3a3"></div></template>
+<template data-ref="fill-forwards"><div style="position:absolute;left:50px;top:20px;width:20px;height:20px;background:#e83"></div></template>
+<template data-ref="transition"><div style="position:absolute;left:40px;top:20px;width:20px;height:20px;background:#a3a"></div></template>
+</body>
+</html>

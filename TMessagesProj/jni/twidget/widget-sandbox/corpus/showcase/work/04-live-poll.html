@@ -1,0 +1,93 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a live poll — other voters trickle in while you watch, the options re-sort with a FLIP animation (transform from the old position), bars and percentages tween, your vote is highlighted, can be changed and is kept locally
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff; --green: #34c759; --red: #ff3b30;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; padding: 16px 18px; }
+  .hd { display: flex; justify-content: space-between; align-items: flex-start; } h3 { margin: 0; font-size: 17px; line-height: 1.3; } .live { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; color: var(--red); letter-spacing: .08em; white-space: nowrap; margin-left: 10px; margin-top: 3px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--red); animation: blink 1.2s ease-in-out infinite; } @keyframes blink { 50% { opacity: .3; } }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .opts { margin-top: 12px; position: relative; }
+  .opt { position: relative; border-radius: 12px; overflow: hidden; border: 1.5px solid var(--border); margin-bottom: 8px; cursor: pointer; background: var(--card); transition: border-color .3s, box-shadow .3s; }
+  .opt.mine { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.15); }
+  .opt.lead .fill { background: light-dark(rgba(52,199,89,.22), rgba(52,199,89,.3)); } .opt.mine .fill { background: light-dark(rgba(0,122,255,.18), rgba(0,122,255,.3)); }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--card2); transition: width .6s cubic-bezier(.22,1,.36,1), background .3s; }
+  .row { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .em { width: 30px; height: 30px; border-radius: 9px; background: var(--card2); display: grid; place-items: center; font-size: 16px; flex-shrink: 0; }
+  .lbl { flex: 1; font-weight: 600; } .lbl small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .pct { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; } .opt.mine .pct { color: var(--blue); } .opt.lead:not(.mine) .pct { color: var(--green); }
+  .ck { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); box-sizing: border-box; flex-shrink: 0; transition: all .3s; display: grid; place-items: center; }
+  .opt.mine .ck { background: var(--blue); border-color: var(--blue); } .opt.mine .ck::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+  .foot { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .foot b { color: var(--fg); font-variant-numeric: tabular-nums; } .foot .ch { color: var(--blue); font-weight: 600; cursor: pointer; }
+  .ticker { font-size: 11px; color: var(--muted); margin-top: 8px; height: 16px; overflow: hidden; } .ticker div { animation: up .4s; } @keyframes up { from { transform: translateY(100%); opacity: 0; } }
+</style>
+<div class="card">
+  <div class="hd"><h3>Which renderer do we ship for the web feed?</h3><span class="live"><i></i>LIVE</span></div>
+  <div class="sub">Engineering · results update as votes arrive · you can change your vote</div>
+  <div class="opts" id="opts"></div>
+  <div class="foot"><span><b id="total">0</b> votes · closes in <b id="cl">14:59</b></span><span class="ch" id="retract" hidden>Retract vote</span></div>
+  <div class="ticker" id="ticker"></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. Your vote is local state in localStorage (kept by the client per message): it is back,
+  // highlighted and counted, when the widget is re-created. The other voters are a seeded demo sequence.
+  const KEY = 'poll-web-renderer';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const OPTS = [
+    { id: 'shadow', em: '🌑', l: 'Shadow DOM, no iframe', s: 'renderer core on a shadow root', v: 9 }, { id: 'iframe', em: '🧱', l: 'Sandboxed iframe per bubble', s: 'opaque origin, per-widget CSP', v: 12 },
+    { id: 'litehtml', em: '🧩', l: 'litehtml on a canvas', s: 'wasm, common profile only', v: 4 }, { id: 'blitz', em: '⚡', l: 'Blitz on a canvas', s: 'wasm, Rust, 3 ms a document', v: 6 },
+  ];
+  let mine = null;
+  const savedVote = store.get(KEY, {}).vote, savedOpt = OPTS.find(o => o.id === savedVote);
+  if (savedOpt) { mine = savedOpt.id; savedOpt.v++; }
+  const opts = document.getElementById('opts');
+  opts.innerHTML = OPTS.map(o => '<div class="opt" data-id="' + o.id + '" role="button"><div class="fill"></div><div class="row"><span class="em">' + o.em + '</span><span class="lbl">' + o.l + '<small>' + o.s + '</small></span><span class="pct">0%</span><span class="ck"></span></div></div>').join('');
+  const els = Object.fromEntries([...opts.children].map(el => [el.dataset.id, el]));
+  const shown = {}; const tweens = {};
+  function tweenPct(id, to) {
+    const el = els[id].querySelector('.pct'), from = shown[id] ?? 0; tweens[id] = to; const t0 = performance.now();
+    (function s() { if (tweens[id] !== to) return; const t = Math.min(1, (performance.now() - t0) / 600), v = from + (to - from) * (1 - Math.pow(1 - t, 3)); shown[id] = v; el.textContent = Math.round(v) + '%'; if (t < 1) requestAnimationFrame(s); })();
+  }
+  function render() {
+    const total = OPTS.reduce((a, o) => a + o.v, 0);
+    const sorted = [...OPTS].sort((a, b) => b.v - a.v);
+    // FLIP: remember positions before the reorder (offsetTop is a layout query; 4 of them per update at a trickle rate is fine)
+    const before = {}; for (const o of OPTS) before[o.id] = els[o.id].offsetTop;
+    sorted.forEach(o => opts.appendChild(els[o.id]));
+    const after = {}; for (const o of OPTS) after[o.id] = els[o.id].offsetTop;
+    for (const o of OPTS) {
+      const el = els[o.id], dy = before[o.id] - after[o.id];
+      if (dy && before[o.id] !== undefined) { el.style.transition = 'none'; el.style.transform = 'translateY(' + dy + 'px)'; requestAnimationFrame(() => { el.style.transition = 'transform .5s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s'; el.style.transform = ''; }); }
+      const p = total ? o.v / total * 100 : 0;
+      el.querySelector('.fill').style.width = p + '%'; tweenPct(o.id, p);
+      el.classList.toggle('mine', o.id === mine); el.classList.toggle('lead', o === sorted[0]);
+    }
+    document.getElementById('total').textContent = total; document.getElementById('retract').hidden = !mine;
+  }
+  opts.addEventListener('click', e => {
+    const el = e.target.closest('.opt'); if (!el) return; const id = el.dataset.id;
+    if (mine === id) return;
+    if (mine) OPTS.find(o => o.id === mine).v--;
+    mine = id; OPTS.find(o => o.id === id).v++; render(); store.set(KEY, { vote: mine });
+  });
+  document.getElementById('retract').addEventListener('click', () => { if (!mine) return; OPTS.find(o => o.id === mine).v--; mine = null; render(); store.set(KEY, { vote: null }); });
+  // Other voters trickle in: a seeded sequence, every 1.5–4 s, for ~2 minutes
+  const NAMES = ['Nino', 'Dato', 'Mira', 'Levan', 'Sasha', 'Tamar', 'Ilya', 'Keti', 'Oleg', 'Ana'];
+  let s = 42; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  let n = 0;
+  (function next() {
+    if (n++ > 40) return;
+    const pick = rnd(); const id = pick < .42 ? 'shadow' : pick < .7 ? 'iframe' : pick < .85 ? 'blitz' : 'litehtml';
+    OPTS.find(o => o.id === id).v++; render();
+    document.getElementById('ticker').innerHTML = '<div>' + NAMES[Math.floor(rnd() * NAMES.length)] + ' voted for ' + OPTS.find(o => o.id === id).l.split(',')[0] + '</div>';
+    setTimeout(next, 1500 + rnd() * 2500);
+  })();
+  let left = 14 * 60 + 59; setInterval(() => { left = Math.max(0, left - 1); document.getElementById('cl').textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'); }, 1000);
+  render();
+</script>

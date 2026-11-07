@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Palette Generator</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111827; --muted: #6b7280; --line: #d1d5db; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .bases { display: flex; gap: 6px; margin-bottom: 8px; }
+  .bases button { flex: 1; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+  .bases button.on { outline: 2px solid var(--fg); outline-offset: 1px; }
+  .modes { display: flex; gap: 4px; margin-bottom: 12px; }
+  .modes button { flex: 1; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; background: transparent; color: inherit; cursor: pointer; }
+  .modes button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .palette { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .swatch { aspect-ratio: 1 / 1.4; border-radius: 10px; display: flex; align-items: flex-end; justify-content: center; padding: 0 0 8px; min-width: 0; cursor: pointer; border: none; }
+  .swatch.sel { outline: 3px solid var(--fg); outline-offset: 2px; }
+  .swatch span { font-size: 10px; font-family: ui-monospace, monospace; background: rgba(255,255,255,.85); color: #111; padding: 2px 4px; border-radius: 4px; }
+  .status { margin-top: 10px; font-size: 13px; color: var(--muted); min-height: 18px; text-align: center; }
+  .css { margin-top: 8px; font-family: ui-monospace, monospace; font-size: 11px; background: rgba(128,128,128,.12); padding: 8px; border-radius: 8px; word-break: break-all; }
+</style>
+</head>
+<body>
+<h2>🎨 Palette Generator</h2>
+<div class="bases" id="bases"></div>
+<div class="modes" id="modes">
+  <button data-m="analogous">Analogous</button><button data-m="mono">Mono</button><button data-m="complementary">Complement</button><button data-m="triadic">Triadic</button>
+</div>
+<div class="palette" id="p"></div>
+<div class="status" id="status">Tap a swatch to save it as your pick</div>
+<div class="css" id="css"></div>
+<script>
+  // No colour picker or <select> in a widget (and no clipboard): the base colour and the harmony
+  // are rows of buttons; the tapped hex code is kept in this message's localStorage.
+  var baseColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b', '#10b981', '#14b8a6', '#64748b'];
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var saved = store.get('palette') || {};
+  var base = baseColors.indexOf(saved.base) >= 0 ? saved.base : baseColors[0];
+  var mode = saved.mode || 'analogous';
+  function hexToHsl(hex) {
+    var r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), h, s, l = (max + min) / 2;
+    if (max === min) h = s = 0; else { var d = max - min; s = l > .5 ? d / (2 - max - min) : d / (max + min); h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; }
+    return [h, s * 100, l * 100];
+  }
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100; var k = function (n) { return (n + h / 30) % 12; }, a = s * Math.min(l, 1 - l);
+    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); };
+    return '#' + [f(0), f(8), f(4)].map(function (x) { return ('0' + Math.round(x * 255).toString(16)).slice(-2); }).join('');
+  }
+  var hexes = [];
+  function generate() {
+    store.set('palette', { base: base, mode: mode, pick: saved.pick });
+    Array.prototype.forEach.call(document.querySelectorAll('#bases button'), function (b) { b.classList.toggle('on', b.getAttribute('data-c') === base); });
+    Array.prototype.forEach.call(document.querySelectorAll('#modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === mode); });
+    var hsl = hexToHsl(base), h = hsl[0], s = hsl[1], l = hsl[2], shades;
+    if (mode === 'analogous') shades = [-40, -20, 0, 20, 40].map(function (d) { return [(h + d + 360) % 360, s, l]; });
+    else if (mode === 'mono') shades = [20, 35, 50, 65, 80].map(function (L) { return [h, s, L]; });
+    else if (mode === 'complementary') shades = [[h, s, l - 15], [h, s, l], [h, s, l + 15], [(h + 180) % 360, s, l], [(h + 180) % 360, s, l + 15]];
+    else shades = [[h, s, l], [(h + 120) % 360, s, l], [(h + 240) % 360, s, l], [h, s, l + 20], [(h + 120) % 360, s, l + 20]];
+    hexes = shades.map(function (c) { return hslToHex(c[0], Math.max(0, Math.min(100, c[1])), Math.max(5, Math.min(95, c[2]))); });
+    document.getElementById('p').innerHTML = hexes.map(function (hex, i) { return '<button class="swatch' + (hex === saved.pick ? ' sel' : '') + '" id="sw-' + i + '" style="background:' + hex + '"><span>' + hex + '</span></button>'; }).join('');
+    document.getElementById('css').textContent = ':root { ' + hexes.map(function (hx, i) { return '--c' + (i + 1) + ': ' + hx + ';'; }).join(' ') + ' }';
+  }
+  function showPick() {
+    document.getElementById('status').textContent = saved.pick ? '★ Your pick: ' + saved.pick : 'Tap a swatch to save it as your pick';
+  }
+  document.getElementById('bases').innerHTML = baseColors.map(function (c) { return '<button data-c="' + c + '" style="background:' + c + '" aria-label="' + c + '"></button>'; }).join('');
+  document.getElementById('bases').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { base = b.getAttribute('data-c'); generate(); } });
+  document.getElementById('modes').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { mode = b.getAttribute('data-m'); generate(); } });
+  document.getElementById('p').addEventListener('click', function (e) {
+    var sw = e.target.closest('.swatch'); if (!sw) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.swatch'), function (x) { x.classList.toggle('sel', x === sw); });
+    saved.pick = hexes[+sw.id.split('-')[1]];
+    store.set('palette', { base: base, mode: mode, pick: saved.pick });
+    showPick();
+  });
+  generate();
+  showPick();
+</script>
+</body>
+</html>

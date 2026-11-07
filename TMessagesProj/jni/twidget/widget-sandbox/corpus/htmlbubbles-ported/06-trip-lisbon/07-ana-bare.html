@@ -1,0 +1,293 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 7
+  author: ana 08:30 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .center { text-align: center; } .right { text-align: right; }
+  .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; text-decoration: none; background-color: rgba(127,127,127,0.16); color: var(--fg); cursor: pointer; }
+  .btn:hover { background-color: rgba(127,127,127,0.28); }
+  .btn.primary { background-color: var(--blue); color: #ffffff; } .btn.primary:hover { background-color: var(--blue-h); }
+  .btn:active { background-color: rgba(127,127,127,0.40); } .btn.primary:active { background-color: var(--blue-h); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  .fav, .rm, .stepper span { cursor: pointer; }
+
+  .ht { width: 380px; max-width: 100%; }
+  .ht .ht-img { position: relative; height: 140px; border-radius: 13px 13px 0 0; background-size: 200% 100%; background-position: 25% 50%; transition: background-position 900ms ease-in-out;
+    background-image: radial-gradient(circle at 50% 78%, #ffe08a 0 7%, rgba(255,224,138,0.55) 12%, rgba(255,224,138,0) 26%), linear-gradient(180deg, #1b1464 0%, #5b2a86 32%, #c74b50 58%, #ff7a3d 76%, #ffb347 100%); }
+  .ht .ht-img::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: linear-gradient(180deg, rgba(20,10,40,0) 0%, rgba(20,10,40,0.45) 100%); }
+  .ht.go .ht-img { background-position: 75% 50%; }
+  .ht .price { position: absolute; z-index: 1; right: 10px; top: 10px; background-color: rgba(0,0,0,0.6); color: #ffffff; font-weight: 700; padding: 3px 10px; border-radius: 12px; font-size: 13px; }
+  .ht .fav { position: absolute; z-index: 1; left: 8px; top: 8px; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 16px; background-color: rgba(0,0,0,0.25); }
+  .ht .fav:hover { background-color: rgba(0,0,0,0.45); }
+  .ht .fav svg { display: block; margin: 6px auto 0 auto; }
+  .ht .fav svg path { fill: none; stroke: #ffffff; stroke-width: 2; }
+  .ht .fav.on svg path { fill: #ff2d55; stroke: #ff2d55; }
+  .ht .fav svg.pop { animation: heart-pop 450ms linear; }
+  @keyframes heart-pop { 0% { transform: scale(.4); } 25% { transform: scale(.89); } 50% { transform: scale(1.053); } 60% { transform: scale(1.059); } 75% { transform: scale(1.038); } 100% { transform: scale(1); } }
+  .ht .stamp { position: absolute; z-index: 1; left: 10px; bottom: 10px; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 800; color: #ffffff; background-color: #34c759; }
+  .ht .stamp.red { background-color: #ff3b30; }
+  .ht .dates { display: flex; border-radius: 10px; border: 1px solid rgba(127,127,127,0.25); margin: 8px 0 10px 0; }
+  .ht .dates > div { flex-grow: 1; flex-basis: 0; padding: 7px 10px; }
+  .ht .dates .dv { border-left: 1px solid rgba(127,127,127,0.25); }
+  .ht .rm { display: flex; align-items: center; padding: 6px 10px; margin-bottom: 5px; border-radius: 10px; border: 2px solid rgba(127,127,127,0.16); }
+  .ht .rm:hover { border-color: rgba(127,127,127,0.36); }
+  .ht .rm.on { border-color: #0a84ff; background-color: rgba(10,132,255,0.07); }
+  .ht .radio { width: 14px; height: 14px; line-height: 14px; border-radius: 9px; border: 2px solid rgba(127,127,127,0.5); margin-right: 10px; text-align: center; font-size: 9px; color: #0a84ff; flex-shrink: 0; }
+  .ht .rm.on .radio { border-color: #0a84ff; }
+  .ht .stepper { display: flex; align-items: center; border-radius: 9px; background-color: rgba(127,127,127,0.13); }
+  .ht .stepper span { width: 30px; height: 28px; line-height: 28px; text-align: center; font-size: 17px; font-weight: 700; border-radius: 9px; }
+  .ht .stepper span:hover { background-color: rgba(127,127,127,0.22); }
+  .ht .stepper span.off { color: rgba(127,127,127,0.45); }
+  .ht .stepper b { width: 24px; text-align: center; font-size: 15px; }
+  .ht .amen { margin-top: 10px; }
+  .ht .amen span { display: inline-block; font-size: 12px; padding: 2px 9px 2px 6px; border-radius: 12px; background-color: rgba(127,127,127,0.12); margin: 0 4px 4px 0; }
+  .ht .amen i { font-style: normal; font-size: 12px; vertical-align: middle; margin-right: 3px; }
+  .ht .book { display: block; margin-top: 6px; padding: 8px 0; font-size: 14px; }
+  .ht .spin { display: inline-block; width: 12px; height: 12px; border-radius: 6px; vertical-align: middle; margin-right: 6px; background: conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, #ffffff 300deg, rgba(255,255,255,0) 300deg); animation: spin 900ms ease-in-out infinite; }
+  @keyframes spin { to { transform: rotate(1080deg); } }
+  .ht .tickbox { height: 58px; display: flex; align-items: center; justify-content: center; }
+  .ht .tick { width: 48px; height: 48px; line-height: 48px; border-radius: 24px; font-size: 26px; background-color: #34c759; color: #ffffff; text-align: center; font-weight: 800; }
+  .ht .tick.pop { animation: tick-pop 650ms linear; }
+  .ht .tick.pop3 { animation: tick-pop3 500ms linear; }
+  @keyframes tick-pop { 0% { transform: scale(.05); } 25% { transform: scale(.82); } 50% { transform: scale(1.09); } 60% { transform: scale(1.1); } 75% { transform: scale(1.06); } 85% { transform: scale(1.03); } 100% { transform: scale(1); } }
+  @keyframes tick-pop3 { 0% { transform: scale(.3); } 25% { transform: scale(.872); } 50% { transform: scale(1.062); } 60% { transform: scale(1.069); } 75% { transform: scale(1.045); } 100% { transform: scale(1); } }
+  .ht .code { font-family: ui-monospace, monospace; font-size: 24px; font-weight: 800; margin-top: 8px; }
+  .ht .sum { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background-color: rgba(127,127,127,0.1); text-align: left; }
+  .ht .sum div { display: flex; justify-content: space-between; padding: 2px 0; font-size: 13px; }
+  .ht button.red { color: #ff3b30; }
+  .ht .meter { height: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.2); }
+  .ht .meter div { height: 4px; border-radius: 2px; background-color: #ff9500; }
+
+  .tr-pop { animation: tr-pop 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 280ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-down { animation: tr-slide-down 280ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-pop { from { opacity: 0; transform: scale(.94); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } }
+  @keyframes tr-slide-down { from { opacity: 0; transform: translateY(-24px); } }
+</style>
+<div class="card ht" id="root">
+  <div class="ht-img">
+    <span class="fav on" id="fav"><svg id="heart" width="20" height="20" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.8-9.3A5.6 5.6 0 0 1 12 6.1a5.6 5.6 0 0 1 9.8 5.6C19.5 16.4 12 21 12 21z"/></svg></span>
+    <span class="price"><span id="p-night">€0</span> / night</span>
+    <span class="stamp" id="stamp" hidden></span>
+  </div>
+
+  <div class="pad" id="v-form">
+    <div class="row"><b class="grow" style="font-size: 17px">Casa do Largo</b><span class="badge orange">2 rooms left</span></div>
+    <div class="small muted"><span class="t-orange">★★★★★</span> 4.8 · 612 reviews · Chiado, 3 min to metro</div>
+    <div class="dates">
+      <div><div class="caps">Check-in</div><b>Thu 9 Oct</b><div class="tiny muted">from 14:00</div></div>
+      <div class="dv"><div class="caps">Check-out</div><b id="checkout">Sun 12 Oct</b><div class="tiny muted">until 11:00</div></div>
+      <div class="dv"><div class="caps">Guests</div><b>3 · 2 rooms</b><div class="tiny muted" id="nights-note">3 nights</div></div>
+    </div>
+    <div class="caps" style="margin-bottom: 5px">Room type</div>
+    <div id="rooms"></div>
+    <div class="row" style="margin-top: 8px">
+      <div class="stepper"><span id="minus" data-step="-1">−</span><b id="nights">3</b><span id="plus" data-step="1">+</span></div>
+      <span class="small muted" style="margin-left: 8px">nights × 2 rooms</span>
+      <div class="grow right"><b style="font-size: 17px" id="total">€0</b><div class="tiny muted"><span id="each">€0</span> each, split 3 ways</div></div>
+    </div>
+    <div class="amen"><span><i>📶</i>Wi-Fi</span><span><i>☕</i>Breakfast</span><span><i>❄️</i>A/C</span><span><i>🌅</i>Rooftop</span><span><i>🐾</i>Pets OK</span></div>
+    <div class="btn primary book center" id="book">Book · €0</div>
+    <div class="center tiny muted" style="margin-top: 5px">Free cancellation until Tue 7 Oct</div>
+  </div>
+
+  <div class="pad center" id="v-done" hidden>
+    <div class="tickbox"><div class="tick" id="tick">✓</div></div>
+    <div style="font-size: 17px; font-weight: 700">You're booked at Casa do Largo</div>
+    <div class="small muted">Ana, Tom and you · <span id="d-room"></span> × 2</div>
+    <div class="code" id="code"></div><div class="tiny muted">Booking code · show it at check-in</div>
+    <div class="sum">
+      <div><span class="muted">Dates</span><b id="d-dates"></b></div>
+      <div><span class="muted">Nights</span><b id="d-nights"></b></div>
+      <div><span class="muted">Total</span><b id="d-total"></b></div>
+      <div><span class="muted">Each</span><b id="d-each"></b></div>
+    </div>
+    <div style="margin-top: 10px"><button id="modify">Modify</button>&nbsp;<button class="red" id="cancel">Cancel booking</button></div>
+  </div>
+
+  <div class="pad" id="v-cancelled" hidden>
+    <div class="row">
+      <svg width="24" height="24" viewBox="0 0 24 24" style="margin-right: 10px; flex-shrink: 0"><circle cx="12" cy="12" r="12" fill="#ff3b30"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <div class="grow"><b>Booking <span id="c-code"></span> cancelled</b><div class="small muted"><span id="c-total"></span> goes back to your card in 3–5 days</div></div></div>
+    <div class="row" style="margin-top: 12px"><div class="grow"><div class="meter"><div id="undo-bar" style="width: 100%"></div></div><div class="tiny muted" style="margin-top: 4px">Changed your mind? Undo within <span id="undo-s">5</span> s</div></div>
+      <button class="primary" id="undo" style="margin-left: 12px">Undo</button></div>
+  </div>
+</div>
+<script>
+const ROOMS = [
+  { name: 'Classic double', sub: '18 m² · quiet courtyard side', price: 142 },
+  { name: 'Superior with balcony', sub: '24 m² · over Largo do Carmo', price: 168 },
+  { name: 'Rooftop suite', sub: '38 m² · private terrace', price: 225 },
+];
+const WD = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];
+const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+let room = 0, nights = 3, fav = true, step = 'form', code = '', undoRun = 0, numRun = 0;
+const shown = { night: 0, total: 0, each: 0 };
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const total = () => ROOMS[room].price * 2 * nights;
+const checkout = () => `${WD[nights % 7]} ${9 + nights} Oct`;
+const eur = n => '€' + Math.round(n).toLocaleString('en-US');
+const rnd = () => ALPHA[Math.floor(Math.random() * ALPHA.length)];
+
+const TR = ['tr-pop', 'tr-slide-right', 'tr-slide-down'];
+function bubble(kind) {
+  if (TR.some(c => root.classList.contains(c))) { root.classList.remove(...TR); void root.offsetWidth; }
+  root.classList.add('tr-' + kind);
+}
+function restart(el, cls) {
+  if (el.classList.contains(cls)) { el.classList.remove(cls); void el.offsetWidth; }
+  el.classList.add(cls);
+}
+root.addEventListener('animationend', e => {
+  if (e.target === root) root.classList.remove(...TR);
+  else if (e.target.classList) e.target.classList.remove('pop', 'pop3');
+});
+
+// --- animated prices (850 ms intro, 450 ms on change) ---
+function showNums() {
+  $('p-night').textContent = eur(shown.night);
+  $('total').textContent = eur(shown.total);
+  $('each').textContent = eur(shown.each);
+  if (step !== 'booking') $('book').textContent = 'Book · ' + eur(shown.total);
+}
+function retarget(ms) {
+  const me = ++numRun, from = Object.assign({}, shown);
+  const to = { night: ROOMS[room].price, total: total(), each: total() / 3 };
+  return animate(ms, p => {
+    if (me !== numRun) return;
+    for (const k in to) shown[k] = lerp(from[k], to[k], p);
+    showNums();
+  }, ease.outCubic);
+}
+
+function renderForm() {
+  $('checkout').textContent = checkout();
+  $('nights-note').textContent = `${nights} night${nights > 1 ? 's' : ''}`;
+  $('nights').textContent = nights;
+  $('minus').classList.toggle('off', nights <= 1);
+  $('plus').classList.toggle('off', nights >= 7);
+  for (const r of $('rooms').children) {
+    const on = Number(r.dataset.room) === room;
+    r.classList.toggle('on', on);
+    r.querySelector('.radio').innerHTML = on ? '●' : '&nbsp;';
+  }
+}
+function renderStep() {
+  $('v-form').hidden = step !== 'form' && step !== 'booking';
+  $('v-done').hidden = step !== 'done';
+  $('v-cancelled').hidden = step !== 'cancelled';
+  const st = $('stamp');
+  st.hidden = step !== 'done' && step !== 'cancelled';
+  st.textContent = step === 'cancelled' ? 'CANCELLED' : 'BOOKED ✓';
+  st.classList.toggle('red', step === 'cancelled');
+  $('book').innerHTML = step === 'booking' ? '<span class="spin"></span>Confirming with the hotel…' : 'Book · ' + eur(shown.total);
+}
+function renderDone() {
+  $('d-room').textContent = ROOMS[room].name;
+  $('d-dates').textContent = `Thu 9 → ${checkout()}`;
+  $('d-nights').textContent = nights;
+  $('d-total').textContent = eur(total());
+  $('d-each').textContent = eur(total() / 3);
+}
+
+$('rooms').innerHTML = ROOMS.map((r, i) => `<div class="rm" data-room="${i}">
+  <span class="radio">&nbsp;</span><div class="grow"><b class="small">${r.name}</b><div class="tiny muted">${r.sub}</div></div><b class="small">€${r.price}</b></div>`).join('');
+renderForm(); renderStep(); showNums();
+setTimeout(() => { retarget(850); root.classList.add('go'); }, 250);
+
+async function book() {
+  if (step !== 'form') return;
+  step = 'booking'; renderStep();
+  await sleep(900);
+  if (step !== 'booking') return;
+  code = 'CDL-' + Array.from({ length: 5 }, rnd).join('');
+  bubble('pop');
+  step = 'done'; renderStep(); renderDone();
+  restart($('tick'), 'pop');
+  const el = $('code');
+  await animate(850, (p, t) => {
+    el.textContent = code.split('').map((ch, i) => ch === '-' || t * (code.length + 2) > i + 2 ? ch : rnd()).join('');
+  }, ease.linear);
+  el.textContent = code;
+}
+
+async function cancel() {
+  if (step !== 'done') return;
+  bubble('slide-down');
+  step = 'cancelled'; renderStep();
+  $('c-code').textContent = code;
+  $('c-total').textContent = eur(total());
+  const me = ++undoRun;
+  await animate(5000, p => {
+    if (me !== undoRun) return;
+    $('undo-bar').style.width = ((1 - p) * 100).toFixed(1) + '%';
+    $('undo-s').textContent = Math.ceil((1 - p) * 5);
+  }, ease.linear);
+  if (me !== undoRun || step !== 'cancelled') return;
+  bubble('slide-right');
+  step = 'form'; code = ''; $('code').textContent = '';
+  renderStep();
+}
+
+$('fav').addEventListener('click', () => {
+  fav = !fav;
+  $('fav').classList.toggle('on', fav);
+  restart($('heart'), 'pop');
+});
+$('rooms').addEventListener('click', e => {
+  const r = e.target.closest('[data-room]');
+  if (!r || step !== 'form') return;
+  room = Number(r.dataset.room); renderForm(); retarget(450);
+});
+root.addEventListener('click', e => {
+  const s = e.target.closest('[data-step]');
+  if (!s || step !== 'form') return;
+  const n = clamp(nights + Number(s.dataset.step), 1, 7);
+  if (n === nights) return;
+  nights = n; renderForm(); retarget(450);
+});
+$('book').addEventListener('click', book);
+$('modify').addEventListener('click', () => { if (step !== 'done') return; bubble('slide-right'); step = 'form'; renderStep(); });
+$('cancel').addEventListener('click', cancel);
+$('undo').addEventListener('click', () => {
+  if (step !== 'cancelled') return;
+  undoRun++;
+  bubble('pop');
+  step = 'done'; $('code').textContent = code; renderStep();
+  restart($('tick'), 'pop3');
+});
+</script>

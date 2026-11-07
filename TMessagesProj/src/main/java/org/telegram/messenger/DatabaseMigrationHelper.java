@@ -1698,8 +1698,42 @@ public class DatabaseMigrationHelper {
             database.executeFast("PRAGMA user_version = 179").stepThis().dispose();
             version = 179;
         }
+        if (version == 179) {
+            database.executeFast("CREATE TABLE widget_state(uid INTEGER, mid INTEGER, local TEXT, PRIMARY KEY(uid, mid));").stepThis().dispose();
+            database.executeFast("CREATE TABLE widget_heights(uid INTEGER, mid INTEGER, width INTEGER, height INTEGER, date INTEGER, PRIMARY KEY(uid, mid, width));").stepThis().dispose();
+            database.executeFast("PRAGMA user_version = 180").stepThis().dispose();
+            version = 180;
+        }
+        if (version == 180) {
+            // Test builds rewrote step 179 in place, so a database at 180 may lack these tables or have the
+            // early widget_state with a height column: bring both to the current schema.
+            if (hasColumn(database, "widget_state", "height")) {
+                database.executeFast("DROP TABLE widget_state").stepThis().dispose();
+            }
+            database.executeFast("CREATE TABLE IF NOT EXISTS widget_state(uid INTEGER, mid INTEGER, local TEXT, PRIMARY KEY(uid, mid));").stepThis().dispose();
+            database.executeFast("CREATE TABLE IF NOT EXISTS widget_heights(uid INTEGER, mid INTEGER, width INTEGER, height INTEGER, date INTEGER, anchor INTEGER default 0, PRIMARY KEY(uid, mid, width));").stepThis().dispose();
+            if (!hasColumn(database, "widget_heights", "anchor")) {
+                database.executeFast("ALTER TABLE widget_heights ADD COLUMN anchor INTEGER default 0").stepThis().dispose();
+            }
+            database.executeFast("PRAGMA user_version = 181").stepThis().dispose();
+            version = 181;
+        }
 
         return version;
+    }
+
+    private static boolean hasColumn(SQLiteDatabase database, String table, String column) throws Exception {
+        SQLiteCursor cursor = database.queryFinalized("PRAGMA table_info(" + table + ")");
+        try {
+            while (cursor.next()) {
+                if (column.equals(cursor.stringValue(1))) {
+                    return true;
+                }
+            }
+            return false;
+        } finally {
+            cursor.dispose();
+        }
     }
 
     private static void executeNoException(SQLiteDatabase database, String query) {

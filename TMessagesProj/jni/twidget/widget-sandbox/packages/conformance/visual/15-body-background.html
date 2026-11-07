@@ -1,0 +1,18 @@
+<!doctype html>
+<html data-test="visual/15-body-background">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: a body background</title>
+<!-- conformance {"title":"A body background without a margin reset fills the whole bubble (root background propagation)","hint":"The whole bubble is dark blue, edge to edge: no strip of the bubble's own colour around the text, in either theme.","bare":true,"themes":["light","dark"],"covers":["css.background.basic","html.el.structure"]} -->
+<!-- conformance:harness --><script>var T=function(){var m=document,g=m.documentElement,A=typeof TelegramWidget!="undefined",T=window.__conformanceMode||(A?"sandbox":"native"),i=[],x={},l=[];var q,s,u,c,b,f,h,d;var w=()=>{d=d||setTimeout(M,0)};function S(t,e,n,r,o){o=o||{};let a=n==null?"skip":n=="pending"?n:(o.xfail?"x":"")+(n?"pass":"fail"),p=x[t+"|"+e]||(x[t+"|"+e]=i[i.length]=[t,e]);return p[2]=a,p[3]=(r?(""+r).slice(0,160):"")+(o.xfail&&a[0]=="x"?" (expected to fail: "+o.xfail+")":""),w(),a}var j=()=>{},C=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function M(){d=0,u&&!c&&j();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let r of i)t[r[2]]++;let e=u&&!l.length,n=c||e&&!t.pending?"done":e&&b?"awaiting":"running";c=n=="done",g.setAttribute("data-conformance",JSON.stringify({v:1,id:g.getAttribute("data-test"),mode:T,status:n,n:t,checks:i,targets:q,stages:s})),y&&y(n,t)}var y;function k(){if(s||(s={},[].forEach.call(m.querySelectorAll("[data-stage]"),e=>{s[e.getAttribute("data-stage")]=C(e)})),!l.length)return u=1,f&&h&&setTimeout(h,f),w();let t;try{t=l.shift()()}catch(e){S("harness","step",!1,e)}setTimeout(k,t||0)}function D(t){t=t||{},b=t.awaitInput,f=t.awaitInput||t.deadline,M();let e=()=>{e=()=>{},setTimeout(k,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}return{run:D}}();</script><!-- /conformance:harness -->
+<style>
+body { background: #2b5278; color: #fff }
+</style>
+</head>
+<body>
+<h3>Dark blue to the edges</h3>
+<p>This widget sets a background on its body and keeps the body's default margin. As in a browser, the body's background paints the whole canvas: the bubble is blue edge to edge, with the text inset by the margin.</p>
+<script>T.run();</script>
+</body>
+</html>

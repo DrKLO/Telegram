@@ -72,6 +72,7 @@ import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.BottomPagesView;
@@ -426,8 +427,8 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
         fragmentView = scrollView;
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.configLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.suggestedLangpack);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.configLoaded);
         ConnectionsManager.getInstance(currentAccount).updateDcSettings();
         LocaleController.getInstance().loadRemoteLanguages(currentAccount);
         checkContinueText();
@@ -470,6 +471,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         destroyed = true;
+        AndroidUtilities.cancelRunOnUIThread(reloadGlTexturesRunnable);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.configLoaded);
         MessagesController.getGlobalMainSettings().edit().putLong("intro_crashed_time", 0).apply();
@@ -587,13 +589,13 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 }
             };
 
-            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(headerTextView, Theme.key_windowBackgroundWhiteBlackText);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setGravity(Gravity.CENTER);
             frameLayout.addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 18, 244, 18, 0));
 
-            messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(messageTextView, Theme.key_windowBackgroundWhiteBlackText);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             messageTextView.setLineSpacing(dpf2(2.33f), 1f);
             messageTextView.setGravity(Gravity.CENTER);
@@ -969,6 +971,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
         startMessagingButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
         darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
         bottomPages.invalidate();
+        glTexturesColor = Theme.getColor(Theme.key_windowBackgroundWhite);
         if (fromTheme) {
             if (eglThread != null) {
                 eglThread.postRunnable(()->{
@@ -989,6 +992,96 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             }
         } else Intro.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+    }
+
+    private int glTexturesColor;
+    private final Runnable reloadGlTexturesRunnable = new Runnable() {
+        @Override
+        public void run() {
+            reloadGlTextures();
+        }
+    };
+
+    // last colors applied by onThemeColorsChanged(): avoids per-frame allocations
+    private int lastButtonColor1, lastButtonColor2, lastLogoColor, lastDarkThemeColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            if (fragmentView == null) {
+                return;
+            }
+            final int buttonColor1 = getThemedColor(Theme.key_featuredStickers_addButton);
+            final int buttonColor2 = getThemedColor(Theme.key_featuredStickers_addButton2);
+            if (startMessagingButtonBackground != null && (buttonColor1 != lastButtonColor1 || buttonColor2 != lastButtonColor2)) {
+                lastButtonColor1 = buttonColor1;
+                lastButtonColor2 = buttonColor2;
+                startMessagingButtonBackground.setColors(new int[]{buttonColor1, buttonColor2});
+            }
+            final int logoColor = Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultTitle), 0.9f);
+            if (logoDrawable != null && logoColor != lastLogoColor) {
+                lastLogoColor = logoColor;
+                logoDrawable.setColorFilter(logoColor, PorterDuff.Mode.MULTIPLY);
+            }
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            if (switchLanguageTextView != null) {
+                switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            }
+            if (startMessagingButton != null) {
+                startMessagingButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+                Theme.setSelectorDrawableColor(startMessagingButton.getBackground(), Theme.getColor(Theme.key_featuredStickers_addButtonPressed), true);
+            }
+            final int darkThemeColor = Theme.getColor(Theme.key_featuredStickers_addButton);
+            if (darkThemeDrawable != null && darkThemeColor != lastDarkThemeColor) {
+                lastDarkThemeColor = darkThemeColor;
+                darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(darkThemeColor, PorterDuff.Mode.SRC_IN));
+            }
+            if (bottomPages != null) {
+                bottomPages.invalidate();
+            }
+            if (viewPager != null) {
+                for (int i = 0; i < viewPager.getChildCount(); i++) {
+                    View ch = viewPager.getChildAt(i);
+                    TextView headerTextView = ch.findViewWithTag(pagerHeaderTag);
+                    if (headerTextView != null) {
+                        headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                    TextView messageTextView = ch.findViewWithTag(pagerMessageTag);
+                    if (messageTextView != null) {
+                        messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                }
+            }
+            if (eglThread != null && glTexturesColor != Theme.getColor(Theme.key_windowBackgroundWhite)) {
+                // textures are heavy: reload once the theme animation settled
+                AndroidUtilities.cancelRunOnUIThread(reloadGlTexturesRunnable);
+                AndroidUtilities.runOnUIThread(reloadGlTexturesRunnable, 100);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void reloadGlTextures() {
+        try {
+            final int color = Theme.getColor(Theme.key_windowBackgroundWhite);
+            final EGLThread eglThread = this.eglThread;
+            if (eglThread == null || fragmentView == null || glTexturesColor == color) {
+                return;
+            }
+            glTexturesColor = color;
+            eglThread.postRunnable(() -> {
+                eglThread.loadTexture(R.drawable.intro_powerful_mask, 17, color, true);
+                eglThread.updatePowerfulTextures();
+
+                eglThread.loadTexture(eglThread.telegramMaskProvider, 23, true);
+                eglThread.updateTelegramTextures();
+
+                Intro.setBackgroundColor(color);
+            });
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     @Override

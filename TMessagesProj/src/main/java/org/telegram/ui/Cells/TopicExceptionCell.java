@@ -10,13 +10,15 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class TopicExceptionCell extends FrameLayout {
+public class TopicExceptionCell extends FrameLayout implements Theme.Colorable {
 
     public boolean drawDivider;
     BackupImageView backupImageView;
@@ -29,7 +31,7 @@ public class TopicExceptionCell extends FrameLayout {
         addView(backupImageView, LayoutHelper.createFrame(30, 30, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
 
         title = new TextView(context);
-        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         title.setTypeface(AndroidUtilities.bold());
         title.setMaxLines(1);
@@ -37,7 +39,7 @@ public class TopicExceptionCell extends FrameLayout {
 
 
         subtitle = new TextView(context);
-        subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(subtitle, Theme.key_windowBackgroundWhiteGrayText);
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         addView(subtitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 72, 32, 12, 0));
 
@@ -50,6 +52,23 @@ public class TopicExceptionCell extends FrameLayout {
         }
         title.setText(topic.title);
         subtitle.setText(MessagesController.getInstance(UserConfig.selectedAccount).getMutedString(dialogId, topic.id));
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            if (backupImageView != null && backupImageView.getImageReceiver() != null && backupImageView.getImageReceiver().getDrawable() instanceof ForumUtilities.GeneralTopicDrawable) {
+                ((ForumUtilities.GeneralTopicDrawable) backupImageView.getImageReceiver().getDrawable()).setColor(Theme.getColor(Theme.key_chats_archiveBackground));
+                backupImageView.invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_chats_archiveBackground);
     }
 
     @Override

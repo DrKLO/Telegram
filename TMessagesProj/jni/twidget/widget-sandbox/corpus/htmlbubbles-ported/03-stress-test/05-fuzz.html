@@ -1,0 +1,29 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 03-stress-test.chat, message 5
+  author: fuzz 11:04
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#000, #fff); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  ul, ol { margin: 4px 0 8px 0; padding-left: 22px; }
+  li { margin: 2px 0; }
+  body > *:first-child { margin-top: 0; } body > *:last-child { margin-bottom: 0; }
+</style>
+<ul>
+  <li>Level 1 (disc)
+    <ul>
+      <li>Level 2 (circle)
+        <ul>
+          <li>Level 3 (square)
+            <ol style="list-style-type: lower-roman"><li>lower-roman i</li><li>lower-roman ii</li><li>lower-roman iii</li></ol>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<ol style="list-style-type: upper-alpha"><li>upper-alpha</li><li>second</li></ol>
+<ol start="9"><li>starts at 9</li><li>ten</li><li>eleven — marker gets wider</li></ol>
+<ul style="list-style-type: none; padding-left: 0"><li>✅ list-style: none</li><li>✅ with emoji bullets</li></ul>

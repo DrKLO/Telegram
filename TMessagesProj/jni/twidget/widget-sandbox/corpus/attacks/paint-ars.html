@@ -1,0 +1,81 @@
+<!-- Paint limit (docs/decisions.md, "Heavy boxes"): ARS's stress test (the question about a huge display list that
+     led to the paint limits), started at its 250-cell level: every cell has a gradient, a blurred shadow and opacity .85
+     and moves, turns and changes colour every frame (an iPhone drew 15 fps at 250 cells, 4 at 1000). 250 heavy boxes:
+     the renderer stops the widget before it draws them ("Paint limit exceeded: 250 boxes …"), the frozen frame has no
+     blurred shadow or transparency, and the page keeps its frame rate. -->
+<html><head><meta charset="utf-8">
+<!-- Stress test for weak devices: a widget whose display list grows to tens of thousands of commands
+     and is rebuilt on every frame. Pick a level; "Auto" doubles it each 3 s until a frame takes over 100 ms. -->
+<style>
+  body { margin: 0; font: 13px system-ui, sans-serif; }
+  #bar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; }
+  #bar button { padding: 4px 8px; border-radius: 8px; }
+  #bar button.on { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
+  #stat { padding: 0 6px 6px; color: var(--tg-theme-hint-color); font-variant-numeric: tabular-nums; }
+  #field { position: relative; height: 320px; overflow: hidden; }
+  .c { position: absolute; width: 22px; height: 22px; border-radius: 6px;
+       background: linear-gradient(135deg, rgba(255,80,80,.8), rgba(80,80,255,.6));
+       box-shadow: 0 1px 3px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.3);
+       border: 1px solid rgba(0,0,0,.2); opacity: .85; font-size: 8px; line-height: 22px; text-align: center; color: #fff; }
+  .c span { text-shadow: 0 0 2px #000; }
+</style></head>
+<body>
+<div id="bar"></div>
+<div id="stat"></div>
+<div id="field"></div>
+<script>
+var LEVELS = [0, 250, 1000, 4000, 16000, 64000];
+var field = document.getElementById('field'), stat = document.getElementById('stat'), bar = document.getElementById('bar');
+var width = 0, cells = [], count = 0, auto = false, autoAt = 0, frames = 0, worst = 0, last = 0, fpsAt = 0, fps = 0;
+
+function setCount(n) {
+  while (cells.length < n) {
+    var d = document.createElement('div'), s = document.createElement('span');
+    d.className = 'c';
+    s.textContent = (cells.length % 100).toString();
+    d.appendChild(s);
+    field.appendChild(d);
+    cells.push(d);
+  }
+  while (cells.length > n) field.removeChild(cells.pop());
+  count = n; worst = 0;
+}
+function button(label, fn) {
+  var b = document.createElement('button');
+  b.textContent = label;
+  b.addEventListener('click', function () {
+    Array.prototype.forEach.call(bar.children, function (x) { x.className = ''; });
+    b.className = 'on';
+    fn();
+  });
+  bar.appendChild(b);
+}
+LEVELS.forEach(function (n) { button(n ? String(n) : 'Off', function () { auto = false; setCount(n); }); });
+button('Auto', function () { auto = true; autoAt = 0; setCount(250); });
+
+function frame(t) {
+  var dt = last ? t - last : 0;
+  last = t;
+  if (dt > worst) worst = dt;
+  frames++;
+  if (t - fpsAt >= 1000) { fps = frames; frames = 0; fpsAt = t; }
+  if (auto) {
+    if (worst > 100) auto = false;
+    else if (t - autoAt > 3000) { autoAt = t; setCount(Math.min(count * 2, 128000)); }
+  }
+  // Every cell moves, turns and changes colour, so nothing can be reused from the previous frame.
+  // The width is read once: a layout query per frame would force a full layout and test the query budget instead.
+  var w = width;
+  for (var i = 0; i < cells.length; i++) {
+    var a = t / 900 + i * 0.37, st = cells[i].style;
+    st.transform = 'translate(' + ((i * 13.7 + t / 20) % w).toFixed(1) + 'px,' + (150 + Math.sin(a) * 140).toFixed(1) + 'px) rotate(' + ((a * 57) % 360).toFixed(0) + 'deg)';
+    st.backgroundColor = 'hsl(' + ((i * 7 + t / 10) % 360).toFixed(0) + ',70%,50%)';
+  }
+  stat.textContent = count + ' cells (~' + count * 6 + ' commands) · ' + fps + ' fps · worst frame ' + worst.toFixed(0) + ' ms' + (auto ? ' · auto' : '');
+  requestAnimationFrame(frame);
+}
+width = field.clientWidth || 300;
+setCount(250);
+requestAnimationFrame(frame);
+</script>
+</body></html>

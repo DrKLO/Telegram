@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!-- Memory exhaustion, steady growth: retain an ever-larger array of 1 MB
+     typed-array chunks until the engine refuses to allocate. The sandbox must
+     stop THIS widget (memoryLimitBytes, 64 MB default) with an "out of memory"
+     that the worker turns into a clean kill — the host process must NOT grow
+     unbounded and other widgets must keep running. The last good render stays
+     on screen as the frozen fallback. -->
+<html><head><meta charset="utf-8"></head><body>
+<p>reached: <span id="mb">0</span> MB</p>
+<script>
+  var kept = [];
+  var mb = document.getElementById('mb');
+  function grow() {
+    try {
+      for (var i = 0; i < 8; i++) {           // 8 MB per tick
+        var chunk = new Uint8Array(1024 * 1024);
+        chunk[0] = chunk[chunk.length - 1] = 1; // touch pages so they're real
+        kept.push(chunk);
+      }
+      mb.textContent = kept.length;             // render count only when alive
+      setTimeout(grow, 0);
+    } catch (e) {
+      // A capped engine throws here; an uncapped one never reaches this line.
+      mb.textContent = kept.length + ' (alloc refused: ' + e.name + ')';
+    }
+  }
+  grow();
+</script>
+</body></html>

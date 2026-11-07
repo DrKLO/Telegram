@@ -31,10 +31,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -44,7 +46,7 @@ import org.telegram.ui.Components.StaticLayoutEx;
 
 import java.util.ArrayList;
 
-public class BotCommandsMenuView extends View {
+public class BotCommandsMenuView extends View implements Theme.Colorable {
 
     final RectF rectTmp = new RectF();
     final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -80,7 +82,7 @@ public class BotCommandsMenuView extends View {
         backDrawable.setCallback(this);
         textPaint.setTypeface(AndroidUtilities.bold());
         backDrawable.setRoundCap();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, backgroundRippleColor = Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         backgroundDrawable.setCallback(this);
         webViewAnimation.setCallback(this);
         webViewAnimation.setMasterParent(this);
@@ -97,16 +99,39 @@ public class BotCommandsMenuView extends View {
         invalidate();
     }
 
-    private void updateColors() {
-        paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-        int textColor = Theme.getColor(Theme.key_chat_messagePanelVoiceDuration);
-        backDrawable.setBackColor(textColor);
-        backDrawable.setIconColor(textColor);
-        if (webViewAnimation != null) {
-            webViewAnimation.setColorFilter(new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN));
+    @Override
+    public void updateColors() {
+        try {
+            paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
+            int textColor = Theme.getColor(Theme.key_chat_messagePanelVoiceDuration);
+            backDrawable.setBackColor(textColor);
+            backDrawable.setIconColor(textColor);
+            if (webViewAnimation != null && (webViewAnimation != lastWebViewAnimation || textColor != lastWebViewAnimationColor)) {
+                lastWebViewAnimation = webViewAnimation;
+                lastWebViewAnimationColor = textColor;
+                webViewAnimation.setColorFilter(new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN));
+            }
+            final int alpha = textPaint.getAlpha();
+            textPaint.setColor(textColor);
+            if (alpha != 255) {
+                textPaint.setAlpha(alpha);
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
-        textPaint.setColor(textColor);
     }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_messagePanelVoiceBackground);
+        colors.add(Theme.key_chat_messagePanelVoiceDuration);
+        colors.add(Theme.key_featuredStickers_addButtonPressed);
+    }
+
+    private int backgroundRippleColor;
+    private Object lastWebViewAnimation;
+    private int lastWebViewAnimationColor;
 
     int lastSize;
 
@@ -161,6 +186,11 @@ public class BotCommandsMenuView extends View {
             if (drawBackgroundDrawable) {
                 rectTmp.set(0, 0, AndroidUtilities.dp(40) + (menuTextWidth + AndroidUtilities.dp(4)) * expandProgress, getMeasuredHeight());
                 canvas.drawRoundRect(rectTmp, AndroidUtilities.dp(16), AndroidUtilities.dp(16), paint);
+                final int rippleColor = Theme.getColor(Theme.key_featuredStickers_addButtonPressed);
+                if (rippleColor != backgroundRippleColor) {
+                    // follow theme changes
+                    Theme.setSelectorDrawableColor(backgroundDrawable, backgroundRippleColor = rippleColor, true);
+                }
                 backgroundDrawable.setBounds((int) rectTmp.left, (int) rectTmp.top, (int) rectTmp.right, (int) rectTmp.bottom);
                 backgroundDrawable.draw(canvas);
             }
@@ -338,7 +368,7 @@ public class BotCommandsMenuView extends View {
             };
             NotificationCenter.listenEmojiLoading(description);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteBlackText);
             description.setTag(Theme.key_windowBackgroundWhiteBlackText);
             description.setMaxLines(2);
             description.setEllipsize(TextUtils.TruncateAt.END);
@@ -346,7 +376,7 @@ public class BotCommandsMenuView extends View {
 
             command = new TextView(context);
             command.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            command.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(command, Theme.key_windowBackgroundWhiteGrayText);
             command.setTag(Theme.key_windowBackgroundWhiteGrayText);
             addView(command, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL));
         }

@@ -1,0 +1,68 @@
+<!doctype html>
+<html data-test="auto/02-attributes-images-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: attributes and images (1/2)</title>
+<!-- conformance {"title":"Global attributes, dir, data-/aria-, legacy presentational attributes, inline handlers, out-of-profile attributes; img width/height, picture"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var u=document,m=u.documentElement,k=typeof TelegramWidget!="undefined",O=window.__conformanceMode||(k?"sandbox":"native"),a=[],y={},l=[];var R,c,p,f,M,d,b,g,q=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),A=()=>{g=g||setTimeout(j,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),A(),s}function T(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var B=(t,e,n,o,r)=>T(t,e,[n,o],r),E=(t,e,n,o,r)=>T(t,e,[n===o,"got "+w(n)+", want "+w(o)],r);var S=(t,e,n)=>getComputedStyle(q(t),n).getPropertyValue(e).trim();function I(t){let e=q(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}function F(t,e,n){let o=S(t,e||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var J=t=>{l.push(t)};var N=()=>{},_=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function j(){g=0,p&&!f&&N();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&M?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:O,status:n,n:t,checks:a,targets:R,stages:c})),x&&x(n,t)}var x;function C(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function D(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=_(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),A();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(D,t||0)}function v(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,j();let e=()=>{e=()=>{},setTimeout(D,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}C();return{color:F,cs:S,eq:E,ok:B,rect:I,run:v,step:J}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+.row{margin:0 0 2px;width:300px}
+:lang(ru) .lg{color:rgb(0,100,0)}
+[data-state="on"]{color:rgb(0,0,150)}
+[aria-pressed="true"]{color:rgb(150,0,0)}
+[contenteditable]{color:rgb(1,1,1)}
+[draggable="true"]{color:rgb(2,2,2)}
+[tabindex]{color:rgb(3,3,3)}
+</style>
+</head>
+<body>
+<div class="conf-head">02a · Attributes and images (1/2)</div>
+<div class="conf-probes">
+  <div class="row"><span id="hid" hidden>hidden</span><span id="sty" style="display:inline-block;width:17px;height:5px"></span><span id="ttl" title="tooltip">t</span></div>
+  <div class="row" lang="ru"><span class="lg" id="lg">язык</span></div>
+  <div class="row" dir="rtl" id="rtl" style="width:200px"><span id="rtl-a" style="display:inline-block;width:10px;height:8px;background:#c33"></span><span id="rtl-b" style="display:inline-block;width:10px;height:8px;background:#33c"></span></div>
+  <div class="row" dir="auto" id="auto" style="width:200px">שלום</div>
+  <div class="row"><span id="dat" data-state="on">d</span> <span id="ar" aria-pressed="true">a</span></div>
+  <div class="row" align="center" id="al">c</div>
+  <table border="1" cellpadding="5" id="lt"><tr><td bgcolor="#ff0000" id="lt-td" valign="top">x</td></tr></table>
+  <div class="row"><button id="ih" onclick="this.setAttribute('data-n', String(Number(this.getAttribute('data-n') || 0) + 1))">inline</button></div>
+  <div class="row"><span id="ce" contenteditable="true">ce</span> <span id="dg" draggable="true">dg</span> <span id="ti" tabindex="0">ti</span></div>
+  <div class="row">
+    <img id="i-png" width="20" height="10" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAE0lEQVR4AWM8Y2z8nwEImBigAAAh4QI1lhEEowAAAABJRU5ErkJggg==">
+    <picture><img id="i-pic" width="12" height="12" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAE0lEQVR4AWM8Y2z8nwEImBigAAAh4QI1lhEEowAAAABJRU5ErkJggg=="></picture>
+  </div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect, CS = T.cs;
+
+T.step(function () {
+  T.ok('html.el.img', 'width/height attributes size the image', R('#i-png').w === 20 && R('#i-png').h === 10, R('#i-png').w + 'x' + R('#i-png').h);
+  T.ok('html.el.img', 'img inside picture is drawn', R('#i-pic').w === 12, R('#i-pic').w + '');
+
+  T.ok('html.attr.global', 'hidden hides', R('#hid').w === 0 && CS('#hid', 'display') === 'none', CS('#hid', 'display'));
+  T.ok('html.attr.global', 'style attribute applies', R('#sty').w === 17 && R('#sty').h === 5, R('#sty').w + 'x' + R('#sty').h);
+  T.eq('html.attr.global', 'lang reaches the renderer (:lang(ru))', T.color('#lg', 'color'), '0,100,0,1');
+  T.eq('html.attr.dir', 'dir=rtl sets direction', CS('#rtl', 'direction'), 'rtl');
+  T.ok('html.attr.dir', 'dir=rtl lays out inline boxes right to left', R('#rtl-a').x > R('#rtl-b').x && R('#rtl-a').r > R('#rtl').r - 2, 'a ' + R('#rtl-a').x + ' b ' + R('#rtl-b').x);
+  T.eq('html.attr.dir', 'dir=auto with Hebrew text resolves to rtl', CS('#auto', 'direction'), 'rtl');
+  T.eq('html.attr.data-aria', 'data-* reaches attribute selectors', T.color('#dat', 'color'), '0,0,150,1');
+  T.eq('html.attr.data-aria', 'aria-* reaches attribute selectors', T.color('#ar', 'color'), '150,0,0,1');
+  T.ok('html.attr.legacy-presentational', 'align is dropped: no centring', !/center/.test(CS('#al', 'text-align')), CS('#al', 'text-align'));
+  T.ok('html.attr.legacy-presentational', 'bgcolor is dropped', T.color('#lt-td') !== '255,0,0,1', T.color('#lt-td'));
+  T.ok('html.attr.legacy-presentational', 'cellpadding is dropped', parseFloat(CS('#lt-td', 'padding-left')) !== 5, CS('#lt-td', 'padding-left'));
+  T.ok('html.attr.legacy-presentational', 'border=1 is dropped', parseFloat(CS('#lt', 'border-top-width')) === 0, CS('#lt', 'border-top-width'));
+  var ih = document.getElementById('ih');
+  ih.click(); ih.click();
+  T.eq('html.attr.event-handlers', 'an inline onclick handler runs', ih.getAttribute('data-n'), '2');
+  T.ok('html.attr.contenteditable', 'contenteditable does not reach the renderer', T.color('#ce', 'color') !== '1,1,1,1', T.color('#ce', 'color'));
+  T.ok('html.attr.draggable', 'draggable does not reach the renderer', T.color('#dg', 'color') !== '2,2,2,1', T.color('#dg', 'color'));
+  T.ok('html.attr.tabindex', 'tabindex does not reach the renderer', T.color('#ti', 'color') !== '3,3,3,1', T.color('#ti', 'color'));
+});
+T.run({ deadline: 4000 });
+</script>
+</body>
+</html>

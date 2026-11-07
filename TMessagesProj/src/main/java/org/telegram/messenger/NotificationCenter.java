@@ -575,8 +575,20 @@ public class NotificationCenter {
         return currentHeavyOperationFlags;
     }
 
+    /** Snapshot of the observers for this id, weakly registered ones unwrapped (collected ones skipped) */
     public ArrayList<NotificationCenterDelegate> getObservers(int id) {
-        return observers.get(id);
+        final ArrayList<NotificationCenterDelegate> objects = observers.get(id);
+        if (objects == null) {
+            return null;
+        }
+        final ArrayList<NotificationCenterDelegate> result = new ArrayList<>(objects.size());
+        for (int a = 0; a < objects.size(); a++) {
+            final NotificationCenterDelegate delegate = unwrap(objects.get(a));
+            if (delegate != null) {
+                result.add(delegate);
+            }
+        }
+        return result;
     }
 
     public void postNotificationNameOnUIThread(final int id, final Object... args) {
@@ -825,6 +837,79 @@ public class NotificationCenter {
         addObserverInternal(observer, id);
     }
 
+    /**
+     * Like {@link #addObserver}, but NotificationCenter keeps only a weak reference to the observer:
+     * once nothing else references it, it is dropped instead of being leaked.
+     * Use it for observers that are owned by something else for as long as they need notifications
+     * (views, fragments, sheets, their fields). Never for one-shot listeners that only NotificationCenter holds.
+     * Remove it with the regular {@link #removeObserver}.
+     */
+    public void addWeakObserver(NotificationCenterDelegate observer, int id) {
+        if (observer == null) {
+            return;
+        }
+        addObserverInternal(new WeakDelegate(this, observer), id);
+    }
+
+    /** NotificationCenter-owned wrapper of a weakly registered observer; equal to any wrapper of the same observer */
+    private static final class WeakDelegate implements NotificationCenterDelegate {
+        private final NotificationCenter center;
+        private final WeakReference<NotificationCenterDelegate> reference;
+        private final int hash;
+
+        private WeakDelegate(NotificationCenter center, NotificationCenterDelegate delegate) {
+            this.center = center;
+            this.reference = new WeakReference<>(delegate);
+            this.hash = System.identityHashCode(delegate);
+        }
+
+        @Override
+        public void didReceivedNotification(int id, int account, Object... args) {
+            final NotificationCenterDelegate delegate = reference.get();
+            if (delegate != null) {
+                delegate.didReceivedNotification(id, account, args);
+            } else {
+                center.removeObserverInternal(this, id);
+            }
+        }
+
+        @Override
+        public boolean equals(@Nullable Object o) {
+            if (this == o) return true;
+            if (!(o instanceof WeakDelegate)) return false;
+            final NotificationCenterDelegate delegate = reference.get();
+            return delegate != null && delegate == ((WeakDelegate) o).reference.get();
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
+
+    private static NotificationCenterDelegate unwrap(NotificationCenterDelegate delegate) {
+        return delegate instanceof WeakDelegate ? ((WeakDelegate) delegate).reference.get() : delegate;
+    }
+
+    /** Whether the list already holds this observer, registered either strongly or weakly */
+    private static boolean containsObserver(ArrayList<NotificationCenterDelegate> objects, NotificationCenterDelegate observer) {
+        final NotificationCenterDelegate target = unwrap(observer);
+        if (target == null) {
+            return false;
+        }
+        if (objects instanceof UniqArrayList) {
+            // hash lookups: a WeakDelegate is equal to any other wrapper of the same observer
+            return objects.contains(target) || objects.contains(new WeakDelegate(null, target));
+        }
+        for (int a = 0, N = objects.size(); a < N; a++) {
+            final NotificationCenterDelegate o = objects.get(a);
+            if (target.equals(o) || o instanceof WeakDelegate && ((WeakDelegate) o).reference.get() == target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void addObserverInternal(NotificationCenterDelegate observer, int id) {
         if (BuildVars.DEBUG_VERSION) {
             if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
@@ -844,7 +929,7 @@ public class NotificationCenter {
         if (objects == null) {
             observers.put(id, (objects = createArrayForId(id)));
         }
-        if (objects.contains(observer)) {
+        if (containsObserver(objects, observer)) {
             return;
         }
         objects.add(observer);
@@ -866,6 +951,10 @@ public class NotificationCenter {
     }
 
     public void removeObserver(NotificationCenterDelegate observer, int id) {
+        removeObserverInternal(observer, id);
+    }
+
+    private void removeObserverInternal(NotificationCenterDelegate observer, int id) {
         if (BuildVars.DEBUG_VERSION) {
             if (Thread.currentThread() != ApplicationLoader.applicationHandler.getLooper().getThread()) {
                 throw new RuntimeException("removeObserver allowed only from MAIN thread");
@@ -882,7 +971,27 @@ public class NotificationCenter {
         }
         ArrayList<NotificationCenterDelegate> objects = observers.get(id);
         if (objects != null) {
-            objects.remove(observer);
+            // the observer may be registered strongly or through its WeakDelegate wrapper
+            final NotificationCenterDelegate target = unwrap(observer);
+            if (objects instanceof UniqArrayList) {
+                objects.remove(observer);
+                if (target != null) {
+                    objects.remove(target);
+                    objects.remove(new WeakDelegate(null, target));
+                }
+                return;
+            }
+            for (int a = objects.size() - 1; a >= 0; a--) {
+                final NotificationCenterDelegate o = objects.get(a);
+                if (observer.equals(o)) {
+                    objects.remove(a);
+                } else if (o instanceof WeakDelegate) {
+                    final NotificationCenterDelegate referent = ((WeakDelegate) o).reference.get();
+                    if (referent == null || referent == target) {
+                        objects.remove(a);
+                    }
+                }
+            }
         }
     }
 
@@ -1056,6 +1165,12 @@ public class NotificationCenter {
 
             for (int N = list.size(), a = N - 1; a >= 0; a--) {
                 final NotificationCenterDelegate delegate = list.get(a);
+                if (delegate instanceof WeakDelegate) {
+                    if (((WeakDelegate) delegate).reference.get() == null) {
+                        list.remove(a);
+                    }
+                    continue;
+                }
                 if (delegate instanceof WeakObserversGroupImpl) {
                     continue;
                 }

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tip Calculator</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1f2937; --muted: #6b7280; --line: #d1d5db; --accent: #059669; --soft: #d1fae5; --out: #065f46; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --accent: #34d399; --soft: #064e3b; --out: #047857; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { margin: 0 0 12px; font-size: 17px; }
+  .label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); margin: 10px 0 6px; }
+  .bill { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .bill span { flex: 1; text-align: center; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bill button { padding: 0 10px; height: 32px; border: none; border-radius: 6px; background: var(--soft); color: var(--fg); font-size: 14px; cursor: pointer; }
+  .tips { display: flex; gap: 6px; }
+  .tips button { flex: 1; padding: 8px 0; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font-size: 14px; cursor: pointer; }
+  .tips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .people { display: flex; align-items: center; gap: 12px; }
+  .people button { width: 36px; height: 36px; border-radius: 50%; border: none; padding: 0; background: var(--soft); color: var(--fg); font-size: 20px; cursor: pointer; }
+  .people span { font-size: 18px; font-weight: 600; min-width: 24px; text-align: center; }
+  .out { margin-top: 16px; background: var(--out); color: #fff; border-radius: 10px; padding: 12px 14px; }
+  .out div { display: flex; justify-content: space-between; padding: 4px 0; }
+  .out .per { font-size: 22px; font-weight: 700; border-top: 1px solid rgba(255,255,255,.3); margin-top: 6px; padding-top: 8px; }
+  .send { margin-top: 10px; width: 100%; padding: 10px; border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .saved { margin-top: 6px; font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<h2>🧾 Tip Calculator</h2>
+<div class="label">Bill amount</div>
+<div class="bill"><button id="bill-5">−5</button><button id="bill-1">−1</button><span id="bill">$84.50</span><button id="bill+1">+1</button><button id="bill+5">+5</button></div>
+<div class="label">Tip <span id="tipPct">15%</span></div>
+<div class="tips" id="tips"><button data-p="0">0%</button><button data-p="10">10%</button><button data-p="15">15%</button><button data-p="18">18%</button><button data-p="20">20%</button><button data-p="25">25%</button></div>
+<div class="label">Split between</div>
+<div class="people">
+  <button id="minus" aria-label="fewer">−</button><span id="people">2</span><button id="plus" aria-label="more">+</button>
+  <span style="font-size:14px;color:var(--muted);font-weight:400">people</span>
+</div>
+<div class="out">
+  <div><span>Tip</span><span id="tipAmt">$0.00</span></div>
+  <div><span>Total</span><span id="total">$0.00</span></div>
+  <div class="per"><span>Each pays</span><span id="each">$0.00</span></div>
+</div>
+<button class="send" id="send">Save this split</button>
+<div class="saved" id="saved" hidden></div>
+<script>
+  // Taps only: the bill is adjusted with buttons, the tip is a row of presets (no slider in a widget).
+  // A saved split stays in this message's localStorage and is restored when the widget is re-created.
+  var bill = 84.5, pct = 15, people = 2;
+  var el = function (id) { return document.getElementById(id); };
+  var money = function (n) { return '$' + n.toFixed(2); };
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var state = {};
+  function update() {
+    el('bill').textContent = money(bill);
+    el('tipPct').textContent = pct + '%';
+    Array.prototype.forEach.call(el('tips').children, function (b) { b.classList.toggle('on', +b.getAttribute('data-p') === pct); });
+    el('people').textContent = people;
+    var tip = bill * pct / 100, total = bill + tip;
+    state = { bill: bill, pct: pct, people: people, tip: tip, total: total, each: total / people };
+    el('tipAmt').textContent = money(tip);
+    el('total').textContent = money(total);
+    el('each').textContent = money(total / people);
+  }
+  function showSaved(s) {
+    el('saved').hidden = !s;
+    if (s) el('saved').textContent = 'Saved: ' + money(s.total) + ' incl. ' + s.pct + '% tip, split ' + s.people + ' ways → ' + money(s.each) + ' each';
+  }
+  [-5, -1, 1, 5].forEach(function (d) { el('bill' + (d > 0 ? '+' : '') + d).addEventListener('click', function () { bill = Math.max(0, Math.round((bill + d) * 100) / 100); update(); }); });
+  el('tips').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { pct = +b.getAttribute('data-p'); update(); } });
+  el('minus').addEventListener('click', function () { if (people > 1) people--; update(); });
+  el('plus').addEventListener('click', function () { if (people < 20) people++; update(); });
+  el('send').addEventListener('click', function () { store.set('tip-split', state); showSaved(state); });
+  var saved = store.get('tip-split');
+  if (saved && typeof saved.each !== 'number') saved = null;
+  if (saved) { bill = saved.bill; pct = saved.pct; people = saved.people; }
+  update();
+  showSaved(saved);
+</script>
+</body>
+</html>

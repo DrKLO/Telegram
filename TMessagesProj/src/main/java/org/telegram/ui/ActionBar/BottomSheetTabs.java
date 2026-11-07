@@ -459,7 +459,7 @@ public class BottomSheetTabs extends FrameLayout {
         });
         dialog[0].show();
         TextView textView = (TextView) dialog[0].getButton(AlertDialog.BUTTON_POSITIVE);
-        textView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        ThemeBind.textColor(textView, Theme.key_text_RedBold);
     }
 
     public boolean removeTab(WebTabData tab, boolean destroy) {

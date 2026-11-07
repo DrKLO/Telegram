@@ -1,0 +1,17 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>stress: Blurred shadows, static · 32 boxes</title>
+<!-- stress {"id":"shadow-static/32","load":"shadow-static","level":3,"param":"boxes","value":32,"unit":"boxes"} -->
+<style>body{margin:0;font:12px system-ui,sans-serif}#h{padding:5px 8px;color:var(--tg-theme-hint-color);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}#f{position:relative;height:300px;overflow:hidden}.b{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:6px;background:#4a90e2;box-shadow:0 2px 6px rgba(0,0,0,.45)}</style>
+</head><body><div id="h">Blurred shadows, static · 32 boxes</div><div id="f"></div>
+<script>
+var ID="shadow-static/32",LV=3,N=32,F=document.getElementById('f'),W=F.clientWidth||300;
+function mk(n,c){for(var a=[],i=0;i<n;i++){var d=document.createElement('div');d.className=c;F.appendChild(d);a.push(d)}return a}
+mk(N,'b').forEach(function(d,i){d.style.transform='translate('+((i%12)*26+4)+'px,'+((Math.floor(i/12)*26)%276+4)+'px)'});
+(function(){var de=document.documentElement,h=document.getElementById('h'),lb=h.textContent,n=0,t0=0,lt=0,lp=0,mx=0,j=0,fs=0,fc=0,fps=0;
+function pub(st,t){de.setAttribute('data-stress',JSON.stringify({v:1,id:ID,level:LV,value:N,status:st,t:Math.round(t),frames:n,fps:fps,maxGap:Math.round(mx),jank:j}));mx=0}
+function loop(t){if(!t0)t0=lt=lp=fs=t;var g=t-lt;lt=t;if(g>mx)mx=g;if(g>50)j++;n++;fc++;if(t-fs>=1000){fps=Math.round(fc*1000/(t-fs));fc=0;fs=t}
+if(typeof step=='function')step(t-t0);
+if(t-lp>=500){lp=t;h.firstChild.data=lb+' \u00b7 '+fps+' fps';pub('running',t-t0)}requestAnimationFrame(loop)}
+pub('setup',0);requestAnimationFrame(loop)})();
+</script>
+</body></html>

@@ -20,12 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -34,21 +29,19 @@ import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.InputType;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewPropertyAnimator;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -63,7 +56,6 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -74,15 +66,18 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.SearchTextWatcher;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
+import org.telegram.utils.glass.source.GlassSourceRenderNode;
+import org.telegram.ui.ActionBar.SimpleActionBarMenuItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.ContactsAdapter;
 import org.telegram.ui.Adapters.SearchAdapter;
@@ -99,37 +94,24 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.FragmentFloatingButton;
-import org.telegram.ui.Components.FragmentSearchField;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
-import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
-import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
-import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
 import org.telegram.ui.Components.inset.WindowAnimatedInsetsProvider;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
-import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class ContactsActivity extends BaseFragment implements FactorAnimator.Target, NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate, WindowAnimatedInsetsProvider.Listener {
-    private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
+    private static final int ANIMATOR_ID_SECTION_LETTERS = 0;
 
-    private static final int ANIMATOR_ID_SEARCH_FIELD_VISIBLE = 0;
-//    private static final int ANIMATOR_ID_SEARCH_FIELD_HEIGHT = 1;
-    private static final int ANIMATOR_ID_SEARCH_HAS_QUERY = 2;
-//
-    private final BoolAnimator animatorSearchFieldVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_FIELD_VISIBLE,
-        this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
-//    private final FactorAnimator animatorSearchFieldHeight = new FactorAnimator(ANIMATOR_ID_SEARCH_FIELD_HEIGHT,
-//        this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
-    private final BoolAnimator animatorSearchHasQuery = new BoolAnimator(ANIMATOR_ID_SEARCH_HAS_QUERY,
-            this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
+    /** Section letters appear after the list fades in with the name sorting. */
+    private final FactorAnimator animatorSectionLetters = new FactorAnimator(ANIMATOR_ID_SECTION_LETTERS,
+        this, CubicBezierInterpolator.EASE_OUT_QUINT, 380, 1f);
 
     @Keep
     public int phonebookRow = 0;
@@ -141,7 +123,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     private LinearLayoutManager layoutManager;
     private SearchAdapter searchListViewAdapter;
 
-    private ActionBarMenuItem sortItem;
+    private SimpleActionBarMenuItem sortItem;
     private boolean sortByName;
 
     private FragmentFloatingButton floatingButton;
@@ -169,8 +151,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     private boolean allowUsernameSearch = true;
     private ContactsActivityDelegate delegate;
     private String initialSearchString;
-    private HeaderShadowView headerShadowView;
-    private FragmentSearchField searchField;
 
     private AlertDialog permissionDialog;
     private boolean askAboutContacts = true;
@@ -179,12 +159,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
     private final LongSparseArray<TLRPC.User> selectedContacts = new LongSparseArray<>();
 
-    private @Nullable ImageView actionModeCloseView;
-    private NumberTextView selectedContactsCountTextView;
-
-    private ActionBarMenuItem searchItem;
-
-    private BackDrawable backDrawable;
+    private SimpleActionBarMenuItem searchItem;
 
     private String searchQuery;
 
@@ -204,25 +179,15 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
     public ContactsActivity(Bundle args) {
         super(args);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
-            iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
-            iBlur3SourceGlass = new BlurredBackgroundSourceRenderNode(null);
-        } else {
-            scrollableViewNoiseSuppressor = null;
-            iBlur3SourceGlassFrosted = null;
-            iBlur3SourceGlass = null;
-        }
     }
 
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.encryptedChatCreated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.contactsDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.encryptedChatCreated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.closeChats);
         checkPermission = UserConfig.getInstance(currentAccount).syncContacts;
         if (arguments != null) {
             onlyUsers = arguments.getBoolean("onlyUsers", false);
@@ -277,55 +242,36 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
         searching = false;
         searchWas = false;
 
-        actionBar.setAllowOverlayTitle(true);
         if (destroyAfterSelect) {
             if (returnAsResult) {
-                actionBar.setTitle(getString(R.string.SelectContact));
+                simpleActionBar.setTitle(getString(R.string.SelectContact));
             } else {
-                actionBar.setTitle(getString(createSecretChat ? R.string.NewSecretChat : R.string.NewMessageTitle));
+                simpleActionBar.setTitle(getString(createSecretChat ? R.string.NewSecretChat : R.string.NewMessageTitle));
             }
         } else {
-            actionBar.setTitle(getString(R.string.Contacts));
+            simpleActionBar.setTitle(getString(R.string.Contacts));
         }
 
-        backDrawable = new BackDrawable(false);
         if (!hasMainTabs) {
-            actionBar.setBackButtonDrawable(backDrawable);
+            simpleActionBar.setBackButtonDrawable(new BackDrawable(false));
         }
 
-        searchField = new FragmentSearchField(context, resourceProvider);
-        searchField.setSectionBackground();
-        searchField.setPivotY(0);
-        final ActionBarMenu actionMode = actionBar.createActionMode(false, null);
-        actionMode.setBackgroundColor(0);
-
-        if (hasMainTabs) {
-            actionModeCloseView = new ImageView(context);
-            actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
-            actionModeCloseView.setImageDrawable(new BackDrawable(true));
-            actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-            actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
-            actionModeCloseView.setOnClickListener(v -> hideActionMode());
-            actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
-        }
-
-        selectedContactsCountTextView = new NumberTextView(actionMode.getContext());
-        selectedContactsCountTextView.setTextSize(18);
-        selectedContactsCountTextView.setTypeface(AndroidUtilities.bold());
-        selectedContactsCountTextView.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
-        actionMode.addView(selectedContactsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, hasMainTabs ? 18 : 72, 0, 0, 0));
-        selectedContactsCountTextView.setOnTouchListener((v, event) -> true);
-
+        final SimpleActionBarMenu actionMode = simpleActionBar.createActionMode();
         actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(54), getString(R.string.Delete));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
-                    if (actionBar.isActionModeShowed()) {
+                    if (simpleActionBar.isActionModeShowed()) {
                         hideActionMode();
                     } else {
                         finishFragment();
@@ -333,28 +279,15 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 } else if (id == delete) {
                     performSelectedContactsDelete();
                 } else if (id == sort_button) {
-                    SharedConfig.toggleSortContactsByName();
-                    sortByName = SharedConfig.sortContactsByName;
-                    listViewAdapter.setSortType(sortByName ? 1 : 2, false);
-                    sortItem.setIcon(sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
-                } else if (id == search_button) {
-                    listView.smoothScrollToPosition(0);
-//                    animatorSearchFieldVisible.setValue(true, true);
-//                    animatorSearchFieldHeight.animateTo(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
-                    AndroidUtilities.doOnPreDraw(searchField.editText, () -> {
-                        searchField.editText.requestFocus();
-                        AndroidUtilities.showKeyboard(searchField.editText);
-                    });
+                    toggleSort();
                 }
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
-
+        final SimpleActionBarMenu menu = simpleActionBar.createMenu();
         searchItem = menu.addItem(search_button, R.drawable.outline_header_search);
         searchItem.setContentDescription(getString(R.string.SearchContacts));
-
-        searchField.editText.addTextChangedListener(new SearchTextWatcher(searchField.editText, new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
+        searchItem.setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
             public void onSearchExpand() {
                 searching = true;
@@ -364,6 +297,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             @Override
             public void onSearchCollapse() {
                 searchListViewAdapter.searchDialogs(null);
+                searchQuery = null;
                 searching = false;
                 searchWas = false;
                 listView.setAdapter(listViewAdapter);
@@ -371,8 +305,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 listViewAdapter.notifyDataSetChanged();
                 listView.setFastScrollVisible(true);
                 listView.setVerticalScrollBarEnabled(false);
-                listView.getFastScroll().topOffset = dp(90);
-                // emptyView.setText(LocaleController.getString(R.string.NoContacts));
                 checkUi_floatingButtonVisible();
             }
 
@@ -382,7 +314,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     return;
                 }
                 String text = editText.getText().toString();
-                animatorSearchHasQuery.setValue(!text.isEmpty(), true);
                 searchQuery = text;
                 if (!text.isEmpty()) {
                     searchWas = true;
@@ -396,13 +327,17 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     emptyView.showProgress(true, true);
                     searchListViewAdapter.searchDialogs(text);
                 } else {
+                    searchWas = false;
+                    searchListViewAdapter.searchDialogs(null);
                     if (listView != null) {
                         listView.setAdapter(listViewAdapter);
                         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_STICKY_HEADERS);
+                        listView.setFastScrollVisible(true);
+                        listView.setVerticalScrollBarEnabled(false);
                     }
                 }
             }
-        }));
+        });
         if (!createSecretChat && !returnAsResult) {
             sortItem = menu.addItem(sort_button, sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
             sortItem.setContentDescription(getString(R.string.AccDescrContactSorting));
@@ -454,68 +389,15 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             }
         };
         listViewAdapter.setSortType(sortItem != null ? (sortByName ? 1 : 2) : 0, false);
+        listViewAdapter.setSectionLetterTextSize(17);
         listViewAdapter.setDisableSections(disableSections);
         listViewAdapter.includeSearch = false;
 
         fragmentView = contentView = new SizeNotifierFrameLayout(context) {
             @Override
-            protected void dispatchDraw(Canvas canvas) {
-                if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
-                    blur3_InvalidateBlur();
-
-                    final int width = getMeasuredWidth();
-                    final int height = getMeasuredHeight();
-                    if (iBlur3SourceGlassFrosted != null && !iBlur3SourceGlassFrosted.inRecording()) {
-                        // if (iBlur3SourceGlassFrosted.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
-                        final Canvas c = iBlur3SourceGlassFrosted.beginRecording(width, height);
-                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                        if (SharedConfig.chatBlurEnabled()) {
-                            scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
-                        }
-                        iBlur3SourceGlassFrosted.endRecording();
-                        // }
-                    }
-                    if (iBlur3SourceGlass != null && !iBlur3SourceGlass.inRecording()) {
-                        // if (iBlur3SourceGlass.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
-                        final Canvas c = iBlur3SourceGlass.beginRecording(width, height);
-                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                        if (SharedConfig.chatBlurEnabled()) {
-                            scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
-                        }
-                        iBlur3SourceGlass.endRecording();
-                        // }
-                    }
-                    iBlur3Invalidated = false;
-                }
-
-                super.dispatchDraw(canvas);
-            }
-
-            @Override
-            public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !SharedConfig.chatBlurEnabled() || iBlur3SourceGlassFrosted == null) {
-                    canvas.drawRect(rectTmp, blurScrimPaint);
-                    return;
-                }
-
-                canvas.save();
-                canvas.translate(0, -y);
-                iBlur3SourceGlassFrosted.draw(canvas, rectTmp.left, rectTmp.top + y, rectTmp.right, rectTmp.bottom + y);
-                canvas.restore();
-
-                final int oldScrimAlpha = blurScrimPaint.getAlpha();
-                blurScrimPaint.setAlpha(ChatActivity.ACTION_BAR_BLUR_ALPHA);
-                canvas.drawRect(rectTmp, blurScrimPaint);
-                blurScrimPaint.setAlpha(oldScrimAlpha);
-            }
-
-            @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                ((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight() + dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
-                ((MarginLayoutParams) headerShadowView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
-
-                checkUi_listViewPadding();
+                measureChildWithMargins(simpleActionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                ((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = simpleActionBar.getMeasuredHeight();
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
 
@@ -524,18 +406,12 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 super.onLayout(changed, left, top, right, bottom);
 
                 checkUi_emptyView();
-                checkUi_searchButton();
                 checkUi_sortItem();
                 checkUi_floatingButtonPosition();
-                checkUi_searchFieldY();
             }
         };
-        iBlur3Capture = new ViewGroupPartRenderer(listView, contentView, listView::drawChild);
-        listView.addEdgeEffectListener(() -> listView.postOnAnimation(() -> {
-            blur3_InvalidateBlur();
-        }));
-        listView.setSections(true);
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        listView.setSections();
+        ThemeBind.backgroundColor(contentView, Theme.key_windowBackgroundGray, getResourceProvider());
 
         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
         flickerLoadingView.setViewType(FlickerLoadingView.PROFILE_SEARCH_CELL);
@@ -547,7 +423,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         emptyView.showProgress(true, false);
         emptyView.title.setText(getString(R.string.NoResult));
         emptyView.subtitle.setText(getString(R.string.SearchEmptyViewFilteredSubtitle2));
-        contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 12, 52 + 12, 12, 0));
+        contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 12, 12, 12, 0));
 
         DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
         defaultItemAnimator.setDelayAnimations(false);
@@ -561,10 +437,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         listView.setAdapter(listViewAdapter);
         listView.setClipToPadding(false);
         scrollHelper = new RecyclerAnimationScrollHelper(listView, layoutManager);
-        scrollHelper.setScrollListener(this::blur3_InvalidateBlur);
-        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, -ADDITIONAL_LIST_HEIGHT_DP, 0, -ADDITIONAL_LIST_HEIGHT_DP));
-
-        contentView.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52, Gravity.TOP, 6, 0, 6, 0));
+        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         listView.setEmptyView(emptyView);
         listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
@@ -863,41 +736,18 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-//                if (scrollingManually && newState != RecyclerView.SCROLL_STATE_DRAGGING) {
-//                    final int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-//                    final View topChild = recyclerView.getChildAt(0);
-//                    final int firstViewTop = topChild != null ? topChild.getTop() : 0;
-//
-//                    final boolean searchForcedVisible = animatorSearchHasQuery.getValue() || (firstVisibleItem == 0 && firstViewTop >= (listView.getPaddingTop() - dp(DialogsActivity.SEARCH_FIELD_HEIGHT)));
-//                    final boolean searchVisible = searchForcedVisible || (animatorSearchFieldHeight.getFactor() > dp(DialogsActivity.SEARCH_FIELD_HEIGHT * (lastScrollToDown ? 1 : 4) / 5f));
-//
-//                    final float heightTo = dp(searchVisible ? DialogsActivity.SEARCH_FIELD_HEIGHT : 0);
-//                    if (animatorSearchFieldHeight.getToFactor() != heightTo) {
-//                        animatorSearchFieldHeight.animateTo(heightTo);
-//                        canScrollByAnimation = true;
-//                    }
-//                    animatorSearchFieldVisible.setValue(searchVisible, true);
-//                }
-
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    if (searching && searchWas || searchField.editText.isFocused()) {
+                    if (searching && searchWas) {
                         AndroidUtilities.hideKeyboard(getParentActivity().getCurrentFocus());
                     }
                     scrollingManually = true;
                 } else {
                     scrollingManually = false;
                 }
-//                lastListScrollState = newState;
             }
-
-            private boolean lastScrollToDown;
 
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                final int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-                final View topChild = recyclerView.getChildAt(0);
-                final int firstViewTop = topChild != null ? topChild.getTop() : 0;
-
                 if (floatingButton != null && !searching) {
                     boolean goingDown = dy > 0;
                     if (dy != 0 && scrollUpdated && (goingDown || scrollingManually)) {
@@ -906,30 +756,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     }
                     scrollUpdated = true;
                 }
-
-//                if (scrollingManually) {
-//                    final boolean searchForcedVisible = animatorSearchHasQuery.getValue() || (firstVisibleItem == 0 && firstViewTop >= (listView.getPaddingTop() /*- dp(DialogsActivity.SEARCH_FIELD_HEIGHT)*/));
-//                    float searchH = animatorSearchFieldHeight.getFactor();
-//                    if (!searchForcedVisible && dy != 0) {
-//                        searchH = MathUtils.clamp(searchH - dy, 0, dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
-//                        animatorSearchFieldHeight.forceFactor(searchH);
-//                    }
-//
-//                    final boolean searchVisible = searchForcedVisible || (animatorSearchFieldHeight.getFactor() > 0);
-//                    animatorSearchFieldVisible.setValue(searchVisible, true);
-//                }
-
-                final boolean shadowVisible = !(firstVisibleItem == 0 && firstViewTop >= listView.getPaddingTop());
-                headerShadowView.setShadowVisible(shadowVisible, true);
-
-                lastScrollToDown = dy < 0;
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableViewNoiseSuppressor != null) {
-                    scrollableViewNoiseSuppressor.onScrolled(dx, dy);
-                    blur3_InvalidateBlur();
-                }
-
-                checkUi_searchFieldY();
             }
         });
 
@@ -950,21 +776,9 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }
 
         if (initialSearchString != null) {
-            actionBar.openSearchField(initialSearchString, false);
+            simpleActionBar.openSearchField(initialSearchString, false);
             initialSearchString = null;
         }
-
-        contentView.addView(actionBar);
-
-        headerShadowView = new HeaderShadowView(context, parentLayout);
-        headerShadowView.setShadowVisible(false, false);
-        contentView.addView(headerShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 5, Gravity.TOP));
-
-        actionBar.setAdaptiveBackground(listView);
-        actionBar.setDrawBlurBackground(contentView);
-
-//        animatorSearchFieldHeight.forceFactor(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
-        animatorSearchFieldVisible.setValue(true, false);
 
         checkUi_searchFieldHint();
 
@@ -987,17 +801,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         return fragmentView;
     }
 
-    @Override
-    public ActionBar createActionBar(Context context) {
-        ActionBar actionBar = super.createActionBar(context);
-        actionBar.setUseContainerForTitles();
-        actionBar.getTitlesContainer().setTranslationX(dp(4));
-        actionBar.setAddToContainer(false);
-        actionBar.createAdditionalSubTitleOverlayContainer();
-        actionBar.getAdditionalSubTitleOverlayContainer().setTranslationX(dp(4));
-        actionBar.getAdditionalSubTitleOverlayContainer().setTranslationY(-dp(2));
-        return actionBar;
-    }
 
     public boolean addOrRemoveSelectedContact(UserCell cell) {
         long dialogId = cell.getDialogId();
@@ -1039,7 +842,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }
         boolean updateAnimated = false;
 
-        if (actionBar.isActionModeShowed()) {
+        if (simpleActionBar.isActionModeShowed()) {
             if (selectedContacts.isEmpty()) {
                 hideActionMode();
                 return;
@@ -1047,16 +850,15 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             updateAnimated = true;
         } else if (checked) {
             AndroidUtilities.hideKeyboard(fragmentView.findFocus());
-            actionBar.showActionMode();
-
-            backDrawable.setRotation(1, true);
+            simpleActionBar.setActionModeCount(selectedContacts.size(), false);
+            simpleActionBar.showActionMode();
         }
 
-        selectedContactsCountTextView.setNumber(selectedContacts.size(), updateAnimated);
+        simpleActionBar.setActionModeCount(selectedContacts.size(), updateAnimated);
     }
 
     private void hideActionMode() {
-        actionBar.hideActionMode();
+        simpleActionBar.hideActionMode();
         int count = listView.getChildCount();
         for (int i = 0; i < count; i++) {
             View view = listView.getChildAt(i);
@@ -1073,7 +875,36 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             }
         }
         selectedContacts.clear();
-        backDrawable.setRotation(0, true);
+    }
+
+    private ViewPropertyAnimator sortAnimator;
+
+    /** The list fades out, changes the sorting and fades in; the section letters then appear. */
+    private void toggleSort() {
+        SharedConfig.toggleSortContactsByName();
+        sortByName = SharedConfig.sortContactsByName;
+        if (sortItem != null) {
+            AndroidUtilities.updateImageViewImageAnimated(sortItem.getIconView(), sortByName ? R.drawable.msg_contacts_time : R.drawable.msg_contacts_name);
+        }
+        if (sortAnimator != null) {
+            sortAnimator.cancel();
+        }
+        animatorSectionLetters.cancel();
+        sortAnimator = listView.animate().alpha(0f).setDuration(120).setInterpolator(CubicBezierInterpolator.EASE_OUT).withEndAction(() -> {
+            animatorSectionLetters.forceFactor(sortByName ? 0f : 1f);
+            listViewAdapter.setSectionLettersProgress(animatorSectionLetters.getFactor());
+            listViewAdapter.setSortType(sortByName ? ContactsAdapter.SORT_TYPE_BY_NAME : ContactsAdapter.SORT_TYPE_BY_TIME, false);
+            listView.scrollToPosition(0);
+            sortAnimator = listView.animate().alpha(1f).setDuration(220).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
+                sortAnimator = null;
+            });
+            sortAnimator.start();
+            if (sortByName) {
+                animatorSectionLetters.setStartDelay(80);
+                animatorSectionLetters.animateTo(1f);
+            }
+        });
+        sortAnimator.start();
     }
 
     private void performSelectedContactsDelete() {
@@ -1147,7 +978,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 editText = new EditTextBoldCursor(getParentActivity());
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                 editText.setText("50");
-                editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+                ThemeBind.textColor(editText, Theme.key_dialogTextBlack, getResourceProvider());
                 editText.setGravity(Gravity.CENTER);
                 editText.setInputType(InputType.TYPE_CLASS_NUMBER);
                 editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -1221,13 +1052,12 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
     @Override
     public boolean onBackPressed(boolean invoked) {
-        if (actionBar.isActionModeShowed()) {
+        if (simpleActionBar.isActionModeShowed()) {
             if (invoked) hideActionMode();
             return false;
-        } else if (animatorSearchHasQuery.getValue()) {
-            if (invoked) {
-                searchField.editText.getText().clear();
-            }
+        } else if (simpleActionBar.isSearchFieldVisible()) {
+            // the tab host does not let ActionBarLayout close the search of a tab
+            if (invoked) simpleActionBar.closeSearchField();
             return false;
         }
         return super.onBackPressed(invoked);
@@ -1347,8 +1177,8 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     @Override
     public void onPause() {
         super.onPause();
-        if (actionBar != null) {
-            actionBar.closeSearchField();
+        if (simpleActionBar != null) {
+            simpleActionBar.closeSearchField();
         }
     }
 
@@ -1432,80 +1262,29 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
-            if (listView != null) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof UserCell) {
-                        ((UserCell) child).update(0);
-                    } else if (child instanceof ProfileSearchCell) {
-                        ((ProfileSearchCell) child).update(0);
-                    }
-                }
-            }
-            if (actionModeCloseView != null) {
-                actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-                actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
-            }
-            if (actionBar != null) {
-                actionBar.updateColors();
-            }
-            if (contentView != null) {
-                contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
-            }
-        };
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::cellDelegateThemeColors;
 
         if (!hasMainTabs) {
             themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         }
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_actionBarDefaultSearch));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_actionBarDefaultSearchPlaceholder));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SECTIONS, new Class[]{LetterSectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollActive));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollInactive));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_FASTSCROLL, null, null, null, null, Theme.key_fastScrollText));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText2));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
 
         if (floatingButton != null) {
-            themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
             themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
             themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
         }
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{GraySectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{GraySectionCell.class}, null, null, null, Theme.key_graySection));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_verifiedCheckDrawable}, null, Theme.key_chats_verifiedCheck));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_namePaint[0], Theme.dialogs_namePaint[1], Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{ProfileSearchCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint[0], Theme.dialogs_nameEncryptedPaint[1], Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName));
 
         return themeDescriptions;
     }
@@ -1517,26 +1296,9 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
     @Override
     public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
-        if (id == ANIMATOR_ID_SEARCH_FIELD_VISIBLE) {
-            checkUi_searchButton();
-//        } else if (id == ANIMATOR_ID_SEARCH_FIELD_HEIGHT) {
-//            searchField.setAlpha(animatorSearchFieldVisible.getFloatValue() * (animatorSearchFieldHeight.getFactor() / dp(DialogsActivity.SEARCH_FIELD_HEIGHT)));
-//            headerShadowView.setTranslationY(factor);
-//            final float alpha = factor / dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
-//            searchField.setClipHeight(alpha);
-//
-//            if (canScrollByAnimation && lastListScrollState == RecyclerView.SCROLL_STATE_IDLE) {
-//                scrollByAcc += (lastSearchFieldHeight - factor);
-//                int scrollBy = Math.round(scrollByAcc);
-//                scrollByAcc -= scrollBy;
-//                listView.scrollBy(0, scrollBy);
-//            }
-//
-//            lastSearchFieldHeight = factor;
-//            checkUi_listClip();
-        } else if (id == ANIMATOR_ID_SEARCH_HAS_QUERY) {
-            checkUi_searchButton();
-            checkUi_sortItem();
+        if (id == ANIMATOR_ID_SECTION_LETTERS) {
+            listViewAdapter.setSectionLettersProgress(factor);
+            listView.invalidate();
         }
     }
 
@@ -1548,13 +1310,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         return true;
     }
 
-    @Override
-    public void onFactorChangeFinished(int id, float finalFactor, FactorAnimator callee) {
-//        if (id == ANIMATOR_ID_SEARCH_FIELD_HEIGHT) {
-//            canScrollByAnimation = false;
-//            scrollByAcc = 0;
-//        }
-    }
 
     /* * */
 
@@ -1584,6 +1339,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
         final Insets systemInsets = AndroidUtilities.getDefaultWindowInsets(insets, false);
         navigationBarHeight = systemInsets.bottom;
+        statusBarInset = systemInsets.top;
 
         checkUi_listViewPadding();
         checkUi_floatingButtonPosition();
@@ -1595,6 +1351,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
         navigationBarHeight = bottom;
+        statusBarInset = top;
         checkUi_listViewPadding();
         checkUi_floatingButtonPosition();
         checkUi_emptyView();
@@ -1606,13 +1363,10 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }
     }
 
+    private int statusBarInset;
+
     private void checkUi_listViewPadding() {
-        listView.setPadding(
-            0,
-            dp(ADDITIONAL_LIST_HEIGHT_DP + 44) + actionBar.getMeasuredHeight(),
-            0,
-            dp(ADDITIONAL_LIST_HEIGHT_DP) + navigationBarHeight + additionNavigationBarHeight
-        );
+        BaseFragmentSimpleGlass.setListViewParams(listView, statusBarInset, navigationBarHeight, ActionBar.getCurrentActionBarHeight(), additionNavigationBarHeight);
     }
 
     private boolean lastIsEmpty;
@@ -1620,45 +1374,22 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     private void checkUi_searchFieldHint() {
         final boolean isEmpty = listViewAdapter != null && listViewAdapter.isEmpty();
 
-        if (lastIsEmpty != isEmpty || TextUtils.isEmpty(searchField.editText.getHint())) {
-            searchField.editText.setHint(getString(isEmpty ? R.string.SearchPeopleByUsername : R.string.SearchContacts));
-            searchField.editText.setContentDescription(getString(isEmpty ? R.string.SearchPeopleByUsername : R.string.SearchContacts));
+        if (lastIsEmpty != isEmpty || !hintSet) {
+            searchItem.setSearchFieldHint(getString(isEmpty ? R.string.SearchPeopleByUsername : R.string.SearchContacts));
             lastIsEmpty = isEmpty;
+            hintSet = true;
         }
     }
 
-    private void checkUi_searchFieldY() {
-        float top = listView.getY() + listView.getPaddingTop();
-        for (int i = 0; i < listView.getChildCount(); ++i) {
-            final View child = listView.getChildAt(i);
-            final int position = listView.getChildAdapterPosition(child);
-            if (position == 0) {
-                final RecyclerView.ItemDecoration decoration = listView.getItemDecorationAt(i);
-                decoration.getItemOffsets(AndroidUtilities.rectTmp2, child, listView, listView.mState);
-                top = listView.getY() + (child.getY() - (listViewAdapter.isEmptyWithMainTabs ? 0 : AndroidUtilities.rectTmp2.top));
-                break;
-            } else if (position > 0) {
-                top = -dp(52);
-                break;
-            }
-        }
-        searchField.setTranslationY(lerp(top, listView.getY() + listView.getPaddingTop(), animatorSearchHasQuery.getFloatValue()) - dp(48));
-        animatorSearchFieldVisible.setValue(top > listView.getY() + listView.getPaddingTop() - dp(12), true);
-    }
+    private boolean hintSet;
+
 
     private void checkUi_sortItem() {
-        final float factor1 = 1f - animatorSearchHasQuery.getFloatValue();
-        final float factor2 = listViewAdapter == null || listViewAdapter.isEmpty() ? 0 : 1;
-        final float factor = factor1 * factor2;
-        FragmentFloatingButton.setAnimatedVisibility(sortItem, factor);
+        if (sortItem != null) {
+            sortItem.setShown(listViewAdapter != null && !listViewAdapter.isEmpty(), true);
+        }
     }
 
-    private void checkUi_searchButton() {
-        final float factor1 = 1f - animatorSearchFieldVisible.getFloatValue();
-        final float factor2 = 1f - animatorSearchHasQuery.getFloatValue();
-        final float factor = factor1 * factor2;
-        FragmentFloatingButton.setAnimatedVisibility(searchItem, factor);
-    }
 
     private void checkUi_floatingButtonPosition() {
         if (floatingButton != null) {
@@ -1674,44 +1405,26 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
 
 
-    /* Blur */
+    /* Glass */
 
-    private final @Nullable DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
-    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlassFrosted;
-    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlass;
-
-    private IBlur3Capture iBlur3Capture;
-    private boolean iBlur3Invalidated;
-
-    private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
-    private final RectF iBlur3PositionActionBar = new RectF();
-    private final RectF iBlur3PositionMainTabs = new RectF(); {
-        iBlur3Positions.add(iBlur3PositionActionBar);
-        iBlur3Positions.add(iBlur3PositionMainTabs);
-    }
-
-    private void blur3_InvalidateBlur() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
-            return;
-        }
-
-        final int additionalList = dp(48);
-        final int additionalSearch = dp(DialogsActivity.SEARCH_FIELD_HEIGHT);
-
-        final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(DialogsActivity.MAIN_TABS_MARGIN);
-        final int mainTabTop = mainTabBottom - dp(DialogsActivity.MAIN_TABS_HEIGHT);
-
-        iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), actionBar.getMeasuredHeight() + additionalList + additionalSearch );
-        iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
-        iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
-
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
-        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
     }
 
     @Override
-    public BlurredBackgroundSourceRenderNode getGlassSource() {
-        return iBlur3SourceGlass;
+    public GlassSourceRenderNode getGlassSource() {
+        return getBaseSimpleGlass().getGlassSource();
+    }
+
+    @Override
+    public GlassSourceRenderNode getFrostedGlassSource() {
+        return getBaseSimpleGlass().getFrostedGlassSource();
+    }
+
+    @Override
+    public boolean drawEdgeNavigationBar() {
+        return !hasMainTabs;
     }
 
 
@@ -1723,7 +1436,64 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             scrollHelper.setScrollDirection(RecyclerAnimationScrollHelper.SCROLL_DIRECTION_UP);
             scrollHelper.scrollToPosition(0, 0, false, true);
         }
-//        animatorSearchFieldHeight.animateTo(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
-        animatorSearchFieldVisible.setValue(true, true);
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            cellDelegateThemeColors();
+            applyThemeColorsHook();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void applyThemeColorsHook() {
+        try {
+            if (listView != null) {
+                listView.updateFastScrollColors();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void cellDelegateThemeColors() {
+        // the simple header is a Theme.Colorable, recolored by ThemeBind
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_chats_secretName);
+        keys.add(Theme.key_chats_name);
+        keys.add(Theme.key_windowBackgroundWhiteBlueText3);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText3);
+        keys.add(Theme.key_chats_verifiedBackground);
+        keys.add(Theme.key_chats_verifiedCheck);
+        keys.add(Theme.key_graySection);
+        keys.add(Theme.key_graySectionText);
+        keys.add(Theme.key_windowBackgroundWhiteGrayIcon);
+        keys.add(Theme.key_windowBackgroundWhiteBlackText);
+        keys.add(Theme.key_avatar_backgroundPink);
+        keys.add(Theme.key_avatar_backgroundBlue);
+        keys.add(Theme.key_avatar_backgroundCyan);
+        keys.add(Theme.key_avatar_backgroundGreen);
+        keys.add(Theme.key_avatar_backgroundViolet);
+        keys.add(Theme.key_avatar_backgroundOrange);
+        keys.add(Theme.key_avatar_backgroundRed);
+        keys.add(Theme.key_avatar_text);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
+        keys.add(Theme.key_windowBackgroundWhite);
     }
 }

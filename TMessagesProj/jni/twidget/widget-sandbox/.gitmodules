@@ -1,0 +1,3 @@
+[submodule "packages/ios/Sources/CQuickJS/quickjs"]
+	path = packages/ios/Sources/CQuickJS/quickjs
+	url = https://github.com/TelegramMessenger/quickjs.git

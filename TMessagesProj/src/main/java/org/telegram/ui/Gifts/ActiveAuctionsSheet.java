@@ -6,6 +6,7 @@ import static org.telegram.messenger.LocaleController.formatNumber;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,6 +26,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.utils.CountdownTimer;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.ColoredImageSpan;
@@ -47,7 +49,7 @@ public class ActiveAuctionsSheet extends BottomSheetWithRecyclerListView impleme
     public ActiveAuctionsSheet(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, null, false, false, false, false, ActionBarType.SLIDING, resourcesProvider);
 
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        setBackgroundColor(lastBackgroundColor = Theme.getColor(Theme.key_windowBackgroundGray));
 
         GiftAuctionController.getInstance(currentAccount).subscribeToActiveAuctionsUpdates(this);
 
@@ -146,7 +148,7 @@ public class ActiveAuctionsSheet extends BottomSheetWithRecyclerListView impleme
         items.add(headerItem);
     }
 
-    private static class ActiveAuctionCell extends FrameLayout {
+    private static class ActiveAuctionCell extends FrameLayout implements Theme.Colorable {
 
         private final ButtonWithCounterView buttonView;
         private final AnimatedTextView titleView;
@@ -171,7 +173,7 @@ public class ActiveAuctionsSheet extends BottomSheetWithRecyclerListView impleme
             titleView = new AnimatedTextView(context);
             titleView.setTextSize(dp(14));
             titleView.setTypeface(AndroidUtilities.bold());
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
             messageView = new AnimatedTextView(context);
             messageView.setTextSize(dp(12));
 
@@ -217,12 +219,12 @@ public class ActiveAuctionsSheet extends BottomSheetWithRecyclerListView impleme
             if (bidStatus.isOutbid()) {
                 messageView.setText(StarsIntroActivity.replaceStarsWithPlain(AndroidUtilities.replaceTags(formatString(
                     R.string.Gift2ActiveAuctionsActiveBidOutbid, bid)), .66f, spanRefStars), animated);
-                messageView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                ThemeBind.textColor(messageView, Theme.key_text_RedBold);
             } else {
                 messageView.setText(StarsIntroActivity.replaceStarsWithPlain(AndroidUtilities.replaceTags(formatString(
                     R.string.Gift2ActiveAuctionsActiveBidActive, bid, auction.getApproximatedMyPlace()
                 )), .66f, spanRefStars), animated);
-                messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(messageView, Theme.key_windowBackgroundWhiteBlackText);
             }
         }
 
@@ -241,6 +243,32 @@ public class ActiveAuctionsSheet extends BottomSheetWithRecyclerListView impleme
         protected void dispatchDraw(@NonNull Canvas canvas) {
             canvas.drawRoundRect(dp(14), dp(9), getMeasuredWidth() - dp(14), getMeasuredHeight() - dp(9), dp(8), dp(8), paint);
             super.dispatchDraw(canvas);
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+    }
+
+    private int lastBackgroundColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int color = Theme.getColor(Theme.key_windowBackgroundGray);
+            if (color != lastBackgroundColor) {
+                lastBackgroundColor = color;
+                setBackgroundColor(color);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

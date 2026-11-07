@@ -17,13 +17,14 @@ import org.telegram.tlrpc.SchemeTlValidator
 import org.telegram.tlrpc.models.RulesHolder
 import org.telegram.tlrpc.models.TlObjectWithLayer
 import org.telegram.tlrpc.schema.TlSchemaJsonParser
+import org.telegram.tlrpc.schema.TlSchemaParamType
 import org.telegram.tlrpc.telegram.TelegramCodeParser
 import org.telegram.tlrpc.telegram.TelegramTlClass
 import java.io.File
 
 abstract class GenerateSchemeTask : DefaultTask() {
     companion object {
-        const val LAYER = 231;
+        const val LAYER = 233;
     }
 
 
@@ -140,9 +141,14 @@ abstract class GenerateSchemeTask : DefaultTask() {
         val typesForGen = allConstructors.map { it.tl.key.name.type }.toSet() +
                 schema.encryptedConstructors.map { it.tl.key.name.type }
 
+        val bareConstructors = (allConstructors + allMethods)
+            .flatMap { it.tl.params.list }
+            .mapNotNull { getBareConstructor(it.type) }
+            .toSet()
+
         for (type in typesForGen) {
             if (type == "Vector t") continue
-            generateSchemeClassForType(type, constructorTypesMap[type]!!, encryptedConstructors.toList())
+            generateSchemeClassForType(type, constructorTypesMap[type]!!, encryptedConstructors.toList(), bareConstructors)
         }
 
         generateSchemeTestClassForType(
@@ -162,7 +168,8 @@ abstract class GenerateSchemeTask : DefaultTask() {
     private fun generateSchemeClassForType(
         type: String,
         constructors: List<TlObjectWithLayer>,
-        encrypted: List<TlObjectWithLayer>
+        encrypted: List<TlObjectWithLayer>,
+        bareConstructors: Set<String>
     ) {
         val packageName = "org.telegram.tgnet.model.generated"
         val x = constructors.groupBy { it.tl.key.name.type }
@@ -186,7 +193,8 @@ abstract class GenerateSchemeTask : DefaultTask() {
             sealedClassBuilder.addType(
                 SchemeCodeGen.generateDataClass(
                     constructor,
-                    if (needSuper) ClassName(packageName, sealedClassName) else null
+                    if (needSuper) ClassName(packageName, sealedClassName) else null,
+                    constructor.tl.key.name.predicate in bareConstructors
                 )
             )
         }
@@ -339,6 +347,15 @@ abstract class GenerateSchemeTask : DefaultTask() {
                     }
                 }
             }
+    }
+
+    private fun getBareConstructor(type: TlSchemaParamType): String? {
+        return when (type) {
+            is TlSchemaParamType.Primary.Object -> type.bareConstructor
+            is TlSchemaParamType.Primary.Vector -> getBareConstructor(type.type)
+            is TlSchemaParamType.Flag.Optional -> getBareConstructor(type.type)
+            else -> null
+        }
     }
 
     private fun mostFrequentStringOrNull(input: List<String>): String? {

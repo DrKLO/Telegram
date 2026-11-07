@@ -1,0 +1,110 @@
+{
+ "$comment": "Fixture for ConformanceProbe in every host glue (TS, Swift, Kotlin, C++): feed `messages` (host → renderer JSON, as Renderer.send receives them) through the probe; it must report `updates` results, the last equal to `final`, the html element id `htmlId`. Typed-op hosts (Swift acceptsTypedOps) feed the same batches as WidgetOp. See CLIENTS.md, \"Reading the ops\".",
+ "cases": [
+  {
+   "name": "the attribute comes with the adopted <html> el op, then attr ops replace it",
+   "messages": [
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"el\", \"id\": 2, \"tag\": \"html\", \"attrs\": [[\"data-test\", \"auto/x\"], [\"data-conformance\", \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"running\\\", \\\"n\\\": {}, \\\"checks\\\": []}\"]], \"adopt\": \"html\"}, {\"op\": \"el\", \"id\": 3, \"tag\": \"body\", \"attrs\": [], \"adopt\": \"body\"}]}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"attr\", \"id\": 2, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"awaiting\\\", \\\"n\\\": {\\\"pass\\\": 1, \\\"pending\\\": 1}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pending\\\", \\\"\\\"]], \\\"targets\\\": {\\\"btn\\\": [10, 20, 64, 28]}}\"}]}",
+    "{\"type\": \"query\", \"qid\": 1, \"query\": {\"q\": \"rect\", \"id\": 3}}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"attr\", \"id\": 2, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"done\\\", \\\"n\\\": {\\\"pass\\\": 2}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pass\\\", \\\"\\\"]]}\"}]}"
+   ],
+   "expect": {
+    "htmlId": 2,
+    "updates": 3,
+    "final": {
+     "v": 1,
+     "id": "auto/x",
+     "status": "done",
+     "n": {
+      "pass": 2
+     },
+     "checks": [
+      [
+       "css.display.flex",
+       "row",
+       "pass",
+       ""
+      ],
+      [
+       "input.tap",
+       "tap",
+       "pass",
+       ""
+      ]
+     ]
+    },
+    "awaitingTargets": {
+     "btn": [
+      10,
+      20,
+      64,
+      28
+     ]
+    }
+   }
+  },
+  {
+   "name": "an attribute of the same name on another element is ignored",
+   "messages": [
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"el\", \"id\": 2, \"tag\": \"html\", \"attrs\": [], \"adopt\": \"html\"}]}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"el\", \"id\": 7, \"tag\": \"div\", \"attrs\": [[\"data-conformance\", \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"done\\\", \\\"n\\\": {\\\"pass\\\": 2}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pass\\\", \\\"\\\"]]}\"]]}]}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"attr\", \"id\": 7, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"done\\\", \\\"n\\\": {\\\"pass\\\": 2}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pass\\\", \\\"\\\"]]}\"}]}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"attr\", \"id\": 2, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"running\\\", \\\"n\\\": {}, \\\"checks\\\": []}\"}]}"
+   ],
+   "expect": {
+    "htmlId": 2,
+    "updates": 1,
+    "final": {
+     "v": 1,
+     "id": "auto/x",
+     "status": "running",
+     "n": {},
+     "checks": []
+    }
+   }
+  },
+  {
+   "name": "no adopted html yet: attr ops are ignored until the el op arrives",
+   "messages": [
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"attr\", \"id\": 2, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"done\\\", \\\"n\\\": {\\\"pass\\\": 2}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pass\\\", \\\"\\\"]]}\"}]}",
+    "{\"type\": \"ops\", \"ops\": [{\"op\": \"el\", \"id\": 2, \"tag\": \"html\", \"attrs\": [], \"adopt\": \"html\"}, {\"op\": \"attr\", \"id\": 2, \"name\": \"data-conformance\", \"value\": \"{\\\"v\\\": 1, \\\"id\\\": \\\"auto/x\\\", \\\"status\\\": \\\"awaiting\\\", \\\"n\\\": {\\\"pass\\\": 1, \\\"pending\\\": 1}, \\\"checks\\\": [[\\\"css.display.flex\\\", \\\"row\\\", \\\"pass\\\", \\\"\\\"], [\\\"input.tap\\\", \\\"tap\\\", \\\"pending\\\", \\\"\\\"]], \\\"targets\\\": {\\\"btn\\\": [10, 20, 64, 28]}}\"}]}"
+   ],
+   "expect": {
+    "htmlId": 2,
+    "updates": 1,
+    "final": {
+     "v": 1,
+     "id": "auto/x",
+     "status": "awaiting",
+     "n": {
+      "pass": 1,
+      "pending": 1
+     },
+     "checks": [
+      [
+       "css.display.flex",
+       "row",
+       "pass",
+       ""
+      ],
+      [
+       "input.tap",
+       "tap",
+       "pending",
+       ""
+      ]
+     ],
+     "targets": {
+      "btn": [
+       10,
+       20,
+       64,
+       28
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

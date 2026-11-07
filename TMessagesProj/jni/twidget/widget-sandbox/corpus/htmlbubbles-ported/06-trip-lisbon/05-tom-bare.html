@@ -1,0 +1,225 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 5
+  author: tom 08:20 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --sep: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14)); --seg-on: light-dark(#ffffff, #5a5a5e); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; } .center { text-align: center; } .right { text-align: right; }
+  .sep { border-top: 1px solid var(--sep); }
+  .seg span, .day { cursor: pointer; }
+
+  .wx { width: 100%; box-sizing: border-box; }
+  .wx .seg { display: inline-block; padding: 2px; border-radius: 8px; background-color: rgba(127,127,127,0.14); }
+  .wx .seg span { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+  .wx .seg span:hover { background-color: rgba(127,127,127,0.2); }
+  .wx .seg span.on { background-color: var(--seg-on); }
+  .wx .days { display: flex; padding: 4px 8px 8px 8px; }
+  .wx .day { flex-grow: 1; flex-basis: 0; text-align: center; padding: 6px 0; border-radius: 10px; }
+  .wx .day:hover { background-color: rgba(127,127,127,0.10); }
+  .wx .day.on { background-color: rgba(255,149,0,0.16); }
+  .wx .day.on:hover { background-color: rgba(255,149,0,0.24); }
+  .wx .day .n { font-size: 12px; font-weight: 700; }
+  .wx .day .ic { display: block; font-size: 22px; line-height: 22px; margin: 4px 0; }
+  .wx .day .hi { font-weight: 700; }
+  .wx .day .lo { font-size: 12px; }
+  .wx .rng { height: 4px; border-radius: 2px; margin: 5px 9px 3px 9px; background-color: rgba(127,127,127,0.2); }
+  .wx .rng div { height: 4px; border-radius: 2px; width: 0; background: linear-gradient(90deg, #5ac8fa, #ffcc00, #ff9500); transition: width 850ms cubic-bezier(.33,1,.68,1); }
+  .wx .hourly { padding: 0 14px 12px 14px; }
+  .wx .plot { position: relative; height: 92px; margin-top: 6px; }
+  .wx .plot svg { display: block; width: 100%; height: 92px; }
+  .wx .val { position: absolute; width: 44px; text-align: center; font-size: 10px; font-weight: 700; }
+  .wx .hrs { display: flex; }
+  .wx .hrs div { flex-grow: 1; flex-basis: 0; text-align: center; font-size: 10px; }
+
+</style>
+<div class="card wx" id="root">
+  <div class="pad row">
+    <span style="font-size: 36px; line-height: 36px; margin-right: 12px">☀️</span>
+    <div class="grow"><div class="caps">Lisbon · now</div><div id="now-t" style="font-size: 30px; font-weight: 800; line-height: 1.1">0°</div></div>
+    <div class="right small"><span class="seg" id="units"><span class="on" data-unit="C">°C</span><span data-unit="F">°F</span></span><div style="margin-top: 4px">Sunny, light breeze</div><div class="muted">H <span data-c="26">26°</span> · L <span data-c="17">17°</span> · UV 6</div></div>
+  </div>
+  <div class="sep" style="margin: 0 14px"></div>
+  <div class="days" id="days"></div>
+  <div class="hourly" id="hourly">
+    <div class="sep" style="margin-bottom: 8px"></div>
+    <div class="row between"><span><b id="h-full"></b> <span class="small muted">· <span id="h-sky"></span></span></span><span class="seg" id="metrics"></span></div>
+    <div class="plot">
+      <svg id="chart" viewBox="0 0 392 92">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop id="g0" offset="0" stop-color="#ff9500" stop-opacity="0.35"/><stop id="g1" offset="1" stop-color="#ff9500" stop-opacity="0"/></linearGradient></defs>
+        <path id="area" fill="url(#g)"/>
+        <path id="line" fill="none" stroke="#ff9500" stroke-width="2.5" stroke-linecap="round"/>
+        <g id="dots" fill="#ff9500"></g>
+      </svg>
+      <div id="labels"></div>
+    </div>
+    <div class="hrs" id="hrs"></div>
+    <div class="tiny muted" style="margin-top: 6px" id="note"></div>
+  </div>
+  <div class="center tiny muted" id="closed" style="padding: 0 0 12px 0" hidden>Tap a day for the hourly forecast</div>
+</div>
+<script>
+const SLOTS = ['00', '03', '06', '09', '12', '15', '18', '21'];
+const SUN = '☀️', PART = '⛅️';
+const DAYS = [
+  { n: 'Thu', full: 'Thursday', sky: 'Sunny', icon: SUN, hi: 26, lo: 17, uv: 6, set: '19:12', temp: [18, 17, 17, 21, 25, 26, 23, 20], rain: [0, 0, 0, 0, 0, 0, 5, 5], wind: [6, 6, 8, 12, 16, 19, 15, 9] },
+  { n: 'Fri', full: 'Friday', sky: 'Partly cloudy', icon: PART, hi: 24, lo: 17, uv: 5, set: '19:10', temp: [18, 17, 17, 20, 23, 24, 22, 19], rain: [5, 5, 10, 10, 15, 20, 10, 5], wind: [8, 8, 10, 14, 18, 20, 16, 10] },
+  { n: 'Sat', full: 'Saturday', sky: 'Drizzle', icon: '🌦', hi: 21, lo: 15, uv: 3, set: '19:09', temp: [16, 15, 15, 17, 19, 21, 19, 17], rain: [40, 55, 60, 70, 65, 50, 45, 35], wind: [14, 16, 18, 22, 24, 24, 20, 16] },
+  { n: 'Sun', full: 'Sunday', sky: 'Clearing up', icon: PART, hi: 23, lo: 16, uv: 5, set: '19:07', temp: [17, 16, 16, 19, 22, 23, 21, 18], rain: [20, 15, 10, 5, 5, 5, 0, 0], wind: [12, 10, 10, 12, 15, 16, 12, 10] },
+  { n: 'Mon', full: 'Monday', sky: 'Sunny and warm', icon: SUN, hi: 27, lo: 18, uv: 7, set: '19:06', temp: [19, 18, 18, 22, 26, 27, 24, 21], rain: [0, 0, 0, 0, 0, 0, 0, 0], wind: [6, 6, 6, 10, 14, 16, 12, 8] },
+  { n: 'Tue', full: 'Tuesday', sky: 'Windy', icon: '💨', hi: 22, lo: 16, uv: 5, set: '19:04', temp: [17, 16, 16, 18, 21, 22, 20, 18], rain: [0, 0, 5, 5, 0, 0, 0, 0], wind: [22, 24, 26, 30, 34, 32, 28, 24] },
+  { n: 'Wed', full: 'Wednesday', sky: 'Sunny', icon: SUN, hi: 25, lo: 17, uv: 6, set: '19:03', temp: [18, 17, 17, 21, 24, 25, 22, 19], rain: [0, 0, 0, 0, 0, 0, 0, 0], wind: [8, 8, 8, 12, 15, 16, 12, 9] },
+];
+const METRICS = { temp: { label: 'Temp', color: '#ff9500', lo: 12, hi: 30 }, rain: { label: 'Rain', color: '#0a84ff', lo: 0, hi: 100 }, wind: { label: 'Wind', color: '#30b0c7', lo: 0, hi: 40 } };
+const W = 392, H = 92, TOP = 20, BOT = 6;
+let sel = 0, metric = 'temp', unit = 'C', open = true, run = 0;
+let ys = Array(8).fill(0), vals = Array(8).fill(0), col = '#ff9500';
+let f = 0, intro = 0, unitRun = 0;
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3), inOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 };
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    if (onFrame(easing(t), t) === false) return resolve();
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => '#' + rgb(a).map((q, i) => Math.round(clamp(q + (rgb(b)[i] - q) * t, 0, 255)).toString(16).padStart(2, '0')).join('');
+const T = c => Math.round(c + f * (c * 0.8 + 32)) + '°';
+const speed = v => Math.round(v * (1 - 0.379 * f));
+const speedUnit = () => f > 0.5 ? 'mph' : 'km/h';
+const f1 = n => n.toFixed(1);
+
+// --- static parts ---
+$('days').innerHTML = DAYS.map((d, i) => {
+  const w = (d.hi - d.lo) / 12 * 100, m = (d.lo - 15) / 12 * 100;
+  return `<div class="day" data-day="${i}"><div class="n">${d.n}</div><span class="ic">${d.icon}</span>
+    <div class="hi" data-c="${d.hi}">${T(d.hi)}</div><div class="rng"><div data-w="${w.toFixed(1)}" style="margin-left: ${m.toFixed(1)}%"></div></div><div class="lo muted" data-c="${d.lo}">${T(d.lo)}</div></div>`;
+}).join('');
+$('metrics').innerHTML = Object.keys(METRICS).map(k => `<span data-metric="${k}">${METRICS[k].label}</span>`).join('');
+$('hrs').innerHTML = SLOTS.map(s => `<div class="muted">${s}</div>`).join('');
+$('dots').innerHTML = SLOTS.map(() => '<circle r="3.2"/>').join('');
+$('labels').innerHTML = SLOTS.map(() => '<div class="val"></div>').join('');
+const dots = $('dots').children, labels = $('labels').children;
+
+function curve(pts) {
+  let d = `M${f1(pts[0][0])},${f1(pts[0][1])}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    d += ` C${f1(p1[0] + (p2[0] - p0[0]) / 6)},${f1(p1[1] + (p2[1] - p0[1]) / 6)} ${f1(p2[0] - (p3[0] - p1[0]) / 6)},${f1(p2[1] - (p3[1] - p1[1]) / 6)} ${f1(p2[0])},${f1(p2[1])}`;
+  }
+  return d;
+}
+function label(v) {
+  if (metric === 'temp') return T(v);
+  if (metric === 'rain') return Math.round(v) + '%';
+  return String(speed(v));
+}
+
+function drawChart() {
+  const pts = ys.map((y, i) => [W * (i + 0.5) / 8, TOP + (1 - y) * (H - TOP - BOT)]);
+  const line = curve(pts);
+  $('area').setAttribute('d', `${line} L${f1(pts[7][0])},${H} L${f1(pts[0][0])},${H} Z`);
+  const ln = $('line');
+  ln.setAttribute('d', line); ln.setAttribute('stroke', col);
+  $('dots').setAttribute('fill', col);
+  $('g0').setAttribute('stop-color', col); $('g1').setAttribute('stop-color', col);
+  pts.forEach((p, i) => {
+    dots[i].setAttribute('cx', f1(p[0])); dots[i].setAttribute('cy', f1(p[1]));
+    const l = labels[i];
+    l.style.left = (p[0] / W * 100).toFixed(3) + '%'; l.style.marginLeft = '-22px'; l.style.top = Math.round(p[1] - 18) + 'px'; l.style.color = col;
+    l.textContent = label(vals[i]);
+  });
+}
+
+function renderNote() {
+  const D = DAYS[sel];
+  const peakAt = D.temp.indexOf(Math.max(...D.temp));
+  const note = metric === 'temp' ? `Warmest ${T(D.hi)} around ${SLOTS[peakAt]}:00`
+    : metric === 'rain' ? (Math.max(...D.rain) >= 40 ? `Rain up to ${Math.max(...D.rain)}% · bring a jacket` : `Rain up to ${Math.max(...D.rain)}% · stays dry`)
+    : `Gusts to ${speed(Math.max(...D.wind) * 1.4)} ${speedUnit()}`;
+  $('note').textContent = `${note} · UV ${D.uv} · sunset ${D.set}${metric === 'wind' ? ` · ${speedUnit()}` : ''}`;
+}
+
+function renderHourly() {
+  const D = DAYS[sel];
+  $('hourly').hidden = !open;
+  $('closed').hidden = open;
+  $('h-full').textContent = D.full; $('h-sky').textContent = D.sky;
+  for (const s of $('metrics').children) s.classList.toggle('on', s.dataset.metric === metric);
+  for (const d of $('days').children) d.classList.toggle('on', open && Number(d.dataset.day) === sel);
+  renderNote();
+}
+
+function applyUnits() {
+  for (const el of root.querySelectorAll('[data-c]')) el.textContent = T(Number(el.dataset.c));
+  $('now-t').textContent = T(24 * intro);
+  for (const s of $('units').children) s.classList.toggle('on', s.dataset.unit === unit);
+  drawChart();
+  renderNote();
+}
+
+function morph(ms) {
+  const me = ++run, M = METRICS[metric];
+  const fromY = ys.slice(), fromV = vals.slice(), fromC = col;
+  const toV = DAYS[sel][metric], toY = toV.map(v => clamp((v - M.lo) / (M.hi - M.lo), 0, 1));
+  return animate(ms, p => {
+    if (me !== run) return false;
+    ys = fromY.map((y, i) => lerp(y, toY[i], p));
+    vals = fromV.map((v, i) => lerp(v, toV[i], p));
+    col = mix(fromC, M.color, p);
+    drawChart();
+  }, ease.outCubic);
+}
+
+renderHourly();
+applyUnits();
+setTimeout(() => {
+  for (const b of root.querySelectorAll('.rng div')) b.style.width = b.dataset.w + '%';
+  animate(850, p => { intro = p; $('now-t').textContent = T(24 * intro); }, ease.outCubic);
+  morph(900);
+}, 250);
+
+$('units').addEventListener('click', e => {
+  const t = e.target.closest('[data-unit]');
+  if (!t || t.dataset.unit === unit) return;
+  unit = t.dataset.unit;
+  const me = ++unitRun, from = f, to = unit === 'F' ? 1 : 0;
+  animate(160, p => { if (me !== unitRun) return false; f = lerp(from, to, p); applyUnits(); }, ease.outCubic);
+});
+$('days').addEventListener('click', e => {
+  const t = e.target.closest('[data-day]');
+  if (!t) return;
+  const d = Number(t.dataset.day);
+  if (d === sel) { open = !open; renderHourly(); return; }
+  if (!open) open = true;
+  sel = d;
+  renderHourly();
+  morph(180);
+});
+$('metrics').addEventListener('click', e => {
+  const t = e.target.closest('[data-metric]');
+  if (!t || t.dataset.metric === metric) return;
+  metric = t.dataset.metric;
+  renderHourly();
+  morph(180);
+});
+</script>

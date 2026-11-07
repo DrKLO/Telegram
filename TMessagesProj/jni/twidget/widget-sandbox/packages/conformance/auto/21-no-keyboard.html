@@ -1,0 +1,47 @@
+<!doctype html>
+<html data-test="auto/21-no-keyboard">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: no keyboard</title>
+<!-- conformance {"title":"No keyboard (D4): key events never reach the widget, Enter/Space do not activate buttons or links, focus() does not take the focus from the chat input, a key press is not a user gesture for the bridge","hint":"Type in the chat input field: the widget must not steal the focus. Tap “button”, press Enter, Space and A; tap “link”, press Enter; tap Finish.","actions":[{"tap":"btn","ids":["input.key-activation"]},{"key":"Enter","ids":["input.keyboard","input.key-activation","input.key-gesture"]},{"key":"Space","ids":["input.keyboard","input.key-activation","input.key-gesture"]},{"key":"a","ids":["input.keyboard","input.key-gesture"]},{"tap":"lnk","ids":["input.key-activation"]},{"key":"Enter","ids":["input.keyboard","input.key-activation","input.key-gesture"]},{"tap":"finish"}],"host":[{"id":"js.focus","name":"focus() from the widget leaves the chat input focused","focus":"chat"},{"id":"input.key-gesture","name":"a key press does not unlock openLink","bridge":{"method":"openLink","arg":"https://example.org/conformance/key","count":0},"gesture":true}]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var d=document,A=d.documentElement,k=typeof TelegramWidget!="undefined",R=window.__conformanceMode||(k?"sandbox":"native"),c=[],T={},p=[],l={},g,u,x,f,q,h,m,y,b=t=>typeof t=="string"?d.querySelector(t):t;var S=()=>{y=y||setTimeout(M,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),a=T[t+"|"+e]||(T[t+"|"+e]=c[c.length]=[t,e]);return a[2]=s,a[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),S(),s}function B(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var E=(t,e,n,o,r)=>B(t,e,[n,o],r);function I(t,e,n){m=()=>{for(let s of c)s[2]=="pending"&&(s[2]="fail",s[3]+=" (timed out)");f=1,M()};let o=(s,a)=>{r.done||(r.done=i(t,e,s,a,n))},r={done:n&&n.sandboxOnly&&!k,pass:s=>o(!0,s),fail:s=>o(!1,s),skip:s=>o(null,s),result:(s,a)=>o(!!s,a)};return i(t,e,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}var F=(t,e,n)=>getComputedStyle(b(t),n).getPropertyValue(e).trim();function J(t,e,n){let o=F(t,e||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var N=t=>{p.push(t)};var _=(t,e)=>{l[t]=e,j=()=>{g={};for(let n in l)b(l[n])&&(g[n]=C(b(l[n])))}},j=()=>{},C=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function M(){y=0,x&&!f&&j();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of c)t[o[2]]++;let e=x&&!p.length,n=f||e&&!t.pending?"done":e&&q?"awaiting":"running";f=n=="done",A.setAttribute("data-conformance",JSON.stringify({v:1,id:A.getAttribute("data-test"),mode:R,status:n,n:t,checks:c,targets:g,stages:u})),w&&w(n,t)}var w;function D(){w=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);d.getElementById("conf-list").textContent=[n.join(" · ")].concat(c.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function O(){if(u||(u={},[].forEach.call(d.querySelectorAll("[data-stage]"),e=>{u[e.getAttribute("data-stage")]=C(e)})),!p.length)return x=1,h&&m&&setTimeout(m,h),S();let t;try{t=p.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(O,t||0)}function v(t){t=t||{},q=t.awaitInput,h=t.awaitInput||t.deadline,M();let e=()=>{e=()=>{},setTimeout(O,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}D();return{color:J,ok:E,run:v,step:N,target:_,wait:I}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+button,a{display:inline-block;min-width:80px;height:30px;margin:4px;font:14px/30px system-ui;text-align:center}
+#btn:focus{outline:3px solid rgb(9,9,9)}
+#field{width:60px}
+</style>
+</head>
+<body>
+<div class="conf-head">21 · No keyboard</div>
+<div class="conf-probes">
+  <button id="btn">button</button><a id="lnk" href="#t">link</a><button id="finish">Finish</button>
+</div>
+<div id="conf-list"></div>
+<script>
+['btn', 'lnk', 'finish'].forEach(function (n) { T.target(n, '#' + n); });
+var keyEv = T.wait('input.keyboard', 'no keydown, keyup, keypress, beforeinput or input event reaches the widget');
+var keyAct = T.wait('input.key-activation', 'Enter and Space add no clicks to a tapped button or link (one click each)');
+var seen = { keydown: 0, keyup: 0, keypress: 0, beforeinput: 0, input: 0 };
+Object.keys(seen).forEach(function (t) { document.addEventListener(t, function () { seen[t]++; }, true); });
+// Were a key press a gesture, this privileged call would reach the host (the runner counts it).
+document.addEventListener('keydown', function () { if (typeof TelegramWidget !== 'undefined') TelegramWidget.openLink('https://example.org/conformance/key'); });
+var clicks = { btn: 0, lnk: 0 };
+document.getElementById('btn').addEventListener('click', function () { clicks.btn++; });
+document.getElementById('lnk').addEventListener('click', function (e) { clicks.lnk++; e.preventDefault(); });
+document.getElementById('finish').addEventListener('click', function () {
+  var total = seen.keydown + seen.keyup + seen.keypress + seen.beforeinput + seen.input;
+  keyEv.result(total === 0, JSON.stringify(seen));
+  keyAct.result(clicks.btn === 1 && clicks.lnk === 1, 'button ' + clicks.btn + ', link ' + clicks.lnk + ' clicks');
+});
+T.step(function () {
+  var btn = document.getElementById('btn');
+  btn.focus();
+  T.ok('js.focus', 'focus() does not make :focus match in the renderer', T.color('#btn', 'outline-color') !== '9,9,9,1', T.color('#btn', 'outline-color'));
+});
+T.run({ awaitInput: 20000 });
+</script>
+</body>
+</html>

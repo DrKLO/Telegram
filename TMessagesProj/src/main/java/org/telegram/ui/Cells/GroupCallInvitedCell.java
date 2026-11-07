@@ -1,5 +1,6 @@
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,12 +18,13 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressWarnings("FieldCanBeLocal")
-public class GroupCallInvitedCell extends FrameLayout {
+public class GroupCallInvitedCell extends FrameLayout implements Theme.Colorable {
 
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
@@ -52,7 +54,7 @@ public class GroupCallInvitedCell extends FrameLayout {
         addView(avatarImageView, LayoutHelper.createFrame(46, 46, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 11, 6, LocaleController.isRTL ? 11 : 0, 0));
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+        ThemeBind.textColor(nameTextView, Theme.key_voipgroup_nameText);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -137,5 +139,25 @@ public class GroupCallInvitedCell extends FrameLayout {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(68), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(68) : 0), getMeasuredHeight() - 1, dividerPaint);
         }
         super.dispatchDraw(canvas);
+    }
+
+    private int themedGrayIconValue;
+
+    @Override
+    public void updateColors() {
+        try {
+            dividerPaint.setColor(Theme.getColor(Theme.key_voipgroup_actionBar));
+            if (muteButton != null && statusTextView != null) {
+                final int grayColor = Theme.getColor(grayIconColor);
+                if (grayColor != themedGrayIconValue) {
+                    themedGrayIconValue = grayColor;
+                    setGrayIconColor(grayIconColor, grayColor); // state key (scrolled / unscrolled)
+                }
+            }
+            invalidate();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

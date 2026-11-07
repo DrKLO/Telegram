@@ -1055,7 +1055,7 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
             circles.get(i).imageReceiver.onAttachedToWindow();
         }
 
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesUpdated);
     }
 
     @Override

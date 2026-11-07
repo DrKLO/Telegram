@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!-- Memory exhaustion, single burst: one synchronous 256 MB allocation in a
+     click handler — the exact case the QuickJS-vs-JSC benchmark flagged, where
+     JSC grew the process 260 MB in 36 ms with no cap while QuickJS refused it
+     at the runtime limit and grew 0 MB. A soft between-ticks footprint poller
+     cannot catch this: it happens inside one call. The sandbox must refuse the
+     allocation (InternalError: out of memory) and kill the widget; the process
+     must not balloon. -->
+<html><head><meta charset="utf-8"></head><body>
+<p id="status">tap to allocate 256 MB at once</p><button id="go">go</button>
+<script>
+  document.getElementById('go').addEventListener('click', function () {
+    try {
+      var big = new Uint8Array(256 * 1024 * 1024);
+      big[0] = 1; big[big.length - 1] = 1;
+      document.getElementById('status').textContent = 'allocated ' + (big.length >> 20) + ' MB — NOT capped';
+    } catch (e) {
+      document.getElementById('status').textContent = 'refused: ' + e.name;
+    }
+  });
+</script>
+</body></html>

@@ -64,6 +64,7 @@ public class SpeedLineParticles {
         }
 
         public void onDraw(Canvas canvas) {
+            updateColors(); // follow theme switches (cheap: recolors only when the color changed)
             long time = System.currentTimeMillis();
             for (int i = 0; i < particles.size(); i++) {
                 Drawable.Particle particle = particles.get(i);
