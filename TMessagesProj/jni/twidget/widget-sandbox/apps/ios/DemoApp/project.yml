@@ -1,0 +1,55 @@
+name: TwidgetDemo
+options:
+  bundleIdPrefix: org.telegram.widgetsandbox
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "26.0"
+packages:
+  WidgetSandbox:
+    path: ../../..   # the repo root holds Package.swift (packages/ios)
+targets:
+  TwidgetDemo:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Corpus
+        type: folder
+        buildPhase: resources
+    preBuildScripts:
+      - name: Build the Blitz renderer (cargo; TW_NATIVE_RENDERERS=YES only)
+        script: "[ \"$TW_NATIVE_RENDERERS\" = YES ] || exit 0; \"$SRCROOT/../../renderer-blitz/build-apple.sh\""
+        basedOnDependencyAnalysis: false
+      - name: Build the litehtml renderer (cmake; TW_NATIVE_RENDERERS=YES only)
+        script: "[ \"$TW_NATIVE_RENDERERS\" = YES ] || exit 0; \"$SRCROOT/../../renderer-litehtml/build-apple.sh\""
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - package: WidgetSandbox
+    info:
+      path: Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        SWIFT_VERSION: "5.0"
+        # Native renderer prototypes (dev tooling, frozen since 2026-10-30: docs/decisions.md,
+        # "The renderer prototypes are frozen"): the Rust static library from renderer-blitz/
+        # and the C++ one from renderer-litehtml/, built by the pre-build script phases, linked
+        # and compiled in (Swift condition TW_NATIVE_RENDERERS) only when the build passes
+        # TW_NATIVE_RENDERERS=YES, e.g. on the xcodebuild command line.
+        TW_NATIVE_RENDERERS: NO
+        TW_NATIVE_RENDERER_CONDITION_YES: TW_NATIVE_RENDERERS
+        TW_NATIVE_RENDERER_LDFLAGS_YES: ["-ltwidget_blitz", "-ltwidget_litehtml", "-lc++", "-framework", "CoreText", "-framework", "CoreGraphics", "-framework", "ImageIO", "-liconv"]
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: ["$(inherited)", "$(TW_NATIVE_RENDERER_CONDITION_$(TW_NATIVE_RENDERERS))"]
+        SWIFT_OBJC_BRIDGING_HEADER: BridgingHeader.h
+        LIBRARY_SEARCH_PATHS: ["$(inherited)", "$(SRCROOT)/../../renderer-blitz/target/apple/$(PLATFORM_NAME)", "$(SRCROOT)/../../renderer-litehtml/target/apple/$(PLATFORM_NAME)"]
+        OTHER_LDFLAGS: ["$(inherited)", "$(TW_NATIVE_RENDERER_LDFLAGS_$(TW_NATIVE_RENDERERS))"]
+        # Simulator builds from the CLI pass CODE_SIGNING_ALLOWED=NO. For a real
+        # iPhone pick your team in Xcode (Signing & Capabilities) or run
+        # `xcodegen generate` with TWIDGET_TEAM=<your 10-char Team ID> exported.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "${TWIDGET_TEAM}"
+        PRODUCT_BUNDLE_IDENTIFIER: org.telegram.widgetsandbox.TwidgetDemo

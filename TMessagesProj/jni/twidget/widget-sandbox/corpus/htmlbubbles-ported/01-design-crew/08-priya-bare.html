@@ -1,0 +1,277 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 01-design-crew.chat, message 8
+  author: priya 09:40 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .t-blue { color: var(--blue); } .t-red { color: var(--red); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.blue { background-color: rgba(0,122,255,0.16); color: var(--blue); }
+  [data-act] { cursor: pointer; }
+
+  .pl { width: 330px; max-width: 100%; }
+  .pl .q { font-size: 16px; font-weight: 700; margin: 2px 0 8px 0; }
+  .pl .opt { padding: 5px 8px 7px 8px; margin: 0 -8px 2px -8px; border-radius: 10px; }
+  .pl .opt:hover { background-color: rgba(127,127,127,0.10); }
+  .pl .res { padding: 5px 0 7px 0; }
+  .pl .top { display: flex; align-items: center; height: 22px; font-size: 13px; }
+  .pl .lbl { flex-grow: 1; }
+  .pl .pc { width: 40px; text-align: right; font-weight: 700; }
+  .pl .vt { display: inline-block; margin-left: 2px; border-radius: 10px; text-align: center; color: #ffffff; font-weight: 700; vertical-align: middle; width: 18px; height: 18px; line-height: 18px; font-size: 9px; }
+  .pl .track { height: 6px; margin-top: 3px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pl .track div { height: 6px; border-radius: 3px; }
+  .pl .names { margin-top: 3px; font-size: 11px; color: #8e8e93; }
+  .pl .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .pl .lnk { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; }
+  .pl .lnk:hover { background-color: rgba(127,127,127,0.14); }
+  .pl .say { margin-top: 8px; padding: 6px 10px; border-radius: 10px; background-color: rgba(127,127,127,0.10); font-size: 12.5px; }
+  .pl .say span { position: relative; }
+  .pl .win { margin: 2px 0 8px 0; padding: 10px 12px; border-radius: 12px; color: #ffffff; }
+  .pl .rank { width: 18px; font-weight: 800; color: #8e8e93; }
+
+  /* ported motion: your avatar pops in (450ms outBack), the reply text slides in (400ms outCubic),
+     the whole card gets the host's bubble transitions (fade / slide-* / pop) via .fx. */
+  @keyframes pop-in { from { width: 0; height: 0; line-height: 0; font-size: 0; } to { width: 18px; height: 18px; line-height: 18px; font-size: 9px; } }
+  .pl .vt.me { animation: pop-in 450ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes slide-in { from { left: 14px; } to { left: 0; } }
+  .pl .say .text { animation: slide-in 400ms cubic-bezier(.33,1,.68,1); }
+  @keyframes fx-a { from { opacity: 0; transform: var(--fx-from); } to { opacity: 1; transform: none; } }
+  @keyframes fx-b { from { opacity: 0; transform: var(--fx-from); } to { opacity: 1; transform: none; } }
+  .fx { animation: fx-a 220ms cubic-bezier(.33,1,.68,1); } .fx.alt { animation-name: fx-b; }
+  .fx-fade { --fx-from: none; } .fx-pop { --fx-from: scale(.96); }
+  .fx-slide-left { --fx-from: translateX(24px); } .fx-slide-right { --fx-from: translateX(-24px); }
+  .fx-slide-up { --fx-from: translateY(16px); } .fx-slide-down { --fx-from: translateY(-16px); }
+</style>
+<div class="card pad pl" id="root">
+  <div id="ballot">
+    <div class="row between"><span class="caps" id="count">📊 Poll · 0 votes</span><span class="badge blue" id="voted" hidden>voted</span></div>
+    <div class="q">Where should we go for the offsite?</div>
+    <div class="opt" data-act="vote" data-value="lis">
+      <div class="top"><span class="lbl">🇵🇹 Lisbon<b class="tick" style="color: #007aff" hidden> ✓</b></span><span class="avs"></span><span class="pc">0%</span></div>
+      <div class="track"><div style="width: 0%; background-color: #007aff"></div></div>
+      <div class="names" hidden></div>
+    </div>
+    <div class="opt" data-act="vote" data-value="kyo">
+      <div class="top"><span class="lbl">🇯🇵 Kyoto<b class="tick" style="color: #ff2d55" hidden> ✓</b></span><span class="avs"></span><span class="pc">0%</span></div>
+      <div class="track"><div style="width: 0%; background-color: #ff2d55"></div></div>
+      <div class="names" hidden></div>
+    </div>
+    <div class="opt" data-act="vote" data-value="rey">
+      <div class="top"><span class="lbl">🇮🇸 Reykjavík<b class="tick" style="color: #30b0c7" hidden> ✓</b></span><span class="avs"></span><span class="pc">0%</span></div>
+      <div class="track"><div style="width: 0%; background-color: #30b0c7"></div></div>
+      <div class="names" hidden></div>
+    </div>
+    <div class="say" id="say" hidden></div>
+    <div class="foot"><span class="tiny muted" id="hint">Click an option to vote ↑</span>
+      <span><span class="lnk t-blue" data-act="names" id="namesLnk">👥 Voters</span><span class="lnk t-red" data-act="close">Close poll</span></span></div>
+  </div>
+  <div id="results" hidden>
+    <div class="row between"><span class="caps" id="finalCount">📊 Poll closed · 0 votes</span><span class="badge">final</span></div>
+    <div class="q">Where should we go for the offsite?</div>
+    <div class="win" id="win"><b style="font-size: 16px" id="winTitle"></b><div class="small" style="color: rgba(255,255,255,0.85)" id="winSub"></div></div>
+    <div id="ranked"></div>
+    <div class="foot"><span class="tiny muted">Closed by you</span><span class="lnk t-blue" data-act="reopen">↺ Reopen poll</span></div>
+  </div>
+</div>
+<script>
+// --- tiny animation kit: the prelude's animate/tween/ease on requestAnimationFrame ---
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const anims = new Set();
+let raf = 0;
+function loop() {
+  raf = 0;
+  const now = performance.now();
+  for (const a of anims) {
+    const t = Math.min(1, (now - a.start) / a.dur);
+    a.step(a.easing(t), t);
+    if (t >= 1) { anims.delete(a); a.end(); }
+  }
+  if (closed) drawResults(); else drawBars();
+  if (anims.size) raf = requestAnimationFrame(loop);
+}
+function animate(dur, step, easing = ease.outCubic, end = () => {}) {
+  const a = { start: performance.now(), dur: Math.max(1, dur), step, easing, end };
+  step(easing(0), 0);
+  anims.add(a);
+  if (!raf) raf = requestAnimationFrame(loop);
+}
+const owners = new WeakMap();
+function tween(target, props, dur = 300, easing = ease.outCubic) {
+  let own = owners.get(target);
+  if (!own) owners.set(target, own = new Map());
+  const token = {}, from = {}, to = {};
+  for (const k of Object.keys(props)) { from[k] = Number(target[k]) || 0; to[k] = Number(props[k]); own.set(k, token); }
+  animate(dur, p => { for (const k in to) if (own.get(k) === token) target[k] = from[k] + (to[k] - from[k]) * p; }, easing,
+    () => { for (const k in to) if (own.get(k) === token) { target[k] = to[k]; own.delete(k); } });
+}
+const hex = c => { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const alpha = (c, a) => `rgba(${hex(c).join(',')},${a.toFixed(3)})`;
+const mix = (a, b, t) => { const x = hex(a), y = hex(b); return `rgb(${x.map((q, i) => Math.round(q + (y[i] - q) * t)).join(',')})`; };
+const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const root = document.getElementById('root');
+let fxAlt = false;
+function fx(kind) {
+  root.className = 'card pad pl fx fx-' + kind + (fxAlt ? '' : ' alt');
+  fxAlt = !fxAlt;
+}
+
+// --- state (same data and rules as the original) ---
+const PEOPLE = { maya: ['Maya', '#ff2d55'], leo: ['Leo', '#34c759'], priya: ['Priya', '#af52de'], me: ['You', '#007aff'] };
+const OPTIONS = [
+  { id: 'lis', label: '🇵🇹 Lisbon', color: '#007aff', voters: ['maya', 'leo'] },
+  { id: 'kyo', label: '🇯🇵 Kyoto', color: '#ff2d55', voters: ['priya'] },
+  { id: 'rey', label: '🇮🇸 Reykjavík', color: '#30b0c7', voters: [] },
+];
+const LINES = {
+  lis: ['priya', 'Lisbon it is! 🎉 Pastéis de nata on me'],
+  kyo: ['priya', "It's a tie! 🍣 vs 🐟 Tie-breaker at standup tomorrow"],
+  rey: ['leo', "Northern lights or bust 🌌 I'm with you"],
+};
+let mine = null, closed = false, names = false, shown = [0, 0, 0], barRun = 0, say = null, sayRun = 0, dotsTimer = 0;
+const count = { v: 0 }, reveal = { v: 1 };
+
+const total = () => OPTIONS.reduce((s, o) => s + o.voters.length, 0);
+const shares = () => { const t = total() || 1; return OPTIONS.map(o => o.voters.length / t); };
+const who = list => list.map(v => PEOPLE[v][0]).join(' · ');
+const votes = n => `${n} vote${n === 1 ? '' : 's'}`;
+const dots = () => '•'.repeat(1 + Math.floor(performance.now() / 250) % 3);
+
+// --- DOM ---
+const $ = id => document.getElementById(id);
+const opts = [...document.querySelectorAll('.opt')];
+
+function moveBars(ms) {
+  const from = shown.slice(), to = shares(), me = ++barRun;
+  animate(ms, p => { if (me === barRun) shown = from.map((f, i) => lerp(f, to[i], p)); }, ease.outCubic);
+}
+function drawBars() {
+  $('count').textContent = `📊 Poll · ${votes(Math.round(count.v))}`;
+  opts.forEach((el, i) => {
+    const pc = shown[i] * 100;
+    el.querySelector('.pc').textContent = `${Math.round(pc)}%`;
+    el.querySelector('.track div').style.width = pc.toFixed(1) + '%';
+  });
+}
+function drawBallot() {
+  $('voted').hidden = !mine;
+  $('hint').textContent = mine ? 'Click your choice again to retract' : 'Click an option to vote ↑';
+  $('namesLnk').textContent = names ? 'Hide voters' : '👥 Voters';
+  opts.forEach((el, i) => {
+    const o = OPTIONS[i], me = mine === o.id;
+    el.style.backgroundColor = me ? alpha(o.color, 0.10) : '';
+    el.querySelector('.tick').hidden = !me;
+    el.querySelector('.avs').innerHTML = o.voters.map(v =>
+      `<span class="vt${v === 'me' ? ' me' : ''}" style="background-color: ${PEOPLE[v][1]}">${PEOPLE[v][0][0]}</span>`).join('');
+    const nm = el.querySelector('.names');
+    nm.hidden = !names;
+    nm.textContent = o.voters.length ? who(o.voters) : 'No votes yet';
+  });
+  drawSay();
+}
+function drawSay() {
+  const el = $('say');
+  clearInterval(dotsTimer); dotsTimer = 0;
+  if (!say) { el.hidden = true; el.innerHTML = ''; return; }
+  const [n, c] = PEOPLE[say.who];
+  el.hidden = false;
+  if (say.typing) {
+    el.innerHTML = `<b style="color: ${c}">${n}</b> <span class="muted">is typing ${dots()}</span>`;
+    const typing = el.querySelector('.muted');
+    dotsTimer = setInterval(() => { typing.textContent = `is typing ${dots()}`; }, 250);
+  } else {
+    el.innerHTML = `<b style="color: ${c}">${n}</b> <span class="text">${esc(say.text)}</span>`;
+  }
+}
+
+function chime(id) {
+  const me = ++sayRun;
+  if (!id) { say = null; drawSay(); return; }
+  say = { who: LINES[id][0], text: LINES[id][1], typing: true };
+  drawSay();
+  setTimeout(() => {
+    if (me !== sayRun) return;
+    say.typing = false;
+    drawSay();
+  }, 1000);
+}
+
+function vote(id) {
+  const o = OPTIONS.find(x => x.id === id);
+  if (!o) return;
+  const had = !!say;
+  if (mine) { const m = OPTIONS.find(x => x.id === mine); m.voters = m.voters.filter(v => v !== 'me'); }
+  if (mine === id) mine = null;
+  else { mine = id; o.voters.push('me'); }
+  if (had !== !!mine) fx('fade');
+  chime(mine);
+  moveBars(650);
+  tween(count, { v: total() }, 450, ease.outCubic);
+  drawBallot();
+}
+
+// --- results view ---
+let ranked = [];
+function openResults() {
+  const t = total();
+  ranked = OPTIONS.map(o => ({ o, n: o.voters.length })).sort((a, b) => b.n - a.n);
+  const top = ranked.filter(r => r.n === ranked[0].n);
+  const tie = top.length > 1;
+  const c = tie ? '#8e8e93' : top[0].o.color;
+  $('finalCount').textContent = `📊 Poll closed · ${votes(t)}`;
+  $('win').style.background = `linear-gradient(135deg, ${c}, ${mix(c, '#000000', 0.3)})`;
+  $('winTitle').textContent = tie ? "🤝 It's a tie" : `🏆 ${top[0].o.label} wins`;
+  $('winSub').textContent = tie ? top.map(r => r.o.label).join(' vs ') + ' · tie-breaker at standup' : `${votes(top[0].n)} of ${t} · ${Math.round(top[0].n / t * 100)}%`;
+  $('ranked').innerHTML = ranked.map((r, k) => `<div class="res">
+      <div class="top"><span class="rank">${k + 1}</span><span class="lbl">${r.o.label}</span><span class="small muted">${votes(r.n)}</span><span class="pc">0%</span></div>
+      <div class="track"><div style="width: 0%; background-color: ${r.o.color}"></div></div>
+      <div class="names">${r.n ? esc(who(r.o.voters)) : 'No votes'}</div></div>`).join('');
+  $('ballot').hidden = true;
+  $('results').hidden = false;
+  drawResults();
+}
+function drawResults() {
+  const t = total();
+  const rows = $('ranked').children;
+  ranked.forEach((r, k) => {
+    const grow = ease.outCubic(clamp(reveal.v * 1.5 - k * 0.22, 0, 1));
+    const pc = (t ? r.n / t : 0) * 100 * grow;
+    rows[k].querySelector('.pc').textContent = `${Math.round(pc)}%`;
+    rows[k].querySelector('.track div').style.width = pc.toFixed(1) + '%';
+  });
+}
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const name = el.dataset.act;
+  if (name === 'vote' && !closed) vote(el.dataset.value);
+  else if (name === 'names') { fx(names ? 'slide-up' : 'slide-down'); names = !names; drawBallot(); }
+  else if (name === 'close' && !closed) {
+    fx('pop');
+    closed = true; sayRun++; say = null; drawSay();
+    reveal.v = 0;
+    tween(reveal, { v: 1 }, 1000, ease.linear);
+    openResults();
+  } else if (name === 'reopen' && closed) {
+    fx('slide-right'); closed = false;
+    $('results').hidden = true; $('ballot').hidden = false;
+    drawBallot(); drawBars();
+  }
+});
+
+drawBallot(); drawBars();
+setTimeout(() => { moveBars(850); tween(count, { v: total() }, 850, ease.outCubic); }, 250);
+</script>

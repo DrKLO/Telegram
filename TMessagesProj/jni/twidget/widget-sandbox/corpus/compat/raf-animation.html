@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #fff; }
+  #stage { position: relative; height: 160px; background: linear-gradient(#eef2ff, #e0e7ff); border-radius: 10px; overflow: hidden; }
+  .ball { position: absolute; width: 28px; height: 28px; border-radius: 50%; background: #2481cc; box-shadow: 0 2px 6px rgba(0,0,0,.3); will-change: transform; }
+  #info { font-size: 12px; color: #666; margin-top: 6px; }
+  #frames { display: inline-block; min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
+</style></head><body>
+<div id="stage"><div class="ball" id="b1"></div><div class="ball" id="b2" style="background:#f59e0b"></div></div>
+<div id="info"><span id="frames">0</span> frames · <button id="stop">stop</button></div>
+<script>
+  var stage = document.getElementById('stage');
+  var balls = [{ el: document.getElementById('b1'), x: 10, y: 20, vx: 2.4, vy: 1.7 }, { el: document.getElementById('b2'), x: 200, y: 90, vx: -1.9, vy: 2.3 }];
+  var frames = 0, running = true, W = 0, H = 0;
+  function measure() { W = stage.clientWidth; H = stage.clientHeight; }
+  measure();
+  function step() {
+    if (!running) return;
+    if (frames % 30 === 0) measure();
+    balls.forEach(function (b) {
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < 0 || b.x > W - 28) b.vx = -b.vx;
+      if (b.y < 0 || b.y > H - 28) b.vy = -b.vy;
+      b.el.style.transform = 'translate(' + b.x.toFixed(1) + 'px,' + b.y.toFixed(1) + 'px)';
+    });
+    document.getElementById('frames').textContent = ++frames;
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+  document.getElementById('stop').addEventListener('click', function () { running = !running; this.textContent = running ? 'stop' : 'start'; if (running) requestAnimationFrame(step); });
+</script>
+</body></html>

@@ -34,6 +34,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.util.Locale;
 
@@ -93,7 +94,7 @@ public class ProximitySheet extends FrameLayout {
 
         Rect padding = new Rect();
         Drawable shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, shadowDrawable, Theme.key_dialogBackground, PorterDuff.Mode.MULTIPLY);
         shadowDrawable.getPadding(padding);
         backgroundPaddingLeft = padding.left;
 
@@ -162,7 +163,7 @@ public class ProximitySheet extends FrameLayout {
 
         TextView titleView = new TextView(context);
         titleView.setText(LocaleController.getString(R.string.LocationNotifiation));
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlack);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleLayout.addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
@@ -243,7 +244,7 @@ public class ProximitySheet extends FrameLayout {
 
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setMaxLines(2);
         buttonTextView.setTypeface(AndroidUtilities.bold());
@@ -261,7 +262,7 @@ public class ProximitySheet extends FrameLayout {
 
         infoTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         infoTextView.setGravity(Gravity.CENTER);
-        infoTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        ThemeBind.textColor(infoTextView, Theme.key_dialogTextGray2);
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         infoTextView.setAlpha(0.0f);
         infoTextView.setScaleX(0.5f);

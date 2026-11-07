@@ -33,15 +33,30 @@ import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 
 
-public class GLIconTextureView extends TextureView implements TextureView.SurfaceTextureListener {
+public class GLIconTextureView extends TextureView implements TextureView.SurfaceTextureListener, org.telegram.ui.ActionBar.Theme.Colorable {
 
     public boolean touched;
     public GLIconRenderer mRenderer;
+
+    /** theme switches: the renderer only stores colors / flags read by the GL thread on its next frame */
+    @Override
+    public void updateColors() {
+        try {
+            if (mRenderer != null) {
+                mRenderer.updateColors();
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
 
     private static final int EGL_OPENGL_ES2_BIT = 4;
     private static final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
 
     private SurfaceTexture mSurface;
+    // Only render threads take this lock; surface teardown never waits on the UI thread.
+    private final Object renderLock = new Object();
+    private GLIconRenderer initializedRenderer;
     private EGLDisplay mEglDisplay;
     private EGLSurface mEglSurface;
     private EGLContext mEglContext;
@@ -49,21 +64,24 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private EGLConfig eglConfig;
     private GL10 mGl;
 
-    private int targetFrameDurationMillis;
+    private long targetFrameDurationNanos;
 
-    private int surfaceHeight;
-    private int surfaceWidth;
 
-    public boolean isRunning = false;
-    private boolean paused = true;
-    private boolean rendererChanged = false;
+    private volatile int surfaceHeight;
+    private volatile int surfaceWidth;
+    private int renderedWidth, renderedHeight;
+
+    public volatile boolean isRunning = false;
+    private volatile boolean paused = true;
+    private volatile boolean rendererChanged = false;
     private boolean dialogIsVisible = false;
 
-    private RenderThread thread;
+    private volatile RenderThread thread;
 
     private int targetFps;
 
     private long idleDelay;
+    private boolean idleAnimationEnabled = true;
 
     private final int animationsCount;
     int animationPointer;
@@ -173,8 +191,15 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
             @Override
             public boolean onScroll(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
-                mRenderer.angleX += v * 0.5f;
-                mRenderer.angleY += v1 * 0.05f;
+                if (type == Icon3D.TYPE_DIAMOND) {
+                    // Match DiamondSurfaceView: GestureDetector deltas run in the
+                    // opposite direction to finger travel.
+                    mRenderer.angleX -= v * 0.5f;
+                    mRenderer.angleY -= v1 * 0.05f;
+                } else {
+                    mRenderer.angleX += v * 0.5f;
+                    mRenderer.angleY += v1 * 0.05f;
+                }
                 return true;
             }
 
@@ -218,28 +243,73 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         startThread(surface, width, height);
     }
 
-    public void startThread(SurfaceTexture surface, int width, int height) {
-        thread = new RenderThread();
-        mSurface = surface;
+    protected boolean preferGles3() {
+        return type == Icon3D.TYPE_DIAMOND;
+    }
+
+    protected int getMaxFrameRate() {
+        // Decoration shares the GPU with the UI, unlike the isolated renderer test.
+        if (type == Icon3D.TYPE_DIAMOND) {
+            return org.telegram.messenger.SharedConfig.getDevicePerformanceClass()
+                    == org.telegram.messenger.SharedConfig.PERFORMANCE_CLASS_HIGH ? 60 : 30;
+        }
+        return targetFps;
+    }
+
+    /** Lets a renderer stretch individual frames, e.g. while nothing on it moves. */
+    protected long getFrameDurationNanos(long targetFrameDurationNanos) {
+        return targetFrameDurationNanos;
+    }
+
+    protected int getMsaaSamples() {
+        return 4;
+    }
+
+    /** Fraction of the view size to render at; TextureView scales the buffer back up. */
+    protected float getRenderScale() {
+        return 1f;
+    }
+
+    private volatile boolean scaledBuffer;
+    private final int[] bufferWidth = new int[1], bufferHeight = new int[1];
+
+    private void setScaledDimensions(SurfaceTexture surface, int width, int height) {
+        final float scale = getRenderScale();
+        scaledBuffer = scale < 1f;
+        if (scale < 1f && width > 0 && height > 0) {
+            width = Math.max(1, Math.round(width * scale));
+            height = Math.max(1, Math.round(height * scale));
+            surface.setDefaultBufferSize(width, height);
+        }
         setDimensions(width, height);
-        targetFrameDurationMillis = Math.max(0, (int) ((1 / (float) targetFps) * 1000) - 1);
+    }
+
+    public void startThread(SurfaceTexture surface, int width, int height) {
+        stopThread();
+        ready = false;
+        thread = new RenderThread(surface);
+        isRunning = true;
+        setScaledDimensions(surface, width, height);
+        targetFrameDurationNanos = 1_000_000_000L / Math.max(1, Math.min(targetFps, getMaxFrameRate()));
         thread.start();
     }
 
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        setDimensions(width, height);
-        if (mRenderer != null) {
-            mRenderer.onSurfaceChanged(mGl, width, height);
+        setScaledDimensions(surface, width, height);
+    }
+
+    public void setPaused(boolean isPaused) {
+        boolean wasPaused = paused;
+        paused = isPaused;
+        if (wasPaused && !isPaused && thread != null) {
+            // Wake the paused 100 ms sleep immediately on a fast scroll back.
+            thread.interrupt();
         }
     }
 
-    public synchronized void setPaused(boolean isPaused) {
-        paused = isPaused;
-    }
-
-    public synchronized boolean isPaused() {
+    public boolean isPaused() {
         return paused;
     }
 
@@ -247,24 +317,27 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
         ready = false;
         stopThread();
-        return false;
+        // Abandon the consumer immediately so an in-flight swap cannot block teardown.
+        return true;
     }
 
     public void stopThread() {
-        if (thread != null) {
-            isRunning = false;
-//            try {
-//                thread.join();
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-            thread = null;
+        RenderThread previous = thread;
+        thread = null;
+        isRunning = false;
+        ready = false;
+        if (previous != null) {
+            previous.cancelled = true;
+            previous.interrupt();
         }
-
     }
 
     private boolean shouldSleep() {
-        return isPaused() || mRenderer == null;
+        return mRenderer == null || (isPaused() && (ready || !renderFirstFrameWhilePaused()));
+    }
+
+    protected boolean renderFirstFrameWhilePaused() {
+        return false;
     }
 
     public void setBackgroundBitmap(Bitmap gradientTextureBitmap) {
@@ -274,91 +347,169 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private volatile boolean ready;
     private volatile Runnable readyListener;
     public void whenReady(Runnable whenReady) {
-        if (ready) whenReady.run();
-        else readyListener = whenReady;
+        readyListener = whenReady;
+        if (ready && whenReady != null) {
+            readyListener = null;
+            whenReady.run();
+        }
     }
 
 
+    /** Called on the UI thread after the render thread has stopped on an error. */
+    protected void onRenderError() {
+    }
+
     private class RenderThread extends Thread {
+        private final SurfaceTexture surface;
+        private volatile boolean cancelled;
+        private boolean readyPosted;
+
+        RenderThread(SurfaceTexture surface) {
+            this.surface = surface;
+        }
+
         @Override
         public void run() {
-            isRunning = true;
-
-            try {
-                initGL();
-            } catch (Exception e) {
-                FileLog.e(e);
-                isRunning = false;
-                return;
-            }
-            checkGlError();
-
-            long lastFrameTime = System.currentTimeMillis();
-
-            while (isRunning) {
-                while (mRenderer == null) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        // Ignore
-                    }
-                }
-
-                if (rendererChanged) {
-                    initializeRenderer(mRenderer);
-                    rendererChanged = false;
-                }
-
+            // A replacement may start immediately, but must wait for the old context
+            // and renderer to be released before touching the shared GL fields.
+            synchronized (renderLock) {
+                if (cancelled) return;
+                mSurface = surface;
+                rendererChanged = true;
                 try {
-                    if (!shouldSleep()) {
-                        final long now = System.currentTimeMillis();
-                        float dt = (now - lastFrameTime) / 1000f;
-                        lastFrameTime = now;
-                        drawSingleFrame(dt);
-                        if (!ready) {
-                            ready = true;
-                            AndroidUtilities.runOnUIThread(readyListener);
-                            readyListener = null;
-                        }
-                    }
+                    render();
                 } catch (Exception e) {
-                    FileLog.e(e);
-                    break;
+                    if (!cancelled) {
+                        FileLog.e(e);
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (thread != this) return;
+                            isRunning = false;
+                            ready = false;
+                            readyListener = null;
+                            onRenderError();
+                        });
+                    }
+                } finally {
+                    releaseGL();
                 }
+            }
+        }
 
+        private void render() throws Exception {
+            initGL();
+            checkGlError();
+            long lastFrameTime = System.nanoTime();
+            while (!cancelled) {
+                synchronized (GLIconTextureView.this) {
+                    if (rendererChanged && mRenderer != null) {
+                        initializeRenderer(mRenderer);
+                        rendererChanged = false;
+                    }
+                }
+                if (!shouldSleep()) {
+                    final long now = System.nanoTime();
+                    float dt = (now - lastFrameTime) / 1_000_000_000f;
+                    lastFrameTime = now;
+                    drawSingleFrame(dt);
+                    if (!readyPosted) {
+                        readyPosted = true;
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (thread != this || cancelled) return;
+                            ready = true;
+                            Runnable callback = readyListener;
+                            readyListener = null;
+                            if (callback != null) callback.run();
+                        });
+                    }
+                }
                 try {
-                    if (shouldSleep())
+                    if (shouldSleep()) {
                         Thread.sleep(100);
-                    else {
-                        long thisFrameTime = System.currentTimeMillis();
-                        long timDiff = thisFrameTime - lastFrameTime;
-                        while (timDiff < targetFrameDurationMillis) {
-                            thisFrameTime = System.currentTimeMillis();
-                            timDiff = thisFrameTime - lastFrameTime;
+                    } else {
+                        long remaining = getFrameDurationNanos(targetFrameDurationNanos) - (System.nanoTime() - lastFrameTime);
+                        if (remaining > 0) {
+                            Thread.sleep(remaining / 1_000_000L, (int) (remaining % 1_000_000L));
                         }
                     }
                 } catch (InterruptedException ignore) {
                 }
             }
         }
+    }
 
+    private void releaseGL() {
+        // Release model names while their owning context is still current.
+        try {
+            if (initializedRenderer != null && initializedRenderer.model != null) {
+                initializedRenderer.model.destroy();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            if (initializedRenderer != null) initializedRenderer.model = null;
+            initializedRenderer = null;
+        }
+        try {
+            if (mEgl != null && mEglDisplay != null && mEglDisplay != EGL10.EGL_NO_DISPLAY) {
+                mEgl.eglMakeCurrent(mEglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+                if (mEglSurface != null && mEglSurface != EGL10.EGL_NO_SURFACE) {
+                    mEgl.eglDestroySurface(mEglDisplay, mEglSurface);
+                }
+                if (mEglContext != null && mEglContext != EGL10.EGL_NO_CONTEXT) {
+                    mEgl.eglDestroyContext(mEglDisplay, mEglContext);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        } finally {
+            mEglSurface = null;
+            mEglContext = null;
+            mEglDisplay = null;
+            mGl = null;
+            mSurface = null;
+        }
     }
 
     private synchronized void initializeRenderer(GLIconRenderer renderer) {
-        if (renderer != null && isRunning) {
+        if (renderer != null) {
+            initializedRenderer = renderer;
             renderer.onSurfaceCreated(mGl, eglConfig);
-            renderer.onSurfaceChanged(mGl, surfaceWidth, surfaceHeight);
+            renderedWidth = surfaceWidth;
+            renderedHeight = surfaceHeight;
+            renderer.onSurfaceChanged(mGl, renderedWidth, renderedHeight);
         }
     }
 
     private synchronized void drawSingleFrame(float dt) {
         checkCurrent();
         if (mRenderer != null) {
+            // Resize only on the thread that owns the current GL context.
+            int width = surfaceWidth, height = surfaceHeight;
+            if (scaledBuffer) {
+                // TextureView resets the buffer to the view size, without a callback, when it
+                // recreates its layer (e.g. after the screen locks). Draw at the size actually
+                // dequeued and ask for the scaled one again from the next buffer on.
+                mEgl.eglQuerySurface(mEglDisplay, mEglSurface, EGL10.EGL_WIDTH, bufferWidth);
+                mEgl.eglQuerySurface(mEglDisplay, mEglSurface, EGL10.EGL_HEIGHT, bufferHeight);
+                if (bufferWidth[0] > 0 && bufferHeight[0] > 0 && (bufferWidth[0] != width || bufferHeight[0] != height)) {
+                    mSurface.setDefaultBufferSize(width, height);
+                    width = bufferWidth[0];
+                    height = bufferHeight[0];
+                }
+            }
+            if (width != renderedWidth || height != renderedHeight) {
+                renderedWidth = width;
+                renderedHeight = height;
+                mRenderer.onSurfaceChanged(mGl, width, height);
+            }
             mRenderer.setDeltaTime(dt);
             mRenderer.onDrawFrame(mGl);
         }
         checkGlError();
-        mEgl.eglSwapBuffers(mEglDisplay, mEglSurface);
+        boolean swapped = mEgl.eglSwapBuffers(mEglDisplay, mEglSurface);
+        if (!swapped && type == Icon3D.TYPE_DIAMOND) {
+            throw new IllegalStateException("Diamond buffer swap failed: " + mEgl.eglGetError());
+        }
     }
 
     public void setDimensions(int width, int height) {
@@ -393,7 +544,9 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private void checkGlError() {
         final int error = mGl.glGetError();
         if (error != GL11.GL_NO_ERROR) {
-            FileLog.e("GL error = 0x" + Integer.toHexString(error));
+            if (type == Icon3D.TYPE_DIAMOND) {
+                throw new IllegalStateException("Diamond GL error: 0x" + Integer.toHexString(error));
+            }
         }
     }
 
@@ -433,27 +586,47 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
                     EGL10.EGL_DEPTH_SIZE, 16,  //was 0
                     EGL10.EGL_STENCIL_SIZE, 0,
                     EGL10.EGL_SAMPLE_BUFFERS, 1,
+                    EGL10.EGL_SAMPLES, getMsaaSamples(),
                     EGL10.EGL_NONE
             };
         }
         eglConfig = null;
-        if (!mEgl.eglChooseConfig(mEglDisplay, configSpec, configs, 1,
-                configsCount)) {
-            throw new IllegalArgumentException(
-                    "eglChooseConfig failed "
-                            + GLUtils.getEGLErrorString(mEgl
-                            .eglGetError()));
-        } else if (configsCount[0] > 0) {
+        if (EmuDetector.with(getContext()).detect()
+                || !mEgl.eglChooseConfig(mEglDisplay, configSpec, configs, 1, configsCount)
+                || configsCount[0] == 0) {
+            int[] fallbackSpec = new int[] {
+                    EGL10.EGL_RENDERABLE_TYPE,
+                    EGL_OPENGL_ES2_BIT,
+                    EGL10.EGL_RED_SIZE, 8,
+                    EGL10.EGL_GREEN_SIZE, 8,
+                    EGL10.EGL_BLUE_SIZE, 8,
+                    EGL10.EGL_ALPHA_SIZE, 8,
+                    EGL10.EGL_DEPTH_SIZE, 16,
+                    EGL10.EGL_STENCIL_SIZE, 0,
+                    EGL10.EGL_NONE
+            };
+            if (!mEgl.eglChooseConfig(mEglDisplay, fallbackSpec, configs, 1, configsCount)) {
+                throw new IllegalArgumentException(
+                        "eglChooseConfig failed "
+                                + GLUtils.getEGLErrorString(mEgl
+                                .eglGetError()));
+            } else if (configsCount[0] > 0) {
+                eglConfig = configs[0];
+            }
+        } else {
             eglConfig = configs[0];
         }
         if (eglConfig == null) {
             throw new RuntimeException("eglConfig not initialized");
         }
         int[] attrib_list = {
-                EGL_CONTEXT_CLIENT_VERSION, 2, EGL10.EGL_NONE
+                EGL_CONTEXT_CLIENT_VERSION, preferGles3() ? 3 : 2, EGL10.EGL_NONE
         };
         mEglContext = mEgl.eglCreateContext(mEglDisplay,
                 eglConfig, EGL10.EGL_NO_CONTEXT, attrib_list);
+        if (mEglContext == null || mEglContext == EGL10.EGL_NO_CONTEXT) {
+            throw new IllegalStateException("eglCreateContext failed: " + mEgl.eglGetError());
+        }
         checkEglError();
         mEglSurface = mEgl.eglCreateWindowSurface(
                 mEglDisplay, eglConfig, mSurface, null);
@@ -582,7 +755,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
 
     public void scheduleIdleAnimation(long time) {
         AndroidUtilities.cancelRunOnUIThread(idleAnimation);
-        if (dialogIsVisible) {
+        if (dialogIsVisible || !idleAnimationEnabled) {
             return;
         }
         AndroidUtilities.runOnUIThread(idleAnimation, time);
@@ -592,9 +765,19 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         AndroidUtilities.cancelRunOnUIThread(idleAnimation);
     }
 
+    public void setIdleAnimationEnabled(boolean enabled) {
+        idleAnimationEnabled = enabled;
+        if (enabled) {
+            scheduleIdleAnimation(idleDelay);
+        } else {
+            cancelIdleAnimation();
+            cancelAnimatons();
+        }
+    }
+
 
     protected void startIdleAnimation() {
-        if (!attached) {
+        if (!attached || !idleAnimationEnabled) {
             return;
         }
 

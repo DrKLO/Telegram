@@ -1,0 +1,140 @@
+diff --git a/quickjs-amalgam.c b/quickjs-amalgam.c
+index 6f9fdd5..3f252df 100644
+--- a/quickjs-amalgam.c
++++ b/quickjs-amalgam.c
+@@ -71723,6 +71723,135 @@ bool JS_DetectModule(const char *input, size_t input_len)
+ #endif // QJS_DISABLE_PARSER
+ }
+ 
++/*
++ * QTS_DetectModule - bellard/quickjs style module detection heuristic
++ * Copied from bellard/quickjs, Copyright (c) 2017-2021 Fabrice Bellard
++ * MIT licensed.
++ *
++ * Heuristic: skip comments and expect 'import' keyword not followed
++ * by '(' or '.' or 'export' keyword.
++ */
++
++#define QTS_TOK_IMPORT 0x100
++#define QTS_TOK_EXPORT 0x101
++#define QTS_TOK_IDENT  0x102
++
++static int qts_match_identifier(const uint8_t *p, const char *s) {
++    uint32_t c;
++    while (*s) {
++        if ((uint8_t)*s++ != *p++)
++            return 0;
++    }
++    c = *p;
++    if (c >= 128)
++        c = utf8_decode(p, &p);
++    return !lre_js_is_ident_next(c);
++}
++
++static void qts_skip_shebang(const uint8_t **pp, const uint8_t *buf_end)
++{
++    const uint8_t *p = *pp;
++    int c;
++
++    if (p[0] == '#' && p[1] == '!') {
++        p += 2;
++        while (p < buf_end) {
++            if (*p == '\n' || *p == '\r') {
++                break;
++            } else if (*p >= 0x80) {
++                c = utf8_decode(p, &p);
++                if (c == CP_LS || c == CP_PS) {
++                    break;
++                } else if (c == -1) {
++                    p++; /* skip invalid UTF-8 */
++                }
++            } else {
++                p++;
++            }
++        }
++        *pp = p;
++    }
++}
++
++static int qts_simple_next_token(const uint8_t **pp)
++{
++    const uint8_t *p;
++    uint32_t c;
++
++    /* skip spaces and comments */
++    p = *pp;
++    for (;;) {
++        switch(c = *p++) {
++        case '\r':
++        case '\n':
++        case ' ':
++        case '\t':
++        case '\v':
++        case '\f':
++            continue;
++        case '/':
++            if (*p == '/') {
++                while (*p && *p != '\r' && *p != '\n')
++                    p++;
++                continue;
++            }
++            if (*p == '*') {
++                while (*++p) {
++                    if (*p == '*' && p[1] == '/') {
++                        p += 2;
++                        break;
++                    }
++                }
++                continue;
++            }
++            break;
++        case 'i':
++            if (qts_match_identifier(p, "mport")) {
++                *pp = p + 5;
++                return QTS_TOK_IMPORT;
++            }
++            return QTS_TOK_IDENT;
++        case 'e':
++            if (qts_match_identifier(p, "xport"))
++                return QTS_TOK_EXPORT;
++            return QTS_TOK_IDENT;
++        case '\\':
++            if (*p == 'u') {
++                if (lre_js_is_ident_first(lre_parse_escape(&p, true)))
++                    return QTS_TOK_IDENT;
++            }
++            break;
++        default:
++            if (c >= 128) {
++                c = utf8_decode(p - 1, &p);
++            }
++            if (lre_is_space(c))
++                continue;
++            if (lre_js_is_ident_first(c))
++                return QTS_TOK_IDENT;
++            break;
++        }
++        return c;
++    }
++}
++
++bool QTS_DetectModule(const char *input, size_t input_len)
++{
++    const uint8_t *p = (const uint8_t *)input;
++    int tok;
++
++    qts_skip_shebang(&p, p + input_len);
++    switch(qts_simple_next_token(&p)) {
++    case QTS_TOK_IMPORT:
++        tok = qts_simple_next_token(&p);
++        return (tok != '.' && tok != '(');
++    case QTS_TOK_EXPORT:
++        return true;
++    default:
++        return false;
++    }
++}
++
+ uintptr_t js_std_cmd(int cmd, ...) {
+     JSContext *ctx;
+     JSRuntime *rt;

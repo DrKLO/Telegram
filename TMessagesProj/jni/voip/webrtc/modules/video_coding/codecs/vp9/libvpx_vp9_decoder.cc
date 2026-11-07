@@ -24,8 +24,8 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
-#include <libvpx/vp8dx.h>
-#include <libvpx/vpx_decoder.h>
+#include <vpx/vp8dx.h>
+#include <vpx/vpx_decoder.h>
 
 namespace webrtc {
 namespace {

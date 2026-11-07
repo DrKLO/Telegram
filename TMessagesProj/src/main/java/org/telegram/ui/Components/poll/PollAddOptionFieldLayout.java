@@ -31,9 +31,11 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.messenger.utils.TextWatcherImpl;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.ChatAttachAlertPollLayout;
@@ -48,7 +50,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
-public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObserver.OnPreDrawListener {
+public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObserver.OnPreDrawListener, Theme.Colorable {
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.Q)
     private static final boolean ALLOW_DRAW_IN_CELL = false; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
 
@@ -164,9 +166,9 @@ public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObs
             */
         };
         ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
+        ThemeBind.hintTextColor(textView, Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
         textView.setHint(getString(R.string.PollAddAnOptionHint));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setMaxLines(Integer.MAX_VALUE);
@@ -181,11 +183,11 @@ public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObs
         });
 
         emojiButton = new EmojiButton(context);
-        emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
+        ThemeBind.selectorBackground(emojiButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_stickers_menuSelector), resourcesProvider);
         ScaleStateListAnimator.apply(emojiButton);
 
         attachButton = new PollAttachButton(getContext(), resourcesProvider, 36);
-        attachButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
+        ThemeBind.selectorBackground(attachButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_stickers_menuSelector), resourcesProvider);
         attachButton.setOnClickListener(v -> ChatAttachAlertPollLayout.openPollAttachMenu(fragment,
             ChatAttachAlertPollLayout.getStartLayoutForMedia(attachedMedia),
             ChatAttachAlertPollLayout.getAllowedLayoutsForIndex(0), media -> {
@@ -385,6 +387,27 @@ public class PollAddOptionFieldLayout extends FrameLayout implements ViewTreeObs
             animatorTextErrorVisibility.getFloatValue()
         );
         limitTextView.setTextColor(color);
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            if (limitTextView != null && fragment != null) {
+                limitTextView.setTextColor(ColorUtils.blendARGB(
+                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, fragment.getResourceProvider()),
+                    Theme.getColor(Theme.key_text_RedRegular, fragment.getResourceProvider()),
+                    animatorTextErrorVisibility.getFloatValue()
+                ));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhiteGrayText3);
+        colors.add(Theme.key_text_RedRegular);
     }
 
     private static class ViewWrapper extends FrameLayout {

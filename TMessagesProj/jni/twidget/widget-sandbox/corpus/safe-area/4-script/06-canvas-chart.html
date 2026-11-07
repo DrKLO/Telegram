@@ -1,0 +1,59 @@
+<!--
+  safe-area: a canvas lays itself out from TelegramWidget.contentSafeAreaInset and redraws on contentSafeAreaChanged (corpus/safe-area/README.md)
+  idea: a week of cycling as a bar chart on a canvas. CSS cannot reach inside a canvas, so the script reads the band and the corner from TelegramWidget.contentSafeAreaInset: the bars and the day labels end above the band, and the week's total is written into the band on the side away from your time (on the left, or on the right in a right-to-left client). With a caption below the total gets a strip of its own. A change (a caption added or removed by an edit) redraws it.
+-->
+<title>Cycling this week</title>
+<style>
+  /* padding: 0 too: this widget handles the band itself, so the renderer's default bottom padding would be a second band. */
+  body { margin: 0; padding: 0 }
+  .an { margin: 10px 12px 6px; padding: 6px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-hint-color) }
+  .an b { color: var(--tg-theme-text-color) }
+  canvas { display: block; width: 100% }
+</style>
+<div class="an"><b>Drawn on a canvas</b> from contentSafeAreaInset: labels above the band, the total beside your time, nothing under it.</div>
+<canvas id="c"></canvas>
+<script>
+  var TW = window.TelegramWidget, cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], KM = [12, 0, 18.5, 9, 22, 41, 30];
+  var css = function (n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  // The chat's palette: themeParams, or the root variables where there is no TelegramWidget (a browser).
+  function colors() {
+    var p = TW && TW.themeParams;
+    return { bar: p ? p.button_color : css('--tg-theme-button-color'), text: p ? p.text_color : css('--tg-theme-text-color'), hint: p ? p.hint_color : css('--tg-theme-hint-color') };
+  }
+  // The SDK's numbers, or the same numbers from the root variables where there is no TelegramWidget (a browser).
+  function area() {
+    if (TW && TW.contentSafeAreaInset) return TW.contentSafeAreaInset;
+    var n = function (v) { return parseFloat(css('--tg-content-safe-area-' + v)) || 0; };
+    return { bottom: n('inset-bottom'), cornerLeft: n('corner-left'), cornerRight: n('corner-right') };
+  }
+  var W = cv.clientWidth || 320;
+  function draw() {
+    // The bottom strip holds the total: the client's band when there is one, else a strip of its own.
+    var a = area(), band = Math.max(a.bottom, 22), dpr = window.devicePixelRatio || 1, COL = colors();
+    var H = 170 + band, base = H - band - 18, top = 18, max = Math.max.apply(null, KM);
+    cv.style.height = H + 'px';
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    var gap = 8, left = 12, right = 12, bw = (W - left - right - gap * 6) / 7;
+    ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    for (var i = 0; i < 7; i++) {
+      var x = left + i * (bw + gap), h = (base - top - 14) * KM[i] / max;
+      ctx.fillStyle = COL.bar; ctx.globalAlpha = i === 5 ? 1 : 0.55;
+      ctx.beginPath(); ctx.roundRect(x, base - h, bw, Math.max(h, 2), 4); ctx.fill();
+      ctx.globalAlpha = 1; ctx.fillStyle = COL.hint;
+      ctx.fillText(DAYS[i], x + bw / 2, base + 14);
+      ctx.fillStyle = COL.text;
+      ctx.fillText(KM[i] ? KM[i] + '' : '–', x + bw / 2, base - h - 4);
+    }
+    // The band: the week's total on the side away from the client's time, never in its corner.
+    var total = KM.reduce(function (s, v) { return s + v; }, 0) + ' km this week';
+    ctx.font = '600 12px system-ui, sans-serif'; ctx.fillStyle = COL.text; ctx.textBaseline = 'middle';
+    if (a.cornerLeft) { ctx.textAlign = 'right'; ctx.fillText(total, W - 12, H - band / 2); }
+    else { ctx.textAlign = 'left'; ctx.fillText(total, 12, H - band / 2); }
+  }
+  if (TW && TW.onEvent) { TW.onEvent('contentSafeAreaChanged', draw); TW.onEvent('themeChanged', draw); }
+  else addEventListener('load', draw);
+  draw();
+</script>

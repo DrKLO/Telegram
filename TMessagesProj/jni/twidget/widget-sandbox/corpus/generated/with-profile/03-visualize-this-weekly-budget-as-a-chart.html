@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Budget</title>
+<style>
+  :root { color-scheme: light dark; --fg: #111; --muted: #555; --bg: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #f3f4f6; --muted: #9ca3af; --bg: #111827; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .chart { display: block; width: 200px; height: 200px; margin: 0 auto; }
+  .chart path { stroke: var(--bg); stroke-width: 2; cursor: pointer; transition: opacity .15s; }
+  .chart.picked path { opacity: .35; }
+  .chart.picked path.on { opacity: 1; }
+  .chart .c1 { fill: var(--fg); font-size: 20px; font-weight: 700; }
+  .chart .c2 { fill: var(--muted); font-size: 11px; }
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 10px; font-size: 13px; }
+  .legend span { cursor: pointer; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+  .total { text-align: center; font-size: 14px; color: var(--muted); margin-top: 8px; min-height: 20px; }
+  .total b { color: var(--fg); font-size: 17px; }
+</style>
+</head>
+<body>
+<h2>💰 Weekly Budget</h2>
+<svg class="chart" id="chart" viewBox="0 0 200 200" role="img" aria-label="Doughnut chart of the weekly budget"></svg>
+<div class="legend" id="legend"></div>
+<div class="total" id="total">Total: <b>$2,450</b> / week</div>
+<script>
+  // Drawn by hand with inline SVG: no chart library is bundled in a widget.
+  var items = [['Rent', 1200, '#6366f1'], ['Groceries', 450, '#22c55e'], ['Transport', 180, '#f59e0b'], ['Entertainment', 220, '#ec4899'], ['Savings', 400, '#06b6d4']];
+  var total = 2450;
+  var svg = document.getElementById('chart'), NS = 'http://www.w3.org/2000/svg';
+  function pt(r, a) { return (100 + r * Math.cos(a)).toFixed(2) + ' ' + (100 + r * Math.sin(a)).toFixed(2); }
+  var a = -Math.PI / 2, R = 92, r = 56;
+  items.forEach(function (it, i) {
+    var b = a + it[1] / total * 2 * Math.PI, large = b - a > Math.PI ? 1 : 0;
+    var p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', 'M' + pt(R, a) + ' A' + R + ' ' + R + ' 0 ' + large + ' 1 ' + pt(R, b) + ' L' + pt(r, b) + ' A' + r + ' ' + r + ' 0 ' + large + ' 0 ' + pt(r, a) + 'Z');
+    p.setAttribute('fill', it[2]);
+    p.setAttribute('data-i', i);
+    svg.appendChild(p);
+    a = b;
+  });
+  [['c1', 104, '$2,450'], ['c2', 121, 'per week']].forEach(function (l) {
+    var t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', l[0]); t.setAttribute('x', 100); t.setAttribute('y', l[1]); t.setAttribute('text-anchor', 'middle');
+    t.textContent = l[2];
+    svg.appendChild(t);
+  });
+  document.getElementById('legend').innerHTML = items.map(function (it, i) { return '<span data-i="' + i + '"><i class="dot" style="background:' + it[2] + '"></i>' + it[0] + '</span>'; }).join('');
+  function pick(i) {
+    svg.classList.add('picked');
+    Array.prototype.forEach.call(svg.querySelectorAll('path'), function (p) { p.classList.toggle('on', p.getAttribute('data-i') === String(i)); });
+    var it = items[i];
+    document.getElementById('total').innerHTML = '<i class="dot" style="background:' + it[2] + '"></i>' + it[0] + ': <b>$' + it[1] + '</b> (' + Math.round(it[1] / total * 100) + '%)';
+  }
+  function onTap(e) { var t = e.target.closest('[data-i]'); if (t) pick(+t.getAttribute('data-i')); }
+  svg.addEventListener('click', onTap);
+  document.getElementById('legend').addEventListener('click', onTap);
+</script>
+</body>
+</html>

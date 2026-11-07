@@ -1,0 +1,235 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 6
+  author: mo 14:05 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.blue { background-color: rgba(0,122,255,0.16); color: var(--blue); } .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .badge.red { background-color: rgba(255,59,48,0.16); color: var(--red); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); } button:active { background-color: rgba(127,127,127,0.40); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  [data-action] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .dp { width: 360px; max-width: 100%; box-sizing: border-box; }
+  .dp .st { display: flex; align-items: center; padding: 6px 4px; border-radius: 8px; }
+  .dp .st.can:hover { background-color: rgba(127,127,127,0.10); }
+  .dp .ic { width: 20px; height: 20px; margin-right: 10px; }
+  .dp .ring { width: 20px; height: 20px; border-radius: 10px; background: conic-gradient(from 0deg, rgba(10,132,255,0) 0deg, #0a84ff 300deg, rgba(10,132,255,0) 300deg); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }   /* spin += 6° per frame */
+  .dp .hole { width: 14px; height: 14px; margin: 3px; border-radius: 7px; background-color: var(--card); }
+  .dp .ok, .dp .ko, .dp .skip { width: 20px; height: 20px; border-radius: 10px; color: #ffffff; text-align: center; line-height: 20px; font-weight: 800; font-size: 12px; }
+  .dp .ok { background-color: #34c759; } .dp .ko { background-color: #ff3b30; } .dp .skip { background-color: #8e8e93; }
+  /* tween(pop, {s: 1}, 320, ease.outBack) from 0 */
+  .dp .ok { animation: pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .dp .wait { width: 16px; height: 16px; border-radius: 8px; margin: 2px; background-color: rgba(127,127,127,0.25); }
+  .dp .pbar { height: 4px; margin-top: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.16); }
+  .dp .pbar div { height: 4px; border-radius: 2px; width: 0; background-color: #0a84ff; }
+  .dp .live { font-size: 11px; font-family: ui-monospace, monospace; margin-top: 2px; }
+  .dp .log { margin: 0 4px 4px 34px; padding: 6px 8px; border-radius: 8px; background-color: rgba(127,127,127,0.10); font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.5; }
+  /* animate(450, q => shake.x = sin(q·6π)·(1 − q)·7) */
+  .dp .st.shake { animation: shake 450ms linear; }
+  @keyframes shake { 0% { transform: translateX(0); } 8.3% { transform: translateX(6.4px); } 25% { transform: translateX(-5.3px); } 41.7% { transform: translateX(4.1px); }
+    58.3% { transform: translateX(-2.9px); } 75% { transform: translateX(1.8px); } 91.7% { transform: translateX(-0.6px); } 100% { transform: translateX(0); } }
+  .dp .banner { margin-top: 8px; padding: 10px 12px; border-radius: 10px; }
+  .dp .stats { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; }
+  .dp .acts { margin-top: 8px; }
+  .dp .acts button { margin-right: 6px; }
+  /* transition('pop' | 'fade' | 'slide-down' | 'slide-up') on the bubble */
+  .tr-pop { animation: tr-pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  .tr-fade { animation: tr-fade 260ms ease-out; }
+  .tr-slide-down { animation: tr-slide-down 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-up { animation: tr-slide-up 300ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-pop { from { opacity: 0; transform: scale(0.94); } }
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-slide-down { from { opacity: 0; transform: translateY(-14px); } }
+  @keyframes tr-slide-up { from { opacity: 0; transform: translateY(14px); } }
+</style>
+<div class="card pad dp" id="w">
+  <div class="row between"><span><b id="hd">🛠 Deploy #1040</b> <span class="badge blue" id="badge">queued</span></span><span id="topbtn"></span></div>
+  <div style="margin-top: 6px" id="steps"></div>
+  <div id="foot"></div>
+</div>
+<script>
+const STEPS = [
+  { name: 'Install dependencies', ms: 900, log: ['$ npm ci', 'resolving 1,284 packages', 'added 1,284 packages in 8.1 s'] },
+  { name: 'Build (release)', ms: 1500, log: ['$ swift build -c release', 'compiling 312 files', 'linking LiteChat', 'build ok, 2.4 MB'] },
+  { name: 'Run 214 tests', ms: 1300, log: ['$ swift test --parallel', 'running 214 tests on 8 workers', '214 passed, 0 failed'],
+    fail: ['$ swift test --parallel', '✗ CheckoutTests.testTimeout (flaky)', '213 passed, 1 failed'] },
+  { name: 'Upload bundle', ms: 1000, log: ['$ upload dist/litechat.zip', 'sha256 9f3c…e1a0', 'uploaded 2.4 MB'], fail: ['$ upload dist/litechat.zip', '✗ 503 from storage, connection reset'] },
+  { name: 'Roll out to 3 regions', ms: 1400, log: ['eu-west 100% ✓', 'us-east 100% ✓', 'ap-south 100% ✓'], fail: ['eu-west 100% ✓', '✗ us-east health check timed out'] },
+];
+let steps, current = -1, status = 'queued', runs = 0, run = 0, failAt = -1, open = -1, retries = 0;
+const fresh = () => { steps = STEPS.map(() => ({ st: 'wait', p: 0, took: 0 })); current = -1; open = -1; retries = 0; };
+fresh();
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3), inOutSine: t => -(Math.cos(Math.PI * t) - 1) / 2 };
+function animate(duration, onFrame, easing) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+      onFrame(easing(t), t);
+      if (t < 1) requestAnimationFrame(step); else resolve();
+    };
+    step();
+  });
+}
+
+const root = document.getElementById('w');
+const $ = id => document.getElementById(id);
+function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function bubble(kind) {
+  for (const c of [...root.classList]) if (c.startsWith('tr-')) root.classList.remove(c);
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+
+$('steps').innerHTML = STEPS.map((s, i) => `<div class="st" data-i="${i}"><div class="ic"></div>
+    <div class="grow"><span class="name muted">${esc(s.name)}</span><div class="lv" hidden><div class="pbar"><div></div></div><div class="live muted"></div></div></div>
+    <span class="small muted rt"></span></div><div class="log" hidden></div>`).join('');
+const rowEls = Array.from($('steps').querySelectorAll('.st')), logEls = Array.from($('steps').querySelectorAll('.log'));
+
+function renderRow(i) {
+  const s = STEPS[i], st = steps[i], row = rowEls[i], ic = row.querySelector('.ic');
+  const icon = st.st === 'done' ? '<div class="ok">✓</div>' : st.st === 'fail' ? '<div class="ko">!</div>' : st.st === 'skip' ? '<div class="skip">–</div>'
+    : st.st === 'run' ? '<div class="ring"><div class="hole"></div></div>' : '<div class="wait"></div>';
+  if (ic.dataset.st !== st.st) { ic.dataset.st = st.st; ic.innerHTML = icon; }
+  const can = st.st === 'done' || st.st === 'fail' || st.st === 'skip';
+  row.classList.toggle('can', can);
+  if (can) { row.dataset.action = 'log'; row.dataset.value = i; } else { delete row.dataset.action; delete row.dataset.value; }
+  row.querySelector('.name').className = 'name ' + (st.st === 'wait' ? 'muted' : st.st === 'fail' ? 't-red' : 'fg');
+  row.querySelector('.lv').hidden = st.st !== 'run';
+  const right = st.st === 'done' ? (st.took / 1000).toFixed(1) + ' s' : st.st === 'run' ? Math.round(st.p * 100) + '%'
+              : st.st === 'fail' ? 'failed' : st.st === 'skip' ? 'cancelled' : '';
+  const rt = row.querySelector('.rt');
+  rt.className = 'small rt ' + (st.st === 'fail' ? 't-red' : 'muted');
+  rt.textContent = right + (can ? (open === i ? ' ▴' : ' ▾') : '');
+  const lines = st.st === 'fail' ? s.fail : st.st === 'skip' ? [s.log[0], '✗ cancelled'] : s.log;
+  const log = logEls[i], showLog = open === i && can;
+  log.hidden = !showLog;
+  if (showLog) log.innerHTML = lines.map(l => `<div class="${l[0] === '✗' ? 't-red' : l[0] === '$' ? 'muted' : ''}">${esc(l)}</div>`).join('');
+}
+function renderLive(i) {
+  const s = STEPS[i], st = steps[i], row = rowEls[i];
+  row.querySelector('.rt').textContent = Math.round(st.p * 100) + '%';
+  const line = s.log[Math.min(s.log.length - 1, Math.floor(st.p * s.log.length))], live = row.querySelector('.live');
+  if (live.textContent !== line) live.textContent = line;
+}
+function renderHead() {
+  const badge = { queued: ['blue', 'queued'], running: ['blue', 'running'], failed: ['red', 'failed'], cancelled: ['', 'cancelled'], live: ['green', 'live'] }[status];
+  $('hd').textContent = `🛠 Deploy #${1040 + runs}`;
+  $('badge').className = 'badge ' + badge[0]; $('badge').textContent = badge[1];
+  $('topbtn').innerHTML = status === 'running' ? '<button data-action="cancel">■ Cancel</button>'
+    : status === 'failed' ? '' : `<button data-action="deploy">↻ ${status === 'live' ? 'Deploy again' : 'Restart'}</button>`;
+}
+function renderFoot() {
+  const foot = $('foot');
+  if (status === 'live') {
+    const total = steps.reduce((t, s) => t + s.took, 0) / 1000;
+    foot.innerHTML = `<div class="banner" style="background-color: rgba(52,199,89,0.14)"><b class="t-green">🚀 Live in production</b>${retries ? ` <span class="tiny muted">after ${retries} retr${retries > 1 ? 'ies' : 'y'}</span>` : ''}
+      <div class="stats"><span><b id="s-mb">0.0</b> MB</span><span><b id="s-total">0.0</b> s total</span><span><b id="s-tests">0</b> tests ✓</span></div></div>`;
+    // tween(banner, {k: 1}, 1000, ease.outCubic): the three numbers count up
+    const me = run;
+    animate(1000, k => { if (me !== run || status !== 'live') return; $('s-mb').textContent = (2.4 * k).toFixed(1); $('s-total').textContent = (total * k).toFixed(1); $('s-tests').textContent = Math.round(214 * k); }, ease.outCubic);
+  } else if (status === 'failed') {
+    const f = STEPS[steps.findIndex(s => s.st === 'fail')];
+    foot.innerHTML = `<div class="banner" style="background-color: rgba(255,59,48,0.12)"><b class="t-red">✗ ${esc(f.name)} failed</b>
+      <div class="small muted">${esc(f.fail[f.fail.length - 1])}. Retrying runs this step again and continues.</div>
+      <div class="acts"><button class="primary" data-action="retry">↻ Retry step</button><button data-action="deploy">Start over</button></div></div>`;
+  } else if (status === 'cancelled') foot.innerHTML = `<div class="banner" style="background-color: rgba(127,127,127,0.12)"><b>Deploy cancelled</b><div class="small muted">Nothing was rolled out. Tap a step to read its log.</div></div>`;
+  else foot.innerHTML = '';
+}
+function renderAll() { renderHead(); STEPS.forEach((_, i) => renderRow(i)); renderFoot(); }
+
+function runFrom(i, me) {
+  if (status !== 'running') { status = 'running'; renderHead(); renderFoot(); }
+  if (i >= STEPS.length) {
+    current = -1; status = 'live';
+    bubble('pop');
+    renderHead(); renderFoot();
+    return;
+  }
+  const s = steps[i], ms = STEPS[i].ms * (0.8 + Math.random() * 0.4), fails = i === failAt;
+  current = i; s.st = 'run'; s.p = 0;
+  renderRow(i);
+  // the bar itself is a CSS transition with the same duration and easing; the % label and the log line follow the frame loop
+  const bar = rowEls[i].querySelector('.pbar div');
+  bar.style.transition = 'none'; bar.style.width = '0%';
+  void bar.offsetWidth;
+  bar.style.transition = `width ${Math.round(fails ? ms * 0.65 : ms)}ms cubic-bezier(.37,0,.63,1)`;
+  bar.style.width = fails ? '65%' : '100%';
+  animate(fails ? ms * 0.65 : ms, (p, raw) => {
+    if (me !== run) return;
+    s.p = fails ? p * 0.65 : p;
+    renderLive(i);
+    if (raw < 1) return;
+    if (fails) {
+      failAt = -1; s.st = 'fail'; status = 'failed'; current = -1;
+      bubble('slide-down');
+      open = i;
+      renderRow(i); renderHead(); renderFoot();
+      restart(rowEls[i], 'shake');
+      return;
+    }
+    s.st = 'done'; s.took = ms;
+    renderRow(i);
+    runFrom(i + 1, me);
+  }, ease.inOutSine);
+}
+
+function deploy() {
+  const me = ++run;
+  runs++; fresh();
+  failAt = runs === 1 ? 2 : Math.random() < 0.4 ? 2 + Math.floor(Math.random() * 3) : -1;
+  rowEls.forEach(r => r.classList.remove('shake'));
+  renderAll();
+  runFrom(0, me);
+}
+renderAll();
+setTimeout(deploy, 250);
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const name = el.dataset.action, value = el.dataset.value;
+  if (name === 'deploy') { if (status !== 'running') bubble('fade'); return deploy(); }
+  if (name === 'cancel' && status === 'running') {
+    run++;
+    bubble('fade');
+    steps[current].st = 'skip'; current = -1; status = 'cancelled';
+    renderAll();
+    return;
+  }
+  if (name === 'retry' && status === 'failed') {
+    const i = steps.findIndex(s => s.st === 'fail');
+    bubble('slide-up');
+    open = -1; retries++;
+    rowEls[i].classList.remove('shake');
+    renderRow(i);
+    return runFrom(i, ++run);
+  }
+  if (name === 'log') {
+    const i = Number(value), was = open;
+    bubble(open === i ? 'slide-up' : 'slide-down');
+    open = open === i ? -1 : i;
+    if (was >= 0) renderRow(was);
+    renderRow(i);
+  }
+});
+</script>

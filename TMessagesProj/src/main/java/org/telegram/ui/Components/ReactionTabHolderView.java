@@ -29,9 +29,34 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
-public class ReactionTabHolderView extends FrameLayout {
+public class ReactionTabHolderView extends FrameLayout implements Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        try {
+            if (bgPaint != null && counterView != null && drawable != null) {
+                final int backgroundSelectedColor = Theme.getColor(Theme.key_chat_inReactionButtonBackground);
+                final int backgroundColor = ColorUtils.setAlphaComponent(backgroundSelectedColor, 0x10);
+                final int textFinalColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_inReactionButtonText), Theme.getColor(Theme.key_chat_inReactionButtonTextSelected), outlineProgress);
+                bgPaint.setColor(ColorUtils.blendARGB(backgroundColor, backgroundSelectedColor, outlineProgress));
+                if (counterView.getCurrentTextColor() != textFinalColor) {
+                    counterView.setTextColor(textFinalColor);
+                    drawable.setColorFilter(new PorterDuffColorFilter(textFinalColor, PorterDuff.Mode.MULTIPLY));
+                }
+                invalidate();
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inReactionButtonText);
+    }
     private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Path path = new Path();
@@ -90,9 +115,9 @@ public class ReactionTabHolderView extends FrameLayout {
         drawable.setColorFilter(new PorterDuffColorFilter(textFinalColor, PorterDuff.Mode.MULTIPLY));
 
         if (outlineProgress == 1f) {
-            overlaySelectorView.setBackground(Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_inReactionButtonTextSelected), (int) (0.3f * 255))));
+            ThemeBind.selectorBackground(overlaySelectorView, Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_inReactionButtonTextSelected), (int) (0.3f * 255))), null, ThemeBind.alpha(Theme.key_chat_inReactionButtonTextSelected, (int) (0.3f * 255)));
         } else if (outlineProgress == 0) {
-            overlaySelectorView.setBackground(Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(backgroundSelectedColor, (int) (0.3f * 255))));
+            ThemeBind.selectorBackground(overlaySelectorView, Theme.createSimpleSelectorRoundRectDrawable((int) radius, Color.TRANSPARENT, ColorUtils.setAlphaComponent(backgroundSelectedColor, (int) (0.3f * 255))), null, ThemeBind.alpha(Theme.key_chat_inReactionButtonBackground, (int) (0.3f * 255)));
         }
         invalidate();
     }

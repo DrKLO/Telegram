@@ -13,17 +13,15 @@
 #include "voip/webrtc/common_video/h264/sps_parser.h"
 #include "voip/webrtc/common_video/h264/h264_common.h"
 #include "c_utils.h"
-#include "sws_context_holder.h"
+#include "gifvideo/sws_context_holder.h"
+#include "gifvideo/video_frame_reader.h"
+#include <cmath>
 
 extern "C" {
 #include <libavformat/avformat.h>
-#include <libavformat/isom.h>
-#include <libavcodec/bytestream.h>
-#include <libavcodec/get_bits.h>
-#include <libavcodec/golomb.h>
 #include <libavutil/eval.h>
-#include <libavutil/intmath.h>
 #include <libswscale/swscale.h>
+#include <libavutil/display.h>
 }
 
 #define RGB8888_A(p) ((p & (0xff<<24))      >> 24 )
@@ -45,20 +43,24 @@ jmethodID jclass_AnimatedFileDrawableStream_isCanceled;
 jmethodID jclass_AnimatedFileDrawableStream_isFinishedLoadingFile;
 jmethodID jclass_AnimatedFileDrawableStream_getFinishedFilePath;
 
+struct OffsetIOContext;
+struct VideoInfo;
+static void freeOffsetIO(VideoInfo *info);
+
 typedef struct VideoInfo {
 
     ~VideoInfo() {
+        delete reader;
+        reader = nullptr;
+
         if (video_dec_ctx) {
-            avcodec_close(video_dec_ctx);
-            video_dec_ctx = nullptr;
+            // avcodec_close() frees internals but NOT the context allocated by
+            // avcodec_alloc_context3(); avcodec_free_context() frees both.
+            avcodec_free_context(&video_dec_ctx);
         }
         if (fmt_ctx) {
             avformat_close_input(&fmt_ctx);
             fmt_ctx = nullptr;
-        }
-        if (frame) {
-            av_frame_free(&frame);
-            frame = nullptr;
         }
         if (src) {
             delete [] src;
@@ -90,12 +92,11 @@ typedef struct VideoInfo {
             avio_context_free(&ioContext);
             ioContext = nullptr;
         }
+        freeOffsetIO(this);
         if (fd >= 0) {
             close(fd);
             fd = -1;
         }
-
-        av_packet_unref(&orig_pkt);
 
         video_stream_idx = -1;
         video_stream = nullptr;
@@ -108,22 +109,21 @@ typedef struct VideoInfo {
     AVStream *video_stream = nullptr;
     AVStream *audio_stream = nullptr;
     AVCodecContext *video_dec_ctx = nullptr;
-    AVFrame *frame = nullptr;
-    bool has_decoded_frames = false;
-    AVPacket pkt;
-    AVPacket orig_pkt;
+    // Borrows fmt_ctx and video_dec_ctx; must be deleted before them (see dtor).
+    VideoFrameReader *reader = nullptr;
     bool stopped = false;
     bool seeking = false;
-
-    int firstWidth = 0;
-    int firstHeight = 0;
-
-    bool dropFrames = false;
+    bool afterEof = false;
+    bool isSingleFrame = false;
 
     struct SwsContextHolder sws_ctx_holder;
 
     AVIOContext *ioContext = nullptr;
     unsigned char *ioBuffer = nullptr;
+    // Custom AVIO for the fileOffset path in nGetVideoInfo. Owned here because
+    // fmt_ctx->pb is not freed by avformat_close_input for a caller-supplied pb.
+    AVIOContext *offsetIoContext = nullptr;
+    struct OffsetIOContext *offsetIoOpaque = nullptr;
     jobject stream = nullptr;
     int32_t account = 0;
     int fd = -1;
@@ -158,7 +158,7 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContext *fmt_ctx, enum AVMediaType type) {
     int ret, stream_index;
     AVStream *st;
-    AVCodec *dec = NULL;
+    const AVCodec *dec = NULL;
     AVDictionary *opts = NULL;
 
     ret = av_find_best_stream(fmt_ctx, type, -1, -1, NULL, 0);
@@ -187,7 +187,9 @@ int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContex
         }
 
         av_dict_set(&opts, "refcounted_frames", "1", 0);
-        if ((ret = avcodec_open2(*dec_ctx, dec, &opts)) < 0) {
+        ret = avcodec_open2(*dec_ctx, dec, &opts);
+        av_dict_free(&opts);   // frees leftover (unconsumed) options on all paths
+        if (ret < 0) {
             LOGE("Failed to open %s codec", av_get_media_type_string(type));
             return ret;
         }
@@ -195,34 +197,6 @@ int open_codec_context(int *stream_idx, AVCodecContext **dec_ctx, AVFormatContex
     }
 
     return 0;
-}
-
-int decode_packet(VideoInfo *info, int *got_frame) {
-    int ret = 0;
-    int decoded = info->pkt.size;
-    *got_frame = 0;
-
-    if (info->pkt.stream_index == info->video_stream_idx) {
-        while (decoded > 0) {
-            ret = avcodec_send_packet(info->video_dec_ctx, &info->pkt);
-            if (ret < 0 && ret != AVERROR(EAGAIN)) {
-                return ret;
-            }
-            if (ret >= 0) {
-                ret = avcodec_receive_frame(info->video_dec_ctx, info->frame);
-                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-                    return 0;
-                } else if (ret < 0) {
-                    return ret;
-                }
-                *got_frame = 1;
-                return info->pkt.size;
-            }
-            decoded = info->pkt.size;
-        }
-    }
-
-    return decoded;
 }
 
 void requestFd(VideoInfo *info) {
@@ -352,7 +326,54 @@ static int64_t offsetSeek(void *opaque, int64_t pos, int whence) {
     return lseek(ctx->fd, ctx->offset + pos, whence);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nGetVideoInfo(JNIEnv *env, jclass clazz, jint sdkVersion, jstring src, jintArray data, jlong fileOffset) {
+// Frees the custom AVIO built for the fileOffset path (see nGetVideoInfo).
+// Safe to call when nothing was allocated: all fields default to null/-1.
+static void freeOffsetIO(VideoInfo *info) {
+    if (info->offsetIoContext != nullptr) {
+        av_freep(&info->offsetIoContext->buffer);
+        avio_context_free(&info->offsetIoContext);
+        info->offsetIoContext = nullptr;
+    }
+    if (info->offsetIoOpaque != nullptr) {
+        if (info->offsetIoOpaque->fd >= 0) {
+            close(info->offsetIoOpaque->fd);
+        }
+        delete info->offsetIoOpaque;
+        info->offsetIoOpaque = nullptr;
+    }
+}
+
+int getVideoRotation(const AVStream *stream) {
+    const AVPacketSideData *displayMatrix = av_packet_side_data_get(
+            stream->codecpar->coded_side_data,
+            stream->codecpar->nb_coded_side_data,
+            AV_PKT_DATA_DISPLAYMATRIX);
+    if (displayMatrix != nullptr && displayMatrix->size >= 9 * sizeof(int32_t)) {
+        // av_display_rotation_get() returns the counter-clockwise angle; negate
+        // to match the legacy clockwise convention, then normalize.
+        double theta = -av_display_rotation_get((const int32_t *) displayMatrix->data);
+        if (!std::isnan(theta)) {
+            int rotation = ((int) lround(theta / 90.0) * 90) % 360;
+            return rotation < 0 ? rotation + 360 : rotation;
+        }
+        return 0;
+    }
+
+    // Fallback for old containers that still carry the legacy metadata tag.
+    AVDictionaryEntry *rotate_tag = av_dict_get(stream->metadata, "rotate", nullptr, 0);
+    if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
+        char *tail;
+        int rotation = (int) av_strtod(rotate_tag->value, &tail);
+        if (*tail == '\0') {
+            rotation = ((rotation / 90) * 90) % 360;
+            return rotation < 0 ? rotation + 360 : rotation;
+        }
+    }
+    return 0;
+}
+
+
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nGetVideoInfo(JNIEnv *env, jclass clazz, jstring src, jintArray data, jlong fileOffset) {
     VideoInfo *info = new VideoInfo();
 
     char const *srcString = env->GetStringUTFChars(src, 0);
@@ -383,18 +404,17 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
         uint8_t *ioBuf = (uint8_t *)av_malloc(32 * 1024);
         AVIOContext *avio = avio_alloc_context(ioBuf, 32 * 1024, 0, ioCtx, offsetRead, nullptr, offsetSeek);
 
+        // Owned by info from here on: ~VideoInfo -> freeOffsetIO frees avio, its
+        // buffer, ioCtx and its fd. avformat_close_input won't free a custom pb.
+        info->offsetIoContext = avio;
+        info->offsetIoOpaque = ioCtx;
+
         info->fmt_ctx = avformat_alloc_context();
         info->fmt_ctx->pb = avio;
 
         if ((ret = avformat_open_input(&info->fmt_ctx, nullptr, nullptr, nullptr)) < 0) {
             LOGE("can't open source file at offset %s (offset=%lld), %s", info->src, fileOffset, av_err2str(ret));
             info->fmt_ctx = nullptr;
-            if (avio) {
-                av_freep(&avio->buffer);
-                avio_context_free(&avio);
-            }
-            close(fd);
-            delete ioCtx;
             delete info;
             return;
         }
@@ -435,8 +455,9 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP8 ||
                 info->video_stream->codecpar->codec_id == AV_CODEC_ID_VP9 ||
-                (sdkVersion > 21 && info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC);
+                info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC;
 
+        /*
         if (strstr(info->fmt_ctx->iformat->name, "mov") != 0 && dataArr[PARAM_NUM_SUPPORTED_VIDEO_CODEC]) {
             MOVStreamContext *mov = (MOVStreamContext *) info->video_stream->priv_data;
             dataArr[PARAM_NUM_VIDEO_FRAME_SIZE] = (jint) mov->data_size;
@@ -446,6 +467,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
                 dataArr[PARAM_NUM_AUDIO_FRAME_SIZE] = (jint) mov->data_size;
             }
         }
+         */
 
         if (info->audio_stream != nullptr) {
             //https://developer.android.com/guide/topics/media/media-formats
@@ -459,7 +481,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
                     info->audio_stream->codecpar->codec_id == AV_CODEC_ID_MP3 ||
                     // not supported codec, skip audio in this case
                     info->audio_stream->codecpar->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV ||
-                    (sdkVersion > 21 && info->audio_stream->codecpar->codec_id == AV_CODEC_ID_OPUS);
+                    info->audio_stream->codecpar->codec_id == AV_CODEC_ID_OPUS;
             dataArr[PARAM_NUM_HAS_AUDIO] = 1;
         } else {
             dataArr[PARAM_NUM_HAS_AUDIO] = 0;
@@ -468,16 +490,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
         dataArr[PARAM_NUM_BITRATE] = (jint) info->video_stream->codecpar->bit_rate;
         dataArr[PARAM_NUM_WIDTH] = info->video_stream->codecpar->width;
         dataArr[PARAM_NUM_HEIGHT] = info->video_stream->codecpar->height;
-        AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", NULL, 0);
-        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
-            char *tail;
-            dataArr[PARAM_NUM_ROTATION] = (jint) av_strtod(rotate_tag->value, &tail);
-            if (*tail) {
-                dataArr[PARAM_NUM_ROTATION] = 0;
-            }
-        } else {
-            dataArr[PARAM_NUM_ROTATION] = 0;
-        }
+        dataArr[PARAM_NUM_ROTATION] = (jint) getVideoRotation(info->video_stream);
         if (info->video_stream->codecpar->codec_id == AV_CODEC_ID_H264 || info->video_stream->codecpar->codec_id == AV_CODEC_ID_HEVC) {
             dataArr[PARAM_NUM_FRAMERATE] = (jint) av_q2d(info->video_stream->avg_frame_rate);
         } else {
@@ -487,6 +500,27 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
         env->ReleaseIntArrayElements(data, dataArr, 0);
         delete info;
     }
+}
+
+static bool isStreamCanceled(VideoInfo *info) {
+    if (info->stream == nullptr) {
+        return false;
+    }
+    JNIEnv *jniEnv = nullptr;
+    JavaVMAttachArgs jvmArgs;
+    jvmArgs.version = JNI_VERSION_1_6;
+
+    bool attached = false;
+    if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
+        javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
+        attached = true;
+    }
+    jboolean canceled = jniEnv->CallBooleanMethod(
+            info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
+    if (attached) {
+        javaVm->DetachCurrentThread();
+    }
+    return canceled;
 }
 
 extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nCreateDecoder(JNIEnv *env, jclass clazz, jstring src, jintArray data, jint account, jlong streamFileSize, jobject stream, jboolean preview) {
@@ -512,6 +546,10 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileN
         info->ioBuffer = (unsigned char *) av_malloc(64 * 1024);
         info->ioContext = avio_alloc_context(info->ioBuffer, 64 * 1024, 0, info, readCallback, nullptr, seekCallback);
         if (info->ioContext == nullptr) {
+            // avio didn't take ownership of the buffer; free it here. After a
+            // successful alloc the buffer lives in ioContext->buffer and is
+            // freed by the destructor (and may be reallocated by FFmpeg).
+            av_freep(&info->ioBuffer);
             delete info;
             return 0;
         }
@@ -556,32 +594,19 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileN
         return 0;
     }
 
-    info->frame = av_frame_alloc();
-    if (info->frame == nullptr) {
-        LOGE("can't allocate frame %s", info->src);
-        delete info;
-        return 0;
-    }
-
-    av_init_packet(&info->pkt);
-    info->pkt.data = NULL;
-    info->pkt.size = 0;
+    info->reader = new VideoFrameReader(info->fmt_ctx, info->video_dec_ctx, info->video_stream_idx);
+    VideoInfo *self = info;
+    info->reader->shouldAbort = [self]() {
+        // Covers nStopDecoder (stopped), nPrepareToSeek (seeking) and stream cancel.
+        return self->stopped || self->seeking || isStreamCanceled(self);
+    };
 
     jint *dataArr = env->GetIntArrayElements(data, 0);
     if (dataArr != nullptr) {
         dataArr[0] = info->video_dec_ctx->width;
         dataArr[1] = info->video_dec_ctx->height;
         //float pixelWidthHeightRatio = info->video_dec_ctx->sample_aspect_ratio.num / info->video_dec_ctx->sample_aspect_ratio.den; TODO support
-        AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", NULL, 0);
-        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
-            char *tail;
-            dataArr[2] = (jint) av_strtod(rotate_tag->value, &tail);
-            if (*tail) {
-                dataArr[2] = 0;
-            }
-        } else {
-            dataArr[2] = 0;
-        }
+        dataArr[2] = (jint) getVideoRotation(info->video_stream);
         dataArr[4] = (int32_t) (info->fmt_ctx->duration * 1000 / AV_TIME_BASE);
         int video_stream_index = -1;
         double fps = 30.0;
@@ -598,8 +623,10 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileN
             } else if(video_stream->r_frame_rate.den && video_stream->r_frame_rate.num) {
                 fps = av_q2d(video_stream->r_frame_rate);
             } else {
+                /*
                 int ticks = video_stream->codec->ticks_per_frame;
                 fps = 1.0 / (ticks * av_q2d(video_stream->time_base));
+                 */
             }
         }
         dataArr[5] = (int32_t) fps;
@@ -653,100 +680,61 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNa
     info->seeking = true;
 }
 
-void push_time(JNIEnv *env, VideoInfo* info, jintArray data) {
+void push_time(JNIEnv *env, VideoInfo* info, AVFrame *frame, jintArray data) {
     jint *dataArr = env->GetIntArrayElements(data, 0);
-    dataArr[3] = (jint) (1000 * info->frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
+    dataArr[3] = (jint) (1000 * frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
+    env->ReleaseIntArrayElements(data, dataArr, 0);
+}
+
+void push_single_frame(JNIEnv *env, jintArray data) {
+    jint *dataArr = env->GetIntArrayElements(data, 0);
+    dataArr[7] = 1;
     env->ReleaseIntArrayElements(data, dataArr, 0);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nSeekToMs(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jintArray data, jboolean precise) {
-    if (ptr == NULL) {
+    if (ptr == 0) {
         return;
     }
     VideoInfo *info = (VideoInfo *) (intptr_t) ptr;
-    info->seeking = false;
-    int64_t pts = (int64_t) (ms / av_q2d(info->video_stream->time_base) / 1000);
-    int ret = 0;
-    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, pts, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
-        LOGE("can't seek file %s, %s", info->src, av_err2str(ret));
+    info->seeking = false;   // clear before decoding so shouldAbort() won't bail
+    info->afterEof = false;
+
+    AVRational tb = info->video_stream->time_base;
+    int64_t pts = (int64_t) (ms / av_q2d(tb) / 1000);
+
+    if (!info->reader->seek(pts)) {
+        LOGE("can't seek file %s", info->src);
         return;
-    } else {
-        avcodec_flush_buffers(info->video_dec_ctx);
-        if (!precise) {
-            push_time(env, info, data);
+    }
+
+    if (!precise) {
+        // Non-precise: land on the keyframe, don't decode toward the target.
+        return;
+    }
+
+    double targetSec = ms / 1000.0;
+    for (;;) {
+        VideoFrameReader::Status st = info->reader->getNextFrame();
+        if (st != VideoFrameReader::Status::Ok) {
+            // Eof: target lies past the last frame -> rewind to start, as before.
+            // Aborted/Error: stop without advancing.
+            if (st == VideoFrameReader::Status::Eof) {
+                info->reader->seek(0);
+            }
             return;
         }
-        int got_frame = 0;
-        int32_t tries = 100;
-        while (tries > 0) {
-            if (info->pkt.size == 0) {
-                ret = av_read_frame(info->fmt_ctx, &info->pkt);
-                if (ret >= 0) {
-                    info->orig_pkt = info->pkt;
-                }
-            }
 
-            if (info->pkt.size > 0) {
-                ret = decode_packet(info, &got_frame);
-                if (ret < 0) {
-                    if (info->has_decoded_frames) {
-                        ret = 0;
-                    }
-                    info->pkt.size = 0;
-                } else {
-                    info->pkt.data += ret;
-                    info->pkt.size -= ret;
-                }
-                if (info->pkt.size == 0) {
-                    av_packet_unref(&info->orig_pkt);
-                }
-            } else {
-                info->pkt.data = NULL;
-                info->pkt.size = 0;
-                ret = decode_packet(info, &got_frame);
-                if (ret < 0) {
-                    push_time(env, info, data);
-                    return;
-                }
-                if (got_frame == 0) {
-                    av_seek_frame(info->fmt_ctx, info->video_stream_idx, 0, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
-                    push_time(env, info, data);
-                    return;
-                }
-            }
-            if (ret < 0) {
-                push_time(env, info, data);
-                return;
-            }
-            if (got_frame) {
-                info->has_decoded_frames = true;
-                bool finished = false;
-                if (info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P) {
-                    int64_t pkt_pts = info->frame->best_effort_timestamp;
-                    if (pkt_pts >= pts) {
-                        finished = true;
-                    }
-                }
-                av_frame_unref(info->frame);
-                if (finished) {
-                    push_time(env, info, data);
-                    return;
-                }
-            }
-            tries--;
+        if (info->reader->frameTimeSeconds() >= targetSec) {
+            push_time(env, info, info->reader->frame(), data);
+            return;
         }
     }
-    push_time(env, info, data);
 }
 
-uint32_t premultiply_channel_value(const uint32_t pixel, const uint8_t offset, const float normalizedAlpha) {
-    auto multipliedValue = ((pixel >> offset) & 0xFF) * normalizedAlpha;
-    return ((uint32_t)std::min(multipliedValue, 255.0f)) << offset;
-}
-
-static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray data, jobject bitmap) {
+static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, AVFrame *frame, jintArray data, jobject bitmap) {
     if (env->IsSameObject(bitmap, NULL)) {
-        push_time(env, info, data);
+        push_time(env, info, frame, data);
         return;
     }
     jint *dataArr = env->GetIntArrayElements(data, 0);
@@ -762,12 +750,12 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
     if (dataArr != nullptr) {
         wantedWidth = dataArr[0];
         wantedHeight = dataArr[1];
-        dataArr[3] = (jint) (1000 * info->frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
+        dataArr[3] = (jint) (1000 * frame->best_effort_timestamp * av_q2d(info->video_stream->time_base));
         if (env->GetArrayLength(data) > 6) {
             bool isOpaque = (
-                info->frame->format == AV_PIX_FMT_YUV420P  ||
-                info->frame->format == AV_PIX_FMT_YUVJ420P ||
-                info->frame->format == AV_PIX_FMT_YUV444P
+                frame->format == AV_PIX_FMT_YUV420P  ||
+                frame->format == AV_PIX_FMT_YUVJ420P ||
+                frame->format == AV_PIX_FMT_YUV444P
             );
             dataArr[6] = isOpaque ? 1 : 0;
         }
@@ -777,7 +765,7 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
         wantedHeight = bitmapHeight;
     }
 
-    if (!(wantedWidth == info->frame->width && wantedHeight == info->frame->height || wantedWidth == info->frame->height && wantedHeight == info->frame->width)) {
+    if (!(wantedWidth == frame->width && wantedHeight == frame->height || wantedWidth == frame->height && wantedHeight == frame->width)) {
         return;
     }
 
@@ -787,15 +775,15 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
     }
 
     SwsContext* sws_ctx = nullptr;
-    if (info->frame->format > AV_PIX_FMT_NONE && info->frame->format < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
+    if (frame->format > AV_PIX_FMT_NONE && frame->format < AV_PIX_FMT_NB && frame->format != AV_PIX_FMT_YUVA420P) {
         sws_ctx = info->sws_ctx_holder.get(
-            info->frame->width,
-            info->frame->height,
-            (AVPixelFormat) info->frame->format,
+            frame->width,
+            frame->height,
+            (AVPixelFormat) frame->format,
             bitmapWidth,
             bitmapHeight,
             AV_PIX_FMT_RGBA);
-    } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB && info->frame->format != AV_PIX_FMT_YUVA420P) {
+    } else if (info->video_dec_ctx->pix_fmt > AV_PIX_FMT_NONE && info->video_dec_ctx->pix_fmt < AV_PIX_FMT_NB && frame->format != AV_PIX_FMT_YUVA420P) {
         sws_ctx = info->sws_ctx_holder.get(
             info->video_dec_ctx->width,
             info->video_dec_ctx->height,
@@ -812,20 +800,20 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
         int32_t dst_stride[1];
         dst_stride[0] = bitmapStride;
         sws_scale(sws_ctx,
-            info->frame->data,
-            info->frame->linesize,
+            frame->data,
+            frame->linesize,
             0,
-            info->frame->height,
+            frame->height,
             dst_data,
             dst_stride
         );
-    } else if (info->frame->width == bitmapWidth && info->frame->height == bitmapHeight) {
-        if (info->frame->format == AV_PIX_FMT_YUVA420P) {
+    } else if (frame->width == bitmapWidth && frame->height == bitmapHeight) {
+        if (frame->format == AV_PIX_FMT_YUVA420P) {
             libyuv::I420AlphaToARGBMatrix(
-                info->frame->data[0], info->frame->linesize[0],
-                info->frame->data[2], info->frame->linesize[2],
-                info->frame->data[1], info->frame->linesize[1],
-                info->frame->data[3], info->frame->linesize[3],
+                frame->data[0], frame->linesize[0],
+                frame->data[2], frame->linesize[2],
+                frame->data[1], frame->linesize[1],
+                frame->data[3], frame->linesize[3],
                 (uint8_t *) pixels,
                 bitmapStride,
                 &libyuv::kYvuI601Constants,
@@ -833,22 +821,22 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
                 bitmapHeight,
                 1
             );
-        } else if (info->frame->format == AV_PIX_FMT_YUV444P) {
+        } else if (frame->format == AV_PIX_FMT_YUV444P) {
             libyuv::H444ToARGB(
-                info->frame->data[0], info->frame->linesize[0],
-                info->frame->data[2], info->frame->linesize[2],
-                info->frame->data[1], info->frame->linesize[1],
+                frame->data[0], frame->linesize[0],
+                frame->data[2], frame->linesize[2],
+                frame->data[1], frame->linesize[1],
                 (uint8_t *) pixels,
                 bitmapStride,
                 bitmapWidth,
                 bitmapHeight
             );
-        } else if (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_YUVJ420P) {
-            if (info->frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
+        } else if (frame->format == AV_PIX_FMT_YUV420P || frame->format == AV_PIX_FMT_YUVJ420P) {
+            if (frame->colorspace == AVColorSpace::AVCOL_SPC_BT709) {
                 libyuv::H420ToARGB(
-                    info->frame->data[0], info->frame->linesize[0],
-                    info->frame->data[2], info->frame->linesize[2],
-                    info->frame->data[1], info->frame->linesize[1],
+                    frame->data[0], frame->linesize[0],
+                    frame->data[2], frame->linesize[2],
+                    frame->data[1], frame->linesize[1],
                     (uint8_t *) pixels,
                     bitmapStride,
                     bitmapWidth,
@@ -856,18 +844,18 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
                 );
             } else {
                 libyuv::I420ToARGB(
-                    info->frame->data[0], info->frame->linesize[0],
-                    info->frame->data[2], info->frame->linesize[2],
-                    info->frame->data[1], info->frame->linesize[1],
+                    frame->data[0], frame->linesize[0],
+                    frame->data[2], frame->linesize[2],
+                    frame->data[1], frame->linesize[1],
                     (uint8_t *) pixels,
                     bitmapStride,
                     bitmapWidth,
                     bitmapHeight
                 );
             }
-        } else if (info->frame->format == AV_PIX_FMT_BGRA) {
+        } else if (frame->format == AV_PIX_FMT_BGRA) {
             libyuv::ABGRToARGB(
-                info->frame->data[0], info->frame->linesize[0],
+                frame->data[0], frame->linesize[0],
                 (uint8_t *) pixels,
                 bitmapStride,
                 bitmapWidth,
@@ -883,10 +871,10 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
             uint8_t *dst_data[1] = { alignedBuf };
             int32_t dst_stride[1] = { alignedStride };
             sws_scale(sws_ctx,
-                      info->frame->data,
-                      info->frame->linesize,
+                      frame->data,
+                      frame->linesize,
                       0,
-                      info->frame->height,
+                      frame->height,
                       dst_data,
                       dst_stride
             );
@@ -910,208 +898,106 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
 }
 
 extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nGetFrameAtTime(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jobject bitmap, jintArray data) {
-    if (ptr == NULL || bitmap == nullptr || data == nullptr) {
+    if (ptr == 0 || bitmap == nullptr || data == nullptr) {
         return 0;
     }
     VideoInfo *info = (VideoInfo *) (intptr_t) ptr;
-    info->seeking = false;
-    int64_t pts = (int64_t) (ms / av_q2d(info->video_stream->time_base) / 1000);
-    int ret = 0;
-    if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, pts, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
-        LOGE("can't seek file %s, %s", info->src, av_err2str(ret));
-        return 0;
-    } else {
-        avcodec_flush_buffers(info->video_dec_ctx);
-        int got_frame = 0;
-        int32_t tries = 1000;
-        bool readNextPacket = true;
-        while (tries > 0) {
-            if (info->stream != nullptr) {
-                JNIEnv *jniEnv = nullptr;
-                JavaVMAttachArgs jvmArgs;
-                jvmArgs.version = JNI_VERSION_1_6;
+    info->seeking = false;   // clear before decoding so shouldAbort() won't bail
+    info->afterEof = false;
 
-                bool attached;
-                if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
-                    javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
-                    attached = true;
-                } else {
-                    attached = false;
-                }
-                jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
-                if (attached) {
-                    javaVm->DetachCurrentThread();
-                }
-                if (canceled) {
-                    return 0;
-                }
-            }
-            if (info->pkt.size == 0 && readNextPacket) {
-                ret = av_read_frame(info->fmt_ctx, &info->pkt);
-                if (ret >= 0) {
-                    info->orig_pkt = info->pkt;
-                }
-            }
+    AVRational tb = info->video_stream->time_base;
+    int64_t pts = (int64_t) (ms / av_q2d(tb) / 1000);
 
-            if (info->pkt.size > 0) {
-                ret = decode_packet(info, &got_frame);
-                if (ret < 0) {
-                    if (info->has_decoded_frames) {
-                        ret = 0;
-                    }
-                    info->pkt.size = 0;
-                } else {
-                    info->pkt.data += ret;
-                    info->pkt.size -= ret;
-                }
-                if (info->pkt.size == 0) {
-                    av_packet_unref(&info->orig_pkt);
-                }
-            } else {
-                info->pkt.data = NULL;
-                info->pkt.size = 0;
-                ret = decode_packet(info, &got_frame);
-                if (ret < 0) {
-                    return 0;
-                }
-                if (got_frame == 0) {
-                    av_seek_frame(info->fmt_ctx, info->video_stream_idx, 0, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
-                    return 0;
-                }
-            }
-            if (ret < 0) {
-                return 0;
-            }
-            if (got_frame) {
-                bool finished = false;
-                if (info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P) {
-                    int64_t pkt_pts = info->frame->best_effort_timestamp;
-                    bool isLastPacket = false;
-                    if (info->pkt.size == 0) {
-                        readNextPacket = false;
-                        isLastPacket = av_read_frame(info->fmt_ctx, &info->pkt) < 0;
-                    }
-                    if (pkt_pts >= pts || isLastPacket) {
-                        writeFrameToBitmap(env, info, data, bitmap);
-                        finished = true;
-                    }
-                }
-                av_frame_unref(info->frame);
-                if (finished) {
-                    return 1;
-                }
-            } else {
-                readNextPacket = true;
-            }
-            tries--;
-        }
+    if (!info->reader->seek(pts)) {
+        LOGE("can't seek file %s", info->src);
         return 0;
     }
+
+    double targetSec = ms / 1000.0;
+    AVFrame *held = av_frame_alloc();   // most recent frame before target (fallback)
+    bool haveHeld = false;
+    int result = 0;
+
+    for (;;) {
+        VideoFrameReader::Status st = info->reader->getNextFrame();
+        if (st != VideoFrameReader::Status::Ok) {
+            // Eof: target lies at/after the last frame -> emit the last frame we
+            // held. Aborted/Error: give up with no frame.
+            if (st == VideoFrameReader::Status::Eof && haveHeld) {
+                writeFrameToBitmap(env, info, held, data, bitmap);
+                result = 1;
+            }
+            break;
+        }
+
+        AVFrame *frame = info->reader->frame();
+        if (info->reader->frameTimeSeconds() >= targetSec) {
+            writeFrameToBitmap(env, info, frame, data, bitmap);
+            result = 1;
+            break;
+        }
+
+        // Frame is before the target: keep it as the fallback and continue.
+        av_frame_unref(held);
+        av_frame_ref(held, frame);
+        haveHeld = true;
+    }
+
+    av_frame_free(&held);
+    return result;
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileNative_nGetVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jboolean preview, jfloat start_time, jfloat end_time, jboolean loop) {
-    if (ptr == NULL) {
+    if (ptr == 0) {
         return 0;
     }
-    //int64_t time = ConnectionsManager::getInstance(0).getCurrentTimeMonotonicMillis();
     VideoInfo *info = (VideoInfo *) (intptr_t) ptr;
-    int ret = 0;
-    int got_frame = 0;
-    int32_t triesCount = preview ? 50 : 6;
-    //info->has_decoded_frames = false;
-    while (!info->stopped && triesCount != 0) {
-        if (info->stream != nullptr) {
-            JNIEnv *jniEnv = nullptr;
-            JavaVMAttachArgs jvmArgs;
-            jvmArgs.version = JNI_VERSION_1_6;
+    if (info->stopped || info->seeking) {
+        return 0;
+    }
 
-            bool attached;
-            if (JNI_EDETACHED == javaVm->GetEnv((void **) &jniEnv, JNI_VERSION_1_6)) {
-                javaVm->AttachCurrentThread(&jniEnv, &jvmArgs);
-                attached = true;
-            } else {
-                attached = false;
-            }
-            jboolean canceled = jniEnv->CallBooleanMethod(info->stream, jclass_AnimatedFileDrawableStream_isCanceled);
-            if (attached) {
-                javaVm->DetachCurrentThread();
-            }
-            if (canceled) {
-                return 0;
-            }
-        }
-        if (info->pkt.size == 0) {
-            ret = av_read_frame(info->fmt_ctx, &info->pkt);
-            if (ret >= 0) {
-                double pts = info->pkt.pts * av_q2d(info->video_stream->time_base);
-                if (end_time > 0 && info->pkt.stream_index == info->video_stream_idx && pts > end_time) {
-                    av_packet_unref(&info->pkt);
-                    info->pkt.data = NULL;
-                    info->pkt.size = 0;
-                } else {
-                    info->orig_pkt = info->pkt;
-                }
-            }
-        }
+    AVRational tb = info->video_stream->time_base;
+    int64_t startPts = start_time > 0 ? (int64_t) (start_time / av_q2d(tb)) : 0;
 
-        if (info->pkt.size > 0) {
-            ret = decode_packet(info, &got_frame);
-            if (ret < 0) {
-                if (info->has_decoded_frames) {
-                    ret = 0;
-                }
-                info->pkt.size = 0;
-            } else {
-                //LOGD("read size %d from packet", ret);
-                info->pkt.data += ret;
-                info->pkt.size -= ret;
-            }
+    VideoFrameReader::Status st = info->reader->getNextFrame();
 
-            if (info->pkt.size == 0) {
-                av_packet_unref(&info->orig_pkt);
-            }
-        } else {
-            info->pkt.data = NULL;
-            info->pkt.size = 0;
-            ret = decode_packet(info, &got_frame);
-            if (ret < 0) {
-                LOGE("can't decode packet flushed %s", info->src);
-                return 0;
-            }
-            if (!preview && got_frame == 0 && info->has_decoded_frames) {
-                if (!loop) {
-                    return 0;
-                }
-                int64_t start_from = 0;
-                if (start_time > 0) {
-                    start_from = (int64_t)(start_time / av_q2d(info->video_stream->time_base));
-                }
-                if ((ret = av_seek_frame(info->fmt_ctx, info->video_stream_idx, start_from, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME)) < 0) {
-                    LOGE("can't seek to begin of file %s, %s", info->src, av_err2str(ret));
-                    return 0;
-                } else {
-                    avcodec_flush_buffers(info->video_dec_ctx);
-                }
-            }
+    // End of stream, or the frame ran past the trim point -> loop back or finish.
+    // Note: end_time is compared against the frame's display-order timestamp,
+    // not a packet pts, so B-frame reordering can no longer drop the wrong frame.
+    bool pastEnd = st == VideoFrameReader::Status::Ok &&
+                   end_time > 0 && info->reader->frameTimeSeconds() > end_time;
+
+    if (st == VideoFrameReader::Status::Eof) {
+        if (info->afterEof && !info->isSingleFrame) {
+            push_single_frame(env, data);
+            info->isSingleFrame = true;
         }
-        if (ret < 0 || info->seeking) {
+        info->afterEof = true;
+    } else {
+        info->afterEof = false;
+    }
+
+    if (st == VideoFrameReader::Status::Eof || pastEnd) {
+        if (!loop) {
             return 0;
         }
-        if (got_frame) {
-            //LOGD("decoded frame with w = %d, h = %d, format = %d", info->frame->width, info->frame->height, info->frame->format);
-            if (bitmap != nullptr && (info->frame->format == AV_PIX_FMT_YUV420P || info->frame->format == AV_PIX_FMT_BGRA || info->frame->format == AV_PIX_FMT_YUVJ420P || info->frame->format == AV_PIX_FMT_YUV444P || info->frame->format == AV_PIX_FMT_YUVA420P)) {
-                writeFrameToBitmap(env, info, data, bitmap);
-            }
-            info->has_decoded_frames = true;
-            push_time(env, info, data);
-            av_frame_unref(info->frame);
-            return 1;
+        if (!info->reader->seek(startPts)) {
+            return 0;
         }
-        if (!info->has_decoded_frames) {
-            triesCount--;
-        }
+        st = info->reader->getNextFrame();
     }
-    return 0;
+
+    if (st != VideoFrameReader::Status::Ok) {
+        // Aborted (stopped / seeking / canceled), Error, or Eof after looping.
+        return 0;
+    }
+
+    AVFrame *frame = info->reader->frame();
+    if (bitmap != nullptr) {
+        writeFrameToBitmap(env, info, frame, data, bitmap);
+    }
+    push_time(env, info, frame, data);
+    return 1;
 }
 
 extern "C" jint videoOnJNILoad(JavaVM *vm, JNIEnv *env) {

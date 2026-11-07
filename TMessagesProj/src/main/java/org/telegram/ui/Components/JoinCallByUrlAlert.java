@@ -25,6 +25,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class JoinCallByUrlAlert extends BottomSheet {
 
@@ -49,7 +50,7 @@ public class JoinCallByUrlAlert extends BottomSheet {
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(textView, Theme.key_featuredStickers_buttonText);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.bold());
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -84,13 +85,13 @@ public class JoinCallByUrlAlert extends BottomSheet {
         TextView percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(percentTextView, Theme.key_dialogTextBlack);
         percentTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(percentTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 24, 17, 0));
 
         TextView infoTextView = new TextView(context);
         infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        infoTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+        ThemeBind.textColor(infoTextView, Theme.key_dialogTextGray3);
         infoTextView.setGravity(Gravity.CENTER_HORIZONTAL);
 
         linearLayout.addView(infoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 30, 8, 30, 0));

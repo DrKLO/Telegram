@@ -42,6 +42,7 @@ import org.telegram.messenger.utils.TextWatcherImpl;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.GroupCallTextCell;
 import org.telegram.ui.Cells.GroupCallUserCell;
@@ -147,7 +148,7 @@ public class UsersAlertBase extends BottomSheet {
         listView.setPadding(0, 0, 0, AndroidUtilities.dp(48));
         listView.setClipToPadding(false);
         listView.setHideIfEmpty(false);
-        listView.setSelectorDrawableColor(Theme.getColor(keyListSelector, resourcesProvider));
+        ThemeBind.listSelectorColor(listView, keyListSelector, resourcesProvider);
         layoutManager = new FillLastLinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false, AndroidUtilities.dp(8), listView);
         layoutManager.setBind(false);
         listView.setLayoutManager(layoutManager);
@@ -188,12 +189,6 @@ public class UsersAlertBase extends BottomSheet {
 
         listView.setEmptyView(emptyView);
         listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        AndroidUtilities.statusBarHeight = AndroidUtilities.getStatusBarHeight(getContext());
     }
 
     protected ContainerView createContainerView(Context context) {
@@ -592,7 +587,7 @@ public class UsersAlertBase extends BottomSheet {
     public void setTitle(CharSequence title) {
         if (titleView == null) {
             titleView = new TextView(getContext());
-            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setLines(1);

@@ -26,7 +26,6 @@ import android.provider.Settings;
 import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.LongSparseArray;
 import android.util.Property;
 import android.util.TypedValue;
@@ -50,7 +49,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
@@ -73,6 +72,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
@@ -81,6 +81,9 @@ import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.Components.Reactions.ReactionsEffectOverlay;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.Reactions.ReactionsUtils;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.SelectAnimatedEmojiDialog;
 import org.telegram.ui.Stars.StarsReactionsSheet;
@@ -90,7 +93,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
 
     public boolean forceAttachToParent = false;
     public final static Property<ReactionsContainerLayout, Float> TRANSITION_PROGRESS_VALUE = new Property<ReactionsContainerLayout, Float>(Float.class, "transitionProgress") {
@@ -256,7 +259,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         shadow = ContextCompat.getDrawable(context, R.drawable.reactions_bubble_shadow).mutate();
         shadowPad.left = shadowPad.top = shadowPad.right = shadowPad.bottom = dp(7);
-        shadow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelShadow), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, shadow, Theme.key_chat_messagePanelShadow, PorterDuff.Mode.MULTIPLY);
 
         recyclerListView = new RecyclerListView(context) {
 
@@ -505,6 +508,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             return;
         }
         reactionsWindow = new CustomEmojiReactionsWindow(type, fragment, allReactionsList, selectedReactions, this, resourcesProvider, forceAttachToParent);
+        if (backgroundFactory != null) {
+            reactionsWindow.setBackgroundFactory(backgroundFactory, backgroundColorProvider);
+        }
         reactionsWindow.setLongPressEnabled(delegate == null || delegate.allowLongPress());
         invalidateLoopViews();
         reactionsWindow.onDismissListener(() -> {
@@ -612,6 +618,32 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         listAdapter.updateItems(animated);
     }
 
+    private BlurredBackgroundDrawable blurredBackgroundDrawable;
+    private BlurredBackgroundDrawable blurredBackgroundDrawable1;
+    private BlurredBackgroundDrawable blurredBackgroundDrawable2;
+
+    private BlurredBackgroundDrawableViewFactory backgroundFactory;
+    private BlurredBackgroundProvider backgroundColorProvider;
+
+    public void setBackgroundFactory(BlurredBackgroundDrawableViewFactory backgroundFactory, BlurredBackgroundProvider backgroundColorProvider) {
+        this.backgroundFactory = backgroundFactory;
+        this.backgroundColorProvider = backgroundColorProvider;
+        this.blurredBackgroundDrawable = backgroundFactory.create(this, true)
+            .setColorProvider(backgroundColorProvider)
+            .setRadius(dp(24))
+            .setPadding(dp(8));
+        this.blurredBackgroundDrawable1 = backgroundFactory.create(this, true)
+            .setColorProvider(backgroundColorProvider)
+            .setRadius(dp(8))
+            .setPadding(dp(8));
+        this.blurredBackgroundDrawable2 = backgroundFactory.create(this, true)
+            .setColorProvider(backgroundColorProvider)
+            .setRadius(dp(4))
+            .setPadding(dp(8));
+    }
+
+
+
     @Override
     protected void dispatchDraw(Canvas canvas) {
         long dt = Math.min(16, System.currentTimeMillis() - lastUpdate);
@@ -686,7 +718,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         if (type != TYPE_STORY) {
             shadow.setAlpha((int) (Utilities.clamp(1f - (customEmojiReactionsEnterProgress / 0.05f), 1f, 0f) * 255));
             shadow.setBounds((int) (getPaddingLeft() + (getWidth() - getPaddingRight() + shadowPad.right) * lt - shadowPad.left), getPaddingTop() - shadowPad.top - (int) expandSize, (int) ((getWidth() - getPaddingRight() + shadowPad.right) * rt), getHeight() - getPaddingBottom() + shadowPad.bottom + (int) expandSize);
-            shadow.draw(canvas);
+            if (blurredBackgroundDrawable == null) {
+                shadow.draw(canvas);
+            }
         }
 
         canvas.restoreToCount(s);
@@ -700,7 +734,16 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             if (type == TYPE_STORY || delegate.drawBackground()) {
                 delegate.drawRoundRect(canvas, rect, radius, getX(), getY(), 255, false);
             } else {
-                canvas.drawRoundRect(rect, radius, radius, bgPaint);
+                if (blurredBackgroundDrawable != null) {
+                    rect.round(AndroidUtilities.rectTmp2);
+                    AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
+
+                    blurredBackgroundDrawable.setBounds(AndroidUtilities.rectTmp2);
+                    blurredBackgroundDrawable.setAlpha(bgPaint.getAlpha());
+                    blurredBackgroundDrawable.draw(canvas);
+                } else {
+                    canvas.drawRoundRect(rect, radius, radius, bgPaint);
+                }
             }
 
             if (hasStar) {
@@ -885,7 +928,17 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             rectF.set(cx - br, cy - br, cx + br, cy + br);
             delegate.drawRoundRect(canvas, rectF, br, getX(), getY(), alpha, false);
         } else {
-            canvas.drawCircle(cx, cy, br, bgPaint);
+            if (blurredBackgroundDrawable1 != null) {
+                AndroidUtilities.rectTmp.set(cx - br, cy - br, cx + br, cy + br);
+                AndroidUtilities.rectTmp.round(AndroidUtilities.rectTmp2);
+                AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
+
+                blurredBackgroundDrawable1.setBounds(AndroidUtilities.rectTmp2);
+                blurredBackgroundDrawable1.setAlpha(bgPaint.getAlpha());
+                blurredBackgroundDrawable1.draw(canvas);
+            } else {
+                canvas.drawCircle(cx, cy, br, bgPaint);
+            }
         }
 
         cx = LocaleController.isRTL || mirrorX ? bigCircleOffset - bigCircleRadius : getWidth() - bigCircleOffset + bigCircleRadius;
@@ -899,7 +952,17 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             rectF.set(cx - sr, cy - sr, cx + sr, cy + sr);
             delegate.drawRoundRect(canvas, rectF, sr, getX(), getY(), alpha, false);
         } else {
-            canvas.drawCircle(cx, cy, sr, bgPaint);
+            if (blurredBackgroundDrawable2 != null) {
+                AndroidUtilities.rectTmp.set(cx - sr, cy - sr, cx + sr, cy + sr);
+                AndroidUtilities.rectTmp.round(AndroidUtilities.rectTmp2);
+                AndroidUtilities.rectTmp2.inset(-dp(8), -dp(8));
+
+                blurredBackgroundDrawable2.setBounds(AndroidUtilities.rectTmp2);
+                blurredBackgroundDrawable2.setAlpha(bgPaint.getAlpha());
+                blurredBackgroundDrawable2.draw(canvas);
+            } else {
+                canvas.drawCircle(cx, cy, sr, bgPaint);
+            }
         }
         canvas.restore();
 
@@ -1025,13 +1088,46 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         invalidateShaders();
     }
 
+    @Override
+    public void updateColors() {
+        try {
+            if (bgPaint != null && type != TYPE_STORY_LIKES && type != TYPE_STICKER_SET_EMOJI) {
+                final int color = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
+                if (bgPaint.getColor() != color) {
+                    final int alpha = bgPaint.getAlpha();
+                    bgPaint.setColor(color);
+                    bgPaint.setAlpha(alpha);
+                    invalidate();
+                }
+            }
+            if (premiumLockIconView != null) {
+                premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
+            }
+            if (getWidth() > 0 && getHeight() > 0 && shadowShaderColor != Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground)) {
+                invalidateShaders();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_actionBarDefaultSubmenuBackground);
+        colors.add(Theme.key_actionBarDefaultSubmenuItemIcon);
+        colors.add(Theme.key_dialogBackground);
+    }
+
     /**
      * Invalidates shaders
      */
+    private int shadowShaderColor;
+
     private void invalidateShaders() {
         int dp = dp(24);
         float cy = getHeight() / 2f;
         int clr = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground);
+        shadowShaderColor = clr;
         leftShadowPaint.setShader(new LinearGradient(0, cy, dp, cy, clr, Color.TRANSPARENT, Shader.TileMode.CLAMP));
         rightShadowPaint.setShader(new LinearGradient(getWidth(), cy, getWidth() - dp, cy, clr, Color.TRANSPARENT, Shader.TileMode.CLAMP));
         invalidate();
@@ -1503,7 +1599,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public void setCustomEmojiReactionsBackground(boolean isNeed) {
         if (isNeed) {
-            customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
+            ThemeBind.selectorBackground(customEmojiReactionsIconView, Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)), null, ThemeBind.alpha(Theme.key_listSelector, 40));
         } else {
             customEmojiReactionsIconView.setBackground(null);
         }
@@ -1573,7 +1669,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            ThemeBind.textColor(button, Theme.key_text_RedBold);
         }
     }
 
@@ -1632,10 +1728,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             hintView.setClickable(true);
             hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
-                hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.textColor(hintView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 hintView.setAlpha(0.5f);
             } else {
-                hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+                ThemeBind.textColor(hintView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             }
             hintView.setGravity(Gravity.CENTER_HORIZONTAL);
             addView(hintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0, 0));
@@ -1997,8 +2093,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     pressedDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                     loopDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 } else {
-                    pressedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
-                    loopDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                    ThemeBind.drawableColorFilter(this, pressedDrawable, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
+                    ThemeBind.drawableColorFilter(this, loopDrawable, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 }
                 pressedBackupImageView.setAnimatedEmojiDrawable(pressedDrawable);
                 loopImageView.setAnimatedEmojiDrawable(loopDrawable);
@@ -2028,7 +2124,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         private void updateImage(ReactionsLayoutInBubble.VisibleReaction react) {
             if (react != null && react.isStar) {
-                enterImageView.getImageReceiver().setImageBitmap(new RLottieDrawable(R.raw.star_reaction, "star_reaction", dp(30), dp(30)));
+                enterImageView.getImageReceiver().setImageBitmap(new RLottieDrawable(R.raw.star_reaction, dp(30), dp(30)));
                 loopImageView.getImageReceiver().setImageBitmap(getContext().getResources().getDrawable(R.drawable.star_reaction));
                 if (particles == null) {
                     particles = new StarsReactionsSheet.Particles(StarsReactionsSheet.Particles.TYPE_RADIAL, SharedConfig.getDevicePerformanceClass() == SharedConfig.PERFORMANCE_CLASS_HIGH ? 45 : 18);
@@ -2319,10 +2415,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
         if (type == TYPE_MESSAGE_EFFECTS) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.availableEffectsUpdate);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.availableEffectsUpdate);
         }
     }
 
@@ -2498,7 +2594,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     premiumLockContainer = new FrameLayout(getContext());
                     premiumLockIconView = new PremiumLockIconView(getContext(), PremiumLockIconView.TYPE_REACTIONS);
                     premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
-                    premiumLockIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(premiumLockIconView, Theme.key_dialogBackground, PorterDuff.Mode.MULTIPLY);
                     premiumLockIconView.setScaleX(0f);
                     premiumLockIconView.setScaleY(0f);
                     premiumLockIconView.setPadding(dp(1), dp(1), dp(1), dp(1));
@@ -2518,9 +2614,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                         customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
                     } else {
-                        customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                        ThemeBind.colorFilter(customEmojiReactionsIconView, Theme.key_dialogBackground, PorterDuff.Mode.MULTIPLY);
                     }
-                    customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
+                    ThemeBind.selectorBackground(customEmojiReactionsIconView, Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)), null, ThemeBind.alpha(Theme.key_listSelector, 40));
                     customEmojiReactionsIconView.setPadding(dp(2), dp(2), dp(2), dp(2));
                     customEmojiReactionsIconView.setContentDescription(LocaleController.getString(R.string.AccDescrExpandPanel));
                     customReactionsContainer.addView(customEmojiReactionsIconView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));

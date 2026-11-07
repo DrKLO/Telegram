@@ -1,0 +1,45 @@
+<!doctype html>
+<html data-test="auto/13-svg-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: inline SVG (1/2)</title>
+<!-- conformance {"title":"Inline SVG (1/2): shapes with presentation attributes, g/use/symbol/viewBox, text, gradients, CSS on SVG; SVG geometry queries"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages>:nth-child(n+5){top:76px}.conf-stages{height:144px}</style><script>var T=function(){var u=document,m=u.documentElement,k=typeof TelegramWidget!="undefined",D=window.__conformanceMode||(k?"sandbox":"native"),a=[],y={},l=[];var O,c,p,f,M,d,b,g,A=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),T=()=>{g=g||setTimeout(S,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),T(),s}function q(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>q(t,e,[n,o],r);var B=(t,e,n,o,r,s)=>q(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+w(n)+", want "+w(o)+" ±"+r],s);var E=(t,e,n)=>getComputedStyle(A(t),n).getPropertyValue(e).trim();function I(t){let e=A(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var F=t=>{l.push(t)};var J=()=>{},N=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function S(){g=0,p&&!f&&J();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&M?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:D,status:n,n:t,checks:a,targets:O,stages:c})),x&&x(n,t)}var x;function j(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function C(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=N(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),T();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(C,t||0)}function _(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,S();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}j();return{cs:E,near:B,ok:R,rect:I,run:_,step:F}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+[data-stage] svg{display:block}
+.sv-a{fill:#c33;stroke:#36c;stroke-width:3}
+.sv-b{fill:none;stroke:#3a3;stroke-width:4;stroke-dasharray:6 3}
+.sv-c{fill:#e83}
+.sv-c:hover{fill:#000}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="shapes" data-covers="svg.shapes"><svg width="80" height="60"><rect x="4" y="4" width="30" height="20" fill="#c33"/><circle cx="56" cy="16" r="12" fill="#36c" stroke="#222" stroke-width="2"/><ellipse cx="18" cy="44" rx="14" ry="8" fill="#3a3"/><line x1="40" y1="34" x2="76" y2="56" stroke="#e83" stroke-width="4" stroke-linecap="round"/><polyline points="40,56 50,40 60,56" fill="none" stroke="#a3a" stroke-width="3"/><polygon points="64,34 76,34 70,46" fill="#333"/></svg></div>
+  <div data-stage="structure" data-covers="svg.structure"><svg width="80" height="60" viewBox="0 0 40 30"><defs><symbol id="cf-sym" viewBox="0 0 10 10"><path d="M0 0H10V10Z" fill="#36c"/></symbol></defs><g transform="translate(4 4) rotate(10)"><rect width="12" height="8" fill="#c33"/></g><use href="#cf-sym" x="22" y="2" width="14" height="14"/><use href="#cf-sym" x="4" y="16" width="10" height="10" transform="scale(1.2)"/></svg></div>
+  <div data-stage="text" data-covers="svg.text" data-max-diff="0.5" data-colors="#222 #c33 #36c"><svg width="80" height="60"><text x="4" y="24" font-family="sans-serif" font-size="20" font-weight="bold" fill="#222">Ab<tspan fill="#c33" dy="6">c</tspan></text><text x="76" y="52" text-anchor="end" font-family="serif" font-size="16" fill="#36c">xyz</text></svg></div>
+  <div data-stage="gradients" data-covers="svg.gradients"><svg width="80" height="60"><defs><linearGradient id="cf-lg" x1="0" x2="1"><stop offset="0" stop-color="#c33"/><stop offset="1" stop-color="#36c"/></linearGradient><radialGradient id="cf-rg"><stop offset="0" stop-color="#e83"/><stop offset="1" stop-color="#3a3"/></radialGradient></defs><rect width="80" height="28" fill="url(#cf-lg)"/><circle cx="40" cy="44" r="14" fill="url(#cf-rg)"/></svg></div>
+  <div data-stage="css" data-covers="svg.css"><svg width="80" height="60"><rect class="sv-a" x="6" y="6" width="30" height="22"/><circle class="sv-b" cx="58" cy="18" r="12"/><path class="sv-c" d="M10 50 L40 34 L70 50 Z"/></svg></div>
+</div>
+<div class="conf-head">13a · Inline SVG (1/2)</div>
+<div class="conf-probes">
+  <svg id="geo" width="120" height="40" viewBox="0 0 60 20"><rect id="g-rect" x="5" y="2" width="10" height="8" fill="#c33"/><path id="g-path" d="M0 15 H40" stroke="#36c"/><text id="g-text" x="20" y="10" font-size="8" font-family="sans-serif">Hello</text></svg>
+</div>
+<div id="conf-list"></div>
+<script>
+T.step(function () {
+  var bb = document.getElementById('g-rect').getBBox();
+  T.ok('svg.shapes', 'getBBox() of a rect', bb.x === 5 && bb.y === 2 && bb.width === 10 && bb.height === 8, [bb.x, bb.y, bb.width, bb.height].join(','));
+  T.near('svg.shapes', 'getTotalLength() of a path', document.getElementById('g-path').getTotalLength(), 40, 0.1);
+  T.ok('svg.text', 'getComputedTextLength() of a text', document.getElementById('g-text').getComputedTextLength() > 10, String(document.getElementById('g-text').getComputedTextLength()));
+  var r = T.rect('#g-rect'), s = T.rect('#geo');
+  T.ok('svg.structure', 'viewBox scales content (10 user units → 20px)', Math.abs(r.w - 20) < 0.5 && Math.abs(r.x - s.x - 10) < 0.5, r.w + ' at ' + (r.x - s.x));
+  T.ok('svg.css', 'a stylesheet fill reaches SVG (computed fill)', /rgb\(204, 51, 51\)|#c33/i.test(T.cs('.sv-a', 'fill')), T.cs('.sv-a', 'fill'));
+});
+T.run({ settle: 400 });
+</script>
+</body>
+</html>

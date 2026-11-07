@@ -1,0 +1,71 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a 40-message chat transcript — left/right bubbles with avatars, day separators, reactions as chips, a reply quote; "Load older" prepends 20 more via insertAdjacentHTML
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .m { display: flex; align-items: flex-end; margin-top: 6px; }
+  .m.me { justify-content: flex-end; }
+  .av { width: 26px; height: 26px; border-radius: 13px; margin-right: 6px; flex-shrink: 0; color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .b { max-width: 270px; padding: 7px 10px; border-radius: 14px; background-color: var(--fill); font-size: 13px; }
+  .me .b { background-color: var(--blue); color: #fff; }
+  .b .who { font-size: 11px; font-weight: 700; margin-bottom: 1px; }
+  .b .t { font-size: 10px; color: var(--muted); text-align: right; margin-top: 2px; }
+  .me .b .t { color: rgba(255,255,255,0.75); }
+  .b .q { border-left: 3px solid var(--blue); padding: 2px 8px; margin-bottom: 4px; font-size: 12px; color: var(--muted); background-color: rgba(127,127,127,0.1); border-radius: 4px; }
+  .me .b .q { border-left-color: #fff; color: rgba(255,255,255,0.85); background-color: rgba(255,255,255,0.15); }
+  .rx { display: flex; margin-top: 3px; }
+  .rx span { font-size: 10px; padding: 1px 6px; border-radius: 7px; background-color: var(--fill2); margin-right: 4px; font-weight: 700; }
+  .day { text-align: center; margin: 10px 0 4px 0; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .day span { padding: 2px 9px; border-radius: 8px; background-color: var(--fill); }
+  .top { text-align: center; margin-bottom: 6px; }
+</style>
+<div class="card">
+  <div class="top"><span class="btn" role="button" id="older" style="padding: 4px 12px; font-size: 12px">Load older</span></div>
+  <div id="log"></div>
+  <div class="tiny muted" style="text-align: center; margin-top: 10px" id="note"></div>
+</div>
+<script>
+const PEOPLE = { M: ['Maya', '#5856d6'], L: ['Leo', '#ff9500'], P: ['Priya', '#34c759'], T: ['Tom', '#ff2d55'] };
+const LINES = [
+  ['M', 'Morning! Kit v2 review at 11, same room.'], ['me', 'On it. Did the chips land?'], ['M', 'They did. 9px radius, 12px text, tinted backgrounds.'],
+  ['L', 'The pricing card looks great on litehtml now.'], ['P', 'Timetable rows were double height on Blitz, fixed by dropping the cell height.'], ['me', 'Nice catch. Tables are the tricky ones.'],
+  ['T', 'Can someone check the receipt? Columns collided for me.'], ['M', 'Already fixed: explicit widths and nowrap on the numbers.'], ['me', 'I will rerun the gallery after lunch.'],
+  ['L', 'Ticker at 2 Hz is fine on all three, log lines too.'], ['P', 'The typewriter is 30 updates per second of text; litehtml rebuilds every time, which is the point.'], ['T', 'Agreed, keep it.'],
+  ['me', 'What about the skeleton swap?'], ['M', 'One innerHTML after 1.4 s. Cheap for everyone.'], ['L', 'Slideshow caption lives in position: absolute, worked everywhere.'],
+  ['P', 'Should we add a 300-chip cloud?'], ['me', 'Added. Also a 60-row table and a tree.'], ['T', 'The article is 900 words, pure text layout.'], ['M', 'That is the one litehtml will feel.'], ['L', 'Good. Numbers at 11.'],
+];
+const TIMES = ['09:02', '09:03', '09:05', '09:11', '09:14', '09:15', '09:20', '09:21', '09:24', '09:30', '09:33', '09:34', '09:40', '09:41', '09:45', '09:52', '09:53', '09:58', '10:04', '10:05'];
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let batch = 0;
+function block(label) {
+  let h = `<div class="day"><span>${label}</span></div>`;
+  LINES.forEach(([who, text], i) => {
+    const me = who === 'me', quote = i % 7 === 3 ? `<div class="q">${esc(LINES[i - 1][1])}</div>` : '';
+    const rx = i % 5 === 2 ? '<div class="rx"><span>+1 · 3</span><span>ok · 1</span></div>' : '';
+    h += `<div class="m${me ? ' me' : ''}">${me ? '' : `<div class="av" style="background-color: ${PEOPLE[who][1]}">${PEOPLE[who][0].slice(0, 2).toUpperCase()}</div>`}<div class="b">${me ? '' : `<div class="who" style="color: ${PEOPLE[who][1]}">${PEOPLE[who][0]}</div>`}${quote}${esc(text)}${rx}<div class="t">${TIMES[i]}</div></div></div>`;
+  });
+  return h;
+}
+const log = document.getElementById('log');
+log.innerHTML = block('Yesterday') + block('Today');
+let msgs = 40;
+document.getElementById('note').textContent = msgs + ' messages';
+document.getElementById('older').addEventListener('click', () => {
+  if (++batch > 4) return;
+  log.insertAdjacentHTML('afterbegin', block(batch + (batch === 1 ? ' day ago' : ' days ago')));
+  msgs += 20;
+  document.getElementById('note').textContent = msgs + ' messages';
+});
+</script>

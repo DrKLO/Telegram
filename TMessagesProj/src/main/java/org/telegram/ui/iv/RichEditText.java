@@ -28,8 +28,9 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.TextStyleSpan;
+import org.telegram.ui.Components.URLSpanReplacement;
 
-public class RichEditText extends EditTextCaption {
+public class RichEditText extends EditTextCaption implements Theme.Colorable {
 
     public interface Listener {
         default void onEnterPressed(RichEditText editText) {}
@@ -45,8 +46,14 @@ public class RichEditText extends EditTextCaption {
         default boolean onPaste(RichEditText editText) { return false; }
     }
 
+    public interface InlineButtonClickListener {
+        void onInlineButtonClick(RichEditText editText, RichInlineButtonSpan span, boolean longPress);
+    }
+
     private Listener listener;
+    private InlineButtonClickListener inlineButtonClickListener;
     private Theme.ResourcesProvider resourcesProvider;
+    private int currentAccount = org.telegram.messenger.UserConfig.selectedAccount;
     private boolean ignoreTextChange;
     private boolean insertingNewline;
     private boolean softEnterNewline;
@@ -55,6 +62,7 @@ public class RichEditText extends EditTextCaption {
     private boolean allowNewlines;
     private boolean centerEmptyHint;
     private boolean applyingEmptyHint;
+    private boolean autoBold;
 
     private LinkPath markPath;
     private Paint markPaint;
@@ -78,6 +86,7 @@ public class RichEditText extends EditTextCaption {
     public void setAccentHint(boolean enable) {
         if (accentHint == enable) return;
         accentHint = enable;
+        forceHintColor = true;
         updateColors();
     }
 
@@ -124,6 +133,7 @@ public class RichEditText extends EditTextCaption {
     public RichEditText(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, resourcesProvider);
         this.resourcesProvider = resourcesProvider;
+        adaptiveCreateLinkDialog = true;
 
         setBackground(null);
         setCursorWidth(1.5f);
@@ -184,6 +194,9 @@ public class RichEditText extends EditTextCaption {
             }
             @Override public void afterTextChanged(Editable s) {
                 if (ignoreTextChange || listener == null) return;
+                if (autoBold && s.length() > 0) {
+                    RichTextStyle.setStyle(s, 0, s.length(), RichTextStyle.BOLD, true, block);
+                }
                 if (allowNewlines || insertingNewline || softEnterNewline) {
                     listener.onTextChanged(RichEditText.this, s);
                     return;
@@ -205,12 +218,19 @@ public class RichEditText extends EditTextCaption {
             }
         });
 
+        customTextColor = false;
+        forceHintColor = true;
         updateColors();
     }
 
     @Override
     protected Theme.ResourcesProvider getResourcesProvider() {
         return resourcesProvider;
+    }
+
+    @Override
+    protected URLSpanReplacement createUrlSpan(String url) {
+        return RichTextStyle.linkSpan(url);
     }
 
     @Override
@@ -222,8 +242,37 @@ public class RichEditText extends EditTextCaption {
         this.listener = listener;
     }
 
+    public void setInlineButtonClickListener(InlineButtonClickListener listener) {
+        inlineButtonClickListener = listener;
+    }
+
+    public void setInlineButtonContext(int currentAccount) {
+        this.currentAccount = currentAccount;
+        bindInlineButtons();
+    }
+
+    private void bindInlineButtons() {
+        final Editable text = getText();
+        if (text == null) return;
+        final RichInlineButtonSpan[] spans = text.getSpans(0, text.length(), RichInlineButtonSpan.class);
+        for (RichInlineButtonSpan span : spans) {
+            span.removeNestedReplacementSpans(text);
+        }
+        for (RichInlineButtonSpan span : spans) {
+            span.bind(this, currentAccount, resourcesProvider);
+        }
+    }
+
     public void setAllowNewlines(boolean allow) {
         this.allowNewlines = allow;
+    }
+
+    public void setAutoBold(boolean enabled) {
+        autoBold = enabled;
+    }
+
+    public boolean isAutoBold() {
+        return autoBold;
     }
 
     public void setSoftEnterNewline(boolean enable) {
@@ -243,8 +292,29 @@ public class RichEditText extends EditTextCaption {
     public void setTextSilently(CharSequence text) {
         ignoreTextChange = true;
         setText(text);
+        bindInlineButtons();
         setSelection(length());
         ignoreTextChange = false;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        bindInlineButtons();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        AndroidUtilities.cancelRunOnUIThread(inlineButtonLongPressRunnable);
+        pressedInlineButton = null;
+        inlineButtonLongPressed = false;
+        final Editable text = getText();
+        if (text != null) {
+            for (RichInlineButtonSpan span : text.getSpans(0, text.length(), RichInlineButtonSpan.class)) {
+                span.detach(this);
+            }
+        }
+        super.onDetachedFromWindow();
     }
 
     public void deleteToEndSilently(int from) {
@@ -266,16 +336,70 @@ public class RichEditText extends EditTextCaption {
     private int textColorKey = Theme.key_windowBackgroundWhiteBlackText;
     public void setTextColorKey(int textColorKey) {
         this.textColorKey = textColorKey;
+        customTextColor = false;
         updateColors();
     }
 
+    // text color set by callers (setTextColor from outside updateColors) is kept on theme updates;
+    // TextView.setHintTextColor(int) is final: the hint is refreshed only while it still is the last color applied here
+    private boolean customTextColor, forceHintColor, applyingColors;
+    private int lastAppliedHintColor;
+
+    @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        if (!applyingColors) {
+            customTextColor = true;
+        }
+    }
+
+    @Override
     public void updateColors() {
-        setTextColor(Theme.getColor(textColorKey, resourcesProvider));
-        setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        setHintTextColor(accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+        applyingColors = true;
+        try {
+            if (!customTextColor) {
+                final int textColor = Theme.getColor(textColorKey, resourcesProvider);
+                if (getCurrentTextColor() != textColor) {
+                    setTextColor(textColor);
+                }
+            }
+            if (forceHintColor || getCurrentHintTextColor() == lastAppliedHintColor) {
+                forceHintColor = false;
+                lastAppliedHintColor = accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
+                if (getCurrentHintTextColor() != lastAppliedHintColor) {
+                    setHintTextColor(lastAppliedHintColor);
+                }
+            }
+        } finally {
+            applyingColors = false;
+        }
+        final int linkColor = Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
+        if (getLinkTextColors() == null || getLinkTextColors().getDefaultColor() != linkColor) {
+            setLinkTextColor(linkColor);
+        }
         setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         setHandlesColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider));
+        // re-creating the inline button renderers is heavy: not on every frame of an animated theme switch,
+        // the update after the animation re-binds them
+        if (!Theme.isAnimatingColor()) {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            bindInlineButtons();
+        } else {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            postDelayed(rebindInlineButtonsWhenIdle, 100);
+        }
     }
+
+    private final Runnable rebindInlineButtonsWhenIdle = new Runnable() {
+        @Override
+        public void run() {
+            if (Theme.isAnimatingColor()) {
+                postDelayed(this, 100);
+            } else {
+                bindInlineButtons();
+            }
+        }
+    };
 
     public void setLocked(boolean locked) {
         if (this.locked == locked) return;
@@ -322,6 +446,17 @@ public class RichEditText extends EditTextCaption {
     private float mathDownX, mathDownY;
     private long mathDownTime;
     private int touchSlop;
+    private RichInlineButtonSpan pressedInlineButton;
+    private boolean inlineButtonLongPressed;
+    private final Runnable inlineButtonLongPressRunnable = () -> {
+        if (pressedInlineButton == null || inlineButtonClickListener == null) return;
+        inlineButtonLongPressed = true;
+        pressedInlineButton.setPressed(false);
+        try {
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+        } catch (Exception ignore) {}
+        inlineButtonClickListener.onInlineButtonClick(this, pressedInlineButton, true);
+    };
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -333,6 +468,32 @@ public class RichEditText extends EditTextCaption {
                 mathDownX = event.getX();
                 mathDownY = event.getY();
                 mathDownTime = event.getEventTime();
+                pressedInlineButton = inlineButtonSpanAt(event.getX(), event.getY());
+                if (pressedInlineButton != null && inlineButtonClickListener != null) {
+                    inlineButtonLongPressed = false;
+                    pressedInlineButton.setPressed(true);
+                    AndroidUtilities.cancelRunOnUIThread(inlineButtonLongPressRunnable);
+                    AndroidUtilities.runOnUIThread(inlineButtonLongPressRunnable, ViewConfiguration.getLongPressTimeout());
+                    return true;
+                }
+                pressedInlineButton = null;
+            } else if (pressedInlineButton != null) {
+                final RichInlineButtonSpan pressed = pressedInlineButton;
+                final boolean released = event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL;
+                final boolean stillInside = event.getAction() != MotionEvent.ACTION_CANCEL
+                    && inlineButtonSpanAt(event.getX(), event.getY()) == pressed;
+                if (!stillInside || released) {
+                    pressed.setPressed(false);
+                    AndroidUtilities.cancelRunOnUIThread(inlineButtonLongPressRunnable);
+                }
+                if (released) {
+                    pressedInlineButton = null;
+                    if (!inlineButtonLongPressed && stillInside && event.getAction() == MotionEvent.ACTION_UP) {
+                        inlineButtonClickListener.onInlineButtonClick(this, pressed, false);
+                    }
+                    inlineButtonLongPressed = false;
+                }
+                return true;
             } else if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (touchSlop == 0) touchSlop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
                 final float dx = event.getX() - mathDownX, dy = event.getY() - mathDownY;
@@ -348,6 +509,36 @@ public class RichEditText extends EditTextCaption {
             }
         }
         return super.onTouchEvent(event);
+    }
+
+    private RichInlineButtonSpan inlineButtonSpanAt(float x, float y) {
+        final Layout layout = getLayout();
+        final Editable text = getText();
+        if (layout == null || text == null || text.length() == 0) return null;
+        final int yy = (int) (y - getTotalPaddingTop() + getScrollY());
+        if (yy < 0 || yy > layout.getHeight()) return null;
+        final int line = layout.getLineForVertical(yy);
+        final float xx = x - getTotalPaddingLeft() + getScrollX();
+        final int lineStart = layout.getLineStart(line);
+        final int lineEnd = layout.getLineEnd(line);
+        for (RichInlineButtonSpan span : text.getSpans(lineStart, lineEnd, RichInlineButtonSpan.class)) {
+            final int start = text.getSpanStart(span);
+            final int end = text.getSpanEnd(span);
+            if (start < 0 || end <= start) continue;
+            final float left = layout.getPrimaryHorizontal(start);
+            final float right = layout.getPrimaryHorizontal(end);
+            if (xx >= Math.min(left, right) - AndroidUtilities.dp(2)
+                && xx <= Math.max(left, right) + AndroidUtilities.dp(2)) {
+                return span;
+            }
+        }
+        return null;
+    }
+
+    public void notifyInlineContentChanged() {
+        notifySpansChanged();
+        requestLayout();
+        invalidateEffects();
     }
 
     private MathSpan mathSpanAt(float x, float y) {
@@ -563,6 +754,7 @@ public class RichEditText extends EditTextCaption {
         if (editable == null || start < 0 || end < 0 || start >= end) return;
         end = Math.min(end, editable.length());
         if (start >= end) return;
+        if ((flag & RichTextStyle.BOLD) != 0) autoBold = false;
         RichTextStyle.setStyle(editable, start, end, flag, false, block);
         if ((flag & org.telegram.ui.Components.TextStyleSpan.FLAG_STYLE_SPOILER) != 0) invalidateSpoilers();
         notifySpansChanged();

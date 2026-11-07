@@ -43,6 +43,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.RecyclerListViewWithOverlayDraw;
@@ -91,8 +92,10 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
                     editModeIconColor = AndroidUtilities.getDominantColor(bitmap);
                     if (editModeIconColor == Color.WHITE || editModeIconColor == 0) {
                         editModeIconColor = Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider);
+                        ThemeBind.fillBackground(editModeIcon, Theme.createRoundRectDrawable(dp(12), editModeIconColor), ThemeBind.of(Theme.key_dialogTextGray2), resourcesProvider);
+                    } else {
+                        editModeIcon.setBackground(Theme.createRoundRectDrawable(dp(12), editModeIconColor));
                     }
-                    editModeIcon.setBackground(Theme.createRoundRectDrawable(dp(12), editModeIconColor));
                     invalidate();
                 }
                 return super.setImageBitmapByKey(drawable, key, type, memCache, guid);
@@ -118,7 +121,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         editModeIcon = new ImageView(context);
         editModeIcon.setImageResource(R.drawable.mini_more_dots);
         editModeIcon.setPadding(dp(2), dp(2), dp(2), dp(2));
-        editModeIcon.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider)));
+        ThemeBind.fillBackground(editModeIcon, Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider)), ThemeBind.of(Theme.key_dialogTextGray2), resourcesProvider);
         editModeIcon.setAlpha(0f);
         addView(editModeIcon, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
         setFocusable(true);
@@ -202,7 +205,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         drawInParentView = false;
         imageView.setColorFilter(null);
         editModeIconColor = 0;
-        editModeIcon.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_dialogTextGray2)));
+        ThemeBind.fillBackground(editModeIcon, Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_dialogTextGray2)), ThemeBind.of(Theme.key_dialogTextGray2));
         if (editModeEnabled) {
             enableEditMode(false);
         } else {
@@ -397,7 +400,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
             imageView.setParentView(this);
         }
         imageView.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
     }
 
     @Override

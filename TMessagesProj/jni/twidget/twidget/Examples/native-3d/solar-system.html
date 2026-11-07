@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<style>
+.solar{width:520px;max-width:100%;background-color:#080e1a;color:#eaf0fb;border:0}.solar .head{padding:15px 16px 11px}.solar .eyebrow{font-size:10px;color:#92a8c9}.solar .title{font-size:21px;font-weight:700}.solar .sub{font-size:12px;color:#a1b1c9;padding-top:4px}.solar .stage{height:360px;background-color:#030712;border-radius:14px}.solar .note{padding:150px 20px 0;text-align:center;color:#b9c8df;font-size:13px}.solar .tools{padding:9px 12px 0;text-align:center}.solar .tools button{font-size:12px;background-color:#17243a;color:#e5edfa;border:1px solid #304361;border-radius:7px;padding:7px 9px;margin:3px 2px}.solar .tools button:hover{background-color:#273b59}.solar .tools button.on{background-color:#285889}.solar .caption{font-size:11px;color:#a1b1c9;padding:8px 16px 13px;text-align:center}
+</style>
+<div class="card solar"><div class="head"><div class="eyebrow">EXPLORING OUR NEIGHBOURHOOD</div><div class="title">Solar system</div><div class="sub">Eight worlds, one star, a different perspective.</div></div><div class="stage" data-3d data-title="Solar system"><div class="note">This scene needs the native 3D host and Metal.</div></div></div>
+<script src="app:three"></script>
+<script>
+const renderer=new THREE.WebGLRenderer({antialias:true,cornerRadius:14});
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x030712);
+const camera=new THREE.PerspectiveCamera(43,1.4,.015,300);
+const light=new THREE.PointLight(0xfff1d5,30,0,1);
+scene.add(light,new THREE.AmbientLight(0x90a5ce,.055));
+const sphere=new THREE.SphereGeometry(1,64,32);
+const unitRing=new THREE.BufferGeometry().setFromPoints(Array.from({length:161},(_,i)=>new THREE.Vector3(Math.cos(i*Math.PI/80),0,Math.sin(i*Math.PI/80))));
+const orbitMaterial=new THREE.LineBasicMaterial({color:0x36506e,transparent:true,opacity:.48,depthWrite:false});
+const definitions=[
+ ['Mercury',.15,2.5,4.15,7,0x99928b,'Rocky, cratered surface'],
+ ['Venus',.27,3.5,1.63,3.4,0xd3af73,'A world wrapped in clouds'],
+ ['Earth',.3,4.7,1,0,0x367dbb,'Oceans, continents and a moon'],
+ ['Mars',.22,6,.53,1.85,0xbf6141,'The red planet'],
+ ['Jupiter',.88,8.7,.084,1.3,0xc8a681,'Cloud belts and a great storm'],
+ ['Saturn',.74,11.6,.034,2.5,0xd2bc8c,'Icy rings tilted through space'],
+ ['Uranus',.49,14.2,.012,.8,0x87cad0,'An ice giant tipped on its side'],
+ ['Neptune',.47,16.8,.006,1.8,0x3166ba,'The outermost planet']
+];
+const tilt=[.03,177,23.4,25.2,3.1,26.7,97.8,28.3];
+const phase=[.9,3.4,5.5,2.2,4.1,.15,2.9,5.1];
+const mix=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*Math.max(0,Math.min(1,t)));
+function paint(geometry,kind){
+ const p=geometry.attributes.position,c=new Float32Array(p.count*3);
+ for(let i=0;i<p.count;i++){
+  const x=p.getX(i),y=p.getY(i),z=p.getZ(i),longitude=Math.atan2(z,x);
+  const noise=Math.sin(x*31+z*13)*Math.sin(y*27-x*9)+.4*Math.sin(z*43+y*21);
+  let color;
+  if(kind===0)color=mix([.23,.22,.21],[.65,.61,.56],.52+noise*.2);
+  else if(kind===1)color=mix([.52,.36,.16],[.94,.82,.55],.62+.2*Math.sin(y*29+Math.sin(longitude*5)*2));
+  else if(kind===2){
+   const land=Math.sin(x*5+Math.cos(z*8))*Math.sin(z*5-x*2)+.55*Math.sin(z*12+y*8)+.25*Math.cos(x*21-z*13);
+   color=land>.34?mix([.12,.32,.15],[.57,.56,.27],(land-.34)*.7):mix([.025,.12,.29],[.06,.31,.53],.5+noise*.15);
+   const cloud=Math.sin(x*16+z*6)*Math.cos(z*13-y*9)+.45*Math.sin(y*23+x*8);
+   if(cloud>.7)color=mix(color,[.95,.97,1],(cloud-.7)*.8);
+   if(Math.abs(y)>.87)color=mix(color,[.87,.93,.97],(Math.abs(y)-.87)*9);
+  }else if(kind===3){color=mix([.31,.12,.065],[.76,.39,.19],.58+noise*.18);if(Math.abs(y)>.92)color=mix(color,[.82,.81,.72],.8)}
+  else if(kind===4){
+   color=mix([.46,.24,.13],[.89,.8,.64],.52+.3*Math.sin(y*36+Math.sin(longitude*5)*1.3));
+   if(Math.pow((longitude-.7)/.28,2)+Math.pow((y+.22)/.095,2)<1)color=[.62,.21,.12];
+  }else if(kind===5)color=mix([.55,.43,.26],[.9,.81,.59],.65+.18*Math.sin(y*43+Math.sin(longitude*3)*.45));
+  else if(kind===6)color=mix([.28,.6,.65],[.66,.86,.84],.6+.08*Math.sin(y*29));
+  else color=mix([.055,.17,.43],[.15,.4,.75],.55+.17*Math.sin(y*24+Math.sin(longitude*5)));
+  c.set(color,i*3);
+ }
+ geometry.setAttribute('color',new THREE.BufferAttribute(c,3));
+ return geometry;
+}
+const bodies=definitions.map((d,i)=>{
+ const plane=new THREE.Group();plane.rotation.z=d[4]*Math.PI/180;plane.rotation.y=i*.41;scene.add(plane);
+ const orbit=new THREE.LineLoop(unitRing,orbitMaterial);orbit.scale.set(d[2],1,d[2]);plane.add(orbit);
+ const group=new THREE.Group();plane.add(group);
+ const axis=new THREE.Group();axis.rotation.z=tilt[i]*Math.PI/180;group.add(axis);
+ const mesh=new THREE.Mesh(paint(sphere.clone(),i),new THREE.MeshStandardMaterial({vertexColors:true,roughness:i<4?.88:1,metalness:0}));
+ mesh.scale.setScalar(d[1]);mesh.userData.planet=i;axis.add(mesh);
+ return{plane,group,axis,mesh,radius:d[1],orbit:d[2],rate:d[3]};
+});
+const ringGeometry=new THREE.RingGeometry(1.34,2.3,160,64);
+const ringColors=new Float32Array(ringGeometry.attributes.position.count*3);
+for(let i=0;i<ringGeometry.attributes.position.count;i++){
+ const p=ringGeometry.attributes.position,r=Math.hypot(p.getX(i),p.getY(i)),gap=r>1.9&&r<1.99;
+ const c=gap?[.11,.1,.09]:mix([.4,.35,.28],[.84,.79,.66],.6+.22*Math.sin(r*110));
+ ringColors.set(c,i*3);
+}
+ringGeometry.setAttribute('color',new THREE.BufferAttribute(ringColors,3));
+const rings=new THREE.Mesh(ringGeometry,new THREE.MeshStandardMaterial({vertexColors:true,side:THREE.DoubleSide,roughness:1,transparent:true,opacity:.85,depthWrite:false}));
+rings.rotation.x=-Math.PI/2;rings.scale.setScalar(bodies[5].radius);bodies[5].axis.add(rings);
+const moon=new THREE.Mesh(paint(sphere.clone(),0),new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}));
+moon.scale.setScalar(.081);bodies[2].group.add(moon);
+const sun=new THREE.Mesh(sphere,new THREE.MeshBasicMaterial({color:0xffd072}));
+sun.scale.setScalar(1.08);scene.add(sun);
+for(let i=1;i<=3;i++){
+ const glow=new THREE.Mesh(sphere,new THREE.MeshBasicMaterial({color:0xffa13c,transparent:true,opacity:.025,side:THREE.BackSide,depthWrite:false}));
+ glow.scale.setScalar(1.08+i*.075);scene.add(glow);
+}
+let seed=92731;
+function random(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+const starPositions=new Float32Array(420*3),starColors=new Float32Array(420*3);
+for(let i=0;i<420;i++){
+ const y=random()*2-1,a=random()*Math.PI*2,r=72+random()*30,s=Math.sqrt(1-y*y);
+ starPositions.set([Math.cos(a)*s*r,y*r,Math.sin(a)*s*r],i*3);
+ const b=.3+random()*.55;starColors.set([b*.87,b*.94,b],i*3);
+}
+const starGeometry=new THREE.BufferGeometry();starGeometry.setAttribute('position',new THREE.BufferAttribute(starPositions,3));starGeometry.setAttribute('color',new THREE.BufferAttribute(starColors,3));
+scene.add(new THREE.Points(starGeometry,new THREE.PointsMaterial({vertexColors:true,size:1.3,depthWrite:false})));
+const size=new THREE.Vector2(),focus=new THREE.Vector3(),desiredFocus=new THREE.Vector3(),desiredCamera=new THREE.Vector3();
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+let selected=5,focused=true,yaw=-.65,elevation=.18,zoom=1,paused=false,time=0,last=0,lastDraw=-Infinity,width=0,height=0,nextSizeCheck=0,dirty=true,sceneDirty=true,ready=false,html='';
+function positionBodies(){
+ for(let i=0;i<bodies.length;i++){
+  const b=bodies[i],a=phase[i]+time*.14*b.rate;
+  b.group.position.set(Math.cos(a)*b.orbit,0,Math.sin(a)*b.orbit);
+  b.mesh.rotation.y=time*(i===1?-.07:.2+i*.03);
+ }
+ moon.position.set(Math.cos(time*.6)*.63,.06*Math.sin(time*.6),Math.sin(time*.6)*.63);
+ scene.updateMatrixWorld(true);
+}
+function placeCamera(dt){
+ if(focused)bodies[selected].group.getWorldPosition(desiredFocus);else desiredFocus.set(0,0,0);
+ const distance=(focused?bodies[selected].radius*(selected===5?9:6.1):46)/zoom;
+ const c=Math.cos(elevation);
+ desiredCamera.set(desiredFocus.x+Math.sin(yaw)*c*distance,desiredFocus.y+Math.sin(elevation)*distance,desiredFocus.z+Math.cos(yaw)*c*distance);
+ const blend=ready?1-Math.exp(-dt*7):1;
+ focus.lerp(desiredFocus,blend);camera.position.lerp(desiredCamera,blend);camera.lookAt(focus);ready=true;
+ return camera.position.distanceToSquared(desiredCamera)>.000001||focus.distanceToSquared(desiredFocus)>.000001;
+}
+function tick(t){
+ requestAnimationFrame(tick);
+ if(t-lastDraw<1000/30)return;
+ if(paused&&!sceneDirty&&t<nextSizeCheck)return;
+ const elapsed=last?Math.max(0,Math.min(.05,(t-last)/1000)):0;last=t;lastDraw=t;nextSizeCheck=t+250;
+ const s=renderer.getSize(size);
+ if(s.x<1||s.y<1)return;
+ if(s.x!==width||s.y!==height){width=s.x;height=s.y;camera.aspect=width/height;camera.updateProjectionMatrix();sceneDirty=true}
+ if(!paused){time+=elapsed;sceneDirty=true}
+ if(!sceneDirty)return;
+ positionBodies();
+ const moving=placeCamera(elapsed);
+ renderer.render(scene,camera);sceneDirty=moving;
+}
+function selectPlanet(index){selected=(index+bodies.length)%bodies.length;dirty=true;sceneDirty=true}
+function onAction(name){
+ if(name==='left')yaw-=.25;
+ else if(name==='right')yaw+=.25;
+ else if(name==='up')elevation=Math.min(1.3,elevation+.15);
+ else if(name==='down')elevation=Math.max(-.75,elevation-.15);
+ else if(name==='near')zoom=Math.min(2,zoom*1.2);
+ else if(name==='far')zoom=Math.max(.5,zoom/1.2);
+ else if(name==='pause')paused=!paused;
+ else if(name==='next')selectPlanet(selected+1);
+ else if(name==='view'){focused=!focused;zoom=1;if(!focused)elevation=.55}
+ else if(name==='reset'){selected=5;focused=true;yaw=-.65;elevation=.18;zoom=1;time=0;paused=false;ready=false}
+ dirty=true;sceneDirty=true;
+}
+function onPointer(x,y){
+ if(width<1||height<1)return;
+ scene.updateMatrixWorld(true);camera.updateMatrixWorld();pointer.set(x/width*2-1,1-y/height*2);raycaster.setFromCamera(pointer,camera);
+ const hit=raycaster.intersectObjects(bodies.map(b=>b.mesh),false)[0];
+ if(hit){selectPlanet(hit.object.userData.planet);focused=true;zoom=1}
+}
+function onKey(key){const action={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',' ':'pause','+':'near','-':'far'}[key];if(action)onAction(action)}
+function render(){
+ if(!dirty)return html;dirty=false;
+ const d=definitions[selected],button=(name,label,on=false)=>'<button data-action="'+name+'"'+(on?' class="on"':'')+'>'+label+'</button>';
+ const stage=renderer.isSupported?'':'<div class="note">This scene needs the native 3D host and Metal.</div>';
+ html='<div class="card solar"><div class="head"><div class="eyebrow">EXPLORING OUR NEIGHBOURHOOD</div><div class="title">Solar system</div><div class="sub">'+(focused?d[0]+' · '+d[6]:'Eight planets and the Sun · tap a planet to explore')+'</div></div><div class="stage" data-3d data-title="Solar system">'+stage+'</div><div class="tools">'+button('left','◀ Orbit')+button('right','Orbit ▶')+button('up','Higher')+button('down','Lower')+button('far','−')+button('near','+')+'</div><div class="tools">'+button('pause',paused?'Play':'Pause',paused)+button('next','Next planet')+button('view',focused?'Overview':'Focus '+d[0])+button('reset','Reset')+'</div><div class="caption">'+d[0]+' · '+Math.round(zoom*100)+'% · Sizes, distances and time are illustrative.</div></div>';
+ return html;
+}
+positionBodies();requestAnimationFrame(tick);
+</script>

@@ -5,6 +5,14 @@ plugins {
 
 gradlePlugin {
     plugins {
+        register("telegramBuildPlugin") {
+            id = "org.telegram.build-plugin"
+            implementationClass = "org.telegram.plugin.TelegramBuildPlugin"
+        }
+        register("telegramBuildAppPlugin") {
+            id = "org.telegram.build-app-plugin"
+            implementationClass = "org.telegram.plugin.TelegramBuildAppPlugin"
+        }
         register("testGenerator") {
             id = "test-generator"
             implementationClass = "com.example.TestGeneratorPlugin"
@@ -15,6 +23,7 @@ gradlePlugin {
 repositories {
     google()
     mavenCentral()
+    gradlePluginPortal()
 }
 /*
 val checkEmojiKeyboard by tasks.registering(GenerateSchemeTask::class) {
@@ -30,10 +39,12 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
-    compileOnly(gradleApi())
+    implementation(gradleApi())
+    implementation("com.android.tools.build:gradle:8.13.2")
 
     implementation("com.squareup.moshi:moshi:1.15.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("com.github.javaparser:javaparser-core:3.25.4")
     implementation("com.squareup:kotlinpoet:1.15.0")
+    implementation("com.google.code.gson:gson:2.11.0")
 }

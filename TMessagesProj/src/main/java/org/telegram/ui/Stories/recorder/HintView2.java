@@ -47,7 +47,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -59,7 +58,6 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.ButtonBounce;
-import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -304,7 +302,7 @@ public class HintView2 extends View {
     }
 
     public HintView2 setIcon(int resId) {
-        RLottieDrawable icon = new RLottieDrawable(resId, "" + resId, dp(34), dp(34));
+        RLottieDrawable icon = new RLottieDrawable(resId, dp(34), dp(34));
         icon.start();
         return setIcon(icon);
     }
@@ -439,6 +437,8 @@ public class HintView2 extends View {
         float leftWidth = 0, rightWidth = 0;
         float prevLeftWidth = 0;
         float prevRightWidth = Float.MAX_VALUE;
+        int bestMid = -1;
+        float bestWidth = Float.MAX_VALUE;
 
         int dir = -1;
         for (int i = 0; i < 10; ++i) {
@@ -449,6 +449,10 @@ public class HintView2 extends View {
             leftWidth = measureCorrectly(text.subSequence(0, mid), paint);
             rightWidth = measureCorrectly(AndroidUtilities.getTrimmedString(text.subSequence(mid, text.length())), paint);
             lastMid = mid;
+            if (mid > 0 && mid < text.length() && Math.max(leftWidth, rightWidth) < bestWidth) {
+                bestWidth = Math.max(leftWidth, rightWidth);
+                bestMid = mid;
+            }
 
             if (leftWidth == prevLeftWidth && rightWidth == prevRightWidth) {
                 break;
@@ -466,9 +470,13 @@ public class HintView2 extends View {
             }
 
             if (mid <= 0 || mid >= text.length()) {
-                return text;
+                break;
             }
         }
+        if (bestMid < 0) {
+            return text;
+        }
+        lastMid = bestMid;
         return TextUtils.concat(
             AndroidUtilities.getTrimmedString(text.subSequence(0, lastMid)),
             "\n",

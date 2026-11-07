@@ -1,0 +1,355 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 09-code-review.chat, message 2
+  author: leo 16:02 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  table { border-collapse: collapse; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .grow { flex-grow: 1; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  [data-action] { cursor: pointer; }
+  svg { vertical-align: middle; }
+
+  .df { width: 420px; max-width: 100%; overflow: hidden; }
+  .df .tb { display: flex; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(127,127,127,0.2); }
+  .df .seg { display: inline-block; border-radius: 8px; background-color: rgba(127,127,127,0.14); padding: 2px; }
+  .df .seg span { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 600; }
+  .df .seg span:hover { background-color: rgba(127,127,127,0.2); }
+  .df .seg span.on { background-color: light-dark(#ffffff, rgba(255,255,255,0.2)); color: light-dark(#1c1c1e, #ffffff); }
+  .df .vp { width: 50px; height: 4px; border-radius: 2px; margin-left: 6px; background-color: rgba(127,127,127,0.22); }
+  .df .vp div { height: 4px; border-radius: 2px; background-color: #34c759; transition: width 500ms cubic-bezier(.33,1,.68,1); }
+  .df .fh { display: flex; align-items: center; padding: 6px 10px 6px 6px; font-family: ui-monospace, monospace; font-size: 11.5px; background-color: rgba(127,127,127,0.08); border-bottom: 1px solid rgba(127,127,127,0.18); }
+  .df .chev { display: inline-block; width: 16px; text-align: center; color: #8e8e93; font-size: 10px; border-radius: 4px; }
+  .df .chev:hover { color: #007aff; background-color: rgba(0,122,255,0.12); }
+  .df .vw { display: flex; align-items: center; margin-left: 10px; padding: 1px 6px; border-radius: 6px; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 600; }
+  .df .vw:hover { background-color: rgba(127,127,127,0.16); }
+  .df .box { display: inline-block; width: 11px; height: 11px; line-height: 11px; margin-right: 4px; border-radius: 3px; border: 1px solid rgba(127,127,127,0.6); text-align: center; font-size: 9px; color: rgba(0,0,0,0); }
+  .df .vw.on .box { background-color: #34c759; border-color: #34c759; color: #ffffff; }
+  .df table { border-collapse: collapse; width: 100%; font-family: ui-monospace, monospace; font-size: 10.5px; line-height: 1.5; }
+  .df td { padding: 0 4px; vertical-align: top; }
+  .df td.cd { white-space: pre-wrap; }
+  .df td.h { width: 40%; }
+  .df td.g { width: 14px; padding: 0 0 0 3px; text-align: center; }
+  .df td.ln { width: 24px; text-align: right; color: #8e8e93; font-size: 9.5px; }
+  .df td.sg { width: 8px; font-weight: 700; }
+  .df td.a { background-color: rgba(52,199,89,0.13); } .df td.a.ln { background-color: rgba(52,199,89,0.22); } .df td.a.sg { color: light-dark(#248a3d, #5fd47b); }
+  .df td.d { background-color: rgba(255,59,48,0.12); } .df td.d.ln { background-color: rgba(255,59,48,0.2); } .df td.d.sg { color: light-dark(#d70015, #ff6961); }
+  .df td.nil { background-color: rgba(127,127,127,0.07); }
+  .df tr.hk td { background-color: rgba(0,122,255,0.08); color: #8e8e93; padding-top: 3px; padding-bottom: 3px; }
+  .df tr.hk:hover td { background-color: rgba(0,122,255,0.16); color: #007aff; }
+  .df tr.l:hover td, .df td.hv:hover { background-color: rgba(255,204,0,0.2); }
+  .df .plus { display: inline-block; width: 12px; height: 12px; line-height: 12px; margin-top: 2px; border-radius: 4px; text-align: center; font-size: 10px; font-weight: 800; color: rgba(0,0,0,0); }
+  .df tr.l:hover .plus, .df tr.l2:hover .plus { background-color: #007aff; color: #ffffff; }
+  .df .note { display: flex; align-items: flex-start; margin: 4px 8px 6px 20px; padding: 7px 9px; border-radius: 9px; font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.35; background-color: rgba(0,122,255,0.07); border: 1px solid rgba(0,122,255,0.25); }
+  .df .note .av { margin-right: 8px; flex-shrink: 0; }
+  .df .x { color: #8e8e93; padding: 0 5px; border-radius: 5px; }
+  .df .x:hover { background-color: rgba(255,59,48,0.14); color: #ff3b30; }
+  .df .kw { color: light-dark(#af52de, #fc5fa3); } .df .st { color: light-dark(#c41a16, #fc6a5d); } .df .nu { color: light-dark(#1c00cf, #d0bf69); } .df .cmt { color: #8e8e93; font-style: italic; }
+  .df .ft { padding: 6px 10px; }
+
+  /* intro: +/- lines tint in, staggered per line (the original's per-row tween) */
+  .df.intro td[data-k] { transition: background-color 420ms cubic-bezier(.33,1,.68,1); }
+  .df tr.pre td.a, .df tr.pre td.d, .df td.pre.a, .df td.pre.d { background-color: transparent; }
+  /* comment flash: yellow, fading out over 1100 ms (ease.inQuad) */
+  .df td.fl { background-color: rgba(255,204,0,0.5) !important; transition: none !important; }
+  .df td.fl-out { transition: background-color 1100ms cubic-bezier(.11,0,.5,0) !important; }
+  .df .nb { display: inline-block; animation: nbpop 420ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes nbpop { from { font-size: 1px; } to { font-size: 10px; } }
+  #nNotes.pop { animation: cntpop 380ms ease-out; }
+  @keyframes cntpop { 0% { font-size: 20.4px; } 60% { font-size: 11.3px; } 100% { font-size: 12px; } }
+  .tr-fade { animation: trFade 220ms ease-out; }
+  .tr-slide-up { animation: trUp 220ms ease-out; } .tr-slide-down { animation: trDown 220ms ease-out; }
+  .tr-slide-left { animation: trLeft 220ms ease-out; } .tr-slide-right { animation: trRight 220ms ease-out; }
+  @keyframes trFade { from { opacity: 0; } }
+  @keyframes trUp { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes trDown { from { opacity: 0; transform: translateY(-8px); } }
+  @keyframes trLeft { from { opacity: 0; transform: translateX(12px); } }
+  @keyframes trRight { from { opacity: 0; transform: translateX(-12px); } }
+</style>
+<div class="card df intro" id="root">
+  <div class="tb"><span class="seg"><span class="on" data-action="mode" data-value="u">Unified</span><span data-action="mode" data-value="s">Split</span></span><span class="grow"></span>
+    <span class="small muted" style="margin-right: 10px">💬 <b class="fg" id="nNotes">0</b></span>
+    <span class="small muted" id="nViewed">0/2 viewed</span><div class="vp"><div id="vp" style="width: 0%"></div></div></div>
+  <div id="files"></div>
+  <div class="ft tiny muted"><span id="allViewed" hidden><b class="t-green">✓ All files viewed</b> · </span>Click a line to comment · click @@ to fold a hunk</div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const root = $('root');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3) };
+const animate = (duration, onFrame, easing = ease.outCubic) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const TR = ['fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right'];
+function transition(kind) { for (const k of TR) root.classList.remove('tr-' + k); requestAnimationFrame(() => root.classList.add('tr-' + kind)); }
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+const FILES = [
+  { name: 'src/LHDocument.mm', hunks: [
+    { head: '@@ -41,8 +41,19 @@ @implementation LHDocument', o: 41, n: 41, lines: [
+      ' - (CGSize)layoutWithMaxWidth:(CGFloat)width',
+      ' {',
+      '-    NSAttributedString *s = [self attributedString];',
+      '-    CGRect r = [s boundingRectWithSize:CGSizeMake(width, CGFLOAT_MAX)',
+      '-                               options:0];',
+      '-    return r.size; // ignores tables, floats and CSS',
+      '+    width = std::max<CGFloat>(1, std::floor(width));',
+      '+    if(std::fabs(width - _lastWidth) < 0.5)',
+      '+        return _size; // cached: scrolling never re-lays out',
+      '+    _lastWidth = width;',
+      '+',
+      '+    lh::pixel_t natural = _doc->render(width);',
+      '+    CGFloat w = width;',
+      '+    if(natural > 0 && natural < width)',
+      '+    {',
+      '+        // shrink-to-fit: render again at the natural width',
+      '+        w = std::ceil(natural + 0.01);',
+      '+        _doc->render(w);',
+      '+    }',
+      '+    _size = CGSizeMake(w, std::ceil(_doc->height()));',
+      '+    return _size;',
+      ' }',
+      ' ',
+    ] },
+    { head: '@@ -96,4 +107,5 @@ - (void)dealloc', o: 96, n: 107, lines: [
+      ' - (void)dealloc',
+      ' {',
+      '+    _doc.reset(); // the document points at the container',
+      '     delete _container;',
+      ' }',
+    ] },
+  ] },
+  { name: 'src/LHContainer.mm', hunks: [
+    { head: '@@ -210,5 +230,6 @@ void LHContainer::draw_text(...)', o: 210, n: 230, lines: [
+      ' void LHContainer::draw_text(uint_ptr hdc, const char* text,',
+      '         uint_ptr hFont, web_color color, const position& pos)',
+      ' {',
+      '-    CGContextSetTextPosition(ctx, pos.x, pos.y);',
+      '+    CGContextSetTextMatrix(ctx, CGAffineTransformMakeScale(1, -1));',
+      '+    CGContextSetTextPosition(ctx, pos.x, pos.y + f->ascent);',
+      '     CTLineDraw(line, ctx);',
+    ] },
+  ] },
+];
+const SAY = {
+  '+': ['Can we cover this with a test?', 'Nice, much easier to follow 👍', 'Is this on the hot path? Worth a benchmark.'],
+  '-': ['🎉 Good riddance.', 'Is anything else still calling this?'],
+  ' ': ['Nit: a short comment here would help.', 'Unrelated, but this could be const.'],
+};
+const KW = new Set(['return', 'if', 'else', 'self', 'const', 'void', 'delete', 'auto', 'nullptr']);
+function hl(src) {
+  if (!src.trim()) return '&nbsp;';
+  const re = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|([A-Za-z_]\w*)|(\d+(?:\.\d+)?)|([\s\S])/g;
+  let out = '', m;
+  while ((m = re.exec(src))) {
+    if (m[1]) out += `<span class="cmt">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="st">${esc(m[2])}</span>`;
+    else if (m[3]) out += KW.has(m[3]) ? `<span class="kw">${m[3]}</span>` : m[3];
+    else if (m[4]) out += `<span class="nu">${m[4]}</span>`;
+    else out += esc(m[5]);
+  }
+  return out;
+}
+for (const F of FILES) {
+  F.adds = 0; F.dels = 0;
+  for (const H of F.hunks) {
+    let o = H.o, n = H.n;
+    H.rows = H.lines.map((s, i) => {
+      const t = s[0];
+      if (t === '+') F.adds++; else if (t === '-') F.dels++;
+      return { t, i, html: hl(s.slice(1)), o: t === '+' ? 0 : o++, n: t === '-' ? 0 : n++ };
+    });
+    H.pairs = [];
+    for (let i = 0; i < H.rows.length;) {
+      if (H.rows[i].t === ' ') { H.pairs.push([H.rows[i], H.rows[i]]); i++; continue; }
+      const dels = [], adds = [];
+      while (i < H.rows.length && H.rows[i].t === '-') dels.push(H.rows[i++]);
+      while (i < H.rows.length && H.rows[i].t === '+') adds.push(H.rows[i++]);
+      for (let k = 0; k < Math.max(dels.length, adds.length); k++) H.pairs.push([dels[k] || null, adds[k] || null]);
+    }
+  }
+}
+
+let mode = 'u', said = 0, introOn = true, preOn = true;
+const folded = {}, closed = {}, viewed = {}, notes = {};
+const STAG_MS = 21; // 0.025 of the 850 ms intro per line
+
+// ---- builders (the diff tables are lists: rebuilt with innerHTML on mode / fold changes) ----
+const markHtml = k => notes[k] ? '<span class="nb">💬</span>' : '<span class="plus">+</span>';
+function noteRow(k) {
+  const n = k && notes[k];
+  if (!n) return '';
+  return `<tr class="nr" data-note="${k}"><td colspan="5"><div class="note"><span class="av" style="background-color: #007aff">ME</span><div class="grow"><b>You</b> <span class="tiny muted">· ${n.at} · pending</span><div>${esc(n.text)}</div></div><span class="x" data-action="unnote" data-value="${k}">✕</span></div></td></tr>`;
+}
+function hunkHead(H, hk) {
+  return `<tr class="hk" data-action="hunk" data-value="${hk}"><td class="g">${folded[hk] ? '▸' : '▾'}</td><td colspan="4">${esc(H.head)}${folded[hk] ? ` <b>· ${H.rows.length} lines folded</b>` : ''}</td></tr>`;
+}
+// intro stagger: cells get the "pre" (transparent) state and a per-line transition delay
+const cellAttrs = (r, key, gi) => {
+  const pre = preOn && r.t !== ' ' ? ' pre' : '';
+  const delay = introOn && r.t !== ' ' ? ` style="transition-delay: ${gi * STAG_MS}ms"` : '';
+  return { cls: pre, attr: ` data-k="${key}"${delay}` };
+};
+function unified(f, gi) {
+  return FILES[f].hunks.map((H, h) => {
+    const hk = f + '.' + h;
+    if (folded[hk]) return hunkHead(H, hk);
+    return hunkHead(H, hk) + H.rows.map(r => {
+      const key = hk + '.' + r.i, c = r.t === '+' ? 'a' : r.t === '-' ? 'd' : '', x = cellAttrs(r, key, gi.n++);
+      return `<tr class="l" data-key="${key}" data-action="line" data-value="${key}"><td class="g">${markHtml(key)}</td><td class="ln ${c}${x.cls}"${x.attr}>${r.o || '&nbsp;'}</td><td class="ln ${c}${x.cls}"${x.attr}>${r.n || '&nbsp;'}</td><td class="sg ${c}${x.cls}"${x.attr}>${r.t === '+' ? '+' : r.t === '-' ? '−' : '&nbsp;'}</td><td class="cd ${c}${x.cls}"${x.attr}>${r.html}</td></tr>${noteRow(key)}`;
+    }).join('');
+  }).join('');
+}
+function split(f, gi) {
+  return FILES[f].hunks.map((H, h) => {
+    const hk = f + '.' + h;
+    if (folded[hk]) return hunkHead(H, hk);
+    return hunkHead(H, hk) + H.pairs.map(([L, R]) => {
+      const lk = L && hk + '.' + L.i, rk = R && hk + '.' + R.i;
+      const side = (r, k, right) => {
+        if (!r) return '<td class="ln nil">&nbsp;</td><td class="cd h nil">&nbsp;</td>';
+        const c = r.t === '+' ? 'a' : r.t === '-' ? 'd' : '', x = cellAttrs(r, k, gi.n++);
+        return `<td class="ln ${c}${x.cls}"${x.attr}>${right ? r.n : r.o}</td><td class="cd h hv ${c}${x.cls}"${x.attr} data-action="line" data-value="${k}">${r.html}</td>`;
+      };
+      const g = lk && notes[lk] ? markHtml(lk) : rk && notes[rk] ? markHtml(rk) : '<span class="plus">+</span>';
+      return `<tr class="l2" data-lk="${lk || ''}" data-rk="${rk || ''}"><td class="g">${g}</td>${side(L, lk, false)}${side(R, rk, true)}</tr>${noteRow(lk)}${rk !== lk ? noteRow(rk) : ''}`;
+    }).join('');
+  }).join('');
+}
+
+const fileEls = FILES.map((F, f) => {
+  const head = document.createElement('div');
+  head.className = 'fh';
+  head.innerHTML = `<span class="chev" data-action="file" data-value="${f}">▾</span><svg width="12" height="12" viewBox="0 0 16 16" style="margin: 0 5px 0 2px" aria-hidden="true"><path d="M3.5 1.5h6L13 5v9.5H3.5z" fill="none" stroke="#8e8e93" stroke-width="1.3" stroke-linejoin="round"/><path d="M9.5 1.5V5H13M6 8.5h4.5M6 11h4.5" fill="none" stroke="#8e8e93" stroke-width="1.2" stroke-linecap="round"/></svg><b class="grow">${F.name}</b><span class="t-green" style="margin-right: 5px">+<span class="adds">0</span></span><span class="t-red">−<span class="dels">0</span></span><span class="vw" data-action="viewed" data-value="${f}"><span class="box">✓</span>Viewed</span>`;
+  const table = document.createElement('table');
+  $('files').append(head, table);
+  return { head, table, chev: head.querySelector('.chev'), vw: head.querySelector('.vw'), adds: head.querySelector('.adds'), dels: head.querySelector('.dels') };
+});
+
+function buildTables() {
+  const gi = { n: 0 };
+  FILES.forEach((F, f) => { fileEls[f].table.innerHTML = mode === 's' ? split(f, gi) : unified(f, gi); });
+}
+function syncFiles() {
+  FILES.forEach((F, f) => {
+    const open = !closed[f];
+    fileEls[f].chev.textContent = open ? '▾' : '▸';
+    fileEls[f].table.hidden = !open;
+    fileEls[f].vw.classList.toggle('on', !!viewed[f]);
+  });
+  const nViewed = FILES.filter((_, f) => viewed[f]).length;
+  $('nViewed').textContent = `${nViewed}/${FILES.length} viewed`;
+  $('allViewed').hidden = nViewed !== FILES.length;
+  $('vp').style.width = (nViewed / FILES.length * 100).toFixed(1) + '%';
+  [...document.querySelectorAll('.seg span')].forEach(s => s.classList.toggle('on', s.dataset.value === mode));
+  $('nNotes').textContent = Object.keys(notes).length;
+}
+
+// ---- notes: inserted and removed in place ----
+function rowsFor(key) {
+  return mode === 's' ? [...document.querySelectorAll(`tr.l2[data-lk="${key}"], tr.l2[data-rk="${key}"]`)] : [...document.querySelectorAll(`tr.l[data-key="${key}"]`)];
+}
+function syncMark(tr) {
+  const g = tr.querySelector('td.g');
+  if (mode === 's') {
+    const lk = tr.dataset.lk, rk = tr.dataset.rk;
+    g.innerHTML = lk && notes[lk] ? markHtml(lk) : rk && notes[rk] ? markHtml(rk) : '<span class="plus">+</span>';
+  } else g.innerHTML = markHtml(tr.dataset.key);
+}
+function addNoteRows(key) {
+  for (const tr of rowsFor(key)) {
+    syncMark(tr);
+    // the note sits after the line row (split: after the left key's note, if any)
+    let after = tr;
+    if (mode === 's' && tr.dataset.rk === key && tr.dataset.lk && tr.dataset.lk !== key && notes[tr.dataset.lk]) after = after.nextElementSibling;
+    after.insertAdjacentHTML('afterend', noteRow(key));
+  }
+}
+function removeNoteRows(key) {
+  for (const nr of document.querySelectorAll(`tr.nr[data-note="${key}"]`)) nr.remove();
+  for (const tr of rowsFor(key)) syncMark(tr);
+}
+function flash(key) {
+  const cells = [...document.querySelectorAll(`td[data-k="${key}"]`)];
+  for (const c of cells) { c.classList.remove('fl-out'); c.classList.add('fl'); }
+  requestAnimationFrame(() => { for (const c of cells) { c.classList.remove('fl'); c.classList.add('fl-out'); } });
+  setTimeout(() => { for (const c of cells) c.classList.remove('fl-out'); }, 1100);
+}
+
+function toggle(key) {
+  if (notes[key]) { transition('slide-up'); delete notes[key]; removeNoteRows(key); syncFiles(); return; }
+  const [f, h, i] = String(key).split('.').map(Number);
+  const H = FILES[f] && FILES[f].hunks[h], r = H && H.rows[i];
+  if (!r) return;
+  transition('slide-down');
+  const pool = SAY[r.t];
+  notes[key] = { text: pool[said++ % pool.length], at: r.t === '-' ? 'L' + r.o : 'R' + r.n };
+  addNoteRows(key);
+  flash(key);
+  syncFiles();
+  replay($('nNotes'), 'pop');
+}
+
+function handleAction(name, v) {
+  if (name === 'mode') {
+    if (v === mode) return;
+    transition(v === 's' ? 'slide-left' : 'slide-right');
+    mode = v; buildTables(); syncFiles();
+  } else if (name === 'hunk') {
+    transition(folded[v] ? 'slide-down' : 'slide-up');
+    folded[v] = !folded[v]; buildTables();
+  } else if (name === 'file') {
+    transition(closed[v] ? 'slide-down' : 'slide-up');
+    closed[v] = !closed[v]; syncFiles();
+  } else if (name === 'viewed') {
+    viewed[v] = !viewed[v];
+    if (!!closed[v] !== viewed[v]) { transition(viewed[v] ? 'slide-up' : 'slide-down'); closed[v] = viewed[v]; }
+    syncFiles();
+  } else if (name === 'line') {
+    toggle(v);
+  } else if (name === 'unnote') {
+    if (!notes[v]) return;
+    transition('slide-up');
+    delete notes[v]; removeNoteRows(v); syncFiles();
+  }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]');
+  if (t && root.contains(t)) handleAction(t.dataset.action, t.dataset.value);
+});
+
+buildTables();
+syncFiles();
+// intro (250 ms later, 850 ms): the +/− counters count up and the lines tint in
+setTimeout(() => {
+  preOn = false;
+  for (const c of document.querySelectorAll('td.pre')) c.classList.remove('pre');
+  animate(850, p => {
+    const k = clamp(p * 1.4, 0, 1);
+    FILES.forEach((F, f) => { fileEls[f].adds.textContent = Math.round(F.adds * k); fileEls[f].dels.textContent = Math.round(F.dels * k); });
+  }, ease.outCubic);
+  setTimeout(() => {
+    introOn = false;
+    root.classList.remove('intro');
+    for (const c of document.querySelectorAll('td[data-k]')) c.style.transitionDelay = '';
+  }, 1800);
+}, 250);
+</script>

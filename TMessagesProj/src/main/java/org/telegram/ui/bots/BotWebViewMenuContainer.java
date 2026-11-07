@@ -29,9 +29,10 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 
 import org.json.JSONObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -57,7 +58,10 @@ import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatAvatarContainer;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -66,6 +70,7 @@ import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PaymentFormActivity;
+import org.telegram.ui.ReportBottomSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.web.BotWebViewContainer;
 
@@ -73,7 +78,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
-public class BotWebViewMenuContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, BottomSheetTabsOverlay.Sheet, BottomSheetTabsOverlay.SheetView {
+public class BotWebViewMenuContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, BottomSheetTabsOverlay.Sheet, BottomSheetTabsOverlay.SheetView, Theme.Colorable {
     private final static int POLL_PERIOD = 60000;
 
     private final static SimpleFloatPropertyCompat<BotWebViewMenuContainer> ACTION_BAR_TRANSITION_PROGRESS_VALUE = new SimpleFloatPropertyCompat<BotWebViewMenuContainer>("actionBarTransitionProgress", obj -> obj.actionBarTransitionProgress, (obj, value) -> {
@@ -195,6 +200,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         tab.props.responseTime = loadedResponseTime;
         tab.ready = webViewContainer != null && webViewContainer.isPageLoaded();
         tab.lastUrl = webViewContainer != null ? webViewContainer.getUrlLoaded() : null;
+        tab.sameOrigin = webViewContainer != null && webViewContainer.isBridgeRestrictedToOrigin();
+        tab.trustedOrigin = webViewContainer != null ? webViewContainer.getTrustedOrigin() : null;
         tab.themeIsDark = Theme.isCurrentThemeDark();
         tab.settings = settingsItem != null && settingsItem.getVisibility() == View.VISIBLE;
         tab.main = mainButtonSettings;
@@ -223,19 +230,19 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         if (tab == null || tab.props == null) return false;
 //        setBackgroundColor(tab.backgroundColor, false);
 //        setActionBarColor(tab.actionBarColor, tab.overrideActionBarColor, false);
-        if (tab.webView != null) {
-//            tab.webView.resumeTimers();
-            tab.webView.onResume();
-            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
-        } else {
-            tab.props.response = null;
-            tab.props.responseTime = 0;
-        }
         currentAccount = tab.props.currentAccount;
         botId = tab.props.botId;
         botUrl = tab.props.buttonUrl;
         loadedResponse = tab.props.response;
         loadedResponseTime = tab.props.responseTime;
+        if (tab.webView != null) {
+//            tab.webView.resumeTimers();
+            tab.webView.onResume();
+            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy, tab.trustedOrigin, tab.sameOrigin);
+        } else {
+            tab.props.response = null;
+            tab.props.responseTime = 0;
+        }
         loadWebView();
         return true;
     }
@@ -267,6 +274,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                 addToHomeScreenItem.setVisibility(View.GONE);
             }
             botMenuItem.addSubItem(R.id.menu_tos_bot, R.drawable.menu_intro, LocaleController.getString(R.string.BotWebViewToS));
+            botMenuItem.addSubItem(R.id.menu_report_bot, R.drawable.msg_report, LocaleController.getString(R.string.BotWebViewReportBot));
         }
     }
 
@@ -619,7 +627,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     .create();
             dialog.show();
             TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            textView.setTextColor(getColor(Theme.key_text_RedBold));
+            ThemeBind.textColor(textView, Theme.key_text_RedBold, parentEnterView.getParentFragment().getResourceProvider());
             return false;
         } else {
             dismiss();
@@ -711,6 +719,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                                 MediaDataController.getInstance(currentAccount).installShortcut(botId, MediaDataController.SHORTCUT_TYPE_ATTACHED_BOT);
                             } else if (id == R.id.menu_tos_bot) {
                                 Browser.openUrl(getContext(), LocaleController.getString(R.string.BotWebViewToSLink));
+                            } else if (id == R.id.menu_report_bot) {
+                                ReportBottomSheet.openChat(currentAccount, getContext(), BulletinFactory.of(Bulletin.BulletinWindow.make(getContext()), null), botId);
                             }
                         }
                     });
@@ -726,8 +736,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                 }
             });
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.webViewResultSent);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.didSetNewTheme);
     }
 
     @Override
@@ -985,7 +995,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
             TLRPC.TL_webViewResultUrl resultUrl = (TLRPC.TL_webViewResultUrl) response;
             queryId = resultUrl.query_id;
-            webViewContainer.loadUrl(currentAccount, resultUrl.url);
+            webViewContainer.loadUrl(currentAccount, resultUrl.url, resultUrl.same_origin);
             swipeContainer.setWebView(webViewContainer.getWebView());
 
             AndroidUtilities.runOnUIThread(pollRunnable, POLL_PERIOD);
@@ -1156,6 +1166,32 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             invalidateActionBar();
             AndroidUtilities.runOnUIThread(this::invalidateActionBar, 300);
         }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            if (parentEnterView == null || parentEnterView.getParentFragment() == null) {
+                return;
+            }
+            if (actionBarColors != null && !overrideBackgroundColor && actionBarColors.progress >= 1f) {
+                actionBarColors.setTo(0, null);
+            }
+            invalidate();
+            invalidateActionBar();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhite);
+        colors.add(Theme.key_actionBarDefault);
+        colors.add(Theme.key_actionBarDefaultIcon);
+        colors.add(Theme.key_actionBarDefaultSelector);
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_actionBarWhiteSelector);
     }
 
     public static class ActionBarColorsAnimating {

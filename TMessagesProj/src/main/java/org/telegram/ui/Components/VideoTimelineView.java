@@ -113,6 +113,13 @@ public class VideoTimelineView extends View {
         return progressRight;
     }
 
+    /** Updates both trim handles without notifying the delegate. */
+    public void setTrimProgress(float left, float right) {
+        progressLeft = Math.max(0f, Math.min(1f, left));
+        progressRight = Math.max(progressLeft, Math.min(1f, right));
+        invalidate();
+    }
+
     public void setMinProgressDiff(float value) {
         minProgressDiff = value;
     }
@@ -595,9 +602,19 @@ public class VideoTimelineView extends View {
 
         public void updateColors() {
             tooltipPaint.setColor(Theme.getColor(Theme.key_chat_gifSaveHintText));
-            tooltipBackground = Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground));
-            tooltipBackgroundArrow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
+            if (tooltipBackground != null) {
+                Theme.setDrawableColor(tooltipBackground, Theme.getColor(Theme.key_chat_gifSaveHintBackground));
+            } else {
+                tooltipBackground = Theme.createRoundRectDrawable(AndroidUtilities.dp(5), Theme.getColor(Theme.key_chat_gifSaveHintBackground));
+            }
+            final int arrowColor = Theme.getColor(Theme.key_chat_gifSaveHintBackground);
+            if (arrowColor != tooltipArrowColor || tooltipBackgroundArrow.getColorFilter() == null) {
+                tooltipArrowColor = arrowColor;
+                tooltipBackgroundArrow.setColorFilter(new PorterDuffColorFilter(arrowColor, PorterDuff.Mode.MULTIPLY));
+            }
         }
+
+        private int tooltipArrowColor;
 
         public void setCx(float v) {
             cx = v;

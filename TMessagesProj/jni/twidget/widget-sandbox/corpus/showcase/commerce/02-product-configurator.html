@@ -1,0 +1,104 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a product configurator — the headphones (inline SVG) recolour with a transition as swatches are tapped, a material and a size, the price updates, "Add to cart" bounces and the cart badge counts
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff; --green: #34c759;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; }
+  .stage { position: relative; height: 230px; background: radial-gradient(ellipse at 50% 100%, var(--glow, #c7d7ff) 0%, var(--card2) 70%); transition: --glow .6s; overflow: hidden; }
+  .stage svg { position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; transform: translate(-50%, -50%); filter: drop-shadow(0 18px 20px rgba(0,0,0,.25)); animation: float 5s ease-in-out infinite; }
+  @keyframes float { 50% { transform: translate(-50%, -54%) rotate(-2deg); } }
+  .stage svg .c { transition: fill .5s; } .stage svg .c2 { transition: fill .5s; }
+  .badge { position: absolute; top: 12px; left: 12px; background: var(--fg); color: var(--card); font-size: 11px; font-weight: 800; padding: 5px 9px; border-radius: 8px; letter-spacing: .04em; }
+  .cart { position: absolute; top: 10px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: var(--card); display: grid; place-items: center; box-shadow: var(--shadow); }
+  .cart svg { width: 18px; height: 18px; fill: none; stroke: var(--fg); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .cart i { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff3b30; color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; font-style: normal; transform: scale(0); transition: transform .3s cubic-bezier(.34,1.56,.64,1); padding: 0 4px; box-sizing: border-box; }
+  .cart i.on { transform: scale(1); } .cart.bump { animation: bump .45s; } @keyframes bump { 30% { transform: scale(1.2) rotate(-6deg); } 60% { transform: scale(.95); } }
+  .body { padding: 14px 18px 16px; }
+  .ttl { display: flex; justify-content: space-between; align-items: baseline; } .ttl h3 { margin: 0; font-size: 18px; } .price { font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .sec { margin-top: 14px; } .sec .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; display: flex; justify-content: space-between; } .sec .lbl span:last-child { text-transform: none; letter-spacing: 0; color: var(--fg); font-weight: 600; }
+  .sw { display: flex; gap: 12px; margin-top: 8px; } .sw button { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; position: relative; transition: transform .2s; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+  .sw button::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; transition: border-color .2s; } .sw button.on::after { border-color: var(--fg); } .sw button:hover { transform: scale(1.08); }
+  .chips { display: flex; gap: 8px; margin-top: 8px; } .chip { flex: 1; padding: 9px 0; border-radius: 10px; border: 1.5px solid var(--border); background: transparent; color: var(--fg); font: inherit; font-weight: 600; cursor: pointer; transition: border-color .2s, background .2s; text-align: center; }
+  .chip.on { border-color: var(--fg); background: var(--card2); } .chip small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+  .add { margin-top: 16px; width: 100%; padding: 14px; border: 0; border-radius: 14px; background: var(--fg); color: var(--card); font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; display: flex; justify-content: center; gap: 8px; transition: transform .15s, background .3s; }
+  .add:active { transform: scale(.98); } .add.ok { background: var(--green); color: #fff; }
+  .ship { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; }
+</style>
+<div class="card">
+  <div class="stage" id="stage">
+    <span class="badge">NEW · 2026</span>
+    <svg viewBox="0 0 200 200" id="hp">
+      <defs><linearGradient id="shine" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+      <path d="M46 118 V96 a54 54 0 0 1 108 0 V118" fill="none" stroke-width="11" stroke-linecap="round" class="c" id="band"/>
+      <path d="M46 118 V96 a54 54 0 0 1 108 0 V118" fill="none" stroke="url(#shine)" stroke-width="11" stroke-linecap="round"/>
+      <path d="M62 60 a46 46 0 0 1 76 0" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="5" stroke-linecap="round"/>
+      <rect x="30" y="112" width="32" height="54" rx="13" class="c"/><rect x="138" y="112" width="32" height="54" rx="13" class="c"/>
+      <rect x="30" y="112" width="32" height="54" rx="13" fill="url(#shine)"/><rect x="138" y="112" width="32" height="54" rx="13" fill="url(#shine)"/>
+      <rect x="38" y="122" width="16" height="34" rx="7" class="c2"/><rect x="146" y="122" width="16" height="34" rx="7" class="c2"/>
+      <rect x="42" y="108" width="8" height="10" rx="2" class="c"/><rect x="150" y="108" width="8" height="10" rx="2" class="c"/>
+      <circle cx="160" cy="150" r="3" fill="#fff" opacity=".7"/>
+    </svg>
+    <div class="cart" id="cart"><svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z M6 6L5 3H2 M9 20a1 1 0 1 0 0 .1 M18 20a1 1 0 1 0 0 .1"/></svg><i id="badge">0</i></div>
+  </div>
+  <div class="body">
+    <div class="ttl"><h3>Aura Pro headphones</h3><span class="price">€<span id="price">329</span></span></div>
+    <div class="sub">Adaptive ANC · 40 h battery · spatial audio</div>
+    <div class="sec"><div class="lbl"><span>Colour</span><span id="colName">Midnight</span></div><div class="sw" id="sw"></div></div>
+    <div class="sec"><div class="lbl"><span>Cushions</span></div><div class="chips" id="mat"><button class="chip on" data-v="0" data-p="0">Vegan leather<small>included</small></button><button class="chip" data-v="1" data-p="40">Knit mesh<small>+ €40</small></button><button class="chip" data-v="2" data-p="90">Lambskin<small>+ €90</small></button></div></div>
+    <div class="sec"><div class="lbl"><span>Fit</span></div><div class="chips" id="fit"><button class="chip" data-v="S">Small</button><button class="chip on" data-v="M">Medium</button><button class="chip" data-v="L">Large</button></div></div>
+    <button class="add" id="add"><span id="addT">Add to cart</span></button>
+    <div class="ship" id="ship">Free shipping · ships Thursday</div>
+  </div>
+</div>
+<script>
+  // SDK v1: no sendMessage. The cart is local state in localStorage (kept by the client per message, it survives the
+  // widget being re-created): the badge and the last configuration come back on load.
+  const KEY = 'aura-pro-cart';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const saved = store.get(KEY, { items: [] });
+  const COLORS = [
+    { n: 'Midnight', c: '#1d1f2b', c2: '#3a3d52', glow: '#9aa5d6' }, { n: 'Fog', c: '#d8d9de', c2: '#a9abb5', glow: '#e4e5ea' },
+    { n: 'Sage', c: '#8fae8b', c2: '#5f7d5c', glow: '#c9dcc6' }, { n: 'Terracotta', c: '#c9643f', c2: '#8a3f23', glow: '#f0c0ad' }, { n: 'Cobalt', c: '#2851c7', c2: '#162d75', glow: '#a9bdf5' },
+  ];
+  let col = 0, mat = 0, matP = 0, fit = 'M', items = Array.isArray(saved.items) ? saved.items : [];
+  const sw = document.getElementById('sw'), stage = document.getElementById('stage');
+  sw.innerHTML = COLORS.map((c, i) => '<button style="background:' + c.c + '" data-i="' + i + '" class="' + (i === 0 ? 'on' : '') + '" aria-label="' + c.n + '"></button>').join('');
+  function paint() {
+    const c = COLORS[col];
+    document.querySelectorAll('#hp .c').forEach(e => e.setAttribute('fill', c.c)); document.getElementById('band').setAttribute('stroke', c.c);
+    document.querySelectorAll('#hp .c2').forEach(e => e.setAttribute('fill', c.c2));
+    stage.style.setProperty('--glow', c.glow);
+    document.getElementById('colName').textContent = c.n;
+    [...sw.children].forEach((b, i) => b.classList.toggle('on', i === col));
+    tweenPrice(329 + matP + (col === 3 ? 20 : 0));
+    document.getElementById('ship').textContent = col === 3 ? 'Limited colour · ships in 2 weeks' : 'Free shipping · ships Thursday';
+  }
+  const priceEl = document.getElementById('price'); let run = 0;
+  function tweenPrice(to) { const from = Number(priceEl.textContent), me = ++run, t0 = performance.now(); (function s() { if (me !== run) return; const t = Math.min(1, (performance.now() - t0) / 450); priceEl.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - t, 3))); if (t < 1) requestAnimationFrame(s); })(); }
+  sw.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; col = Number(b.dataset.i); paint(); });
+  document.getElementById('mat').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; mat = Number(b.dataset.v); matP = Number(b.dataset.p); [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b)); paint(); });
+  document.getElementById('fit').addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; fit = b.dataset.v; [...e.currentTarget.children].forEach(x => x.classList.toggle('on', x === b)); });
+  const add = document.getElementById('add'), addT = document.getElementById('addT'), cart = document.getElementById('cart'), badge = document.getElementById('badge');
+  add.addEventListener('click', () => {
+    if (add.classList.contains('ok')) return;
+    items.push({ col, mat, fit }); store.set(KEY, { items });
+    add.classList.add('ok'); addT.textContent = '✓ Added · ' + COLORS[col].n + ', ' + fit;
+    cart.classList.remove('bump'); void cart.offsetWidth; cart.classList.add('bump'); badge.textContent = items.length; badge.classList.add('on');
+    setTimeout(() => { add.classList.remove('ok'); addT.textContent = 'Add another'; }, 1600);
+  });
+  // Restore: the last configuration added, the badge with the cart's size.
+  const last = items[items.length - 1];
+  if (last && COLORS[last.col]) {
+    col = last.col; fit = last.fit;
+    [...document.getElementById('mat').children].forEach(x => { const on = Number(x.dataset.v) === last.mat; x.classList.toggle('on', on); if (on) { mat = last.mat; matP = Number(x.dataset.p); } });
+    [...document.getElementById('fit').children].forEach(x => x.classList.toggle('on', x.dataset.v === fit));
+    badge.textContent = items.length; badge.classList.add('on'); addT.textContent = 'Add another';
+  }
+  paint();
+</script>

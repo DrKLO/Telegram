@@ -1,0 +1,107 @@
+<!-- bot-demos/04, tic-tac-toe duel (tw-bot duel): the protocol is in README.md -->
+<meta name="tw-bot" content="duel">
+<style>
+:root{--b:var(--tg-theme-button-color);--h:var(--tg-theme-hint-color);--X:var(--b);--O:var(--tg-theme-destructive-text-color)}
+body{margin:0;padding:12px 14px 14px;font-variant-numeric:tabular-nums}
+.x{display:none!important}
+#sc{display:flex;align-items:center;gap:8px}
+.pl{position:relative;z-index:0;flex:1;min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:12px;font-weight:600}
+.pl:before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--k);opacity:0;transition:opacity .3s}
+.pl.on:before{opacity:.13}
+#px{--k:var(--X)}
+#po{--k:var(--O);flex-direction:row-reverse}
+.pl span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.pl .e{color:var(--h);font-weight:400}
+#s{font-size:22px;letter-spacing:.04em}
+.bu{animation:bu .45s}
+@keyframes bu{40%{transform:scale(1.3)}}
+#tl{display:flex;justify-content:center;align-items:center;gap:6px;height:22px;margin:12px 0 8px;font-weight:600}
+#tl.a{color:var(--b)}
+#tl.e{color:var(--tg-theme-destructive-text-color);animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+svg{fill:none;stroke-linecap:round}
+.k{width:20px;height:20px;flex:none;stroke-width:3}
+#tl .k{width:16px;height:16px}
+#bd{position:relative;max-width:264px;margin:auto;aspect-ratio:1}
+#bd>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#gr{stroke:var(--h);stroke-width:3;opacity:.35}
+#g{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr)}
+#g button{padding:0;border-radius:16px;background:none;display:grid;place-items:center}
+#g svg{width:58%;height:58%;stroke-width:2.6}
+#g svg *,#wl{stroke-dasharray:1 2}
+.mx{stroke:var(--X)}.mo{stroke:var(--O)}
+.d *,#wl.d{animation:dr .3s ease-out backwards}
+.d :nth-child(2){animation-delay:.13s}
+#wl.d{animation-duration:.4s;animation-delay:.3s}
+@keyframes dr{from{stroke-dashoffset:1}}
+.gh{opacity:.3;animation:gh .7s infinite alternate}
+@keyframes gh{to{opacity:.1}}
+#wl{stroke-width:9;opacity:.85}
+#rm,#pb{display:block;width:100%;margin-top:12px;padding:10px;border-radius:12px;font:600 15px system-ui;animation:up .35s ease-out}
+#rm{background:var(--b);color:var(--tg-theme-button-text-color)}
+#pb{color:var(--b)}
+.f svg{opacity:.3;transition:opacity .5s .4s}
+#rm small{display:block;font-size:12px;font-weight:400;opacity:.8}
+@keyframes up{from{opacity:0;transform:translateY(8px)}}
+@media (max-width:300px){#sc{gap:4px}.pl{padding:7px 6px;gap:5px}#s{font-size:18px;letter-spacing:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div id="sc"><div id="px" class="pl"></div><b id="s"></b><div id="po" class="pl"></div></div>
+<div id="tl"></div>
+<div id="bd"><div id="g"></div><svg viewBox="0 0 300 300"><path id="gr" d="M100 8v284M200 8v284M8 100h284M8 200h284"/><line id="wl" pathLength="1"/></svg></div>
+<button id="rm" class="x">Rematch<small id="rs"></small></button>
+<button id="pb" class="x"></button>
+<script>
+let T=window.TelegramWidget||0,V=T.viewer,F=T.isForward,sh=!F&&(!T||V||T.isPreview),busy=0,gh=-1,gm,cur=[],cells=[],an=0,fm,fe,tm,LL,LW,B,
+L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],
+M={x:'<path pathLength="1" d="M6.5 6.5l11 11"/><path pathLength="1" d="M17.5 6.5l-11 11"/>',o:'<circle pathLength="1" cx="12" cy="12" r="6.5" transform="rotate(-90 12 12)"/>'},
+E={NOT_ALLOWED:'Moves are off here',BUSY:'Wait a moment',RATE_LIMITED:'Too fast, try again',TIMEOUT:"The bot didn't answer",FAILED:"Couldn't reach the bot",INVALID_ANSWER:'Bad answer from the bot',Taken:'That cell is taken',Full:'Two players are already in'};
+const $=i=>document.getElementById(i),
+J=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}},
+hp=(k,v)=>{try{T.HapticFeedback[k](v)}catch(e){}},
+cl=(i,c,on)=>(typeof i=="string"?$(i):i).classList.toggle(c,!!on),
+mk=(m,c)=>'<svg viewBox="0 0 24 24" class="m'+m+' '+c+'">'+M[m]+'</svg>',
+who=p=>p instanceof Array?p:p?[0,p]:null,
+G=()=>{let g=J(F?T.publicData:T.chatData,0)||!F&&J(T.publicData,0)||{};g.b=/^[-xo]{9}$/.test(g.b)?g.b:'---------';g.X=who(g.x);g.O=who(g.o);g.t=g.t=='o'?'o':'x';g.m=V&&g.X&&g.X[0]==V.id?'x':V&&g.O&&g.O[0]==V.id?'o':null;return g},
+fl=(s,i)=>{fm=s;fe=!i;clearTimeout(tm);tm=setTimeout(()=>{fm=0;draw()},2600);draw()};
+for(let i=0;i<9;i++)cells.push($('g').appendChild(document.createElement('button')));
+for(const k of'xo')$('p'+k).innerHTML=mk(k,'k')+'<span></span>';
+function draw(){
+let g=G(),w='xod'.includes(g.w)&&g.w||null,on=w||!F&&g.t,p={x:g.X,o:g.O},s=g.s||[],tl=$('tl'),t,a,k,l,
+nm=k=>k==g.m?'You':p[k]?p[k][1]:k.toUpperCase();
+for(k of'xo'){a=$('p'+k).lastChild;a.textContent=p[k]?nm(k):'Open';a.className=p[k]?'':'e';cl('p'+k,'on',on==k)}
+t=(s[0]|0)+' : '+(s[1]|0);a=$('s');if(an&&a.textContent!=t){a.className='bu';setTimeout(()=>$('s').className='',500)}a.textContent=t;
+l=w&&w!='d'&&(g.l instanceof Array&&g.l.length==3?g.l:L.find(l=>l.every(j=>g.b[j]==w)));
+cells.forEach((c,i)=>{k=gh==i&&g.b[i]=='-'?'g':g.b[i];if(cur[i]!=k){c.innerHTML=k=='-'?'':k=='g'?mk(gm,'gh'):mk(k,an?'d':'');cur[i]=k}cl(c,'f',l&&l.indexOf(i)<0)});
+cl('wl','x',!l);
+if(l&&LL!=l+''){a=$('wl');k=(j,y)=>(y?l[j]/3|0:l[j]%3)*100+50;let dx=k(2)-k(0),dy=k(2,1)-k(0,1),r=26/Math.hypot(dx,dy);
+a.setAttribute('x1',k(0)-dx*r);a.setAttribute('y1',k(0,1)-dy*r);a.setAttribute('x2',k(2)+dx*r);a.setAttribute('y2',k(2,1)+dy*r);a.setAttribute('class','m'+w+(an?' d':''))}
+LL=l?l+'':'';
+if(an&&w&&w!=LW&&g.m)hp('notificationOccurred',g.m==w?'success':'warning');LW=w;
+t=fm||(F?w=='d'?'Draw':w?nm(w)+' won':'Game in progress':w=='d'?"It's a draw":w?g.m==w?'You win!':nm(w)+' wins':!g.X?'Tap any cell to play':!p[g.t]?g.m||!V?'Waiting for an opponent':'Tap any cell to play':g.m==g.t?'Your turn':g.m?'Waiting for '+nm(g.t):nm(g.t)+"'s turn");
+tl.innerHTML=fm||w=='d'||!on?'':mk(on,'k');tl.append(t);
+tl.className=fm?fe?'e':'':!F&&(w?w==g.m:g.m==g.t)?'a':'';
+cl('rm','x',!w||!sh);
+$('rm').firstChild.textContent=busy&&w?'Starting…':'Rematch';
+k=w=='x'?'o':'x';$('rs').textContent=p[k]?k==g.m?'You start':p[k][1]+' starts':'';
+B=g.bot||J(T.publicData,{}).bot;
+cl('pb','x',!F||!/^\w{5,32}$/.test(B));$('pb').textContent='Play your own: @'+B;
+an=1}
+function req(d,i,m){let r;if(busy)return fl(E.BUSY);try{r=T.request(d)}catch(e){r=Promise.reject(e)}
+hp('impactOccurred','light');busy=1;gh=i;gm=m;draw();
+r.then(a=>{let j=J(a&&a.result,0)||{};if(j.err)throw{code:j.err};busy=0;draw();setTimeout(()=>{gh=-1;draw()},3e3)}).catch(e=>{busy=0;gh=-1;hp('notificationOccurred','error');fl(E[e.code]||e.code||E.FAILED)})}
+$('g').addEventListener('click',e=>{
+let i=cells.indexOf(e.target.closest('button')),g=G(),m=g.m||(g.X?'o':'x');
+if(i<0||!T||F)return;
+if(!V)return fl(E.NOT_ALLOWED);
+if(g.w)return fl('Tap Rematch to play again',1);
+if(g.b[i]!='-')return fl(E.Taken);
+if(!g.m&&g.X&&g.O)return fl(E.Full);
+if(g.X&&g.t!=m)return fl('Not your turn');
+req('ttt:'+i,i,m)});
+$('rm').addEventListener('click',()=>V&&req('ttt:new',-1));
+$('pb').addEventListener('click',()=>{try{T.openTelegramLink('https://t.me/'+B)}catch(e){}});
+if(T){T.onEvent('chatDataChanged',()=>{gh=-1;draw()});T.onEvent('publicDataChanged',draw)}
+draw();
+T.ready&&T.ready();
+</script>

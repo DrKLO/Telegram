@@ -52,7 +52,7 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.SpeedIconDrawable;
 
-public class ActionBarMenuSlider extends FrameLayout {
+public class ActionBarMenuSlider extends FrameLayout implements Theme.Colorable {
 
     private static final float BLUR_RADIUS = 8f;
 
@@ -146,7 +146,7 @@ public class ActionBarMenuSlider extends FrameLayout {
         AndroidUtilities.adjustBrightnessColorMatrix(colorMatrix, .1f);
         pseudoBlurPaint.setColorFilter(new ColorMatrixColorFilter(colorMatrix));
 
-        backgroundPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+        backgroundPaint.setColor(themeBackgroundColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
         backgroundDark = AndroidUtilities.computePerceivedBrightness(backgroundPaint.getColor()) <= 0.721f;
         leftTextDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
         rightTextDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
@@ -212,7 +212,39 @@ public class ActionBarMenuSlider extends FrameLayout {
         rightTextDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
     }
 
+    private int themeBackgroundColor;
+    private boolean customTextColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (backgroundPaint != null && backgroundPaint.getColor() == themeBackgroundColor) {
+                final int color = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
+                if (color != themeBackgroundColor) {
+                    themeBackgroundColor = color;
+                    backgroundPaint.setColor(color);
+                    backgroundDark = AndroidUtilities.computePerceivedBrightness(color) <= 0.721f;
+                    if (!customTextColor) {
+                        if (leftTextDrawable != null) {
+                            leftTextDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
+                        }
+                        if (rightTextDrawable != null) {
+                            rightTextDrawable.setTextColor(backgroundDark ? 0xffffffff : 0xff000000);
+                        }
+                    }
+                }
+            }
+            if (fillPaint != null) {
+                fillPaint.setColor(getColorValue(value));
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public void setTextColor(int color) {
+        customTextColor = true;
         leftTextDrawable.setTextColor(color);
         rightTextDrawable.setTextColor(color);
     }

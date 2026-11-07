@@ -25,6 +25,7 @@ import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxBase;
 import org.telegram.ui.Components.LayoutHelper;
@@ -71,7 +72,7 @@ public class PremiumTierCell extends ViewGroup {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setSingleLine();
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 0, 8, 0, 0));
@@ -85,20 +86,20 @@ public class PremiumTierCell extends ViewGroup {
 
         pricePerYearStrikeView = new TextView(context);
         pricePerYearStrikeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        pricePerYearStrikeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(pricePerYearStrikeView, Theme.key_windowBackgroundWhiteGrayText);
         pricePerYearStrikeView.getPaint().setStrikeThruText(true);
         pricePerYearStrikeView.setSingleLine();
         addView(pricePerYearStrikeView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 0, 0, 0, 8));
 
         pricePerYearView = new TextView(context);
         pricePerYearView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        pricePerYearView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(pricePerYearView, Theme.key_windowBackgroundWhiteGrayText);
         pricePerYearView.setSingleLine();
         addView(pricePerYearView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, 0, 0, 0, 8));
 
         pricePerMonthView = new TextView(context);
         pricePerMonthView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        pricePerMonthView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(pricePerMonthView, Theme.key_windowBackgroundWhiteGrayText);
         pricePerMonthView.setSingleLine();
         addView(pricePerMonthView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.END));
 

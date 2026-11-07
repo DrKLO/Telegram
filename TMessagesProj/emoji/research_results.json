@@ -1,0 +1,186 @@
+{
+  "stages": [
+    {
+      "name": "joint_quantization",
+      "gain_bytes": 61148,
+      "result_bytes": 3547064
+    },
+    {
+      "name": "fitted_parts_after_seam_gate",
+      "gain_bytes": 45869,
+      "result_bytes": 3501195
+    },
+    {
+      "name": "other_exact_splits",
+      "gain_bytes": 3225,
+      "result_bytes": 3497970
+    },
+    {
+      "name": "unused_roots",
+      "gain_bytes": 1568,
+      "result_bytes": 3496402
+    },
+    {
+      "name": "palette_deflate_without_dictionary",
+      "gain_bytes": 4064,
+      "result_bytes": 3492338
+    }
+  ],
+  "quantization": {
+    "groups_tested": 443,
+    "palette_sizes": [
+      32,
+      40,
+      48,
+      56,
+      64,
+      80,
+      96,
+      112,
+      128,
+      160,
+      192
+    ],
+    "dither_error_factors": [
+      0.8,
+      1.0
+    ],
+    "maps_selected_at_first_stage": 163,
+    "emoji_selected_at_first_stage": 579
+  },
+  "split_positions": [
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    40,
+    44,
+    48,
+    52,
+    56
+  ],
+  "mask_experiments": {
+    "merged_rgba_records_tested": 2161,
+    "positive_complete_mask_group_saving": 0,
+    "separated_rgba_best_net_saving": 2,
+    "adopted": false
+  },
+  "dictionary_experiments": [
+    {
+      "mode": "stream",
+      "dictionary_limit": 0,
+      "dictionary_bytes": 0,
+      "record_count": 0,
+      "net_saving_bytes": 0
+    },
+    {
+      "mode": "stream",
+      "dictionary_limit": 4096,
+      "dictionary_bytes": 4096,
+      "record_count": 66,
+      "net_saving_bytes": -3939
+    },
+    {
+      "mode": "stream",
+      "dictionary_limit": 16384,
+      "dictionary_bytes": 16384,
+      "record_count": 72,
+      "net_saving_bytes": -16132
+    },
+    {
+      "mode": "stream",
+      "dictionary_limit": 32768,
+      "dictionary_bytes": 32768,
+      "record_count": 59,
+      "net_saving_bytes": -32583
+    },
+    {
+      "mode": "all",
+      "dictionary_limit": 0,
+      "dictionary_bytes": 0,
+      "record_count": 0,
+      "net_saving_bytes": 0
+    },
+    {
+      "mode": "all",
+      "dictionary_limit": 4096,
+      "dictionary_bytes": 4096,
+      "record_count": 28,
+      "net_saving_bytes": -4070
+    },
+    {
+      "mode": "all",
+      "dictionary_limit": 16384,
+      "dictionary_bytes": 16384,
+      "record_count": 32,
+      "net_saving_bytes": -16278
+    },
+    {
+      "mode": "all",
+      "dictionary_limit": 32768,
+      "dictionary_bytes": 32768,
+      "record_count": 44,
+      "net_saving_bytes": -32633
+    },
+    {
+      "mode": "palette",
+      "dictionary_limit": 0,
+      "dictionary_bytes": 0,
+      "record_count": 145,
+      "net_saving_bytes": 3996
+    },
+    {
+      "mode": "palette",
+      "dictionary_limit": 4096,
+      "dictionary_bytes": 2192,
+      "record_count": 360,
+      "net_saving_bytes": 3351
+    },
+    {
+      "mode": "palette",
+      "dictionary_limit": 16384,
+      "dictionary_bytes": 2192,
+      "record_count": 360,
+      "net_saving_bytes": 3351
+    },
+    {
+      "mode": "palette",
+      "dictionary_limit": 32768,
+      "dictionary_bytes": 2192,
+      "record_count": 360,
+      "net_saving_bytes": 3351
+    }
+  ],
+  "seam_filter": {
+    "retained_records": 123,
+    "lost_gain_bytes": 950,
+    "affected_records": [
+      376,
+      441,
+      545,
+      825,
+      1743,
+      1817,
+      1825,
+      1840,
+      1866,
+      1872,
+      1894,
+      1922,
+      2556,
+      3276
+    ]
+  },
+  "verification": {
+    "alpha_exact": true,
+    "compared_with_both_prior_packs": true,
+    "all_emojis": 3606,
+    "changed_from_v2": 698
+  },
+  "rebuild_identical": true,
+  "sha256": "c4200fd8b0efbf2267297c084f23f8f490d03a1c55d76c87ea2f844328769652"
+}

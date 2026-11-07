@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!-- out-of-profile/chartjs-line.html without Chart.js (profile 1 bundles no library): two line datasets drawn with
+     canvas 2D — Bézier curves with Chart.js's tension 0.3 control points, the first one filled to the axis, point
+     markers, a legend at the bottom laid out with measureText, a ResizeObserver for the width, "index" mode
+     interaction (a tap, or the hover pointer, picks the nearest day and shows both values) and an Add point button
+     that appends a day and redraws (seeded values, so every run draws the same chart). -->
+<html><head><meta charset="utf-8">
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; } .wrap { position: relative; height: 220px; } canvas { display: block; touch-action: pan-y; } #readout { font-variant-numeric: tabular-nums; }</style>
+</head><body>
+<div class="wrap" id="wrap"><canvas id="c"></canvas></div>
+<p id="note" style="font-size:12px;color:#666;margin:6px 0 0">Tap the chart for the values of a day. <button id="add">Add point</button> <span id="n">7 points</span></p>
+<p id="readout" style="font-size:12px;color:#444;margin:4px 0 0;min-height:16px"></p>
+<script>
+  var labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  var sets = [
+    { label: 'Visits', data: [120, 190, 150, 220, 300, 260, 180], color: '#2481cc', fill: 'rgba(36,129,204,.15)' },
+    { label: 'Signups', data: [12, 25, 18, 30, 42, 35, 20], color: '#f59e0b', fill: null },
+  ];
+  var FONT = '12px system-ui, sans-serif', TENSION = 0.3;
+  var canvas = document.getElementById('c'), wrap = document.getElementById('wrap'), ctx = canvas.getContext('2d');
+  var cssW = 0, cssH = 220, active = -1, pinned = false, area = null;
+  var seed = 7;
+  function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+
+  // Chart.js splineCurve: control points from the neighbours, scaled by the distances and the tension.
+  function controls(pts) {
+    return pts.map(function (p, i) {
+      var a = pts[Math.max(0, i - 1)], c = pts[Math.min(pts.length - 1, i + 1)];
+      var d01 = Math.hypot(p[0] - a[0], p[1] - a[1]), d12 = Math.hypot(c[0] - p[0], c[1] - p[1]);
+      var s01 = d01 / (d01 + d12 || 1), s12 = d12 / (d01 + d12 || 1);
+      var fa = TENSION * s01, fb = TENSION * s12;
+      return { p: p, c1: [p[0] - fa * (c[0] - a[0]), p[1] - fa * (c[1] - a[1])], c2: [p[0] + fb * (c[0] - a[0]), p[1] + fb * (c[1] - a[1])] };
+    });
+  }
+  function trace(cp) {
+    ctx.moveTo(cp[0].p[0], cp[0].p[1]);
+    for (var i = 1; i < cp.length; i++) ctx.bezierCurveTo(cp[i - 1].c2[0], cp[i - 1].c2[1], cp[i].c1[0], cp[i].c1[1], cp[i].p[0], cp[i].p[1]);
+  }
+  function draw() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.font = FONT; ctx.textBaseline = 'middle';
+    var max = 0;
+    sets.forEach(function (s) { s.data.forEach(function (v) { max = Math.max(max, v); }); });
+    var stepV = max > 250 ? 50 : 25, top = Math.ceil(max / stepV) * stepV;
+    var yw = 0;
+    for (var v = 0; v <= top; v += stepV) yw = Math.max(yw, ctx.measureText(String(v)).width);
+    area = { l: Math.ceil(yw) + 10, r: cssW - 8, t: 8, b: cssH - 46 };
+    var x = function (i) { return area.l + (area.r - area.l) * i / (labels.length - 1); };
+    var y = function (val) { return area.b - (area.b - area.t) * val / top; };
+    ctx.textAlign = 'right';
+    for (v = 0; v <= top; v += stepV) {
+      ctx.fillStyle = 'rgba(0,0,0,.1)'; ctx.fillRect(area.l, Math.round(y(v)), area.r - area.l, 1);
+      ctx.fillStyle = '#666'; ctx.fillText(String(v), area.l - 6, y(v));
+    }
+    ctx.textAlign = 'center';
+    labels.forEach(function (name, i) { ctx.fillStyle = '#666'; ctx.fillText(name, x(i), area.b + 11); });
+    if (active >= 0) { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(x(active)), area.t, 1, area.b - area.t); }
+    sets.forEach(function (s) {
+      var cp = controls(s.data.map(function (val, i) { return [x(i), y(val)]; }));
+      if (s.fill) {
+        ctx.beginPath(); trace(cp); ctx.lineTo(x(labels.length - 1), area.b); ctx.lineTo(x(0), area.b); ctx.closePath();
+        ctx.fillStyle = s.fill; ctx.fill();
+      }
+      ctx.beginPath(); trace(cp); ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+      s.data.forEach(function (val, i) {
+        ctx.beginPath(); ctx.arc(x(i), y(val), i === active ? 5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = i === active ? s.color : '#fff'; ctx.fill(); ctx.lineWidth = 1.5; ctx.stroke();
+      });
+    });
+    // Legend centred at the bottom: a stroked box per dataset.
+    var items = sets.map(function (s) { return 12 + 6 + ctx.measureText(s.label).width; });
+    var lx = (cssW - items.reduce(function (a, b) { return a + b; }, 0) - 16 * (items.length - 1)) / 2;
+    sets.forEach(function (s, i) {
+      ctx.fillStyle = s.fill || '#fff'; ctx.fillRect(lx, cssH - 18, 12, 12);
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.strokeRect(lx + 1, cssH - 17, 10, 10);
+      ctx.fillStyle = '#666'; ctx.textAlign = 'left'; ctx.fillText(s.label, lx + 18, cssH - 12);
+      lx += items[i] + 16;
+    });
+    if (active >= 0) tooltip(x(active), y);
+  }
+  function tooltip(cx, y) {
+    var lines = sets.map(function (s) { return s.label + ': ' + s.data[active]; });
+    ctx.font = 'bold ' + FONT;
+    var w = ctx.measureText(labels[active]).width;
+    ctx.font = FONT;
+    lines.forEach(function (l) { w = Math.max(w, 16 + ctx.measureText(l).width); });
+    var bw = w + 16, bh = 12 + 16 * (lines.length + 1);
+    var bx = cx + 10 + bw > area.r ? cx - 10 - bw : cx + 10, by = Math.max(area.t, Math.min(area.b - bh, y(sets[0].data[active]) - bh / 2));
+    ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = 'bold ' + FONT; ctx.fillText(labels[active], bx + 8, by + 14);
+    ctx.font = FONT;
+    lines.forEach(function (l, i) {
+      ctx.fillStyle = sets[i].color; ctx.fillRect(bx + 8, by + 25 + 16 * i, 10, 10);
+      ctx.fillStyle = '#fff'; ctx.fillText(l, bx + 24, by + 30 + 16 * i);
+    });
+  }
+  function report() {
+    document.getElementById('readout').textContent = active < 0 ? '' : labels[active] + ' — ' + sets.map(function (s) { return s.label + ' ' + s.data[active]; }).join(' · ');
+    document.getElementById('n').textContent = labels.length + ' points';
+  }
+  function pick(e, tap) {
+    if (!area) return;
+    var r = canvas.getBoundingClientRect(), px = e.clientX - r.left;
+    var idx = Math.max(0, Math.min(labels.length - 1, Math.round((px - area.l) / (area.r - area.l) * (labels.length - 1))));
+    if (tap) pinned = true;
+    if (idx !== active) { active = idx; draw(); report(); }
+  }
+  canvas.addEventListener('click', function (e) { pick(e, true); });
+  // Hover with a mouse, scrub with a pressed finger (touch-action: pan-y leaves vertical swipes to the chat).
+  canvas.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' || e.buttons) pick(e, false); });
+  canvas.addEventListener('pointerleave', function (e) { if (!pinned && e.pointerType === 'mouse' && active >= 0) { active = -1; draw(); report(); } });
+  document.getElementById('add').addEventListener('click', function () {
+    labels.push('D' + (labels.length + 1));
+    sets.forEach(function (s, i) { s.data.push(Math.round(rnd() * (i ? 30 : 200) + (i ? 10 : 50))); });
+    draw(); report();
+  });
+  cssW = Math.round(wrap.getBoundingClientRect().width) || 360;
+  draw();
+  new ResizeObserver(function (entries) {
+    var w = Math.round(entries[0].contentRect.width);
+    if (w && w !== cssW) { cssW = w; draw(); }
+  }).observe(wrap);
+</script>
+</body></html>

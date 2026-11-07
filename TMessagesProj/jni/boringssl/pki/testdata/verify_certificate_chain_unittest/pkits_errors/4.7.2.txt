@@ -1,3 +1,0 @@
------ Certificate i=1 (CN=keyUsage Not Critical keyCertSign False CA,O=Test Certificates 2011,C=US) -----
-ERROR: keyCertSign bit is not set
-

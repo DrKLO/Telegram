@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -49,6 +50,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.TextCheckCell2;
@@ -74,7 +76,10 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.chat.layouts.ChatActivityFadeView;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.FilteredSearchView;
+import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.TopicsFragment;
 import org.telegram.ui.community.cells.CommunityPendingRequestCell;
@@ -87,7 +92,7 @@ import java.util.ArrayList;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
-public class CommunitySheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
+public class CommunitySheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target, DialogCell.DialogCellDelegate {
 
     private static final int ANIMATOR_ID_SEARCH_MESSAGES_VISIBLE = 1;
     private static final int ANIMATOR_ID_SEARCH_CHATS_VISIBLE = 2;
@@ -191,7 +196,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                AndroidUtilities.hideKeyboard(chatsSearchView.editText);
+                if (foundChatsView.scrollingByUser) {
+                    AndroidUtilities.hideKeyboard(chatsSearchView.editText);
+                }
             }
         });
         foundChatsView.setClipToPadding(false);
@@ -373,7 +380,7 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             items.add(UItem.asSpace(5, dp(14.33f)));
         }
 
-        CommunityUtils.fillLinkedPeers(currentAccount, items, communityId, true);
+        CommunityUtils.fillLinkedPeers(currentAccount, items, this, communityId, true);
     }
 
     private void fillItemsRequests(ArrayList<UItem> items, UniversalAdapter adapter) {
@@ -663,11 +670,11 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private void init(Context context) {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.updateInterfaces);
 
         backgroundPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
-        fixNavigationBar(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        fixNavigationBarKey(Theme.key_windowBackgroundGray);
 
         containerView = new ContainerView(context);
 
@@ -730,10 +737,10 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
 
             actionBar = new ActionBar(context, resourcesProvider);
             actionBar.setOccupyStatusBar(false);
-            actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, CommunitySheet.this.resourcesProvider, false);
             actionBar.setTitle(DialogObject.getName(currentCommunity));
             actionBar.getTitleTextView().setTranslationX(-dp(18));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -862,11 +869,11 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
 
             actionBar = new ActionBar(context, resourcesProvider);
             actionBar.setOccupyStatusBar(false);
-            actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);
             actionBar.setBackButtonImage(onlyChatsMode ? R.drawable.ic_ab_close : R.drawable.ic_ab_back);
-            actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
-            actionBar.setTitle(getString(R.string.CommunityAddAChatToCommunity));
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, CommunitySheet.this.resourcesProvider, false);
+            actionBar.setTitle(getString(R.string.CommunityAddAChatToCommunityHeader));
             actionBar.getTitleTextView().setTranslationX(-dp(18));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
@@ -943,10 +950,10 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
 
             actionBar = new ActionBar(context, resourcesProvider);
             actionBar.setOccupyStatusBar(false);
-            actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, CommunitySheet.this.resourcesProvider, false);
             actionBar.setTitle(getString(R.string.CommunityPendingRequestsTitle));
             actionBar.getTitleTextView().setTranslationX(-dp(18));
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -969,6 +976,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             buttonDeclineAllView.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_windowBackgroundWhiteBlackText), 0.125f));
             buttonDeclineAllView.setText(getString(R.string.CommunityPendingRequestDeclineAll));
             buttonDeclineAllView.setRound();
+            if (buttonDeclineAllView.getBackground() != null) {
+                ThemeBind.fillBackground(buttonDeclineAllView, buttonDeclineAllView.getBackground(), ThemeBind.blend(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhiteBlackText, 0.125f), resourcesProvider);
+            }
             buttonDeclineAllView.setOnClickListener(v -> pendingRequestsList.onResolveAllJoinRequests(false));
             buttonsLayout.addView(buttonDeclineAllView, LayoutHelper.createLinear(0, 48, 1f, Gravity.NO_GRAVITY, 4, 0, 4, 0));
 
@@ -1346,6 +1356,65 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             gradientProtectionDrawableBottom.setBounds(0, getHeight() - bottomHeight, getWidth(), getHeight());
             gradientProtectionDrawableBottom.setColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundGray), bottomAlpha));
             gradientProtectionDrawableBottom.draw(canvas);
+        }
+    }
+
+
+
+
+    @Override
+    public void onButtonClicked(DialogCell dialogCell) {
+        if (dialogCell.getMessage() != null) {
+            TLRPC.TL_forumTopic topic = MessagesController.getInstance(currentAccount).getTopicsController().findTopic(-dialogCell.getDialogId(), MessageObject.getTopicId(currentAccount, dialogCell.getMessage().messageOwner, true));
+            if (topic != null) {
+                ForumUtilities.openTopic(parentFragment, -dialogCell.getDialogId(), topic, 0);
+            }
+        }
+    }
+
+    @Override
+    public void onButtonLongPress(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public boolean canClickButtonInside() {
+        return true;
+    }
+
+    @Override
+    public void openStory(DialogCell dialogCell, Runnable onDone) {
+        if (MessagesController.getInstance(currentAccount).getStoriesController().hasStories(dialogCell.getDialogId())) {
+            parentFragment.getOrCreateStoryViewer().doOnAnimationReady(onDone);
+            parentFragment.getOrCreateStoryViewer().open(parentFragment.getContext(), dialogCell.getDialogId(), StoriesListPlaceProvider.of((RecyclerListView) dialogCell.getParent()));
+        }
+    }
+
+    @Override
+    public void showChatPreview(DialogCell dialogCell) {
+
+    }
+
+    @Override
+    public void openHiddenStories() {
+
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int gray = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
+            if (backgroundPaint.getColor() != gray) {
+                setBackgroundColor(gray);
+                backgroundPaint.setColor(gray);
+                // navigation bar: follows the theme through fixNavigationBarKey (BottomSheet)
+                if (containerView != null) {
+                    containerView.invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

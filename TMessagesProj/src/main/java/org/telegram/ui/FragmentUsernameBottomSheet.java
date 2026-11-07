@@ -32,6 +32,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_fragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
@@ -55,14 +56,14 @@ public class FragmentUsernameBottomSheet {
         Theme.ResourcesProvider resourcesProvider
     ) {
         BottomSheet sheet = new BottomSheet(context, false, resourcesProvider);
-        sheet.fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        sheet.fixNavigationBarKey(Theme.key_dialogBackground);
 
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(16), 0, dp(16), 0);
 
         FrameLayout imageContainerView = new FrameLayout(context);
-        imageContainerView.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        ThemeBind.fillBackground(imageContainerView, Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
         layout.addView(imageContainerView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
 
         RLottieImageView imageView = new RLottieImageView(context);
@@ -119,6 +120,7 @@ public class FragmentUsernameBottomSheet {
 
         final SpannableString tonIcon = new SpannableString("TON");
         ColoredImageSpan span = new ColoredImageSpan(R.drawable.mini_gram_16);
+        span.recolorDrawable = false;
         span.setWidth(dp(13));
         tonIcon.setSpan(span, 0, tonIcon.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         CharSequence messageSpanned = AndroidUtilities.replaceCharSequence("TON", AndroidUtilities.replaceTags(message), tonIcon);
@@ -126,14 +128,14 @@ public class FragmentUsernameBottomSheet {
         TextView headerView = new LinkSpanDrawable.LinksTextView(context);
         headerView.setTypeface(AndroidUtilities.bold());
         headerView.setGravity(Gravity.CENTER);
-        headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        headerView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider));
+        ThemeBind.textColor(headerView, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.linkTextColor(headerView, Theme.key_windowBackgroundWhiteBlueText2, resourcesProvider);
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         headerView.setText(titleSpanned);
         layout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 42, 0, 42, 0));
 
         FrameLayout chipLayout = new FrameLayout(context);
-        chipLayout.setBackground(Theme.createRoundRectDrawable(dp(28), dp(28), Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider)));
+        ThemeBind.fillBackground(chipLayout, Theme.createRoundRectDrawable(dp(28), dp(28), Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider)), ThemeBind.of(Theme.key_groupcreate_spanBackground), resourcesProvider);
 
         BackupImageView chipAvatar = new BackupImageView(context);
         chipAvatar.setRoundRadius(dp(28));
@@ -143,7 +145,7 @@ public class FragmentUsernameBottomSheet {
         chipLayout.addView(chipAvatar, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.TOP));
 
         TextView chipText = new TextView(context);
-        chipText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(chipText, Theme.key_dialogTextBlack, resourcesProvider);
         chipText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         chipText.setSingleLine();
         chipText.setText(Emoji.replaceEmoji(ownerName, chipText.getPaint().getFontMetricsInt(), false));
@@ -153,7 +155,7 @@ public class FragmentUsernameBottomSheet {
 
         TextView descriptionView = new TextView(context);
         descriptionView.setGravity(Gravity.CENTER);
-        descriptionView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(descriptionView, Theme.key_dialogTextBlack, resourcesProvider);
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         descriptionView.setText(messageSpanned);
         layout.addView(descriptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 19));

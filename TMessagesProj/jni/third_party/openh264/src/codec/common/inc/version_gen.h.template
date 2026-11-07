@@ -1,6 +1,0 @@
-#ifndef VERSION_GEN_H
-#define VERSION_GEN_H
-
-#define VERSION_NUMBER $FULL_VERSION
-
-#endif // VERSION_GEN_H

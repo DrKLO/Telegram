@@ -97,6 +97,10 @@ public class RadioButton extends View {
         return color;
     }
 
+    public int getCheckedColor() {
+        return checkedColor;
+    }
+
     public void setColor(int color1, int color2) {
         color = color1;
         checkedColor = color2;

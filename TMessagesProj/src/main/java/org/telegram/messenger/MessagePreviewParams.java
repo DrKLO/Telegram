@@ -13,6 +13,7 @@ import android.util.LongSparseArray;
 import android.util.SparseBooleanArray;
 
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.MessagePreviewView;
@@ -499,6 +500,17 @@ public class MessagePreviewParams {
             if (header != null) {
                 message.fwd_from = header;
                 message.flags |= TLRPC.MESSAGE_FLAG_FWD;
+            }
+
+            if (messageObject.isWelcomeAnchored()) {
+                message.id = messageObject.getEphemeralId();
+                if (message.fwd_from != null && message.fwd_from.from_id != null) {
+                    message.fwd_from.from_id = TLObject.deepCopy(messageObject.messageOwner.peer_id, TLRPC.Peer::TLdeserialize);
+                    final long dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.from_id);
+                    if (dialogId > 0) {
+                        message.via_bot_id = dialogId;
+                    }
+                }
             }
         }
 

@@ -105,6 +105,7 @@ absl::optional<H265SpsParser::ShortTermRefPicSet> H265SpsParser::ParseShortTermR
       // delta_idx_minus1: ue(v)
       RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&delta_idx_minus1));
     }
+    RETURN_EMPTY2_ON_FAIL(delta_idx_minus1 < st_rps_idx);
     // delta_rps_sign: u(1)
     uint32_t delta_rps_sign = 0;
     RETURN_EMPTY2_ON_FAIL(buffer->ReadBits(&delta_rps_sign, 1));
@@ -112,6 +113,7 @@ absl::optional<H265SpsParser::ShortTermRefPicSet> H265SpsParser::ParseShortTermR
     uint32_t abs_delta_rps_minus1 = 0;
     RETURN_EMPTY2_ON_FAIL(buffer->ReadExponentialGolomb(&abs_delta_rps_minus1));
     uint32_t ref_rps_idx = st_rps_idx - (delta_idx_minus1 + 1);
+    RETURN_EMPTY2_ON_FAIL(ref_rps_idx < short_term_ref_pic_set.size());
     uint32_t num_delta_pocs = 0;
     if (short_term_ref_pic_set[ref_rps_idx].inter_ref_pic_set_prediction_flag) {
       auto& used_by_curr_pic_flag = short_term_ref_pic_set[ref_rps_idx].used_by_curr_pic_flag;

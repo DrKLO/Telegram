@@ -8,8 +8,6 @@ import android.text.style.ReplacementSpan;
 
 import org.telegram.messenger.FileLog;
 
-import ru.noties.jlatexmath.JLatexMathDrawable;
-
 /**
  * Inline LaTeX span for the rich editor. It renders the equation as a baseline-aligned bitmap (the same way
  * {@code TL_iv.textMath} is drawn in messages) and carries the original {@code source} so the run can be
@@ -37,28 +35,9 @@ public class MathSpan extends ReplacementSpan {
     /** Builds a span for {@code source} rendered at {@code textSizePx}, or null if it can't be rendered. */
     public static MathSpan create(String source, int color, float textSizePx) {
         if (source == null || source.isEmpty()) return null;
-        try {
-            final JLatexMathDrawable drawable =
-                JLatexMathDrawable.builder(source)
-                    .textSize(textSizePx)
-                    .build();
-            final int w = drawable.getIntrinsicWidth();
-            final int h = drawable.getIntrinsicHeight();
-            if (w <= 0 || h <= 0) return null;
-            final Bitmap bm = Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8);
-            drawable.setBounds(0, 0, w, h);
-            drawable.draw(new Canvas(bm));
-            int depth = 0;
-            try {
-                depth = drawable.icon().getIconDepth();
-            } catch (Throwable t) {
-                FileLog.e(t);
-            }
-            return new MathSpan(source, bm, w, h, color, depth);
-        } catch (Exception e) {
-            FileLog.e(e);
-            return null;
-        }
+        final Latex r = Latex.render(source, textSizePx, true);
+        if (r == null) return null;
+        return new MathSpan(source, r.bitmap, r.width, r.height, color, r.depth);
     }
 
     @Override

@@ -1,0 +1,107 @@
+<!-- bot-demos/02, shared poll (tw-bot vote): the protocol is in README.md -->
+<meta name="tw-bot" content="vote">
+<style>
+:root{--h:var(--tg-theme-hint-color);--a:var(--tg-theme-button-color);--s:var(--tg-theme-secondary-bg-color)}
+body{margin:0;padding:12px 10px 10px}
+[hidden]{display:none!important}
+h1{font-size:17px;font-weight:600;line-height:1.3;margin:0 4px 3px}
+.sb{display:flex;align-items:center;gap:6px;margin:0 4px 8px;font-size:13px;color:var(--h)}
+#lv{display:flex;align-items:center;gap:5px;color:var(--tg-theme-accent-text-color);font-weight:500}
+#lv i{width:7px;height:7px;border-radius:50%;background:currentColor;animation:bl 1.6s ease-in-out infinite}
+@keyframes bl{50%{opacity:.25}}
+#os button{display:grid;grid-template-columns:52px 1fr auto;align-items:center;row-gap:6px;width:100%;margin:0;padding:8px 8px 10px 0;background:none;border-radius:12px;color:inherit;font:inherit;text-align:left;transition:opacity .3s,background .2s}
+#os button:active{background:var(--s)}
+.p{font-size:14px;font-weight:600;text-align:right;padding-right:10px;white-space:nowrap}
+.p,.c{font-variant-numeric:tabular-nums}
+.l{display:flex;align-items:center;gap:6px;min-width:0}
+.n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c{font-size:13px;color:var(--h);padding-left:8px}
+.b,.sk{grid-column:2/4;height:6px;border-radius:3px;background:var(--s)}
+.b i{display:block;height:100%;width:0;border-radius:3px;background:var(--a);transition:width .6s cubic-bezier(.3,.7,.2,1),opacity .3s}
+.v .b i{opacity:.35}
+.v .m .b i{opacity:1}
+.k{display:none;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:var(--a);place-items:center;flex:none}
+.m .k,.q .k{display:grid}
+.m .k{animation:pp .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pp{from{transform:scale(0)}}
+.k svg{width:10px;height:10px;fill:none;stroke:var(--tg-theme-button-text-color);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.q .k{background:none;border:2px solid var(--a);border-right-color:transparent;animation:sp .7s linear infinite}
+.q .k svg{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bz button:not(.q){opacity:.45}
+.sk{display:block;height:14px;margin:16px 30px 6px 52px;border-radius:7px;background:var(--h);opacity:.16;animation:sk 1s ease-in-out infinite alternate}
+@keyframes sk{to{opacity:.06}}
+#ms{margin:6px 4px 0;font-size:13px;color:var(--h)}
+#ms.er{color:var(--tg-theme-destructive-text-color)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<h1 id="q"></h1>
+<div class="sb"><span id="lv" hidden><i></i>Live</span><span id="tt"></span></div>
+<div id="os"></div>
+<div id="ms"></div>
+<script>
+const T=window.TelegramWidget,$=i=>document.getElementById(i),
+J=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}},
+H=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';'),
+R=matchMedia('(prefers-reduced-motion: reduce)').matches,
+ok=T&&!T.isPreview,lv=ok&&T.watchPublicData,
+hap=k=>{try{const h=T.HapticFeedback;k?h.notificationOccurred(k):h.impactOccurred('light')}catch(e){}},
+E={NOT_ALLOWED:T&&T.isForward?'Vote in the original':"Voting isn't available here",BUSY:'One vote at a time',RATE_LIMITED:'Too fast, try again in a moment',TIMEOUT:"The bot didn't answer, try again",FAILED:"Couldn't send your vote",INVALID_ANSWER:'Bad answer from the bot'};
+let P,my=-1,q=-1,msg='',bad=0,ko,rows=[],sh=[],tok=0;
+try{my=+(localStorage.getItem('my')??-1)}catch(e){}
+const load=()=>{const p=J(T&&T.publicData,{});if(!P||(p.r|0)>=(P.r|0))P=p};
+function pct(v,t){
+const p=v.map(x=>t?x*100/t:0),f=p.map(Math.floor);
+let r=t?100-f.reduce((a,b)=>a+b,0):0;
+p.map((x,i)=>[x-f[i],i]).sort((a,b)=>b[0]-a[0]).forEach(e=>{if(r-->0)f[e[1]]++});
+return f;
+}
+function tween(to){
+const f=!R&&sh.length==to.length?sh:to,t0=performance.now(),id=++tok,n=rows.length;
+(function s(){
+if(id!=tok)return;
+const k=Math.min(1,(performance.now()-t0)/600),e=1-(1-k)**3;
+sh=to.map((x,i)=>f[i]+(x-f[i])*e);
+const r=sh.map(Math.round),put=(el,v)=>{if(el.textContent!==(v+=''))el.textContent=v};
+rows.forEach((b,i)=>{put(b.children[0],r[i]+'%');put(b.children[2],r[n+i])});
+put($('tt'),(lv?'· ':'')+(n?r[2*n]+(r[2*n]==1?' vote':' votes'):'No results yet'));
+if(k<1)requestAnimationFrame(s);
+})();
+}
+function draw(){
+const o=Array.isArray(P.o)?P.o.slice(0,6):[],v=o.map((x,i)=>Math.max(0,+(P.v||[])[i]||0)),t=v.reduce((a,b)=>a+b,0),p=pct(v,t),k=JSON.stringify(o);
+$('q').textContent=P.q||'Poll';
+if(k!=ko){
+ko=k;sh=[];
+$('os').innerHTML=o.length?o.map(n=>'<button><span class="p"></span><span class="l"><span class="n">'+H(n)+'</span><span class="k"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span><span class="c"></span><i class="b"><i></i></i></button>').join(''):'<i class="sk"></i>'.repeat(3);
+rows=o.length?[...$('os').children]:[];
+rows.forEach((b,i)=>b.onclick=()=>vote(i));
+}
+$('os').className=(q<0?'':'bz')+(my>=0&&my<o.length?' v':'');
+rows.forEach((b,i)=>{b.className=(i==my?'m':'')+(i==q?' q':'');b.children[3].firstChild.style.width=p[i]+'%'});
+tween([...p,...v,t]);
+$('ms').textContent=msg||(!ok||!o.length?'':!T.viewer?(T.isForward?E.NOT_ALLOWED:''):my>=0?'Tap your vote again to take it back':'Tap an option to vote');
+$('ms').className=bad?'er':'';
+}
+const say=(t,e)=>{msg=t;bad=e};
+function vote(i){
+if(!ok||q>=0)return;
+hap();
+q=i;say('');draw();
+T.request('vote:'+i).then(a=>{
+const r=J(a.result,{});
+if(r.err){say(r.err,1);hap('error');return}
+if(Array.isArray(r.v)&&(r.r|0)>=(P.r|0)){P.v=r.v;P.r=r.r}
+if(r.my!=null){my=+r.my;try{localStorage.setItem('my',my)}catch(e){}}
+say(my<0?'Vote taken back':'');
+hap('success');
+},e=>{say(E[e.code]||E.FAILED,1);hap('error')}).finally(()=>{q=-1;draw()});
+}
+load();
+$('lv').hidden=!lv;
+draw();
+if(T){
+T.onEvent('publicDataChanged',()=>{load();draw()});
+if(lv)T.watchPublicData();
+}
+</script>

@@ -435,7 +435,7 @@ public class StarReactionsOverlay extends View {
             drawable.recycle(true);
         }
         final int asset = effectAssets[Utilities.fastRandom.nextInt(effectAssets.length)];
-        RLottieDrawable drawable = new RLottieDrawable(asset, "" + asset, dp(70), dp(70));
+        RLottieDrawable drawable = new RLottieDrawable(asset, dp(70), dp(70));
         drawable.setMasterParent(this);
         drawable.setAllowDecodeSingleFrame(true);
         drawable.setAutoRepeat(0);

@@ -1,0 +1,80 @@
+<!doctype html>
+<html data-test="auto/29-grid-svg-marks">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: a 3×3 board with SVG marks</title>
+<!-- conformance {"title":"A 3×3 board with SVG marks (a game board): nine <button>s in a grid on an aspect-ratio box, an SVG mark at 58 % put into a cell by innerHTML after load"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var u=document,m=u.documentElement,w=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(w?"sandbox":"native"),a=[],y={},l=[];var j,c,p,f,k,d,b,g,C=e=>typeof e=="string"?u.querySelector(e):e;var M=()=>{g=g||setTimeout(A,0)};function i(e,t,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),h=y[e+"|"+t]||(y[e+"|"+t]=a[a.length]=[e,t]);return h[2]=s,h[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function D(e,t,o,n){if(n&&n.sandboxOnly&&!w)return i(e,t,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(e,t,!1,"threw "+s,n)}return r==null?i(e,t,null,"not applicable",n):i(e,t,r instanceof Array?!!r[0]:!!r,r[1],n)}var O=(e,t,o,n,r)=>D(e,t,[o,n],r);function R(e){let t=C(e).getBoundingClientRect();return{x:t.left,y:t.top,w:t.width,h:t.height,r:t.right,b:t.bottom}}var B=e=>{l.push(e)};var E=()=>{},I=e=>{let t=e.getBoundingClientRect();return[t.left,t.top,t.width,t.height].map(o=>Math.round(o*10)/10)};function A(){g=0,p&&!f&&E();let e={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)e[n[2]]++;let t=p&&!l.length,o=f||t&&!e.pending?"done":t&&k?"awaiting":"running";f=o=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:S,status:o,n:e,checks:a,targets:j,stages:c})),x&&x(o,e)}var x;function T(){x=(e,t)=>{let o=[e];for(let n in t)t[n]&&o.push(n+" "+t[n]);u.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),t=>{c[t.getAttribute("data-stage")]=I(t)})),!l.length)return p=1,d&&b&&setTimeout(b,d),M();let e;try{e=l.shift()()}catch(t){i("harness","step",!1,t)}setTimeout(q,e||0)}function F(e){e=e||{},k=e.awaitInput,d=e.awaitInput||e.deadline,A();let t=()=>{t=()=>{},setTimeout(q,e.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>t()))}catch(o){}setTimeout(()=>t(),400)}T();return{ok:O,rect:R,run:F,step:B}}();</script><!-- /conformance:harness -->
+<style>
+svg{fill:none;stroke-linecap:round}
+#bd{position:relative;max-width:264px;margin:auto;aspect-ratio:1}
+#bd>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#gr{stroke:var(--tg-theme-hint-color);stroke-width:3;opacity:.35}
+#g{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr)}
+#g button{padding:0;border-radius:16px;background:none;display:grid;place-items:center}
+#g svg{width:58%;height:58%;stroke-width:2.6}
+#g svg *{stroke-dasharray:1 2}
+.mx{stroke:var(--tg-theme-button-color)}.mo{stroke:var(--tg-theme-destructive-text-color)}
+.d *{animation:dr .3s ease-out backwards}
+.d :nth-child(2){animation-delay:.13s}
+@keyframes dr{from{stroke-dashoffset:1}}
+.gh{opacity:.3;animation:gh .7s infinite alternate}
+@keyframes gh{to{opacity:.1}}
+</style>
+</head>
+<body>
+<div class="conf-head">29 · 3×3 board with SVG marks</div>
+<div class="conf-probes"><div id="bd"><div id="g"></div><svg viewBox="0 0 300 300"><path id="gr" d="M100 8v284M200 8v284M8 100h284M8 200h284"/></svg></div></div>
+<div id="conf-list"></div>
+<script>
+// A tic-tac-toe board (corpus/bot-demos/04-tic-tac-toe), built as it builds it: nine buttons appended to the grid, a
+// move first shows a faded ghost mark, then the mark that draws itself in (stroke-dashoffset). Seen on clients after
+// moves in cells 4 and 5 (0-based): marks at full cell size in the middle column at the top and the bottom, or the first
+// one in the wrong column.
+var M = { x: '<path pathLength="1" d="M6.5 6.5l11 11"/><path pathLength="1" d="M17.5 6.5l-11 11"/>', o: '<circle pathLength="1" cx="12" cy="12" r="6.5" transform="rotate(-90 12 12)"/>' };
+var mk = function (m, c) { return '<svg viewBox="0 0 24 24" class="m' + m + ' ' + c + '">' + M[m] + '</svg>'; };
+var R = T.rect, cells = [], B;
+for (var i = 0; i < 9; i++) cells.push(document.getElementById('g').appendChild(document.createElement('button')));
+var px = function (v) { return Math.round(v * 10) / 10; };
+// Cell i's third of the board as it was before any mark: [x, y, w, h] from the board's top left.
+var third = function (i) { var w = B.w / 3, h = B.h / 3; return [i % 3 * w, (i / 3 | 0) * h, w, h]; };
+function thirds(name) {
+  var bad = [];
+  cells.forEach(function (c, i) {
+    var r = R(c), t = third(i), g = [r.x - B.x, r.y - B.y, r.w, r.h];
+    if (g.some(function (v, k) { return Math.abs(v - t[k]) > 1; })) bad.push(i + ' at ' + g.map(px).join(','));
+  });
+  T.ok('css.display.grid', name, !bad.length, bad.length ? 'cells x,y,w,h: ' + bad.join('; ') + ' (a third is ' + px(B.w / 3) + ')' : '');
+}
+T.step(function () {
+  B = R('#bd');
+  var w = Math.min(264, R('.conf-probes').w);
+  T.ok('css.box.aspect-ratio', 'the board is square at its max-width (aspect-ratio: 1, max-width: 264px)', Math.abs(B.w - w) < 0.5 && Math.abs(B.h - w) < 0.5, px(B.w) + 'x' + px(B.h) + ', want ' + px(w));
+  thirds('nine buttons take equal thirds of the board (grid-template: repeat(3,1fr)/repeat(3,1fr))');
+  cells[4].innerHTML = mk('x', 'gh');
+  return 300;
+});
+T.step(function () { cells[4].innerHTML = mk('x', 'd'); return 500; });
+T.step(function () {
+  thirds('after a mark in cell 4: the cells keep equal thirds');
+  cells[5].innerHTML = mk('o', 'gh');
+  return 300;
+});
+T.step(function () { cells[5].innerHTML = mk('o', 'd'); return 600; });
+T.step(function () {
+  thirds('after marks in cells 4 and 5: the cells keep equal thirds');
+  var at = [], size = [];
+  [4, 5].forEach(function (i) {
+    var m = R(cells[i].firstChild), t = third(i), dx = m.x - B.x + m.w / 2 - t[0] - t[2] / 2, dy = m.y - B.y + m.h / 2 - t[1] - t[3] / 2;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) at.push(i + ': off its cell\'s centre by ' + px(dx) + ',' + px(dy));
+    if (Math.abs(m.w - 0.58 * t[2]) > 1 || Math.abs(m.h - 0.58 * t[3]) > 1) size.push(i + ': ' + px(m.w) + 'x' + px(m.h) + ', want ' + px(0.58 * t[2]));
+  });
+  T.ok('css.display.grid', 'each mark is centred in its own cell (place-items: center)', !at.length, at.join('; '));
+  T.ok('css.box.size', 'each mark is 58 % of its cell (width/height: 58% of the button)', !size.length, size.join('; '));
+});
+T.run();
+</script>
+</body>
+</html>

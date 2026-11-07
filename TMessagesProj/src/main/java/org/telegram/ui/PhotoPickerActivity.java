@@ -81,6 +81,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
@@ -101,6 +102,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.StickerEmptyView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -460,7 +462,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.closeChats);
         return super.onFragmentCreate();
     }
 
@@ -482,10 +484,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public View createView(Context context) {
         listSort = false;
 
-        actionBar.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
-        actionBar.setTitleColor(Theme.getColor(textKey));
-        actionBar.setItemsColor(Theme.getColor(textKey), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(selectorKey), false);
+        ThemeBind.backgroundColor(actionBar, dialogBackgroundKey);
+        ThemeBind.actionBarTitleColor(actionBar, textKey);
+        ThemeBind.actionBarItemsColor(actionBar, textKey, false);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, selectorKey, false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (selectedAlbum != null) {
             actionBar.setTitle(selectedAlbum.bucketName);
@@ -579,9 +581,9 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
             });
             EditTextBoldCursor editText = searchItem.getSearchField();
-            editText.setTextColor(Theme.getColor(textKey));
-            editText.setCursorColor(Theme.getColor(textKey));
-            editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+            ThemeBind.textColor(editText, textKey);
+            ThemeBind.cursorColor(editText, textKey);
+            ThemeBind.hintTextColor(editText, Theme.key_chat_messagePanelHint);
         }
 
         if (selectedAlbum == null) {
@@ -761,7 +763,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 super.requestLayout();
             }
         };
-        sizeNotifierFrameLayout.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
+        ThemeBind.backgroundColor(sizeNotifierFrameLayout, dialogBackgroundKey);
         fragmentView = sizeNotifierFrameLayout;
 
         listView = new RecyclerListView(context);
@@ -789,7 +791,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         });
         sizeNotifierFrameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
         listView.setAdapter(listAdapter = new ListAdapter(context));
-        listView.setGlowColor(Theme.getColor(dialogBackgroundKey));
+        ThemeBind.listGlowColor(listView, dialogBackgroundKey);
         listView.setOnItemClickListener((view, position) -> {
             if (selectedAlbum == null && searchResult.isEmpty()) {
                 if (position < recentSearches.size()) {
@@ -817,7 +819,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                        ThemeBind.textColor(button, Theme.key_text_RedBold);
                     }
                     return;
                 }
@@ -933,7 +935,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         emptyView.setAnimateLayoutChange(true);
         emptyView.title.setTypeface(Typeface.DEFAULT);
         emptyView.title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        emptyView.title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(emptyView.title, Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
         emptyView.addView(flickerView, 0);
         if (selectedAlbum != null) {
 //            emptyView.setShowAtCenter(false);
@@ -982,7 +984,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             sizeNotifierFrameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
 
             frameLayout2 = new FrameLayout(context);
-            frameLayout2.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
+            ThemeBind.backgroundColor(frameLayout2, dialogBackgroundKey);
             frameLayout2.setVisibility(View.INVISIBLE);
             frameLayout2.setTranslationY(AndroidUtilities.dp(48));
             sizeNotifierFrameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));
@@ -1053,7 +1055,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             writeButton.setBackgroundDrawable(writeButtonDrawable);
             writeButton.setImageResource(R.drawable.attach_send);
             writeButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            writeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogFloatingIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(writeButton, Theme.key_dialogFloatingIcon, PorterDuff.Mode.MULTIPLY);
             writeButton.setScaleType(ImageView.ScaleType.CENTER);
             if (Build.VERSION.SDK_INT >= 21) {
                 writeButton.setOutlineProvider(new ViewOutlineProvider() {
@@ -1883,8 +1885,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                     view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                     if (forceDarckTheme) {
                         TextCell textCell = (TextCell) view;
-                        textCell.textView.setTextColor(Theme.getColor(textKey));
-                        textCell.imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_voipgroup_mutedIcon), PorterDuff.Mode.MULTIPLY));
+                        ThemeBind.textColor(textCell.textView, textKey);
+                        ThemeBind.colorFilter(textCell.imageView, Theme.key_voipgroup_mutedIcon, PorterDuff.Mode.MULTIPLY);
                     }
                     break;
                 }
@@ -1982,12 +1984,10 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, textKey));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, selectorKey));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, textKey));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_chat_messagePanelHint));
         themeDescriptions.add(new ThemeDescription(searchItem != null ? searchItem.getSearchField() : null, ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, textKey));
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, dialogBackgroundKey));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{Theme.chat_attachEmptyDrawable}, null, Theme.key_chat_attachEmptyImage));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, Theme.key_chat_attachPhotoBackground));
 
         return themeDescriptions;
@@ -1996,5 +1996,12 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     @Override
     public boolean isLightStatusBar() {
         return AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f;
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_chat_attachEmptyImage);
     }
 }

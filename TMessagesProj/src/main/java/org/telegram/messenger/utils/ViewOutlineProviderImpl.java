@@ -1,9 +1,23 @@
 package org.telegram.messenger.utils;
 
+import android.graphics.Canvas;
 import android.graphics.Outline;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.Looper;
 import android.view.View;
 import android.view.ViewOutlineProvider;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
+
+
+import org.telegram.messenger.Utilities;
+
+import java.util.function.Supplier;
 
 public class ViewOutlineProviderImpl {
     public static final ViewOutlineProvider BOUNDS_OVAL = new ViewOutlineProvider() {
@@ -63,5 +77,120 @@ public class ViewOutlineProviderImpl {
                     view.getHeight() - padding, r);
             }
         };
+    }
+
+    @Nullable
+    public static ViewOutlineProvider boundsWithRound(int radius, boolean left, boolean top, boolean right, boolean bottom) {
+        if (!left && !right || !top && !bottom) {
+            return null;
+        }
+
+        return new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                final int w = view.getWidth();
+                final int h = view.getHeight();
+
+                outline.setRoundRect(
+                    - (left ? 0 : radius),
+                    - (top ? 0 : radius),
+                    w + (right ? 0 : radius),
+                    h + (bottom ? 0 : radius), radius);
+            }
+        };
+    }
+
+
+    private static Path drawClipPath;
+    private static Outline drawClipOutline;
+    private static Rect drawClipRect;
+
+    public static void drawViewWithOutline(Canvas canvas, View view, Utilities.Callback<Canvas> draw) {
+        if (canvas == null || view == null) {
+            return;
+        }
+
+        final ViewOutlineProvider outlineProvider = view.getOutlineProvider();
+        if (
+                canvas.isHardwareAccelerated() ||
+                        Build.VERSION.SDK_INT < Build.VERSION_CODES.N ||
+                        !view.getClipToOutline() ||
+                        outlineProvider == null
+        ) {
+            draw.run(canvas);
+            return;
+        }
+
+        final Path path;
+        final Outline outline;
+        final Rect rect;
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            if (drawClipPath == null) {
+                drawClipPath = new Path();
+                drawClipOutline = new Outline();
+                drawClipRect = new Rect();
+            }
+
+            path = drawClipPath;
+            outline = drawClipOutline;
+            rect = drawClipRect;
+
+            outline.setEmpty();
+            rect.setEmpty();
+        } else {
+            path = new Path();
+            outline = new Outline();
+            rect = new Rect();
+        }
+
+        outlineProvider.getOutline(view, outline);
+
+        if (!outlineToPath(outline, rect, path)) {
+            draw.run(canvas);
+            return;
+        }
+
+        final int saveCount = canvas.save();
+        canvas.clipPath(path);
+        draw.run(canvas);
+        canvas.restoreToCount(saveCount);
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private static boolean outlineToPath(
+            Outline outline,
+            Rect rect,
+            Path outPath
+    ) {
+        outPath.rewind();
+
+        if (outline.isEmpty() || !outline.getRect(rect)) {
+            return false;
+        }
+
+        final float radius = outline.getRadius();
+
+        if (radius > 0f) {
+            outPath.addRoundRect(
+                    rect.left,
+                    rect.top,
+                    rect.right,
+                    rect.bottom,
+                    radius,
+                    radius,
+                    Path.Direction.CW
+            );
+        } else {
+            outPath.addRect(
+                    rect.left,
+                    rect.top,
+                    rect.right,
+                    rect.bottom,
+                    Path.Direction.CW
+            );
+        }
+
+        return true;
     }
 }

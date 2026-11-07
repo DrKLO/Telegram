@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+@Deprecated
 public class RectFMergeBounding {
 
     private static final float EPS = 1e-4f;

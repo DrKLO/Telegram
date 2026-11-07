@@ -19,7 +19,25 @@ import androidx.dynamicanimation.animation.SpringForce;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
-public class OutlineTextContainerView extends FrameLayout {
+public class OutlineTextContainerView extends FrameLayout implements Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        try {
+            updateColor();
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhiteHintText);
+        colors.add(Theme.key_windowBackgroundWhiteValueText);
+        colors.add(Theme.key_text_RedBold);
+        colors.add(Theme.key_windowBackgroundWhiteInputField);
+        colors.add(Theme.key_windowBackgroundWhiteInputFieldActivated);
+    }
     private final static int PADDING_LEFT = 14, PADDING_TEXT = 4;
 
     private final static float SPRING_MULTIPLIER = 100;
@@ -128,6 +146,13 @@ public class OutlineTextContainerView extends FrameLayout {
         setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
     }
 
+    private void applyThemeColorsOnDraw() {
+        int textSelectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteValueText, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : titleProgress);
+        textPaint.setColor(ColorUtils.blendARGB(textSelectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
+        int selectionColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), forceUseCenter && !forceForceUseCenter ? 0f : selectionProgress);
+        outlinePaint.setColor(ColorUtils.blendARGB(selectionColor, Theme.getColor(Theme.key_text_RedBold, resourcesProvider), errorProgress));
+    }
+
     public void animateSelection(boolean selected) {
         animateSelection(selected ? 1f : 0f, selected ? 1f : 0f, true);
     }
@@ -192,6 +217,7 @@ public class OutlineTextContainerView extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        applyThemeColorsOnDraw();
 
         float textOffset = textPaint.getTextSize() / 2f - AndroidUtilities.dp(1.75f);
         float topY = getPaddingTop() + textOffset;

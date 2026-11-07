@@ -1,0 +1,7 @@
+<div class="widget">timer / rAF / promise driven links</div><script>
+setTimeout(function () { TelegramWidget.openLink('http://127.0.0.1:9999/hit/activation-timeout'); }, 0);
+setInterval(function () { TelegramWidget.sendMessage('activation-interval'); }, 700);
+requestAnimationFrame(function () { TelegramWidget.openLink('http://127.0.0.1:9999/hit/activation-raf'); });
+Promise.resolve().then(function () { window.open('http://127.0.0.1:9999/hit/activation-promise'); });
+queueMicrotask(function () { TelegramWidget.openLink('chat:send?text=activation-microtask'); });
+</script>

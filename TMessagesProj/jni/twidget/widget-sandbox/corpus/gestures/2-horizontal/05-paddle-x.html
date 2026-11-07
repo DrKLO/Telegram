@@ -1,0 +1,108 @@
+<!--
+  gestures: touch-action: pan-y on the playfield, so it claims horizontal drags only (corpus/gestures/README.md)
+  idea: Brick breaker on touch-action: pan-y. Slide your finger left and right anywhere on the field to move the paddle; tap to serve. A paddle only moves sideways, so the horizontal claim is all it needs: a drag that starts up or down scrolls the chat, and a still thumb opens the message menu.
+-->
+<title>Brick breaker</title>
+<style>
+  .ta { margin: 0 0 8px; font-size: 13px; color: var(--tg-theme-hint-color) }
+  #f { position: relative; height: 250px; margin: 0 8px; border-radius: 12px; background: var(--tg-theme-secondary-bg-color); overflow: hidden; touch-action: pan-y }
+  #f div { position: absolute }
+  .k { height: 12px; border-radius: 3px }
+  #pd { height: 8px; border-radius: 4px; background: var(--tg-theme-button-color) }
+  #bl { width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: var(--tg-theme-text-color) }
+  #msg { left: 0; right: 0; top: 150px; text-align: center; font-size: 13px; color: var(--tg-theme-hint-color); pointer-events: none }
+  .st { margin: 8px 0 0; font-size: 13px }
+</style>
+<p class="ta"><code>touch-action: pan-y</code> · slide sideways anywhere to move the paddle, tap to serve; up or down scrolls the chat</p>
+<div id="f"><div id="pd"></div><div id="bl"></div><div id="msg">Tap to serve</div></div>
+<p class="st">Bricks <b id="br">24</b> · lives <b id="lv">3</b> · presses taken by the chat: <b id="tk">0</b></p>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var f = $('f'), pd = $('pd'), bl = $('bl'), msg = $('msg');
+var COLS = 6, ROWS = 4, PW = 22, PY = 230, H = 250;
+var colors = ['#e53935', '#fb8c00', '#fdd835', '#43a047'];
+var bricks = [], paddle = 50, ball = null, lives = 3, took = 0, w = 280, press = null, last = 0;
+for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) {
+  var k = { x: 2 + c * 16.2, y: 14 + r * 18, el: document.createElement('div') };
+  k.el.className = 'k';
+  k.el.style.cssText = 'left:' + k.x + '%;top:' + k.y + 'px;width:15%;background:' + colors[r];
+  f.appendChild(k.el);
+  bricks.push(k);
+}
+function drawPaddle() { pd.style.left = paddle - PW / 2 + '%'; pd.style.width = PW + '%'; pd.style.top = PY + 'px'; }
+function rest() { ball = { x: paddle, y: PY - 6, vx: 0, vy: 0, live: false }; drawBall(); }
+function drawBall() { bl.style.left = ball.x + '%'; bl.style.top = ball.y + 'px'; }
+drawPaddle();
+rest();
+function serve() {
+  if (ball.live) return;
+  if (!lives || !bricks.some(function (k) { return k.el.parentNode; })) {
+    bricks.forEach(function (k) { if (!k.el.parentNode) f.appendChild(k.el); });
+    lives = 3;
+    $('lv').textContent = lives;
+    $('br').textContent = bricks.length;
+  }
+  ball.live = true;
+  ball.vx = 90;   // px per second
+  ball.vy = -170;
+  msg.textContent = '';
+  last = 0;
+  requestAnimationFrame(tick);
+}
+f.addEventListener('click', serve);
+f.addEventListener('pointerdown', function (e) {
+  w = f.clientWidth || w;
+  press = { id: e.pointerId, sx: e.clientX, p: paddle };
+  try { f.setPointerCapture(e.pointerId); } catch (_) {}
+});
+f.addEventListener('pointermove', function (e) {
+  if (!press || e.pointerId !== press.id) return;
+  paddle = Math.max(PW / 2, Math.min(100 - PW / 2, press.p + (e.clientX - press.sx) * 100 / w));
+  drawPaddle();
+  if (!ball.live) { ball.x = paddle; drawBall(); }
+});
+f.addEventListener('pointerup', function () { press = null; });
+f.addEventListener('pointercancel', function () {
+  if (!press) return;
+  press = null;
+  $('tk').textContent = ++took;
+});
+function tick(t) {
+  if (!ball.live) return;
+  var dt = last ? Math.min(t - last, 40) / 1000 : 0;
+  last = t;
+  var b = ball, px = b.x * w / 100;
+  px += b.vx * dt;
+  b.y += b.vy * dt;
+  if (px < 5) { px = 5; b.vx = Math.abs(b.vx); }
+  if (px > w - 5) { px = w - 5; b.vx = -Math.abs(b.vx); }
+  if (b.y < 5) { b.y = 5; b.vy = Math.abs(b.vy); }
+  b.x = px * 100 / w;
+  if (b.vy > 0 && b.y >= PY - 5 && b.y <= PY + 8 && Math.abs(b.x - paddle) <= PW / 2 + 2) {
+    // the further from the middle, the steeper the bounce
+    var off = (b.x - paddle) / (PW / 2);
+    b.vx = off * 160;
+    b.vy = -Math.sqrt(Math.max(193 * 193 - b.vx * b.vx, 100 * 100));
+  }
+  for (var i = 0; i < bricks.length; i++) {
+    var k = bricks[i];
+    if (!k.el.parentNode) continue;
+    if (b.x >= k.x - 1 && b.x <= k.x + 16 && b.y >= k.y - 5 && b.y <= k.y + 17) {
+      f.removeChild(k.el);
+      b.vy = -b.vy;
+      var left = bricks.filter(function (q) { return q.el.parentNode; }).length;
+      $('br').textContent = left;
+      if (!left) { b.live = false; msg.textContent = 'Cleared! Tap to play again'; return; }
+      break;
+    }
+  }
+  if (b.y > H) {
+    $('lv').textContent = --lives;
+    msg.textContent = lives ? 'Missed · tap to serve' : 'Game over · tap to play again';
+    rest();
+    return;
+  }
+  drawBall();
+  requestAnimationFrame(tick);
+}
+</script>

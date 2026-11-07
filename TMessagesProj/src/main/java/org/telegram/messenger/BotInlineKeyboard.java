@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_keyboard;
 
 import java.util.ArrayList;
 
@@ -35,9 +36,9 @@ public class BotInlineKeyboard {
     }
 
     public static class ButtonBot extends Button {
-        public final TLRPC.KeyboardButton button;
+        public final TL_keyboard.KeyboardInlineButton button;
 
-        public ButtonBot(TLRPC.KeyboardButton button) {
+        public ButtonBot(TL_keyboard.KeyboardInlineButton button) {
             this.button = button;
         }
 
@@ -144,7 +145,7 @@ public class BotInlineKeyboard {
 
         public void addBotKeyboard(TLRPC.TL_replyInlineMarkup replyInlineMarkup) {
             for (int a = 0; a < replyInlineMarkup.rows.size(); a++) {
-                ArrayList<TLRPC.KeyboardButton> row = replyInlineMarkup.rows.get(a).buttons;
+                ArrayList<TL_keyboard.KeyboardInlineButton> row = replyInlineMarkup.rows.get(a).buttons;
                 ButtonBot[] arr = new ButtonBot[row.size()];
                 for (int b = 0; b < row.size(); b++) {
                     arr[b] = new ButtonBot(row.get(b));

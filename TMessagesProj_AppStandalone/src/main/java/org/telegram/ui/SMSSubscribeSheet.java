@@ -95,7 +95,7 @@ public class SMSSubscribeSheet {
             }
         };
         layout.addView(new FeatureCell(context, R.drawable.menu_feature_sms,     getString(R.string.SmsSubscribeFeature1Title), formatPluralString("SmsSubscribeFeature1Message", isEligible == null ? 100 : isEligible.monthly_sent_sms), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 30, 16, 30, 0));
-        layout.addView(new FeatureCell(context, R.drawable.menu_feature_premium, getString(R.string.SmsSubscribeFeature2Title), AndroidUtilities.replaceSingleTag(getString(R.string.SmsSubscribeFeature2Message), openPremium), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 30, 16, 30, 0));
+        layout.addView(new FeatureCell(context, org.telegram.messenger.R.drawable.menu_feature_premium, getString(R.string.SmsSubscribeFeature2Title), AndroidUtilities.replaceSingleTag(getString(R.string.SmsSubscribeFeature2Message), openPremium), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 30, 16, 30, 0));
         layout.addView(new FeatureCell(context, R.drawable.menu_feature_gift,    getString(R.string.SmsSubscribeFeature3Title), getString(R.string.SmsSubscribeFeature3Message), resourcesProvider), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 30, 16, 30, 0));
 
         final Runnable openTOS = () -> {
@@ -147,7 +147,7 @@ public class SMSSubscribeSheet {
                     new AlertDialog.Builder(context, resourcesProvider)
                         .setTitle(LocaleController.getString(R.string.SmsNoSimTitle))
                         .setMessage(AndroidUtilities.replaceTags(LocaleController.getString(R.string.SmsNoSimMessage)))
-                        .setPositiveButton(LocaleController.getString(R.string.OK), null)
+                        .setPositiveButton(LocaleController.getString(org.telegram.messenger.R.string.OK), null)
                         .show();
                     return;
                 }
@@ -158,7 +158,7 @@ public class SMSSubscribeSheet {
                         BulletinFactory.showError(err);
                     } else if (res instanceof TLRPC.TL_boolFalse) {
                         button.setLoading(false);
-                        BulletinFactory.global().createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
+                        BulletinFactory.global().createErrorBulletin(LocaleController.getString(org.telegram.messenger.R.string.UnknownError)).show();
                     } else {
                         SMSJobController.getInstance(currentAccount).setState(SMSJobController.STATE_JOINED);
                         sheet.dismiss();
@@ -231,7 +231,7 @@ public class SMSSubscribeSheet {
         layout.setOrientation(LinearLayout.VERTICAL);
 
         RLottieImageView imageView = new RLottieImageView(context);
-        imageView.setAnimation(R.raw.giveaway_results, 120, 120);
+        imageView.setAnimation(org.telegram.messenger.R.raw.giveaway_results, 120, 120);
         imageView.getAnimatedDrawable().multiplySpeed(1.8f);
         imageView.playAnimation();
         layout.addView(imageView, LayoutHelper.createLinear(120, 120, Gravity.CENTER_HORIZONTAL, 0, 24, 0, 12));
@@ -287,7 +287,7 @@ public class SMSSubscribeSheet {
         layout.addView(linkTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 30, 0, 30, 24));
 
         ButtonWithCounterView button = new ButtonWithCounterView(context, resourcesProvider);
-        button.setText(getString(R.string.OK), false);
+        button.setText(getString(org.telegram.messenger.R.string.OK), false);
         layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 14, 0, 14, 0));
         button.setOnClickListener(v -> {
             sheet.dismiss();
@@ -336,13 +336,13 @@ public class SMSSubscribeSheet {
                 }
                 new AlertDialog.Builder(activity)
                     .setMessage(AndroidUtilities.replaceTags(getString(messageResId)))
-                    .setPositiveButton(LocaleController.getString(R.string.Settings), (dialog, which) -> {
+                    .setPositiveButton(LocaleController.getString(org.telegram.messenger.R.string.Settings), (dialog, which) -> {
                         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
                         Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
                         intent.setData(uri);
                         activity.startActivity(intent);
                     })
-                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                    .setNegativeButton(LocaleController.getString(org.telegram.messenger.R.string.Cancel), null)
                     .setOnDismissListener(dialog -> {
 
                     })
@@ -351,7 +351,7 @@ public class SMSSubscribeSheet {
             } else {
                 new AlertDialog.Builder(activity)
                     .setMessage(AndroidUtilities.replaceTags(getString(R.string.SmsPermissionText)))
-                    .setPositiveButton(LocaleController.getString(R.string.Next), (dialog, which) -> {
+                    .setPositiveButton(LocaleController.getString(org.telegram.messenger.R.string.Next), (dialog, which) -> {
                         final int requestCode = (int) (1000 + Math.abs(Math.random() * (Integer.MAX_VALUE - 1000)));
                         permissionsCallbacks.put(requestCode, success -> {
                             if (!success) {
@@ -362,7 +362,7 @@ public class SMSSubscribeSheet {
                         });
                         activity.requestPermissions(new String[] { Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_PHONE_NUMBERS }, requestCode);
                     })
-                    .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+                    .setNegativeButton(LocaleController.getString(org.telegram.messenger.R.string.Cancel), null)
                     .setOnDismissListener(dialog -> {
 
                     })

@@ -71,7 +71,7 @@ public class GradientTools {
                 if (gradientBitmap == null) {
                     gradientBitmap = Bitmap.createBitmap(INTERNAL_WIDTH, INTERNAL_HEIGHT, Bitmap.Config.ARGB_8888);
                 }
-                Utilities.generateGradient(gradientBitmap, true, 0, 0, gradientBitmap.getWidth(), gradientBitmap.getHeight(), gradientBitmap.getRowBytes(), colors);
+                Utilities.generateGradient(gradientBitmap, 0, 0, colors);
                 paint.setShader(shader = new BitmapShader(gradientBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
             }
         }

@@ -1,0 +1,107 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: an order on its way — the status steps complete one after another (check marks drawn with stroke-dashoffset), the courier's "stops away" count ticks down, items collapse, then a star rating appears
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --green: #34c759; --orange: #ff9500; --blue: #007aff; --yellow: #ffcc00;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; }
+  .top { padding: 16px 18px 14px; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #ff6b6b, #ffa94d); display: grid; place-items: center; font-size: 22px; flex-shrink: 0; }
+  .top h3 { margin: 0; font-size: 16px; } .top .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .status { margin-left: auto; text-align: right; } .status b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; transition: color .4s; } .status span { font-size: 11px; color: var(--muted); }
+  .steps { padding: 4px 18px 10px; }
+  .step { display: flex; align-items: flex-start; gap: 12px; padding: 7px 0; position: relative; }
+  .step + .step::before { content: ''; position: absolute; left: 11px; top: -12px; height: 18px; width: 2px; background: var(--border); }
+  .step.done + .step::before { background: var(--green); }
+  .step .ck { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); box-sizing: border-box; flex-shrink: 0; display: grid; place-items: center; transition: border-color .3s, background .3s; }
+  .step .ck svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; }
+  .step.done .ck { background: var(--green); border-color: var(--green); } .step.done .ck svg { animation: draw .4s .1s forwards; }
+  .step.cur .ck { border-color: var(--orange); } .step.cur .ck::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: beat 1.2s ease-in-out infinite; }
+  @keyframes beat { 50% { transform: scale(.6); opacity: .6; } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .step .t { font-weight: 600; transition: color .3s; } .step .m { font-size: 12px; color: var(--muted); } .step:not(.done):not(.cur) .t { color: var(--muted); }
+  .step .when { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .items { margin: 4px 18px 0; border-top: 1px solid var(--border); }
+  .items .hd { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; cursor: pointer; font-weight: 600; font-size: 13px; }
+  .items .hd svg { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 2; transition: transform .3s; } .items.open .hd svg { transform: rotate(180deg); }
+  .items .list { max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1); } .items.open .list { max-height: 200px; }
+  .it { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; } .it span:first-child { color: var(--muted); } .it b { font-variant-numeric: tabular-nums; }
+  .it.tot { border-top: 1px dashed var(--border); margin-top: 4px; padding-top: 8px; padding-bottom: 12px; } .it.tot span:first-child { color: var(--fg); font-weight: 700; }
+  .rate { padding: 14px 18px 16px; border-top: 1px solid var(--border); display: none; animation: up .5s cubic-bezier(.22,1,.36,1); }
+  .rate.show { display: block; } @keyframes up { from { opacity: 0; transform: translateY(10px); } }
+  .rate .q { font-weight: 700; margin-bottom: 8px; }
+  .stars { display: flex; gap: 6px; } .stars svg { width: 32px; height: 32px; fill: var(--card2); stroke: var(--border); stroke-width: 1; cursor: pointer; transition: fill .2s, transform .2s; }
+  .stars svg.on { fill: var(--yellow); stroke: #e0b400; } .stars svg:hover { transform: scale(1.1); } .stars svg.bump { animation: pop .4s; }
+  @keyframes pop { 40% { transform: scale(1.35) rotate(-8deg); } }
+  .thanks { font-size: 12px; color: var(--muted); margin-top: 8px; min-height: 16px; }
+  .foot { padding: 0 18px 16px; display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 11px; border-radius: 12px; border: 0; font: inherit; font-weight: 700; background: var(--card2); color: var(--fg); cursor: pointer; transition: transform .15s; } .btn:active { transform: scale(.97); }
+</style>
+<div class="card">
+  <div class="top"><div class="logo">🍜</div><div><h3>Order #4821 · Noodle House</h3><div class="sub">Pad see ew ×2, Tom kha, Thai iced tea</div></div><div class="status"><b id="eta">18 min</b><span id="etaSub">estimated</span></div></div>
+  <div class="steps" id="steps">
+    <div class="step done"><div class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="t">Order confirmed</div><div class="m">Paid with Apple Pay · €31.40</div></div><span class="when">12:41</span></div>
+    <div class="step cur"><div class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="t">Being prepared</div><div class="m">Kitchen is a little busy today</div></div><span class="when">12:43</span></div>
+    <div class="step"><div class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="t">Picked up by courier</div><div class="m" id="courier">Nino is on a bike</div></div><span class="when"></span></div>
+    <div class="step"><div class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><div><div class="t">Delivered</div><div class="m">Leave at the door, flat 12</div></div><span class="when"></span></div>
+  </div>
+  <div class="items" id="items">
+    <div class="hd" role="button"><span>Receipt · 4 items</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+    <div class="list">
+      <div class="it"><span>2 × Pad see ew</span><b>€19.80</b></div><div class="it"><span>Tom kha gai</span><b>€7.90</b></div><div class="it"><span>Thai iced tea</span><b>€3.70</b></div><div class="it"><span>Delivery</span><b>€0.00</b></div>
+      <div class="it tot"><span>Total</span><b>€31.40</b></div>
+    </div>
+  </div>
+  <div class="rate" id="rate"><div class="q">How was Noodle House?</div><div class="stars" id="stars"></div><div class="thanks" id="thanks"></div></div>
+  <div class="foot"><button class="btn" id="help">Help with order</button><button class="btn" id="again">Order again</button></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. The rating is local state (localStorage: the client keeps it per message, so it is
+  // still there when the widget is re-created); help and reorder are links. window.TelegramWidget is absent when
+  // the dev app renders the file natively (reference mode).
+  const tw = window.TelegramWidget, KEY = 'order-4821';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const saved = store.get(KEY, {});
+  const steps = [...document.querySelectorAll('.step')], eta = document.getElementById('eta'), etaSub = document.getElementById('etaSub'), courier = document.getElementById('courier');
+  const whens = steps.map(s => s.querySelector('.when'));
+  // Demo timeline (real seconds): prepared → picked up at 4 s, "stops away" counts down, delivered at 26 s.
+  let minutes = 18, stops = 4, delivered = false, t = 0;
+  const clock = m => '12:' + String(43 + m).padStart(2, '0');
+  function advance(n, when) { steps.forEach((s, i) => { s.classList.toggle('done', i < n); s.classList.toggle('cur', i === n); }); if (when) whens[n - 1].textContent = when; }
+  function deliver() {
+    delivered = true; clearInterval(t); whens[1].textContent = clock(2); advance(4, clock(16)); steps[3].classList.add('done'); steps[3].classList.remove('cur');
+    eta.textContent = 'Delivered'; eta.style.color = 'var(--green)'; etaSub.textContent = '12:59 · 17 min';
+    document.getElementById('rate').classList.add('show');
+  }
+  document.getElementById('items').addEventListener('click', e => { if (e.target.closest('.hd')) e.currentTarget.classList.toggle('open'); });
+  const stars = document.getElementById('stars'), thanks = document.getElementById('thanks');
+  stars.innerHTML = Array.from({ length: 5 }, (_, i) => '<svg viewBox="0 0 24 24" data-i="' + (i + 1) + '" role="button"><path d="M12 2.5l2.9 6.2 6.7.8-5 4.6 1.4 6.7L12 17.4l-6 3.4 1.4-6.7-5-4.6 6.7-.8z"/></svg>').join('');
+  const WORDS = ['', 'Oh no. Sorry about that.', 'Could be better — noted.', 'Fair enough.', 'Great, thanks!', 'Perfect — the kitchen will love this.'];
+  function rate(n, bump) {
+    [...stars.children].forEach((x, i) => { x.classList.toggle('on', i < n); x.classList.remove('bump'); if (bump && i < n) { void x.offsetWidth; x.style.animationDelay = (i * 50) + 'ms'; x.classList.add('bump'); } });
+    thanks.textContent = WORDS[n] + ' · your rating is saved';
+  }
+  stars.addEventListener('click', e => {
+    const s = e.target.closest('svg'); if (!s) return; const n = Number(s.dataset.i);
+    rate(n, true); store.set(KEY, { rating: n });
+  });
+  if (saved.rating) { deliver(); rate(saved.rating, false); } // rated before: the order is long delivered
+  else {
+    setTimeout(() => { advance(2, clock(2)); courier.textContent = 'Nino is on a bike · ' + stops + ' stops away'; }, 4000);
+    t = setInterval(() => {
+      if (delivered) return;
+      minutes = Math.max(1, minutes - 1);
+      eta.textContent = minutes + ' min';
+      if (steps[2].classList.contains('cur') && minutes % 3 === 0 && stops > 0) { stops--; courier.textContent = stops ? 'Nino is on a bike · ' + stops + ' stop' + (stops > 1 ? 's' : '') + ' away' : 'Nino is at your door'; }
+      if (minutes <= 2) eta.style.color = 'var(--green)';
+    }, 1200);
+    setTimeout(deliver, 26000);
+  }
+  // Links open in the client after the user confirms (one per tap, from the tap's own handler).
+  document.getElementById('help').addEventListener('click', () => tw?.openLink('https://noodlehouse.example.com/orders/4821/help'));
+  document.getElementById('again').addEventListener('click', () => tw?.openLink('https://noodlehouse.example.com/orders/4821/reorder'));
+</script>

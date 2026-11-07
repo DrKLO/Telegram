@@ -67,7 +67,7 @@ public abstract class RichBlockCell extends FrameLayout implements RichInsetCell
     /**
      * Extra horizontal margin a cell needs on BOTH sides when it's nested in a quote/list. Edge-to-edge cells
      * (media, map — base padding 0, drawn full width) return the page margin here so their content lines up with
-     * text cells (which already carry a {@code dp(16)} base margin) inside the quote background. 0 at top level.
+     * text cells (which already carry a {@code dp(16)} base margin plus their 2dp text inset) inside the quote background. 0 at top level.
      */
     protected int nestedContentMargin() {
         return 0;

@@ -76,8 +76,8 @@ public interface INavigationLayout {
     void startActivityForResult(Intent intent, int requestCode);
 
     // TODO: Migrate them to be out of navigation layout
-    Theme.MessageDrawable getMessageDrawableOutStart();
-    Theme.MessageDrawable getMessageDrawableOutMediaStart();
+    MessageDrawable getMessageDrawableOutStart();
+    MessageDrawable getMessageDrawableOutMediaStart();
 
     // TODO: Make something like FieldsContainer and put them there?
     List<BackButtonMenu.PulledDialog> getPulledDialogs();
@@ -160,7 +160,7 @@ public interface INavigationLayout {
         if (getFragmentStack().isEmpty()) return null;
         for (int i = getFragmentStack().size() - 1; i >= 0; --i) {
             BaseFragment fragment = getFragmentStack().get(i);
-            if (fragment == null || fragment.isFinishing() || fragment.isRemovingFromStack())
+            if (fragment == null || fragment.getContext() == null || fragment.isFinishing() || fragment.isRemovingFromStack())
                 continue;
             return fragment;
         }

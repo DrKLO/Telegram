@@ -44,8 +44,8 @@
 #include "rtc_base/time_utils.h"
 #include "rtc_base/trace_event.h"
 #include "third_party/libyuv/include/libyuv/convert.h"
-#include <libvpx/vp8cx.h>
-#include <libvpx/vpx_encoder.h>
+#include <vpx/vp8cx.h>
+#include <vpx/vpx_encoder.h>
 
 #if (defined(WEBRTC_ARCH_ARM) || defined(WEBRTC_ARCH_ARM64)) && \
     (defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS))

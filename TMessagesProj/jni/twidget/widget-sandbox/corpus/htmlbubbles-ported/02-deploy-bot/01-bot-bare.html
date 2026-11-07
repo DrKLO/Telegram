@@ -1,0 +1,446 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 02-deploy-bot.chat, message 1
+  author: bot 10:02 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --green: #34c759; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  /* kit rules this message uses */
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; }
+  .t-green { color: var(--green); } .t-orange { color: var(--orange); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; }
+  ul { margin: 4px 0 8px 0; padding-left: 22px; } li { margin: 2px 0; }
+  svg { vertical-align: middle; }
+  .b, a { cursor: pointer; } .b.off { cursor: default; }
+
+  .bld { width: 390px; max-width: 100%; }
+  .bld .hd { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(127,127,127,0.2); }
+  .bld .hd .hic svg { display: none; margin-right: 10px; }
+  .bld[data-state="passed"] .i-ok, .bld[data-state="live"] .i-ok, .bld[data-state="deploying"] .i-dep,
+  .bld[data-state="rolling"] .i-roll, .bld[data-state="rolledback"] .i-back { display: inline; }
+  .bld .st { padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+  .bld .bd { padding: 8px 14px 0 14px; font-size: 13px; }
+  .bld .k { width: 64px; padding: 2px 0; color: #8e8e93; }
+  .bld .steps { margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(127,127,127,0.35); }
+  .bld .sr { display: flex; align-items: center; height: 21px; }
+  .bld .ic { display: inline-block; width: 20px; height: 16px; }
+  .bld .sr .chk { display: none; } .bld .sr.on .chk { display: inline; } .bld .sr.on .cir { display: none; }
+  .bld .cap { margin-top: 8px; font-size: 11px; color: #8e8e93; }
+  .bld .job { margin: 8px 14px 0 14px; padding: 10px 12px; border-radius: 10px; background-color: rgba(127,127,127,0.10); font-size: 12.5px; }
+  .bld .prog { height: 8px; margin: 6px 0 8px 0; border-radius: 4px; background-color: rgba(127,127,127,0.22); }
+  .bld .prog div { height: 8px; border-radius: 4px; }
+  .bld .pods { display: flex; margin-bottom: 6px; }
+  .bld .pod { width: 27px; height: 10px; margin-right: 4px; border-radius: 3px; }
+  .bld .js { display: flex; align-items: center; height: 20px; }
+  .bld .spin { display: inline-block; width: 13px; height: 13px; border-radius: 7px; vertical-align: middle; }
+  .bld .logbar { display: flex; justify-content: space-between; margin: 10px 14px 4px 14px; font-size: 12px; }
+  .bld .log { margin: 0 14px; padding: 8px 10px; height: 150px; overflow: hidden; border-radius: 10px; background-color: #1e1e2e; color: #cdd6f4; font-family: ui-monospace, monospace; font-size: 11px; line-height: 15px; }
+  .bld .log div { white-space: nowrap; overflow: hidden; }
+  .bld .win { margin: 8px 14px 0 14px; padding: 12px; border-radius: 12px; text-align: center; color: #ffffff; }
+  .bld .win a { color: #ffffff; text-decoration: underline; }
+  .bld .stats { display: flex; justify-content: space-around; margin-top: 8px; }
+  .bld .stats b { font-size: 17px; }
+  .bld .acts { display: flex; padding: 10px 14px 12px 14px; }
+  .bld .b { flex-grow: 1; margin-right: 6px; padding: 7px 0; border-radius: 8px; text-align: center; font-weight: 600; }
+  .bld .b.last { margin-right: 0; }
+  .bld .go { color: #ffffff; background: linear-gradient(180deg, #3ad16a, #248a3d); }
+  .bld .go:hover { background: linear-gradient(180deg, #32c060, #1d7533); }
+  .bld .lg { background-color: rgba(127,127,127,0.14); }
+  .bld .lg:hover { background-color: rgba(127,127,127,0.26); }
+  .bld .lg.on { background-color: rgba(88,86,214,0.18); color: #5856d6; }
+  @media (prefers-color-scheme: dark) { .bld .lg.on { color: #9d9bff; } }
+  .bld .rb { color: #ff3b30; background-color: rgba(255,59,48,0.10); }
+  .bld .rb:hover { background-color: rgba(255,59,48,0.22); }
+  .bld .off { color: #8e8e93; background-color: rgba(127,127,127,0.08); }
+  .bld .warn { margin: 12px 14px 0 14px; padding: 12px 14px; border-radius: 12px; border: 2px dashed #ff9500; background-color: rgba(255,149,0,0.08); }
+  .bld .warn ul { margin: 0 0 10px 0; padding-left: 18px; font-size: 12px; }
+  .bld .yes { color: #ffffff; background-color: #ff3b30; }
+  .bld .yes:hover { background-color: #d92c22; }
+
+  /* animations that replace the per-frame render() of the original */
+  .bld .job.promote { --jc: #5856d6; --jc2: #7a78e8; --jc0: rgba(88,86,214,0); }
+  .bld .job.rollback { --jc: #ff9500; --jc2: #ffb340; --jc0: rgba(255,149,0,0); }
+  /* striped bar: offset (now/25) % 14 px → 14 px every 350 ms */
+  @keyframes stripes { from { background-position: 0 0; } to { background-position: 14px 0; } }
+  .bld .prog div { background-image: linear-gradient(45deg, var(--jc) 25%, var(--jc2) 25%, var(--jc2) 50%, var(--jc) 50%, var(--jc) 75%, var(--jc2) 75%); background-size: 14px 14px; animation: stripes 350ms linear infinite; }
+  /* pods: 0 idle, 1 updating (glow = sin(now/90), mix with #c9c8ff at 0.6), 2 green, 3 orange */
+  @keyframes podglow { from { background-color: #5856d6; } to { background-color: rgb(156,154,239); } }
+  .bld .pod { background-color: rgba(142,142,147,0.35); }
+  .bld .pod.p1 { animation: podglow 283ms ease-in-out infinite alternate; }
+  .bld .pod.p2 { background-color: #34c759; }
+  .bld .pod.p3 { background-color: #ff9500; }
+  /* spinner: 0.6 deg/ms = one turn per 600 ms */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bld .spin { background: conic-gradient(from 0deg, var(--jc0) 0deg, var(--jc) 300deg, var(--jc0) 300deg); animation: spin 600ms linear infinite; }
+  .bld .js .ic > * { display: none; }
+  .bld .js.done .chk { display: inline; } .bld .js.cur .spin { display: inline-block; } .bld .js.todo .cir { display: inline; }
+  /* log caret: visible for 400 ms, hidden for 400 ms while live */
+  @keyframes blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+  .bld .caret { visibility: hidden; }
+  .bld .live .caret { visibility: visible; animation: blink 800ms linear infinite; }
+  /* whole-bubble transition(kind) */
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-slide-down { from { opacity: 0; transform: translateY(-12px); } }
+  @keyframes tr-slide-up { from { opacity: 0; transform: translateY(12px); } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } }
+  @keyframes tr-pop { 0% { transform: scale(0.97); } 50% { transform: scale(1.015); } 100% { transform: scale(1); } }
+  .tr-fade { animation: tr-fade 220ms ease-out; }
+  .tr-slide-down { animation: tr-slide-down 260ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-up { animation: tr-slide-up 260ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-left { animation: tr-slide-left 260ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 260ms cubic-bezier(.33,1,.68,1); }
+  .tr-pop { animation: tr-pop 300ms cubic-bezier(.33,1,.68,1); }
+</style>
+<div class="card bld" id="root" data-state="passed">
+  <div class="hd">
+    <span class="hic">
+      <svg class="i-ok" width="24" height="24" viewBox="0 0 24 24"><polygon fill="#34c759" stroke="#34c759" stroke-width="1.2" stroke-linejoin="round" points="12.00,0.00 14.67,2.05 18.00,1.61 19.28,4.72 22.39,6.00 21.95,9.33 24.00,12.00 21.95,14.67 22.39,18.00 19.28,19.28 18.00,22.39 14.67,21.95 12.00,24.00 9.33,21.95 6.00,22.39 4.72,19.28 1.61,18.00 2.05,14.67 0.00,12.00 2.05,9.33 1.61,6.00 4.72,4.72 6.00,1.61 9.33,2.05"/><path d="M7.2 12.4l3.2 3.2 6.4-6.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i-dep" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5856d6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 0-13.7-5.6"/><path d="M4 12a8 8 0 0 0 13.7 5.6"/><path d="M6.3 2.6v3.8h3.8"/><path d="M17.7 21.4v-3.8h-3.8"/></svg>
+      <svg class="i-roll" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#ff9500"/><path d="M16 17v-5a3.5 3.5 0 0 0-3.5-3.5H7.5M10.3 5.7L7.5 8.5l2.8 2.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i-back" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#ff3b30"/><path d="M16 17v-5a3.5 3.5 0 0 0-3.5-3.5H7.5M10.3 5.7L7.5 8.5l2.8 2.8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <div class="grow"><b>Build #1842 passed</b><div class="small muted">litechat/main · 4m 12s · triggered by Leo</div></div>
+    <span class="st" id="badge" style="color: #34c759; background-color: rgba(52,199,89,0.160)">SUCCESS</span>
+  </div>
+  <div id="main">
+    <div class="bd">
+      <table style="width: 100%">
+        <tr><td class="k">Commit</td><td><code>a1b2c3d</code> Render bubbles with litehtml</td></tr>
+        <tr><td class="k">Tests</td><td><b class="t-green"><span id="tests">0</span> passed</b> · <span class="t-orange">3 skipped</span> · 0 failed</td></tr>
+        <tr><td class="k">Artifact</td><td>LiteChat.app <span class="muted">(4.1 MB)</span></td></tr>
+        <tr><td class="k">Prod</td><td id="where"><b>#1839</b> <span class="muted">· canary runs #1842 at 10%</span></td></tr>
+      </table>
+      <div class="steps" id="steps">
+        <div class="sr"><span class="ic"><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg><svg class="chk" width="1" height="1" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow nm muted">Checkout</span><span class="muted tm"></span></div>
+        <div class="sr"><span class="ic"><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg><svg class="chk" width="1" height="1" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow nm muted">Build (clang, -O2)</span><span class="muted tm"></span></div>
+        <div class="sr"><span class="ic"><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg><svg class="chk" width="1" height="1" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow nm muted">Unit tests</span><span class="muted tm"></span></div>
+        <div class="sr"><span class="ic"><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg><svg class="chk" width="1" height="1" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow nm muted">Package &amp; notarize</span><span class="muted tm"></span></div>
+      </div>
+      <div class="cap">Build time, last 12 runs</div>
+      <svg id="spark" width="360" height="44" style="margin-top: 2px"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5856d6" stop-opacity="0.35"/><stop offset="1" stop-color="#5856d6" stop-opacity="0"/></linearGradient></defs><polygon id="sp-fill" fill="url(#g)" points="3,44 3.0,30.0 3.0,30.0 3.0,44"/><polyline id="sp-line" fill="none" stroke="#5856d6" stroke-width="2" stroke-linejoin="round" points="3.0,30.0 3.0,30.0"/><circle id="sp-dot" cx="3.0" cy="30.0" r="3" fill="#5856d6"/></svg>
+    </div>
+    <div class="job" id="job" hidden>
+      <div class="row between"><b id="j-title"></b><span class="small muted" id="j-pct">0%</span></div>
+      <div class="small muted" id="j-sub"></div>
+      <div class="prog"><div id="j-bar" style="width: 0%"></div></div>
+      <div class="pods" id="j-pods"><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div><div class="pod"></div></div>
+      <div class="js todo"><span class="ic"><svg class="chk" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="spin"></span><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg></span><span class="lbl muted"><span class="lt"></span></span></div>
+      <div class="js todo"><span class="ic"><svg class="chk" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="spin"></span><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg></span><span class="lbl muted"><span class="lt"></span> <b class="mv">0/10</b> pods</span></div>
+      <div class="js todo"><span class="ic"><svg class="chk" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="6.5" fill="#34c759"/><path d="M3.6 6.7l2 2 3.9-4.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="spin"></span><svg class="cir" width="13" height="13" viewBox="0 0 13 13"><circle cx="6.5" cy="6.5" r="5.75" fill="none" stroke="#c7c7cc" stroke-width="1.5"/></svg></span><span class="lbl muted"><span class="lt"></span></span></div>
+    </div>
+    <div class="win" id="win-promote" hidden style="background: linear-gradient(135deg, #34c759, #30b0c7)">
+      <div style="font-size: 26px">🎉</div><div style="font-size: 17px; font-weight: 700">#1842 is live in production</div>
+      <div class="small" style="color: rgba(255,255,255,0.85)">10/10 pods healthy · 3m 05s · <a href="#" class="dismiss">dismiss</a></div>
+      <div class="stats"><div><b id="s-err">0.00%</b><div class="tiny">errors</div></div><div><b id="s-p95">0ms</b><div class="tiny">p95</div></div><div><b id="s-thr">+0%</b><div class="tiny">throughput</div></div></div>
+    </div>
+    <div class="win" id="win-rollback" hidden style="background: linear-gradient(135deg, #ff3b30, #ff9500)">
+      <div style="font-size: 17px; font-weight: 700">↩️ Rolled back</div>
+      <div class="small"><span id="r-where">Canary</span> is on <b>#1839</b> again · <a href="#" class="dismiss">dismiss</a></div>
+      <div class="tiny" style="margin-top: 4px; color: rgba(255,255,255,0.85)">Incident <a href="https://github.com/litehtml/litehtml">INC-2207</a> opened automatically</div>
+    </div>
+    <div id="logs" hidden>
+      <div class="logbar"><b>build-1842.log</b><span><span id="live" hidden><span class="t-green">● live</span> · </span><a href="#" id="replay">↻ Replay</a></span></div>
+      <div class="log"><div id="loglines"></div><div class="caret" style="color: #f5c2e7">▍</div></div>
+    </div>
+    <div class="acts"><span class="b go" id="b-promote">🚀 Promote</span><span class="b lg" id="b-logs">View logs</span><span class="b rb last" id="b-roll">Rollback</span></div>
+  </div>
+  <div id="confirm" hidden>
+    <div class="warn">
+      <div style="font-weight: 700"><svg width="15" height="15" viewBox="0 0 15 15"><path d="M7.5 1.2 14.3 13.2H.7z" fill="#ff9500"/><path d="M7.5 5.3v3.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><circle cx="7.5" cy="11.2" r=".9" fill="#fff"/></svg> Roll back <span id="c-target">canary</span> to #1839?</div>
+      <div class="small muted" style="margin: 4px 0 6px 0">This reverts 3 commits<span id="c-canary"> on the canary (10% of traffic)</span>:</div>
+      <ul><li><code>a1b2c3d</code> Render bubbles with litehtml</li><li><code>9f8e7d6</code> Dark mode stylesheet</li><li><code>5c4b3a2</code> Card components</li></ul>
+      <div class="row"><span class="b yes" id="b-confirm">Yes, roll back</span><span class="b lg last" id="b-cancel">Cancel</span></div>
+    </div><div style="height: 14px"></div>
+  </div>
+</div>
+<script>
+const STEPS = [['Checkout', '2s'], ['Build (clang, -O2)', '1m 48s'], ['Unit tests', '1m 55s'], ['Package & notarize', '27s']];
+const SPARK = [30, 26, 28, 18, 22, 12, 16, 20, 10, 14, 8, 12];
+const LOG = [
+  ['cmd', '$ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release'],
+  ['', '-- The C compiler identification is AppleClang 17.0'],
+  ['', '-- Configuring done (0.4s)'],
+  ['cmd', '$ cmake --build build -j10'],
+  ['', '[ 12%] Building C object src/gumbo/CMakeFiles/gumbo.dir/parser.c.o'],
+  ['', '[ 47%] Building CXX object CMakeFiles/litehtml.dir/src/render_flex.cpp.o'],
+  ['', '[ 84%] Built target litehtml'],
+  ['', '[ 89%] Building OBJCXX object CMakeFiles/lhmac.dir/src/LHContainer.mm.o'],
+  ['', '[ 96%] Linking OBJCXX executable LiteChat.app/Contents/MacOS/LiteChat'],
+  ['', '[100%] Built target LiteChat'],
+  ['cmd', '$ ctest --output-on-failure'],
+  ['ok', '100% tests passed, 0 tests failed out of 412'],
+  ['warn', '3 skipped: test_bidi_*, test_print_media'],
+];
+const INK = { cmd: '#89b4fa', ok: '#a6e3a1', warn: '#f9e2af', err: '#f38ba8', info: '#cdd6f4' };
+const BADGE = {
+  passed: ['SUCCESS', '#34c759', 'rgba(52,199,89,0.160)'],
+  deploying: ['DEPLOYING', '#5856d6', 'rgba(88,86,214,0.160)'],
+  live: ['LIVE', '#34c759', 'rgba(52,199,89,0.160)'],
+  rolling: ['ROLLING BACK', '#ff9500', 'rgba(255,149,0,0.160)'],
+  rolledback: ['ROLLED BACK', '#ff3b30', 'rgba(255,59,48,0.160)'],
+};
+
+let intro = 0, state = 'passed', prod = '#1839', canary = '#1842', view = 'main', job = null, result = null, run = 0;
+let logOpen = false, logShown = 0, logTimer = 0, extra = [];
+const tests = { v: 0 }, stats = { v: 1 };
+
+// --- small animation kit (same formulas as the host prelude) ---
+const ease = {
+  linear: t => t,
+  outCubic: t => 1 - Math.pow(1 - t, 3),
+  inOutSine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+  outBack: t => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2),
+};
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const animate = (duration, onFrame, easing = ease.linear) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const tweens = new WeakMap();
+function tween(target, props, duration, easing, onFrame) {
+  let owners = tweens.get(target);
+  if (!owners) { owners = new Map(); tweens.set(target, owners); }
+  const token = {}, from = {}, to = {};
+  for (const key of Object.keys(props)) { from[key] = Number(target[key]) || 0; to[key] = Number(props[key]); owners.set(key, token); }
+  return animate(duration, p => {
+    for (const key in to) if (owners.get(key) === token) target[key] = from[key] + (to[key] - from[key]) * p;
+    onFrame();
+  }, easing).then(() => {
+    for (const key in to) if (owners.get(key) === token) { target[key] = to[key]; owners.delete(key); }
+    onFrame();
+  });
+}
+
+// --- DOM ---
+const $ = s => document.querySelector(s);
+const root = $('#root');
+const TR = ['tr-fade', 'tr-slide-down', 'tr-slide-up', 'tr-slide-left', 'tr-slide-right', 'tr-pop'];
+function bubble(kind) {
+  const cls = 'tr-' + kind;
+  if (root.classList.contains(cls)) { root.classList.remove(cls); requestAnimationFrame(() => root.classList.add(cls)); }
+  else { root.classList.remove(...TR); root.classList.add(cls); }
+}
+root.addEventListener('animationend', ev => { if (ev.target === root) root.classList.remove(...TR); });
+
+const rollTarget = () => prod === '#1842' ? 'production' : 'canary';
+const canRoll = () => !job && (prod === '#1842' || canary === '#1842');
+const clockText = () => {
+  const s = 36720 + Math.floor(performance.now() / 1000);
+  return [s / 3600, (s / 60) % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, '0')).join(':');
+};
+function log(kind, text) {
+  extra.push([kind, `${clockText()} ${text}`]);
+  if (extra.length > 30) extra.shift();
+  renderLog();
+}
+
+// intro: steps tick in (outBack on the icon size), the sparkline draws, the test counter runs
+const stepRows = [...root.querySelectorAll('#steps .sr')].map(el => ({ el, chk: el.querySelector('.chk'), nm: el.querySelector('.nm'), tm: el.querySelector('.tm'), d: 1 }));
+function drawSteps() {
+  stepRows.forEach((r, i) => {
+    const k = clamp((intro * 900 - 120 - i * 150) / 240, 0, 1);
+    const d = Math.max(1, Math.round(13 * ease.outBack(k)));
+    r.el.classList.toggle('on', k > 0);
+    r.nm.classList.toggle('muted', !(k > 0));
+    if (r.d !== d) { r.d = d; r.chk.setAttribute('width', d); r.chk.setAttribute('height', d); }
+    r.tm.textContent = k >= 1 ? STEPS[i][1] : '';
+  });
+}
+function drawSpark() {
+  const n = SPARK.length - 1, upto = intro * n, X = i => 3 + i * 354 / n;
+  const pts = [];
+  for (let i = 0; i <= Math.floor(upto); i++) pts.push([X(i), SPARK[i]]);
+  if (upto < n) { const i = Math.floor(upto), f = upto - i; pts.push([X(i + f), lerp(SPARK[i], SPARK[i + 1], f)]); }
+  const line = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const [lx, ly] = pts[pts.length - 1];
+  $('#sp-fill').setAttribute('points', `3,44 ${line} ${lx.toFixed(1)},44`);
+  $('#sp-line').setAttribute('points', line);
+  $('#sp-dot').setAttribute('cx', lx.toFixed(1));
+  $('#sp-dot').setAttribute('cy', ly.toFixed(1));
+}
+setTimeout(() => {
+  animate(900, (_, t) => { intro = t; drawSteps(); drawSpark(); }, ease.linear);
+  tween(tests, { v: 412 }, 900, ease.outCubic, () => { $('#tests').textContent = Math.round(tests.v); });
+}, 250);
+
+// --- targeted updates ---
+function syncHeader() {
+  const [label, c, bg] = BADGE[state];
+  root.dataset.state = state;
+  const b = $('#badge');
+  b.textContent = label; b.style.color = c; b.style.backgroundColor = bg;
+}
+function syncWhere() {
+  $('#where').innerHTML = prod === '#1842' ? '<b>#1842</b> <span class="muted">· this build</span>'
+    : canary === '#1842' ? '<b>#1839</b> <span class="muted">· canary runs #1842 at 10%</span>'
+    : '<b>#1839</b> <span class="muted">· canary rolled back</span>';
+}
+function syncButtons() {
+  const bp = $('#b-promote');
+  if (!job && prod !== '#1842') { bp.className = 'b go'; bp.textContent = '🚀 ' + (state === 'rolledback' ? 'Promote again' : 'Promote'); }
+  else { bp.className = 'b off'; bp.textContent = job && job.kind === 'promote' ? 'Deploying…' : job ? '🚀 Promote' : '✓ Promoted'; }
+  const bl = $('#b-logs');
+  bl.className = 'b lg' + (logOpen ? ' on' : ''); bl.textContent = logOpen ? 'Hide logs' : 'View logs';
+  const br = $('#b-roll');
+  if (canRoll()) { br.className = 'b rb last'; br.textContent = 'Rollback'; }
+  else { br.className = 'b off last'; br.textContent = job && job.kind === 'rollback' ? 'Rolling back…' : 'Rollback'; }
+}
+function syncView() {
+  $('#main').hidden = view !== 'main';
+  $('#confirm').hidden = view !== 'confirm';
+  if (view === 'confirm') {
+    const target = rollTarget();
+    $('#c-target').textContent = target;
+    $('#c-canary').hidden = target !== 'canary';
+  }
+}
+function syncResult() {
+  $('#win-promote').hidden = !(result && result.kind === 'promote');
+  $('#win-rollback').hidden = !(result && result.kind === 'rollback');
+  if (result && result.kind === 'rollback') $('#r-where').textContent = result.target === 'production' ? 'Production' : 'Canary';
+}
+function drawStats() {
+  const k = stats.v;
+  $('#s-err').textContent = (0.01 * k).toFixed(2) + '%';
+  $('#s-p95').textContent = Math.round(176 * k) + 'ms';
+  $('#s-thr').textContent = '+' + Math.round(4 * k) + '%';
+}
+function renderLog() {
+  const live = !!logTimer || !!job;
+  $('#logs').classList.toggle('live', live);
+  $('#live').hidden = !live;
+  if (!logOpen) return;
+  const lines = LOG.slice(0, logShown).concat(extra).slice(-9);
+  $('#loglines').innerHTML = lines.map(([k, t]) => `<div style="color: ${INK[k] || INK.info}">${esc(t)}</div>`).join('');
+}
+function syncLogs() { $('#logs').hidden = !logOpen; renderLog(); }
+function sync() { syncHeader(); syncWhere(); syncButtons(); syncView(); syncResult(); syncLogs(); }
+
+// job panel
+const jobEl = $('#job'), pods = [...root.querySelectorAll('#j-pods .pod')], jobSteps = [...root.querySelectorAll('#job .js')];
+function showJob() {
+  const j = job;
+  jobEl.hidden = false;
+  jobEl.className = 'job ' + j.kind;
+  $('#j-title').textContent = j.title;
+  $('#j-sub').textContent = j.sub;
+  jobSteps.forEach((row, i) => { row.querySelector('.lt').textContent = j.steps[i]; });
+  drawProgress(); drawPods(); drawJobSteps();
+}
+function drawProgress() {
+  $('#j-bar').style.width = (job.p * 100).toFixed(1) + '%';
+  $('#j-pct').textContent = Math.round(job.p * 100) + '%';
+}
+function drawPods() {
+  job.pods.forEach((s, i) => { pods[i].className = 'pod p' + s; });
+  const moved = job.pods.filter(s => s === (job.kind === 'promote' ? 2 : 3)).length;
+  $('#job .mv').textContent = `${moved}/10`;
+}
+function drawJobSteps() {
+  jobSteps.forEach((row, i) => {
+    row.className = 'js ' + (i < job.step ? 'done' : i === job.step ? 'cur' : 'todo');
+    row.querySelector('.lbl').classList.toggle('muted', i > job.step);
+  });
+}
+
+async function runJob(kind) {
+  const token = ++run, promote = kind === 'promote', target = promote ? 'production' : rollTarget();
+  const alive = () => token === run;
+  result = null;
+  state = promote ? 'deploying' : 'rolling';
+  job = {
+    kind, target, p: 0, step: 0,
+    title: promote ? 'Deploying #1842 → production' : `Rolling back ${target} → #1839`,
+    sub: promote ? 'Rolling update · 10 pods' : 'Reverting 3 commits · 10 pods',
+    steps: promote ? ['Drain canary', 'Rolling update', 'Health checks'] : ['Freeze traffic', 'Restore #1839', 'Verify health'],
+    pods: Array(10).fill(promote ? 0 : 2),
+  };
+  sync(); showJob();
+  log(promote ? 'info' : 'warn', promote ? 'INFO  promote #1842 → production' : `WARN  rollback ${target} → #1839`);
+  await animate(700, p => { if (alive()) { job.p = 0.12 * p; drawProgress(); } }, ease.inOutSine);
+  if (!alive()) return;
+  job.step = 1; drawJobSteps();
+  log('info', promote ? 'INFO  canary drained' : 'INFO  traffic frozen');
+  for (let i = 0; i < 10; i++) {
+    job.pods[i] = 1; drawPods();
+    await animate(230, p => { if (alive()) { job.p = 0.12 + 0.76 * (i + p) / 10; drawProgress(); } }, ease.linear);
+    if (!alive()) return;
+    job.pods[i] = promote ? 2 : 3; drawPods();
+    if (i % 3 === 2) log('info', `INFO  pod-${i} → litechat:${promote ? 1842 : 1839} (${i + 1}/10)`);
+  }
+  job.step = 2; drawJobSteps();
+  await animate(800, p => { if (alive()) { job.p = 0.88 + 0.12 * p; drawProgress(); } }, ease.inOutSine);
+  if (!alive()) return;
+  log('ok', promote ? 'OK    10/10 pods healthy ✔' : `OK    ${target} on #1839 ✔`);
+  bubble('pop');
+  job = null; jobEl.hidden = true;
+  if (promote) { prod = '#1842'; canary = '#1842'; state = 'live'; }
+  else { prod = '#1839'; canary = '#1839'; state = 'rolledback'; }
+  result = { kind, target };
+  stats.v = 0;
+  tween(stats, { v: 1 }, 900, ease.outCubic, drawStats);
+  sync();
+}
+
+function streamLog() {
+  if (logTimer || logShown >= LOG.length) return;
+  logTimer = setInterval(() => {
+    logShown++;
+    if (logShown >= LOG.length) { clearInterval(logTimer); logTimer = 0; }
+    renderLog();
+  }, 110);
+  renderLog();
+}
+
+// --- actions ---
+root.addEventListener('click', ev => {
+  const t = ev.target.closest('#b-promote, #b-roll, #b-confirm, #b-cancel, #b-logs, #replay, .dismiss');
+  if (!t || !root.contains(t)) return;
+  if (t.tagName === 'A') ev.preventDefault();
+  const name = t.id ? t.id.replace(/^b-/, '') : 'dismiss';
+  if (name === 'promote' && !job && prod !== '#1842' && view === 'main') {
+    bubble('slide-down');
+    runJob('promote');
+  } else if (name === 'roll' && canRoll() && view === 'main') {
+    bubble('slide-left');
+    view = 'confirm'; sync();
+  } else if (name === 'confirm' && view === 'confirm') {
+    bubble('slide-right');
+    view = 'main'; sync();
+    if (canRoll()) runJob('rollback');
+  } else if (name === 'cancel' && view === 'confirm') {
+    bubble('slide-right');
+    view = 'main'; sync();
+  } else if (name === 'logs' && view === 'main') {
+    bubble(logOpen ? 'slide-up' : 'slide-down');
+    logOpen = !logOpen;
+    if (logOpen) streamLog();
+    sync();
+  } else if (name === 'replay') {
+    logShown = 0; extra = [];
+    streamLog(); renderLog();
+  } else if (name === 'dismiss') {
+    bubble('fade');
+    result = null; sync();
+  }
+});
+sync();
+</script>

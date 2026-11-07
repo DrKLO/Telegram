@@ -18,6 +18,7 @@ import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.io.File;
@@ -72,9 +73,9 @@ public class ThemePreviewDrawable extends BitmapDrawable {
         Drawable micDrawable = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.preview_mic).mutate();
         Theme.setDrawableColor(micDrawable, messageFieldIconColor);
 
-        Theme.MessageDrawable[] messageDrawable = new Theme.MessageDrawable[2];
+        MessageDrawable[] messageDrawable = new MessageDrawable[2];
         for (int a = 0; a < 2; a++) {
-            messageDrawable[a] = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_PREVIEW, a == 1, false) {
+            messageDrawable[a] = new MessageDrawable(MessageDrawable.TYPE_PREVIEW, a == 1, false) {
                 @Override
                 protected int getColor(int key) {
                     Integer color = colors.get(key);

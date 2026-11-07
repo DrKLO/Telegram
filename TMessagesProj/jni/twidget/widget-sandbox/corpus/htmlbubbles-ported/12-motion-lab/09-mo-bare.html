@@ -1,0 +1,244 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 9
+  author: mo 14:09 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); } button:active { background-color: rgba(127,127,127,0.40); }
+  [data-action] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .ck { width: 340px; max-width: 100%; box-sizing: border-box; }
+  .ck .tab { display: inline-block; padding: 2px 9px; margin-left: 2px; border-radius: 7px; font-size: 12px; font-weight: 600; }
+  .ck .tab:hover { background-color: rgba(127,127,127,0.16); }
+  .ck .tab.on { background-color: rgba(255,159,10,0.2); color: #ff9f0a; }
+  .ck .face { display: flex; align-items: center; margin-top: 10px; }
+  .ck .face svg { display: block; }
+  .ck .hand { transform-box: view-box; transform-origin: 100px 100px; }
+  .ck .digital { margin-left: 14px; }
+  .ck .big { font-size: 24px; font-weight: 700; font-family: ui-monospace, monospace; }
+  .ck .zones div { display: flex; justify-content: space-between; font-size: 12.5px; padding: 2px 0; width: 148px; }
+  .ck .roll { display: flex; justify-content: center; align-items: center; margin: 16px 0 10px 0; }
+  .ck .dg { width: 36px; height: 58px; overflow: hidden; margin: 0 2px; border-radius: 8px; background-color: #1c1c1e; text-align: center; }
+  .ck .dg div { height: 58px; line-height: 58px; font-size: 38px; font-weight: 700; font-family: ui-monospace, monospace; color: #f2f2f7; }
+  /* tween(digit, {k: 1}, 380, ease.outCubic): the column rolls one slot up; two names so a re-roll restarts without a reflow */
+  .ck .dg .col { transform: translateY(-58px); }
+  .ck .dg .col.roll-a { animation: roll-a 380ms cubic-bezier(.33,1,.68,1); }
+  .ck .dg .col.roll-b { animation: roll-b 380ms cubic-bezier(.33,1,.68,1); }
+  @keyframes roll-a { from { transform: translateY(0); } to { transform: translateY(-58px); } }
+  @keyframes roll-b { from { transform: translateY(0); } to { transform: translateY(-58px); } }
+  .ck .colon { width: 12px; font-size: 30px; font-weight: 700; text-align: center; }
+  .ck .ampm { margin-left: 6px; font-size: 13px; font-weight: 700; }
+  .ck .seg span { display: inline-block; padding: 1px 8px; margin-left: 3px; border-radius: 7px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .ck .seg span:hover { background-color: rgba(127,127,127,0.24); }
+  .ck .seg span.on { background-color: #ff9f0a; color: #ffffff; }
+  .ck .city { display: flex; align-items: center; padding: 5px 6px; border-radius: 8px; }
+  .ck .city:hover { background-color: rgba(127,127,127,0.12); }
+  .ck .city svg { margin-right: 10px; display: block; flex-shrink: 0; }
+  .ck .city .t { font-family: ui-monospace, monospace; font-weight: 700; font-size: 15px; }
+  /* home row: alpha('#ff9f0a', 0.14 + 0.25 * glow.a), glow tweened 1 → 0 over 900 ms inQuad */
+  .ck .city.home { background-color: rgba(255,159,10,0.14); }
+  .ck .city.home.glow { animation: glow 900ms cubic-bezier(.11,0,.5,0); }
+  @keyframes glow { from { background-color: rgba(255,159,10,0.39); } to { background-color: rgba(255,159,10,0.14); } }
+  /* transition('slide-left' | 'slide-right') on the bubble */
+  .tr-slide-left { animation: tr-slide-left 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 300ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(28px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-28px); } }
+</style>
+<div class="card pad ck" id="w">
+  <div class="row between"><span><b>🕰 Clock</b> <span class="small t-orange" id="homename">Local</span></span><span id="tabs"></span></div>
+  <div id="analog">
+    <div class="face"><div style="position: relative; width: 150px; height: 150px">
+      <svg width="150" height="150" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="97" fill="#1c1c1e" stroke="#3a3a3c" stroke-width="4"/>
+        <g id="ticks"></g>
+        <line class="hand" id="h-hour" x1="100" y1="110" x2="100" y2="50" stroke="#f2f2f7" stroke-width="7" stroke-linecap="round"/>
+        <line class="hand" id="h-min" x1="100" y1="112" x2="100" y2="28" stroke="#f2f2f7" stroke-width="5" stroke-linecap="round"/>
+        <line class="hand" id="h-sec" x1="100" y1="118" x2="100" y2="20" stroke="#ff9f0a" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="100" cy="100" r="5" fill="#ff9f0a"/>
+      </svg></div>
+      <div class="digital"><div class="big" id="a-time"></div><div class="small muted" id="a-date"></div>
+        <div class="zones" style="margin-top: 6px" id="zones"></div>
+        <button data-action="spin" style="margin-top: 6px">🌀 Spin</button></div></div>
+  </div>
+  <div id="digital" hidden>
+    <div class="roll" id="roll"></div>
+    <div class="row between"><span class="small muted" id="d-date"></span><span class="seg" id="seg"></span></div>
+  </div>
+  <div id="world" hidden>
+    <div style="margin-top: 8px" id="cities"></div>
+    <div class="tiny muted" style="margin-top: 4px">Tap a city to show it on the analog and digital clocks</div>
+  </div>
+</div>
+<script>
+const CITIES = [['Local', null], ['Lisbon', 'Europe/Lisbon'], ['New York', 'America/New_York'], ['Tokyo', 'Asia/Tokyo'], ['Sydney', 'Australia/Sydney'], ['São Paulo', 'America/Sao_Paulo']];
+const TABS = [['analog', 'Analog'], ['digital', 'Digital'], ['world', 'World']];
+const ELASTIC = 'linear(0,0.272,0.646,1,1.25,1.364,1.354,1.257,1.125,1,0.912,0.871,0.875,0.909,0.956,1,1.031,1.046,1.044,1.032,1.016,1,0.989,0.984,0.984,0.989,0.994,1,1.004,1.006,1.006,1.004,1.002,1,0.999,0.998,0.998,0.999,0.999,1,1)';
+let now = new Date(), tab = 'analog', home = 0, h12 = false, digits = null, to = now.getSeconds() * 6, introDone = false;
+const fmts = new Map(), dates = new Map();
+
+const root = document.getElementById('w');
+const $ = id => document.getElementById(id);
+function bubble(kind) {
+  for (const c of [...root.classList]) if (c.startsWith('tr-')) root.classList.remove(c);
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+
+function parts(tz) {
+  if (!tz) return [now.getHours(), now.getMinutes(), now.getSeconds()];
+  let f = fmts.get(tz);
+  if (!f) { f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }); fmts.set(tz, f); }
+  return f.format(now).split(':').map(Number).map((v, i) => i ? v : v % 24);
+}
+function dateOf(tz) {
+  const key = tz || 'local';
+  let f = dates.get(key);
+  if (!f) { f = new Intl.DateTimeFormat('en-GB', tz ? { timeZone: tz, weekday: 'long', day: 'numeric', month: 'short' } : { weekday: 'long', day: 'numeric', month: 'short' }); dates.set(key, f); }
+  return f.format(now);
+}
+const hhmm = (h, m, s) => {
+  const hh = h12 ? (h + 11) % 12 + 1 : h;
+  return String(hh).padStart(2, '0') + ':' + String(m).padStart(2, '0') + (s === undefined ? '' : ':' + String(s).padStart(2, '0')) + (h12 ? `<span class="tiny muted">${h < 12 ? ' am' : ' pm'}</span>` : '');
+};
+const setHTML = (el, html) => { if (el.innerHTML !== html) el.innerHTML = html; };
+
+// --- analog: the hands are SVG lines rotated with CSS transforms
+let ticks = '';
+for (let i = 0; i < 60; i++) ticks += i % 5 ? `<line x1="100" y1="11" x2="100" y2="16" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round" transform="rotate(${i * 6} 100 100)"/>`
+                                             : `<line x1="100" y1="11" x2="100" y2="22" stroke="#f2f2f7" stroke-width="3.5" stroke-linecap="round" transform="rotate(${i * 6} 100 100)"/>`;
+$('ticks').innerHTML = ticks;
+const hHour = $('h-hour'), hMin = $('h-min'), hSec = $('h-sec');
+function springTo(extra, ms) {
+  // the second hand always turns forward: the target angle only grows (as in the original)
+  let next = Math.floor(to / 360) * 360 + now.getSeconds() * 6 + extra;
+  if (next < to) next += 360;
+  to = next;
+  hSec.style.transition = `transform ${ms}ms ${ELASTIC}`;
+  hSec.style.transform = `rotate(${to}deg)`;
+}
+function analog(jump) {
+  const [h, m, s] = parts(CITIES[home][1]);
+  if (jump) { for (const el of [hHour, hMin, hSec]) el.style.transition = 'none'; to = Math.floor(to / 360) * 360 + s * 6; hSec.style.transform = `rotate(${to}deg)`; }
+  hHour.style.transform = `rotate(${(h % 12 * 30 + m * 0.5).toFixed(1)}deg)`;
+  hMin.style.transform = `rotate(${(m * 6 + s * 0.1).toFixed(1)}deg)`;
+  setHTML($('a-time'), hhmm(h, m, s));
+  $('a-date').textContent = dateOf(CITIES[home][1]);
+  setHTML($('zones'), CITIES.filter((_, i) => i !== home).slice(0, 3).map(([n, tz]) => { const [a, b] = parts(tz); return `<div><span class="muted">${n}</span><b>${hhmm(a, b)}</b></div>`; }).join(''));
+}
+
+// --- digital
+$('roll').innerHTML = [0, 1, 2, 3, 4, 5].map(j => `<div class="dg"><div class="col"><div class="from"></div><div class="to"></div></div></div>${j === 1 || j === 3 ? '<span class="colon t-orange">:</span>' : ''}`).join('') + '<span class="ampm muted" id="ampm" hidden></span>';
+const cols = Array.from($('roll').querySelectorAll('.col'));
+$('seg').innerHTML = [['24', '24h'], ['12', '12h']].map(([v, l]) => `<span data-action="h12" data-value="${v}">${l}</span>`).join('');
+function syncDigits(roll) {
+  const [h, m, s] = parts(CITIES[home][1]);
+  const str = String(h12 ? (h + 11) % 12 + 1 : h).padStart(2, '0') + String(m).padStart(2, '0') + String(s).padStart(2, '0');
+  if (!digits) { digits = [...str].map(c => ({ to: c, ab: false })); roll = false; }
+  [...str].forEach((c, j) => {
+    const d = digits[j], col = cols[j];
+    if (d.to === c && col.querySelector('.to').textContent === c) return;
+    col.querySelector('.from').textContent = roll ? d.to : c;
+    col.querySelector('.to').textContent = c;
+    d.to = c;
+    if (roll) { d.ab = !d.ab; col.classList.remove(d.ab ? 'roll-b' : 'roll-a'); col.classList.add(d.ab ? 'roll-a' : 'roll-b'); }
+    else col.classList.remove('roll-a', 'roll-b');
+  });
+  $('ampm').hidden = !h12;
+  $('ampm').textContent = h < 12 ? 'AM' : 'PM';
+  for (const sp of $('seg').children) sp.classList.toggle('on', (sp.dataset.value === '12') === h12);
+  $('d-date').textContent = dateOf(CITIES[home][1]);
+}
+
+// --- world: a small inline SVG clock per city, rebuilt when the minute changes
+let worldKey = '';
+function mini(i) {
+  const [h, m] = parts(CITIES[i][1]);
+  const day = h >= 7 && h < 19, ink = day ? '#1c1c1e' : '#f2f2f7';
+  return `<svg width="34" height="34" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="94" fill="${day ? '#f2f2f7' : '#1c1c1e'}" stroke="#8e8e93" stroke-width="8"/>
+    <line x1="100" y1="100" x2="100" y2="52" stroke="${ink}" stroke-width="14" stroke-linecap="round" transform="rotate(${(h % 12 * 30 + m * 0.5).toFixed(1)} 100 100)"/>
+    <line x1="100" y1="100" x2="100" y2="28" stroke="${ink}" stroke-width="10" stroke-linecap="round" transform="rotate(${m * 6} 100 100)"/><circle cx="100" cy="100" r="9" fill="#ff9f0a"/></svg>`;
+}
+function world(glow) {
+  const [lh, lm] = parts(null), key = home + ':' + lh + ':' + lm + ':' + h12 + ':' + CITIES.map(c => parts(c[1]).slice(0, 2).join('.')).join(',');
+  if (key === worldKey && !glow) return;
+  worldKey = key;
+  $('cities').innerHTML = CITIES.map(([n, tz], i) => {
+    const [h, m] = parts(tz);
+    let diff = (h * 60 + m) - (lh * 60 + lm);
+    if (diff > 840) diff -= 1440; if (diff < -720) diff += 1440;
+    const day = lh * 60 + lm + diff >= 1440 ? 'tomorrow' : lh * 60 + lm + diff < 0 ? 'yesterday' : 'today';
+    const off = diff === 0 ? 'same time' : `${diff > 0 ? '+' : '−'}${Math.floor(Math.abs(diff) / 60)}${Math.abs(diff) % 60 ? ':' + String(Math.abs(diff) % 60).padStart(2, '0') : ''}h`;
+    return `<div class="city ${i === home ? 'home' : ''} ${i === home && glow ? 'glow' : ''}" data-action="home" data-value="${i}">${mini(i)}
+      <div class="grow"><b>${n}</b>${i === home ? ' <span class="badge orange">home</span>' : ''}<div class="tiny muted">${off} · ${day}</div></div>
+      <span class="t">${hhmm(h, m)}</span></div>`;
+  }).join('');
+}
+
+function showTab(id) {
+  tab = id;
+  for (const [t] of TABS) $(t).hidden = t !== id;
+  for (const t of $('tabs').children) t.classList.toggle('on', t.dataset.value === id);
+  if (id === 'analog') { analog(true); void root.offsetWidth; for (const el of [hHour, hMin]) el.style.transition = ''; }
+  if (id === 'digital') syncDigits(!!digits);
+  if (id === 'world') world(false);
+}
+function tick() {
+  now = new Date();
+  if (tab === 'analog') { analog(false); if (introDone) springTo(0, 450); }
+  else if (tab === 'digital') syncDigits(true);
+  else world(false);
+  setTimeout(tick, 1000 - (Date.now() % 1000) + 5);
+}
+
+$('tabs').innerHTML = TABS.map(([id, label]) => `<span class="tab ${tab === id ? 'on' : ''}" data-action="tab" data-value="${id}">${label}</span>`).join('');
+// intro: tween(intro, {k: 1}, 900, ease.outCubic) — every hand sweeps from 12 o'clock to its angle
+for (const el of [hHour, hMin, hSec]) { el.style.transition = 'none'; el.style.transform = 'rotate(0deg)'; }
+setHTML($('a-time'), hhmm(...parts(CITIES[home][1])));
+$('a-date').textContent = dateOf(CITIES[home][1]);
+setTimeout(tick, 1000 - (Date.now() % 1000) + 5);
+setTimeout(() => {
+  void root.offsetWidth;
+  for (const el of [hHour, hMin, hSec]) el.style.transition = 'transform 900ms cubic-bezier(.33,1,.68,1)';
+  analog(false);
+  hSec.style.transform = `rotate(${to}deg)`;
+  setTimeout(() => { introDone = true; for (const el of [hHour, hMin]) el.style.transition = ''; }, 900);
+}, 250);
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const name = el.dataset.action, value = el.dataset.value;
+  if (name === 'spin') return springTo(360, 1400);
+  if (name === 'h12') { h12 = value === '12'; analog(false); world(false); return syncDigits(true); }
+  if (name === 'tab') {
+    const a = TABS.findIndex(t => t[0] === tab), b = TABS.findIndex(t => t[0] === value);
+    if (a === b) return;
+    bubble(b > a ? 'slide-left' : 'slide-right');
+    showTab(value);
+    return;
+  }
+  if (name === 'home') {
+    home = Number(value);
+    digits = null;
+    $('homename').textContent = CITIES[home][0];
+    world(true);
+  }
+});
+</script>

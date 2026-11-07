@@ -193,7 +193,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
         if (firstFrameRendered) {
             Bitmap bitmap = textureView.getBitmap(100, 100);
             if (bitmap != null) {
-                Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+                Utilities.blurBitmap(bitmap, 3);
                 Drawable drawable = new BitmapDrawable(bitmap);
                 blurredStubView.setBackground(drawable);
             }

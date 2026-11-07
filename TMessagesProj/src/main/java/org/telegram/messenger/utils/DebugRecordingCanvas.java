@@ -1025,6 +1025,32 @@ public class DebugRecordingCanvas extends Canvas {
         }
     }
 
+    public static final class GetClipBoundsCmd extends Command {
+
+        final Rect    bounds;
+        final boolean nonEmpty;
+
+        GetClipBoundsCmd(@NonNull Rect outBounds, boolean nonEmpty) {
+            this.bounds   = new Rect(outBounds);
+            this.nonEmpty = nonEmpty;
+        }
+
+        @NonNull public Rect getBounds()    { return new Rect(bounds); }
+        public boolean wasClipEmpty()       { return !nonEmpty; }
+
+        @Override
+        public void replay(@NonNull Canvas c) {
+            c.getClipBounds(new Rect());
+        }
+
+        @Override
+        public String toString() {
+            String warn = !nonEmpty ? "⚠ CLIP_EMPTY " : "";
+            return warn + "getClipBounds(Rect) -> nonEmpty=" + nonEmpty
+                    + " bounds=" + bounds.toShortString();
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     //  Fields
     // ──────────────────────────────────────────────────────────────────────────
@@ -1653,5 +1679,12 @@ public class DebugRecordingCanvas extends Canvas {
     public void drawPatch(@NonNull NinePatch patch, @NonNull RectF dst, @Nullable Paint paint) {
         record(new DrawPatchCmd(patch, dst, paint));
         super.drawPatch(patch, dst, paint);
+    }
+
+    @Override
+    public boolean getClipBounds(@NonNull Rect bounds) {
+        boolean nonEmpty = super.getClipBounds(bounds);
+        record(new GetClipBoundsCmd(bounds, nonEmpty));
+        return nonEmpty;
     }
 }

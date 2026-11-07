@@ -12,7 +12,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 
-public class LoginOrView extends View {
+public class LoginOrView extends View implements Theme.Colorable {
     private final static int LINE_SIZE_DP = 64;
 
     private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
@@ -34,6 +34,7 @@ public class LoginOrView extends View {
         this.measureAfter = measureAfter;
     }
 
+    @Override
     public void updateColors() {
         textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         linePaint.setColor(Theme.getColor(Theme.key_sheet_scrollUp));

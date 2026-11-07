@@ -33,7 +33,6 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
@@ -130,7 +129,7 @@ public class AcceptDeclineView extends View {
         callDrawable = ContextCompat.getDrawable(context, R.drawable.calls_decline).mutate();
         cancelDrawable = ContextCompat.getDrawable(context, R.drawable.ic_close_white).mutate();
         cancelDrawable.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.MULTIPLY));
-        acceptVoiceDrawable = new RLottieDrawable(R.raw.call_accept, "" + R.raw.call_accept, dp(48), dp(48), true, null);
+        acceptVoiceDrawable = new RLottieDrawable(R.raw.call_accept, dp(48), dp(48), true, null);
         acceptVoiceDrawable.setAutoRepeat(1);
         acceptVoiceDrawable.setCustomEndFrame(90);
         acceptVoiceDrawable.setMasterParent(this);

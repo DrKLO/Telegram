@@ -2,69 +2,46 @@ package org.telegram.ui.Components.Premium.GLIcon;
 
 import android.content.Context;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 
 public final class ObjLoader {
 
     public int numFaces;
-
     public float[] normals;
     public float[] textureCoordinates;
     public float[] positions;
 
     public ObjLoader(Context context, String file, float scale) {
-        ArrayList<Float> vertices = new ArrayList<>();
-        ArrayList<Float> normals = new ArrayList<>();
-        ArrayList<Float> textures = new ArrayList<>();
-
-        try {
-            DataInputStream inputStream = new DataInputStream(context.getAssets().open(file));
-            int n = inputStream.readInt();
-            for (int i = 0; i < n; i++) {
-                vertices.add(inputStream.readFloat());
-            }
-
-            n = inputStream.readInt();
-            for (int i = 0; i < n; i++) {
-                textures.add(inputStream.readFloat());
-            }
-
-            n = inputStream.readInt();
-            for (int i = 0; i < n; i++) {
-                normals.add(inputStream.readFloat());
-            }
-
-            n = inputStream.readInt();
-
-            numFaces = n;
-            this.normals = new float[numFaces * 3];
+        // Assets otherwise perform a native read for every scalar. Buffer the BINOBJ
+        // stream and keep primitive arrays to avoid thousands of boxed Floats on startup.
+        try (DataInputStream input = new DataInputStream(new BufferedInputStream(context.getAssets().open(file), 16384))) {
+            float[] vertices = readFloats(input);
+            float[] textures = readFloats(input);
+            float[] sourceNormals = readFloats(input);
+            numFaces = input.readInt();
+            normals = new float[numFaces * 3];
             textureCoordinates = new float[numFaces * 2];
             positions = new float[numFaces * 3];
-            int positionIndex = 0;
-            int normalIndex = 0;
-            int textureIndex = 0;
-
-            for (int i = 0; i < n; i++) {
-                int index = 3 * inputStream.readInt();
-                positions[positionIndex++] = vertices.get(index++) * scale;
-                positions[positionIndex++] = vertices.get(index++) * scale;
-                positions[positionIndex++] = vertices.get(index) * scale;
-
-                index = 2 * inputStream.readInt();
-                textureCoordinates[normalIndex++] = index < 0 || index >= textures.size() ? 0 : textures.get(index);
-                index++;
-                textureCoordinates[normalIndex++] = index < 0 || index >= textures.size() ? 0 : 1 - textures.get(index);
-
-                index = 3 * inputStream.readInt();
-                this.normals[textureIndex++] = normals.get(index++);
-                this.normals[textureIndex++] = normals.get(index++);
-                this.normals[textureIndex++] = normals.get(index);
+            for (int i = 0; i < numFaces; i++) {
+                int position = 3 * input.readInt();
+                for (int j = 0; j < 3; j++) positions[i * 3 + j] = vertices[position + j] * scale;
+                int texture = 2 * input.readInt();
+                textureCoordinates[i * 2] = texture < 0 || texture >= textures.length ? 0 : textures[texture];
+                texture++;
+                textureCoordinates[i * 2 + 1] = texture < 0 || texture >= textures.length ? 0 : 1 - textures[texture];
+                int normal = 3 * input.readInt();
+                for (int j = 0; j < 3; j++) normals[i * 3 + j] = sourceNormals[normal + j];
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static float[] readFloats(DataInputStream input) throws IOException {
+        float[] values = new float[input.readInt()];
+        for (int i = 0; i < values.length; i++) values[i] = input.readFloat();
+        return values;
     }
 }

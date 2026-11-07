@@ -30,6 +30,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.LaunchActivity;
 
 public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
@@ -42,7 +43,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private final Drawable headerShadowDrawable;
     protected LinearLayoutManager layoutManager;
     protected RecyclerListView recyclerListView;
-    protected ActionBar actionBar;
+    public ActionBar actionBar;
     boolean wasDrawn;
     protected int contentHeight;
     private BaseFragment baseFragment;
@@ -75,40 +76,135 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
      */
     protected boolean takeTranslationIntoAccount = false;
 
-    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize) {
-        this(fragment, needFocus, hasFixedSize, false, fragment == null ? null : fragment.getResourceProvider());
+    public BottomSheetWithRecyclerListView(
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize
+    ) {
+        this(fragment.getParentActivity(), fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .resourcesProvider(fragment.getResourceProvider())
+            .build());
     }
 
-    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
-        this(fragment.getParentActivity(), fragment, needFocus, hasFixedSize, useNested, resourcesProvider);
+    public BottomSheetWithRecyclerListView(
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize,
+        boolean useNested,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        this(fragment.getParentActivity(), fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .useNested(useNested)
+            .resourcesProvider(resourcesProvider)
+            .build());
     }
 
-    public BottomSheetWithRecyclerListView(BaseFragment fragment, boolean needFocus, boolean hasFixedSize, ActionBarType actionBarType) {
-        this(fragment.getParentActivity(), fragment, needFocus, hasFixedSize, false, actionBarType, fragment.getResourceProvider());
+    public BottomSheetWithRecyclerListView(
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize,
+        ActionBarType actionBarType
+    ) {
+        this(fragment.getParentActivity(), fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .actionBarType(actionBarType)
+            .resourcesProvider(fragment.getResourceProvider())
+            .build());
     }
 
-    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, Theme.ResourcesProvider resourcesProvider) {
-        this(context, fragment, needFocus, hasFixedSize, useNested, ActionBarType.FADING, resourcesProvider);
+    public BottomSheetWithRecyclerListView(
+        Context context,
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize,
+        boolean useNested,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        this(context, fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .useNested(useNested)
+            .resourcesProvider(resourcesProvider)
+            .build());
     }
 
     @SuppressLint("AppCompatCustomView")
-    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, ActionBarType actionBarType, Theme.ResourcesProvider resourcesProvider) {
-        this(context, fragment, needFocus, hasFixedSize, useNested, false, actionBarType, resourcesProvider);
-    }
-
-    EditTextEmoji editTextEmoji;
-    public void setEditTextEmoji(EditTextEmoji editTextEmoji) {
-        this.editTextEmoji = editTextEmoji;
+    public BottomSheetWithRecyclerListView(
+        Context context,
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize,
+        boolean useNested,
+        ActionBarType actionBarType,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        this(context, fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .useNested(useNested)
+            .actionBarType(actionBarType)
+            .resourcesProvider(resourcesProvider)
+            .build());
     }
 
     @SuppressLint("AppCompatCustomView")
-    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean hasFixedSize, boolean useNested, boolean stackFromEnd, ActionBarType actionBarType, Theme.ResourcesProvider resourcesProvider) {
-        this(context, fragment, needFocus, false, hasFixedSize, useNested, stackFromEnd, actionBarType, resourcesProvider);
+    public BottomSheetWithRecyclerListView(
+        Context context,
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean hasFixedSize,
+        boolean useNested,
+        boolean stackFromEnd,
+        ActionBarType actionBarType,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        this(context, fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .hasFixedSize(hasFixedSize)
+            .useNested(useNested)
+            .stackFromEnd(stackFromEnd)
+            .actionBarType(actionBarType)
+            .resourcesProvider(resourcesProvider)
+            .build()
+        );
     }
 
     @SuppressLint("AppCompatCustomView")
-    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, boolean needFocus, boolean edgeToEdge, boolean hasFixedSize, boolean useNested, boolean stackFromEnd, ActionBarType actionBarType, Theme.ResourcesProvider resourcesProvider) {
-        super(context, needFocus, edgeToEdge, resourcesProvider);
+    public BottomSheetWithRecyclerListView(
+        Context context,
+        BaseFragment fragment,
+        boolean needFocus,
+        boolean edgeToEdge,
+        boolean hasFixedSize,
+        boolean useNested,
+        boolean stackFromEnd,
+        ActionBarType actionBarType,
+        Theme.ResourcesProvider resourcesProvider
+    ) {
+        this(context, fragment, new Params.Builder()
+            .needFocus(needFocus)
+            .edgeToEdge(edgeToEdge ? EdgeToEdge.V1 : EdgeToEdge.NONE)
+            .hasFixedSize(hasFixedSize)
+            .useNested(useNested)
+            .stackFromEnd(stackFromEnd)
+            .actionBarType(actionBarType)
+            .resourcesProvider(resourcesProvider)
+            .build());
+    }
+
+    @SuppressLint("AppCompatCustomView")
+    public BottomSheetWithRecyclerListView(Context context, BaseFragment fragment, Params params) {
+        super(context, params.needFocus, params.edgeToEdge, params.resourcesProvider);
+        final boolean hasFixedSize = params.hasFixedSize;
+        final boolean useNested = params.useNested;
+        final boolean stackFromEnd = params.stackFromEnd;
+        final ActionBarType actionBarType = params.actionBarType;
+
         this.baseFragment = fragment;
         this.hasFixedSize = hasFixedSize;
         this.stackFromEnd = stackFromEnd;
@@ -390,11 +486,11 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                     return super.dispatchTouchEvent(ev);
                 }
             };
-            actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-            actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, resourcesProvider, false);
 
             actionBar.setCastShadows(true);
             actionBar.setTitle(getTitle());
@@ -454,6 +550,11 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 return BottomSheetWithRecyclerListView.this.canHighlightChildAt(child, x, y);
             }
         };
+    }
+
+    EditTextEmoji editTextEmoji;
+    public void setEditTextEmoji(EditTextEmoji editTextEmoji) {
+        this.editTextEmoji = editTextEmoji;
     }
 
     private class PaddingView extends View {
@@ -865,6 +966,81 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 ((LinearLayoutManager) recyclerListView.getLayoutManager()).scrollToPositionWithOffset(savedScrollPosition, offset);
             }
             savedScrollPosition = -1;
+        }
+    }
+
+
+
+
+
+    public static final class Params {
+
+        public final boolean needFocus;
+        public final EdgeToEdge edgeToEdge;
+        public final boolean hasFixedSize;
+        public final boolean useNested;
+        public final boolean stackFromEnd;
+        public final ActionBarType actionBarType;
+        public final Theme.ResourcesProvider resourcesProvider;
+
+        private Params(Builder builder) {
+            needFocus = builder.needFocus;
+            edgeToEdge = builder.edgeToEdge;
+            hasFixedSize = builder.hasFixedSize;
+            useNested = builder.useNested;
+            stackFromEnd = builder.stackFromEnd;
+            actionBarType = builder.actionBarType;
+            resourcesProvider = builder.resourcesProvider;
+        }
+
+        public static final class Builder {
+
+            private boolean needFocus;
+            private BottomSheet.EdgeToEdge edgeToEdge = EdgeToEdge.NONE;
+            private boolean hasFixedSize;
+            private boolean useNested;
+            private boolean stackFromEnd;
+            private ActionBarType actionBarType = ActionBarType.FADING;
+            private Theme.ResourcesProvider resourcesProvider;
+
+            public Builder needFocus(boolean needFocus) {
+                this.needFocus = needFocus;
+                return this;
+            }
+
+            public Builder edgeToEdge(EdgeToEdge edgeToEdge) {
+                this.edgeToEdge = edgeToEdge;
+                return this;
+            }
+
+            public Builder hasFixedSize(boolean hasFixedSize) {
+                this.hasFixedSize = hasFixedSize;
+                return this;
+            }
+
+            public Builder useNested(boolean useNested) {
+                this.useNested = useNested;
+                return this;
+            }
+
+            public Builder stackFromEnd(boolean stackFromEnd) {
+                this.stackFromEnd = stackFromEnd;
+                return this;
+            }
+
+            public Builder actionBarType(ActionBarType actionBarType) {
+                this.actionBarType = actionBarType;
+                return this;
+            }
+
+            public Builder resourcesProvider(Theme.ResourcesProvider resourcesProvider) {
+                this.resourcesProvider = resourcesProvider;
+                return this;
+            }
+
+            public Params build() {
+                return new Params(this);
+            }
         }
     }
 }

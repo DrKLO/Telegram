@@ -1,0 +1,86 @@
+<!--
+  gestures: touch-action: pan-y on the slider, so it claims horizontal drags only (corpus/gestures/README.md)
+  idea: a price filter with a two-thumb range slider built from divs (form controls are outside profile 1), on touch-action: pan-y. Drag either thumb, or press anywhere on the track and slide: the nearest thumb follows and ticks on each step. A drag that starts up or down scrolls the chat; this is the claim a horizontal slider needs.
+-->
+<title>Price filter</title>
+<style>
+  .ta { margin: 0 0 8px; font-size: 13px; color: var(--tg-theme-hint-color) }
+  h3 { margin: 0 0 2px }
+  #val { margin: 0; font-size: 22px; font-weight: 600 }
+  #sl { position: relative; height: 48px; margin: 6px 8px 0; touch-action: pan-y }
+  #tk0, #fill { position: absolute; top: 22px; height: 4px; border-radius: 2px }
+  #tk0 { left: 0; right: 0; background: rgba(128, 128, 128, .3) }
+  #fill { background: var(--tg-theme-button-color) }
+  .th { position: absolute; top: 10px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); pointer-events: none }
+  .th.on { box-shadow: 0 0 0 6px rgba(51, 144, 236, .25), 0 1px 4px rgba(0, 0, 0, .35) }
+  #hist { display: flex; align-items: flex-end; gap: 2px; height: 50px; margin: 10px 8px 0 }
+  #hist i { flex: 1; border-radius: 2px 2px 0 0; background: var(--tg-theme-button-color) }
+  #hist i.off { background: rgba(128, 128, 128, .3) }
+  .ends { display: flex; justify-content: space-between; margin: 4px 8px 0; font-size: 12px; color: var(--tg-theme-hint-color) }
+  .st { margin: 8px 0 0; font-size: 13px }
+</style>
+<p class="ta"><code>touch-action: pan-y</code> · slide a thumb or the track sideways; up or down scrolls the chat</p>
+<h3>Hotels in Lisbon, per night</h3>
+<p id="val"></p>
+<div id="hist"></div>
+<div id="sl"><div id="tk0"></div><div id="fill"></div><div class="th" id="a"></div><div class="th" id="b"></div></div>
+<div class="ends"><span>€20</span><span>€300</span></div>
+<p class="st"><span id="n"></span> · presses taken by the chat: <b id="tk">0</b></p>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var MIN = 20, MAX = 300, STEP = 10, sl = $('sl'), hist = $('hist');
+var lo = 60, hi = 180, press = null, took = 0, seed = 11, prices = [], bars = [];
+function rnd() { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; }
+for (var k = 0; k < 60; k++) prices.push(Math.round(MIN + Math.pow(rnd(), 1.6) * (MAX - MIN)));
+for (var c = 0; c < 28; c++) {
+  var from = MIN + c * STEP, n = prices.filter(function (p) { return p >= from && p < from + STEP; }).length;
+  var bar = document.createElement('i');
+  bar.style.height = Math.min(100, 6 + n * 9) + '%';
+  bars.push(hist.appendChild(bar));
+}
+var pct = function (v) { return (v - MIN) * 100 / (MAX - MIN); };
+function draw() {
+  $('a').style.left = pct(lo) + '%';
+  $('b').style.left = pct(hi) + '%';
+  $('fill').style.left = pct(lo) + '%';
+  $('fill').style.width = pct(hi) - pct(lo) + '%';
+  $('val').textContent = '€' + lo + ' – €' + hi;
+  $('n').textContent = prices.filter(function (p) { return p >= lo && p <= hi; }).length + ' of ' + prices.length + ' hotels';
+  bars.forEach(function (b, c) { var v = MIN + c * STEP; b.className = v >= lo && v < hi ? '' : 'off'; });
+}
+draw();
+function hap() { try { TelegramWidget.HapticFeedback.selectionChanged(); } catch (_) {} }
+function set(e) {
+  var v = Math.round((MIN + (e.clientX - press.r.left) / press.r.width * (MAX - MIN)) / STEP) * STEP;
+  if (press.th === 'a') v = Math.max(MIN, Math.min(hi - STEP, v));
+  else v = Math.min(MAX, Math.max(lo + STEP, v));
+  if (v === (press.th === 'a' ? lo : hi)) return;
+  if (press.th === 'a') lo = v; else hi = v;
+  hap();
+  draw();
+}
+sl.addEventListener('pointerdown', function (e) {
+  var r = sl.getBoundingClientRect();
+  if (!(r.width > 0)) r = { left: 0, width: 280 };
+  var v = MIN + (e.clientX - r.left) / r.width * (MAX - MIN);
+  press = { id: e.pointerId, r: r, was: [lo, hi], th: Math.abs(v - lo) <= Math.abs(v - hi) && v < hi ? 'a' : 'b' };
+  $(press.th).className = 'th on';
+  try { sl.setPointerCapture(e.pointerId); } catch (_) {}
+  set(e);
+});
+sl.addEventListener('pointermove', function (e) { if (press && e.pointerId === press.id) set(e); });
+function end(e) {
+  if (!press) return;
+  $(press.th).className = 'th';
+  if (e.type === 'pointercancel') {
+    // the chat took the press (a scroll that began on the track): undo the jump of its pointerdown
+    lo = press.was[0];
+    hi = press.was[1];
+    draw();
+    $('tk').textContent = ++took;
+  }
+  press = null;
+}
+sl.addEventListener('pointerup', end);
+sl.addEventListener('pointercancel', end);
+</script>

@@ -1,5 +1,7 @@
 package org.telegram.ui.Components;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
@@ -45,14 +47,7 @@ public class FragmentContextViewWavesDrawable {
     ArrayList<View> parents = new ArrayList<>();
 
     Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-    LineBlobDrawable lineBlobDrawable = new LineBlobDrawable(5);
-    LineBlobDrawable lineBlobDrawable1 = new LineBlobDrawable(7);
-    LineBlobDrawable lineBlobDrawable2 = new LineBlobDrawable(8);
-
-    RectF rect = new RectF();
     Path path = new Path();
-    private final Paint selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public FragmentContextViewWavesDrawable() {
         for (int i = 0; i < 4; i++) {
@@ -143,29 +138,6 @@ public class FragmentContextViewWavesDrawable {
                 currentState.setToPaint(paint);
             }
 
-            lineBlobDrawable.minRadius = 0;
-            lineBlobDrawable.maxRadius = AndroidUtilities.dp(2) + AndroidUtilities.dp(2) * amplitude;
-
-            lineBlobDrawable1.minRadius = AndroidUtilities.dp(0);
-            lineBlobDrawable1.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
-
-            lineBlobDrawable2.minRadius = AndroidUtilities.dp(0);
-            lineBlobDrawable2.maxRadius = AndroidUtilities.dp(3) + AndroidUtilities.dp(9) * amplitude;
-
-            if (i == 1 && update) {
-                lineBlobDrawable.update(amplitude, 0.3f);
-                lineBlobDrawable1.update(amplitude, 0.7f);
-                lineBlobDrawable2.update(amplitude, 0.7f);
-            }
-
-            if (LiteMode.isEnabled(LiteMode.FLAG_CALLS_ANIMATIONS)) {
-                paint.setAlpha((int) (76 * alpha));
-                float top1 = AndroidUtilities.dp(6) * amplitude2;
-                float top2 = AndroidUtilities.dp(6) * amplitude2;
-                lineBlobDrawable1.draw(left, top - top1, right, bottom, canvas, paint, top, progress);
-                lineBlobDrawable2.draw(left, top - top2, right, bottom, canvas, paint, top, progress);
-            }
-
             if (i == 1 && rippleTransition) {
                 paint.setAlpha(255);
             } else if (i == 1) {
@@ -174,18 +146,18 @@ public class FragmentContextViewWavesDrawable {
                 paint.setAlpha(255);
             }
             if (i == 1 && rippleTransition) {
-                path.reset();
-                float cx = right - AndroidUtilities.dp(18);
+                path.rewind();
+                float cx = right - dp(18);
                 float cy = top + (bottom - top) / 2;
                 float r = (right - left) * 1.1f * alpha;
                 path.addCircle(cx, cy, r, Path.Direction.CW);
                 canvas.save();
 
                 canvas.clipPath(path);
-                lineBlobDrawable.draw(left, top, right, bottom, canvas, paint, top, progress);
+                canvas.drawRoundRect(left, top, right, bottom, dp(18), dp(18), paint);
                 canvas.restore();
             } else {
-                lineBlobDrawable.draw(left, top, right, bottom, canvas, paint, top, progress);
+                canvas.drawRoundRect(left, top, right, bottom, dp(18), dp(18), paint);
             }
         }
     }

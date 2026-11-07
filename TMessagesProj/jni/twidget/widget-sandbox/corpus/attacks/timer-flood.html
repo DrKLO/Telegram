@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!-- Timer flood: 100 000 setTimeout calls in a loop. The shim throws RangeError
+     past maxTimers (256), the glue refuses as a backstop, the widget must stay
+     alive and its memory must stay bounded. -->
+<html><head><meta charset="utf-8"></head><body>
+<p id="status">flooding</p><p id="count">0</p><button id="btn">still clickable</button><p id="clicks">0</p>
+<script>
+  var ok = 0, failed = 0, firstError = '';
+  for (var i = 0; i < 100000; i++) {
+    try { setTimeout(function () { ok++; }, 1 + (i % 1000)); } catch (e) { if (!firstError) firstError = e.name + ': ' + e.message; failed++; }
+  }
+  document.getElementById('status').textContent = 'done: ' + firstError;
+  document.getElementById('count').textContent = (100000 - failed) + ' accepted, ' + failed + ' refused';
+  var clicks = 0;
+  document.getElementById('btn').addEventListener('click', function () { document.getElementById('clicks').textContent = ++clicks; });
+</script>
+</body></html>

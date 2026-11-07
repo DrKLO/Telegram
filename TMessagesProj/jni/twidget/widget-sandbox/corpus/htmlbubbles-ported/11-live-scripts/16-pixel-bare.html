@@ -1,0 +1,52 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 16
+  author: pixel 10:19 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+  The misbehaviour is kept (it is the demo), but only behind the button; nothing spins at load.
+  twidget's numbers differ from LiteChat's: 500 ms per task, 300 ms of JS per second, and an
+  over-budget widget has its timers deferred rather than being stopped — the tick rate shows it.
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button.primary { background-color: var(--blue); color: #fff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+</style>
+<div class="card pad" style="width: 330px; max-width: 100%">
+  <div class="row between"><b>🐷 Greedy timer</b><span class="badge" id="badge"><span id="ticks">0</span> ticks</span></div>
+  <p class="small muted" style="margin: 6px 0 8px 0">Each tick burns 40 ms of CPU, 10 times a second. Every call is under the 500 ms per-task cap, but together they ask for 400 ms of a 300 ms per second budget. twidget doesn't stop the script: it defers the timer until the budget frees up, so the rate drops.</p>
+  <button class="primary" id="go">Start</button>
+  <div class="small muted" id="rate" style="margin-top: 6px" hidden></div>
+</div>
+<script>
+let ticks = 0, greedy = false, startedAt = 0;
+const ticksEl = document.getElementById('ticks'), badge = document.getElementById('badge'), go = document.getElementById('go'), rate = document.getElementById('rate');
+function busy(ms) { const end = Date.now() + ms; while (Date.now() < end) {} }
+go.addEventListener('click', () => {
+  if (greedy) return;
+  greedy = true;
+  startedAt = performance.now();
+  badge.classList.add('orange');
+  go.textContent = 'Burning…';
+  rate.hidden = false;
+  setInterval(() => {
+    busy(40);
+    ticks++;
+    ticksEl.textContent = String(ticks);
+    const s = (performance.now() - startedAt) / 1000;
+    if (s > 0.5) rate.textContent = `${(ticks / s).toFixed(1)} ticks/s observed (10 asked for) · ${(ticks * 40 / s).toFixed(0)} ms of CPU per second`;
+  }, 100);
+});
+</script>

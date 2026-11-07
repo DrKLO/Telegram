@@ -10,6 +10,7 @@ import android.util.SparseIntArray;
 
 import androidx.core.graphics.ColorUtils;
 
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.HashSet;
@@ -91,6 +92,8 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_dialogBackgroundGray, 0xff000000);
         sparseIntArray.put(Theme.key_dialog_inlineProgressBackground, -15393241);
         sparseIntArray.put(Theme.key_windowBackgroundWhite, -15198183);
+        sparseIntArray.put(Theme.key_glass_targetMainTabs, -15198183);
+        sparseIntArray.put(Theme.key_glass_tabUnselected, Color.WHITE);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteBlackText, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_emojiPanelEmptyText, -8553090);
         sparseIntArray.put(Theme.key_progressCircle, -10177027);
@@ -210,7 +213,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
     public Drawable getDrawable(String drawableKey) {
         if (Objects.equals(drawableKey, Theme.key_drawable_msgOutMedia)) {
             if (msgOutMedia == null) {
-                msgOutMedia = new Theme.MessageDrawable(Theme.MessageDrawable.TYPE_MEDIA, true, false, this);
+                msgOutMedia = new MessageDrawable(MessageDrawable.TYPE_MEDIA, true, false, this);
             }
             return msgOutMedia;
         }

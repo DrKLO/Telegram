@@ -51,16 +51,16 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
     protected ArrayList<MoveInfo> mPendingMoves = new ArrayList<>();
     protected ArrayList<ChangeInfo> mPendingChanges = new ArrayList<>();
 
-    ArrayList<ArrayList<RecyclerView.ViewHolder>> mAdditionsList = new ArrayList<>();
-    ArrayList<ArrayList<MoveInfo>> mMovesList = new ArrayList<>();
-    ArrayList<ArrayList<ChangeInfo>> mChangesList = new ArrayList<>();
-    ArrayList<MoveInfo> currentMoves = new ArrayList<>();
-    ArrayList<ChangeInfo> currentChanges = new ArrayList<>();
+    protected ArrayList<ArrayList<RecyclerView.ViewHolder>> mAdditionsList = new ArrayList<>();
+    protected ArrayList<ArrayList<MoveInfo>> mMovesList = new ArrayList<>();
+    protected ArrayList<ArrayList<ChangeInfo>> mChangesList = new ArrayList<>();
+    protected ArrayList<MoveInfo> currentMoves = new ArrayList<>();
+    protected ArrayList<ChangeInfo> currentChanges = new ArrayList<>();
 
     protected ArrayList<RecyclerView.ViewHolder> mAddAnimations = new ArrayList<>();
     protected ArrayList<RecyclerView.ViewHolder> mMoveAnimations = new ArrayList<>();
     protected ArrayList<RecyclerView.ViewHolder> mRemoveAnimations = new ArrayList<>();
-    ArrayList<RecyclerView.ViewHolder> mChangeAnimations = new ArrayList<>();
+    protected ArrayList<RecyclerView.ViewHolder> mChangeAnimations = new ArrayList<>();
 
     protected boolean delayAnimations = true;
     private long delayIncrement = 0;
@@ -90,8 +90,8 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
             this.newHolder = newHolder;
         }
 
-        ChangeInfo(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder,
-                int fromX, int fromY, int toX, int toY) {
+        public ChangeInfo(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder,
+                          int fromX, int fromY, int toX, int toY) {
             this(oldHolder, newHolder);
             this.fromX = fromX;
             this.fromY = fromY;
@@ -912,7 +912,7 @@ public class DefaultItemAnimator extends SimpleItemAnimator {
         dispatchAnimationsFinished();
     }
 
-    void cancelAll(List<RecyclerView.ViewHolder> viewHolders) {
+    protected void cancelAll(List<RecyclerView.ViewHolder> viewHolders) {
         for (int i = viewHolders.size() - 1; i >= 0; i--) {
             viewHolders.get(i).itemView.animate().cancel();
         }

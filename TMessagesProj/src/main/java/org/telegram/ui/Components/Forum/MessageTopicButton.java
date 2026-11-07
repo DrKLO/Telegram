@@ -30,7 +30,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -78,6 +80,14 @@ public class MessageTopicButton {
     private Context context;
     private Theme.ResourcesProvider resourcesProvider;
 
+    // theme refresh state: 0 - none, 1 - user/chat name colors, 2 - topic icon colors
+    private int themeColorsMode;
+    private int themeColorsGeneration;
+    private int userNameColorKey = -1;
+    private MessagesController.PeerColor userPeerColor;
+    private int topicIconColor;
+    private int topicIconColorKey = -1;
+
     private final static int[] idleState = new int[]{};
     private final static int[] pressedState = new int[]{android.R.attr.state_enabled, android.R.attr.state_pressed};
 
@@ -122,8 +132,11 @@ public class MessageTopicButton {
             imageReceiver.setForUserOrChat(userOrChat, avatarDrawable);
         }
 
+        themeColorsMode = 0;
+        userNameColorKey = -1;
+        userPeerColor = null;
         if (messageObject.isOutOwner()) {
-            topicNameColor = getThemedColor(Theme.key_chat_outReplyNameText);
+            topicNameColor = getThemedColor(userNameColorKey = Theme.key_chat_outReplyNameText);
         } else {
             int colorId = 0;
             if (userOrChat instanceof TLRPC.User) {
@@ -132,19 +145,22 @@ public class MessageTopicButton {
                 colorId = ChatObject.getColorId((TLRPC.Chat) userOrChat);
             }
             if (colorId < 7) {
-                topicNameColor = getThemedColor(Theme.keys_avatar_nameInMessage[colorId]);
+                topicNameColor = getThemedColor(userNameColorKey = Theme.keys_avatar_nameInMessage[colorId]);
             } else {
                 MessagesController.PeerColors peerColors = MessagesController.getInstance(messageObject.currentAccount).peerColors;
                 MessagesController.PeerColor peerColor = peerColors != null ? peerColors.getColor(colorId) : null;
                 if (peerColor != null) {
                     topicNameColor = peerColor.getColor(0, resourcesProvider);
+                    userPeerColor = peerColor;
                 } else {
-                    topicNameColor = getThemedColor(Theme.key_chat_inReplyNameText);
+                    topicNameColor = getThemedColor(userNameColorKey = Theme.key_chat_inReplyNameText);
                 }
             }
         }
         boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
         topicBackgroundColor = Theme.multAlpha(topicNameColor, dark ? 0.12f : 0.10f);
+        themeColorsMode = 1;
+        themeColorsGeneration = ThemeBind.generation();
 
 
         return setInternal(cell, messageObject, maxWidth, title, 1);
@@ -158,8 +174,10 @@ public class MessageTopicButton {
         topicClosed = topic.closed;
         String title = topic.title == null ? "" : topic.title;
         int iconColor;
+        themeColorsMode = 0;
+        topicIconColorKey = -1;
         if (isGeneralTopic) {
-            iconColor = getThemedColor(messageObject != null && messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
+            iconColor = getThemedColor(topicIconColorKey = messageObject != null && messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
             topicIconDrawable = ForumUtilities.createGeneralTopicDrawable(context, .65f, iconColor, false);
         } else if (topic.icon_emoji_id != 0) {
             if (!(topicIconDrawable instanceof AnimatedEmojiDrawable) || topic.icon_emoji_id != ((AnimatedEmojiDrawable) topicIconDrawable).getDocumentId()) {
@@ -174,13 +192,16 @@ public class MessageTopicButton {
             iconColor = topicIconDrawable instanceof AnimatedEmojiDrawable ? AnimatedEmojiDrawable.getDominantColor((AnimatedEmojiDrawable) topicIconDrawable) : 0;
             if (iconColor == 0) {
                 topicIconWaiting = true;
-                iconColor = getThemedColor(messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
+                iconColor = getThemedColor(topicIconColorKey = messageObject.isOutOwner() ? Theme.key_chat_outReactionButtonText : Theme.key_chat_inReactionButtonText);
             }
         } else {
             iconColor = topic.icon_color;
             topicIconDrawable = ForumUtilities.createSmallTopicDrawable(title, topic.icon_color);
         }
         setupColors(iconColor);
+        topicIconColor = iconColor;
+        themeColorsMode = 2;
+        themeColorsGeneration = ThemeBind.generation();
 
         return setInternal(cell, messageObject, maxWidth, title, 2);
     }
@@ -463,11 +484,54 @@ public class MessageTopicButton {
         return topicHeight;
     }
 
+    // re-reads the theme colors after a theme change (called on draw)
+    private void refreshThemeColors() {
+        themeColorsGeneration = ThemeBind.generation();
+        try {
+            final int prevBackgroundColor = topicBackgroundColor;
+            if (themeColorsMode == 1) {
+                if (userNameColorKey >= 0) {
+                    topicNameColor = getThemedColor(userNameColorKey);
+                } else if (userPeerColor != null) {
+                    topicNameColor = userPeerColor.getColor(0, resourcesProvider);
+                } else {
+                    return;
+                }
+                boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+                topicBackgroundColor = Theme.multAlpha(topicNameColor, dark ? 0.12f : 0.10f);
+            } else if (themeColorsMode == 2) {
+                int iconColor = topicIconColor;
+                if (topicIconColorKey >= 0) {
+                    iconColor = topicIconColor = getThemedColor(topicIconColorKey);
+                    if (topicIconDrawable instanceof ForumUtilities.GeneralTopicDrawable) {
+                        ((ForumUtilities.GeneralTopicDrawable) topicIconDrawable).setColor(iconColor);
+                    }
+                }
+                setupColors(iconColor);
+            } else {
+                return;
+            }
+            if (topicSelectorDrawable != null && topicBackgroundColor != prevBackgroundColor) {
+                Theme.setSelectorDrawableColor(topicSelectorDrawable, topicBackgroundColor, true);
+            }
+            if (topicPaint != null) {
+                topicPaint.setColor(topicBackgroundColor);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public void draw(Canvas canvas, float x, float y, float alpha) {
+        if (themeColorsMode != 0 && themeColorsGeneration != ThemeBind.generation()) {
+            refreshThemeColors();
+        }
         if (topicIconWaiting && topicIconDrawable instanceof AnimatedEmojiDrawable) {
             int iconColor = AnimatedEmojiDrawable.getDominantColor((AnimatedEmojiDrawable) topicIconDrawable);
             if (iconColor != 0) {
                 topicIconWaiting = false;
+                topicIconColor = iconColor;
+                topicIconColorKey = -1;
                 setupColors(iconColor);
             }
         }

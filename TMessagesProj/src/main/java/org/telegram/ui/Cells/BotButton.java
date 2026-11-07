@@ -17,13 +17,12 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotInlineKeyboard;
 import org.telegram.messenger.MessageObject;
-import org.telegram.messenger.MessagesController;
-import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.Text;
@@ -42,7 +41,7 @@ class BotButton {
     public int positionFlags;
     public Text title;
     @Nullable
-    public TLRPC.KeyboardButton button;
+    public TL_keyboard.KeyboardInlineButton button;
     @Nullable
     public BotInlineKeyboard.ButtonCustom buttonCustom;
     public BotInlineKeyboard.Button buttonImpl;
@@ -76,6 +75,7 @@ class BotButton {
         RectF rect,
         boolean drawProgress,
         boolean drawBuyCard,
+        boolean compact,
         Theme.ResourcesProvider resourcesProvider
     ) {
         boolean invalidate = false;
@@ -120,7 +120,7 @@ class BotButton {
             canvas.drawPath(path, Theme.chat_actionBackgroundGradientDarkenPaint);
         }
 
-//        boolean drawProgress = (button instanceof TLRPC.TL_keyboardButtonCallback || button instanceof TLRPC.TL_keyboardButtonGame || button instanceof TLRPC.TL_keyboardButtonBuy || button instanceof TLRPC.TL_keyboardButtonUrlAuth) && SendMessagesHelper.getInstance(currentAccount).isSendingCallback(currentMessageObject, button)
+//        boolean drawProgress = (button instanceof TLRPC.TL_keyboardButtonCallback_layer228 || button instanceof TLRPC.TL_keyboardButtonGame || button instanceof TLRPC.TL_keyboardButtonBuy_layer228 || button instanceof TLRPC.TL_keyboardButtonUrlAuth_layer228) && SendMessagesHelper.getInstance(currentAccount).isSendingCallback(currentMessageObject, button)
 //                || button instanceof TLRPC.TL_keyboardButtonRequestGeoLocation && SendMessagesHelper.getInstance(currentAccount).isSendingCurrentLocation(currentMessageObject, button)
 //                || button instanceof TLRPC.TL_keyboardButtonUrl && delegate != null && delegate.isProgressLoading(this, ChatActivity.PROGRESS_BOT_BUTTON) && delegate.getProgressLoadingBotButtonUrl(this) == button.url;
 //
@@ -153,11 +153,15 @@ class BotButton {
             loadingRect.inset(AndroidUtilities.dpf2(.625f), AndroidUtilities.dpf2(.625f));
             loadingDrawable.setRadii(radii);
             loadingDrawable.setBounds(loadingRect);
+            // compact buttons have dark text on a light background: tint the loading like the text
+            final int loadingColor = compact ?
+                Theme.multAlpha(Theme.getColor(Theme.key_chat_compact_botButtonText, resourcesProvider), .125f) :
+                Theme.getColor(Theme.key_chat_serviceBackgroundSelector, resourcesProvider);
             loadingDrawable.setColors(
-                Theme.multAlpha(Theme.getColor(Theme.key_chat_serviceBackgroundSelector, resourcesProvider), 1f),
-                Theme.multAlpha(Theme.getColor(Theme.key_chat_serviceBackgroundSelector, resourcesProvider), 2.5f),
-                Theme.multAlpha(Theme.getColor(Theme.key_chat_serviceBackgroundSelector, resourcesProvider), 3f),
-                Theme.multAlpha(Theme.getColor(Theme.key_chat_serviceBackgroundSelector, resourcesProvider), 10f)
+                Theme.multAlpha(loadingColor, 1f),
+                Theme.multAlpha(loadingColor, 2.5f),
+                Theme.multAlpha(loadingColor, 3f),
+                Theme.multAlpha(loadingColor, 10f)
             );
             loadingDrawable.setAlpha(0xFF);
             loadingDrawable.draw(canvas);
@@ -201,6 +205,7 @@ class BotButton {
         title.draw(canvas, titleX, rect.centerY(), isLocked ? 0.5f: 1f);
         canvas.restore();
 
+        final TL_keyboard.TL_inlineButtonTypeUrl buttonTypeUrl = TLKeyboardHelper.getType(button, TL_keyboard.TL_inlineButtonTypeUrl.class);
         if (buttonCustom != null) {
             if (isLocked) {
                 final Drawable drawable = Theme.getThemeDrawable(Theme.key_drawable_botLock, resourcesProvider);
@@ -209,14 +214,14 @@ class BotButton {
                 drawable.draw(canvas);
             }
 
-        } else if (button instanceof TLRPC.TL_keyboardButtonWebView) {
+        } else if (TLKeyboardHelper.isButtonWebView(button)) {
             final Drawable drawable = Theme.getThemeDrawable(Theme.key_drawable_botWebView, resourcesProvider);
             final int x = (int) rect.right - dp(3) - drawable.getIntrinsicWidth();
             BaseCell.setDrawableBounds(drawable, x, rect.top + dp(3));
             drawable.draw(canvas);
-        } else if (button instanceof TLRPC.TL_keyboardButtonUrl) {
+        } else if (buttonTypeUrl != null) {
             final Drawable drawable;
-            if (LinkManager.isWebAppLink(button.url)) {
+            if (LinkManager.isWebAppLink(buttonTypeUrl.url)) {
                 drawable = Theme.getThemeDrawable(Theme.key_drawable_botWebView, resourcesProvider);
             } else if (isInviteButton) {
                 drawable = Theme.getThemeDrawable(Theme.key_drawable_botInvite, resourcesProvider);
@@ -226,12 +231,12 @@ class BotButton {
             int x = (int) rect.right - dp(3) - drawable.getIntrinsicWidth();
             BaseCell.setDrawableBounds(drawable, x, rect.top + dp(3));
             drawable.draw(canvas);
-        } else if (button instanceof TLRPC.TL_keyboardButtonSwitchInline || button instanceof TLRPC.TL_keyboardButtonRequestPeer) {
+        } else if (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeSwitchInline.class) || TLKeyboardHelper.isType(button, TL_keyboard.TL_buttonTypeRequestPeer.class)) {
             final Drawable drawable = Theme.getThemeDrawable(Theme.key_drawable_botInline, resourcesProvider);
             final int x = (int) rect.right - dp(3) - drawable.getIntrinsicWidth();
             BaseCell.setDrawableBounds(drawable, x, rect.top + dp(3));
             drawable.draw(canvas);
-        } else if (button instanceof TLRPC.TL_keyboardButtonBuy && drawBuyCard) {
+        } else if (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeBuy.class) && drawBuyCard) {
             final int x = (int) rect.right - dp(5) - Theme.chat_botCardDrawable.getIntrinsicWidth();
             BaseCell.setDrawableBounds(Theme.chat_botCardDrawable, x, rect.top + dp(4));
             Theme.chat_botCardDrawable.draw(canvas);

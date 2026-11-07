@@ -22,6 +22,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -72,7 +73,7 @@ public class BusinessBotButton extends FrameLayout {
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(dp(14));
         titleView.setText(UserObject.getUserName(user));
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setEllipsizeByGradient(true);
         textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17, 0, 0, 0, 1));
 
@@ -81,7 +82,7 @@ public class BusinessBotButton extends FrameLayout {
         subtitleView.getDrawable().setHacks(true, true, false);
         subtitleView.setTextSize(dp(13));
         subtitleView.setText(LocaleController.getString(R.string.BizBotStatusManages));
-        subtitleView.setTextColor(Theme.getColor(Theme.key_chat_topPanelMessage, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_chat_topPanelMessage, resourcesProvider);
         subtitleView.setEllipsizeByGradient(true);
         textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 17));
 
@@ -92,10 +93,10 @@ public class BusinessBotButton extends FrameLayout {
         pauseButton.setAnimationProperties(.75f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
         pauseButton.setScaleProperty(.6f);
         pauseButton.setTypeface(AndroidUtilities.bold());
-        pauseButton.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(14), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.multAlpha(Color.WHITE, .12f))));
+        ThemeBind.selectorBackground(pauseButton, Theme.createSimpleSelectorRoundRectDrawable(dp(14), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.multAlpha(Color.WHITE, .12f))), ThemeBind.of(Theme.key_featuredStickers_addButton), null, resourcesProvider);
         pauseButton.setTextSize(dp(14));
         pauseButton.setGravity(Gravity.RIGHT);
-        pauseButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        ThemeBind.textColor(pauseButton, Theme.key_featuredStickers_buttonText, resourcesProvider);
         pauseButton.setPadding(dp(13), 0, dp(13), 0);
         pauseButton.setOnClickListener(v -> {
             paused = !paused;
@@ -124,8 +125,8 @@ public class BusinessBotButton extends FrameLayout {
         menuView = new ImageView(context);
         menuView.setScaleType(ImageView.ScaleType.CENTER);
         menuView.setImageResource(R.drawable.msg_mini_customize);
-        menuView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0));
-        menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.selectorBackground(menuView, Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(menuView, Theme.key_chat_topPanelClose, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         menuView.setOnClickListener(e -> {
             ItemOptions itemOptions = ItemOptions.makeOptions(chatActivity.getLayoutContainer(), resourcesProvider, menuView);
             itemOptions.add(R.drawable.msg_cancel, LocaleController.getString(R.string.BizBotRemove), true, () -> {

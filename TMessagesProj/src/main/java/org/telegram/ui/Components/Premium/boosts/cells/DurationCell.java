@@ -8,6 +8,7 @@ import org.telegram.messenger.BillingController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
@@ -20,10 +21,10 @@ public class DurationCell extends BaseCell {
         super(context, resourcesProvider);
         imageView.setVisibility(GONE);
 
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider);
         totalTextView = new SimpleTextView(context);
         totalTextView.setTextSize(16);
-        totalTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider));
+        ThemeBind.textColor(totalTextView, Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider);
         totalTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         addView(totalTextView);
 

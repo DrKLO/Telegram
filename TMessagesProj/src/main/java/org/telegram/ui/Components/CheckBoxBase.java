@@ -26,6 +26,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.GenericProvider;
 import org.telegram.messenger.LocaleController;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 
 public class CheckBoxBase {
@@ -97,7 +98,7 @@ public class CheckBoxBase {
 
     private ProgressDelegate progressDelegate;
 
-    private Theme.MessageDrawable messageDrawable;
+    private MessageDrawable messageDrawable;
     private Theme.ResourcesProvider resourcesProvider;
 
     private GenericProvider<Void, Paint> circlePaintProvider = obj -> paint;
@@ -327,7 +328,7 @@ public class CheckBoxBase {
         invalidate();
     }
 
-    public void setBackgroundDrawable(Theme.MessageDrawable drawable) {
+    public void setBackgroundDrawable(MessageDrawable drawable) {
         if (messageDrawable == drawable) {
             return;
         }

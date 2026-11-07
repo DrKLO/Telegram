@@ -1,0 +1,30 @@
+<style>
+body{margin:0;font:13px -apple-system,system-ui,sans-serif;color:light-dark(#1c1c1e,#f2f2f7);background:light-dark(#fff,#1c1c1e)}
+.row{display:flex;gap:10px;padding:14px}
+.card{width:56px;height:56px;border-radius:14px;background:#0a84ff}
+.card:nth-child(2){background:#30d158}.card:nth-child(3){background:#ff9f0a}.card:nth-child(4){background:#ff375f}
+.bar{margin:0 14px;height:10px;border-radius:5px;background:#5e5ce6;width:40px}
+button{margin:14px;font:inherit;padding:6px 12px;border-radius:8px;border:0;background:#8e8e93;color:#fff}
+</style>
+<div class="row"><div class="card"></div><div class="card"></div><div class="card"></div><div class="card"></div></div>
+<div class="bar" id="bar"></div>
+<button id="toggle">Pause</button><span id="state"></span>
+<script>
+const cards = [...document.querySelectorAll('.card')];
+const anims = cards.map((card, i) => card.animate([
+  { transform: 'translateY(0px) rotate(0deg)', opacity: 1 },
+  { transform: 'translateY(-10px) rotate(12deg)', opacity: 0.6, offset: 0.4, easing: 'ease-out' },
+  { transform: 'translateY(0px) rotate(0deg)', opacity: 1 },
+], { duration: 900, delay: i * 120, iterations: Infinity, easing: 'ease-in-out' }));
+const bar = document.getElementById('bar').animate({ width: ['40px', '300px'], backgroundColor: ['#5e5ce6', '#64d2ff'] }, { duration: 1600, iterations: Infinity, direction: 'alternate', easing: 'cubic-bezier(.3,1.4,.6,1)' });
+const all = [...anims, bar];
+const state = document.getElementById('state');
+const show = () => { state.textContent = all.map(a => a.playState[0]).join(''); };
+document.getElementById('toggle').onclick = (e) => {
+  const paused = all[0].playState === 'paused';
+  all.forEach(a => paused ? a.play() : a.pause());
+  e.target.textContent = paused ? 'Pause' : 'Play';
+  Promise.all(all.map(a => a.ready)).then(show);
+};
+Promise.all(all.map(a => a.ready)).then(show);
+</script>

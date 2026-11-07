@@ -1,0 +1,102 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a day's itinerary — a vertical timeline whose progress line fills to "now", cards expand on tap with a height transition, a running "now" marker, Navigate (a maps link) / Push 30 min (kept locally)
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff; --green: #34c759; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; padding: 16px 16px 14px; }
+  .hd { display: flex; align-items: flex-start; justify-content: space-between; } .hd h3 { margin: 0; font-size: 18px; } .hd .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .prog { text-align: right; font-size: 12px; color: var(--muted); } .prog b { display: block; font-size: 18px; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .tl { position: relative; margin-top: 14px; padding-left: 34px; }
+  .tl::before { content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--border); border-radius: 1px; }
+  .tl .fill { position: absolute; left: 11px; top: 8px; width: 2px; background: var(--blue); border-radius: 1px; height: 0; transition: height 1.2s cubic-bezier(.4,0,.2,1); }
+  .nowm { position: absolute; left: 0; right: 0; height: 0; border-top: 1.5px dashed var(--blue); transition: top 1.2s cubic-bezier(.4,0,.2,1); }
+  .nowm span { position: absolute; left: -2px; top: -9px; background: var(--blue); color: #fff; font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 5px; letter-spacing: .04em; }
+  .item { position: relative; margin-bottom: 10px; border-radius: 14px; background: var(--card2); cursor: pointer; transition: box-shadow .3s, transform .3s; }
+  .item:hover { transform: translateX(2px); }
+  .item .dot { position: absolute; left: -29px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--card); border: 2px solid var(--border); box-sizing: border-box; transition: all .4s; }
+  .item.done .dot { background: var(--blue); border-color: var(--blue); }
+  .item.cur .dot { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0,122,255,.2); animation: ring 1.6s ease-out infinite; }
+  @keyframes ring { to { box-shadow: 0 0 0 9px rgba(0,122,255,0); } }
+  .item.done .main { opacity: .6; }
+  .main { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-size: 16px; flex-shrink: 0; }
+  .ttl { font-weight: 700; } .meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .time { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .chev { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 2; transition: transform .3s; flex-shrink: 0; } .item.open .chev { transform: rotate(180deg); }
+  .more { overflow: hidden; max-height: 0; transition: max-height .4s cubic-bezier(.4,0,.2,1); }
+  .item.open .more { max-height: 160px; }
+  .more .in { padding: 0 12px 12px 56px; font-size: 13px; color: var(--muted); }
+  .more .acts { display: flex; gap: 8px; margin-top: 10px; }
+  .btn { padding: 7px 12px; border-radius: 9px; border: 0; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; background: var(--card); color: var(--blue); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .btn.p { background: var(--blue); color: #fff; }
+  .ff { margin-top: 4px; font-size: 11px; color: var(--muted); text-align: center; } .ff span { color: var(--blue); cursor: pointer; font-weight: 600; }
+</style>
+<div class="card">
+  <div class="hd"><div><h3>Saturday in Tbilisi</h3><div class="sub" id="sub">4 stops · 6.8 km on foot</div></div><div class="prog"><b id="pct">0%</b>of the day</div></div>
+  <div class="tl" id="tl"><div class="fill" id="fill"></div><div class="nowm" id="nowm"><span>NOW</span></div></div>
+  <div class="ff" id="ff">Demo clock runs at 60× · <span id="ffb" role="button">pause</span></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. Navigate opens a maps link (one per tap, confirmed by the client); pushed stops are local
+  // state in localStorage, kept by the client per message. window.TelegramWidget is absent in reference mode.
+  const tw = window.TelegramWidget, KEY = 'tbilisi-saturday';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const STOPS = [
+    { t: 9 * 60 + 30, ttl: 'Breakfast at Stamba', q: 'Stamba, Kostava 14', meta: 'Kostava 14 · booked, table 6', ic: '☕', c: '#ff9500', more: 'Khachapuri and the good filter coffee. Ask for the courtyard.' },
+    { t: 11 * 60, ttl: 'Dry Bridge market', q: 'Dry Bridge', meta: 'Flea market · 20 min walk', ic: '🛍', c: '#af52de', more: 'Soviet cameras, enamel pins, old maps. Cash only — there is an ATM at the bridge.' },
+    { t: 13 * 60 + 30, ttl: 'Lunch at Shavi Lomi', q: 'Shavi Lomi, Zurab Kvlividze 23', meta: 'Zurab Kvlividze 23 · no booking', ic: '🍽', c: '#34c759', more: 'Their pkhali platter and the lobio. Vegetarian-friendly, moderate wait.' },
+    { t: 16 * 60, ttl: 'Narikala by cable car', q: 'Rike park cable car', meta: 'From Rike park · ₾2.5 each way', ic: '🚡', c: '#30b0c7', more: 'Golden hour at 18:40 — stay for it. The walk down through the botanical garden is 35 min.' },
+    { t: 19 * 60 + 30, ttl: 'Dinner at Barbarestan', q: 'Barbarestan, Aghmashenebeli 132', meta: 'Aghmashenebeli 132 · booked 19:30', ic: '🍷', c: '#ff2d55', more: 'Recipes from a 19th-century cookbook. Dress a notch up.' },
+  ];
+  const pushed = store.get(KEY, {}).pushed;
+  if (Array.isArray(pushed)) STOPS.forEach((s, i) => { s.t += Math.max(0, Math.min(240, Number(pushed[i]) || 0)); });
+  const shifts = STOPS.map((s, i) => (Array.isArray(pushed) ? Math.max(0, Math.min(240, Number(pushed[i]) || 0)) : 0));
+  const tl = document.getElementById('tl');
+  const fmt = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  tl.insertAdjacentHTML('beforeend', STOPS.map((s, i) => '<div class="item" data-i="' + i + '" role="button"><span class="dot"></span><div class="main"><div class="ic" style="background:' + s.c + '">' + s.ic + '</div><div><div class="ttl">' + s.ttl + '</div><div class="meta">' + s.meta + '</div></div><span class="time">' + fmt(s.t) + '</span><svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="more"><div class="in">' + s.more + '<div class="acts"><button class="btn p" data-act="nav">Navigate</button><button class="btn" data-act="move">Push 30 min</button></div></div></div></div>').join(''));
+  const items = [...tl.querySelectorAll('.item')];
+  tl.addEventListener('click', e => {
+    const b = e.target.closest('.btn');
+    const it = e.target.closest('.item'); if (!it) return;
+    if (b) {
+      const s = STOPS[Number(it.dataset.i)];
+      if (b.dataset.act === 'nav') tw?.openLink('https://maps.example.com/dir/?mode=walking&destination=' + encodeURIComponent(s.q + ', Tbilisi'));
+      else { s.t += 30; shifts[Number(it.dataset.i)] += 30; store.set(KEY, { pushed: shifts }); it.querySelector('.time').textContent = fmt(s.t); b.textContent = 'Pushed'; layout(); }
+      return;
+    }
+    const open = it.classList.contains('open');
+    items.forEach(x => x.classList.remove('open'));
+    if (!open) it.classList.add('open');
+    setTimeout(layout, 420);
+  });
+  // Demo clock: starts at 08:50, 60× real time, pauses with the link.
+  let now = 8 * 60 + 50, paused = false;
+  const fill = document.getElementById('fill'), nowm = document.getElementById('nowm'), pct = document.getElementById('pct');
+  function layout() {
+    const first = STOPS[0].t, lastT = STOPS[STOPS.length - 1].t;
+    let y = 8;
+    // find the pixel position of "now" between the stop dots
+    const tops = items.map(it => it.offsetTop + 20);
+    if (now <= first) y = Math.max(8, tops[0] - 24 + (now - (first - 60)) / 60 * 24);
+    else if (now >= lastT) y = tops[tops.length - 1];
+    else for (let i = 0; i < STOPS.length - 1; i++) if (now >= STOPS[i].t && now < STOPS[i + 1].t) { const f = (now - STOPS[i].t) / (STOPS[i + 1].t - STOPS[i].t); y = tops[i] + f * (tops[i + 1] - tops[i]); }
+    if (!isFinite(y) || tops[0] === 0 && tops[1] === 0) y = 8;
+    fill.style.height = Math.max(0, y - 8) + 'px'; nowm.style.top = y + 'px';
+    items.forEach((it, i) => { it.classList.toggle('done', now >= STOPS[i].t + 45); it.classList.toggle('cur', now >= STOPS[i].t - 20 && now < STOPS[i].t + 45); });
+    pct.textContent = Math.round(Math.max(0, Math.min(1, (now - first) / (lastT + 60 - first))) * 100) + '%';
+    document.getElementById('sub').textContent = STOPS.length + ' stops · 6.8 km on foot · ' + fmt(Math.round(now));
+  }
+  // One tick a second (60×: a real second is a demo minute); the CSS transitions on the line and the marker smooth the motion between ticks.
+  layout();
+  const timer = setInterval(() => {
+    if (!paused) now = Math.min(21 * 60, now + 1);
+    layout();
+    if (now >= 21 * 60) { clearInterval(timer); document.getElementById('ff').textContent = 'The day is over — what a day.'; }
+  }, 1000);
+  document.getElementById('ffb').addEventListener('click', e => { paused = !paused; e.currentTarget.textContent = paused ? 'resume' : 'pause'; });
+</script>

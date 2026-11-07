@@ -5,7 +5,6 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -16,29 +15,20 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.os.Parcel;
-import android.text.DynamicLayout;
 import android.text.Editable;
 import android.text.Layout;
-import android.text.ParcelableSpan;
 import android.text.Selection;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
-import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.LeadingMarginSpan;
 import android.text.style.LineHeightSpan;
 import android.text.style.MetricAffectingSpan;
-import android.text.style.ParagraphStyle;
-import android.text.style.ReplacementSpan;
-import android.util.Log;
-import android.util.LongSparseArray;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -46,7 +36,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -55,9 +44,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.TreeSet;
 
 public class QuoteSpan implements LeadingMarginSpan {
@@ -327,14 +314,8 @@ public class QuoteSpan implements LeadingMarginSpan {
         return blocks;
     }
 
-    private AnimatedFloat expandScale;
-    private AnimatedTextView.AnimatedTextDrawable expandText;
-    private int expandTextWidth;
-    private boolean expandTextCollapsed;
-    private ExpandDrawable expandDrawable;
-    private int expandDrawableColor;
-    private ButtonBounce expandBounce;
-    private boolean expandPressed;
+    // Collapse/expand toggle button, extracted into a reusable widget (see CollapseButton).
+    public QuoteCollapseButton collapseButton;
 
     public static class Block {
 
@@ -379,26 +360,8 @@ public class QuoteSpan implements LeadingMarginSpan {
             this.width = (int) Math.ceil(width);
 
             if (span.edit && view != null) {
-                if (span.expandScale == null) {
-                    span.expandScale = new AnimatedFloat(view, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-                }
-                if (span.expandDrawable == null) {
-                    span.expandDrawable = new ExpandDrawable(view);
-                }
-                if (span.expandText == null) {
-                    span.expandText = new AnimatedTextView.AnimatedTextDrawable();
-                    span.expandText.setTextSize(dp(11));
-                    span.expandText.setHacks(true, true, true);
-                    span.expandText.setCallback(view);
-                    span.expandText.setOverrideFullWidth((int) (AndroidUtilities.displaySize.x * .3f));
-                    span.expandText.setText(getString((span.expandTextCollapsed = false) ? R.string.QuoteExpand : R.string.QuoteCollapse), false);
-                    span.expandTextWidth = (int) Math.ceil(Math.max(
-                        span.expandText.getPaint().measureText(getString(R.string.QuoteExpand)),
-                        span.expandText.getPaint().measureText(getString(R.string.QuoteCollapse))
-                    ));
-                }
-                if (span.expandBounce == null) {
-                    span.expandBounce = new ButtonBounce(view);
+                if (span.collapseButton == null) {
+                    span.collapseButton = new QuoteCollapseButton(view);
                 }
             }
         }
@@ -421,32 +384,12 @@ public class QuoteSpan implements LeadingMarginSpan {
             span.backgroundPath.addRoundRect(AndroidUtilities.rectTmp, span.backgroundPathRadii, Path.Direction.CW);
             canvas.drawPath(span.backgroundPath, span.backgroundPaint);
 
-            if (span.edit && view != null) {
-                if (span.isCollapsing != span.expandTextCollapsed) {
-                    span.expandText.setText(getString((span.expandTextCollapsed = span.isCollapsing) ? R.string.QuoteExpand : R.string.QuoteCollapse), true);
-                }
-                final int buttonWidth = (int) (dp(6 + 11.66f + 6) + span.expandText.getCurrentWidth());
-                final int buttonHeight = dp(17.66f);
-                final int pad = dp(3.333f);
+            if (span.edit && view != null && span.collapseButton != null) {
                 if (collapseButtonBounds == null) {
                     collapseButtonBounds = new RectF();
                 }
-                collapseButtonBounds.set(width - pad - buttonWidth, bottom - pad - buttonHeight, width - pad, bottom - pad);
-                final float s = span.expandScale.set(hasButton()) * span.expandBounce.getScale(0.02f);
-                if (s > 0) {
-                    canvas.save();
-                    canvas.scale(s, s, width - pad, bottom - pad);
-                    canvas.drawRoundRect(collapseButtonBounds, buttonHeight / 2f, buttonHeight / 2f, span.backgroundPaint);
-                    span.expandText.setBounds((int) (collapseButtonBounds.left + dp(6)), (int) collapseButtonBounds.top, (int) (collapseButtonBounds.right - dp(17.66f)), (int) collapseButtonBounds.bottom);
-                    span.expandText.setTextColor(color);
-                    span.expandText.draw(canvas);
-                    final int sz = dp(14);
-                    span.expandDrawable.setBounds((int) (collapseButtonBounds.right - dp(3.33f) - sz), (int) (collapseButtonBounds.centerY() - sz / 2f + dp(.33f)), (int) (collapseButtonBounds.right - dp(3.33f)), (int) (collapseButtonBounds.centerY() + sz / 2f + dp(.33f)));
-                    span.expandDrawable.setColor(color);
-                    span.expandDrawable.setState(!span.isCollapsing);
-                    span.expandDrawable.draw(canvas);
-                    canvas.restore();
-                }
+                final int pad = dp(3.333f);
+                span.collapseButton.draw(canvas, collapseButtonBounds, width - pad, bottom - pad, color, span.isCollapsing, hasButton());
             }
 
             AndroidUtilities.rectTmp.set(-dp(3), top, 0, bottom);
@@ -475,7 +418,7 @@ public class QuoteSpan implements LeadingMarginSpan {
         }
 
         public int buttonWidth() {
-            return (int) (dp(6 + 11.66f + 6) + span.expandTextWidth + 2 * dp(3.333f));
+            return span.collapseButton != null ? span.collapseButton.width() : (int) (dp(6 + 11.66f + 6) + 2 * dp(3.333f));
         }
 
         public boolean hasButton() {
@@ -487,31 +430,29 @@ public class QuoteSpan implements LeadingMarginSpan {
         if (blocks == null) return false;
         boolean hasPressed = false;
         for (Block block : blocks) {
+            final QuoteCollapseButton button = block.span.collapseButton;
             final boolean hit = block.hasButton() && block.collapseButtonBounds.contains(ev.getX(), ev.getY() - scrollY);
             if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-                block.span.expandPressed = hit;
-                if (block.span.expandBounce != null) {
-                    block.span.expandBounce.setPressed(block.span.expandPressed);
+                if (button != null) {
+                    button.setPressed(hit);
                 }
             } else if (ev.getAction() == MotionEvent.ACTION_UP) {
-                if (block.span.expandPressed && hit) {
+                if (button != null && button.isPressed() && hit) {
                     hasPressed = true;
                     block.span.isCollapsing = !block.span.isCollapsing;
                     if (updateQuotes != null) {
                         updateQuotes.run();
                     }
                 }
-                block.span.expandPressed = false;
-                if (block.span.expandBounce != null) {
-                    block.span.expandBounce.setPressed(block.span.expandPressed);
+                if (button != null) {
+                    button.setPressed(false);
                 }
             } else if (ev.getAction() == MotionEvent.ACTION_CANCEL) {
-                block.span.expandPressed = false;
-                if (block.span.expandBounce != null) {
-                    block.span.expandBounce.setPressed(block.span.expandPressed);
+                if (button != null) {
+                    button.setPressed(false);
                 }
             }
-            hasPressed = block.span.expandPressed || hasPressed;
+            hasPressed = (button != null && button.isPressed()) || hasPressed;
         }
         return hasPressed;
     }

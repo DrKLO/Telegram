@@ -2,7 +2,6 @@ package org.telegram.tgnet.tl;
 
 import android.graphics.Bitmap;
 
-import org.telegram.messenger.MessageObject;
 import org.telegram.tgnet.InputSerializedData;
 import org.telegram.tgnet.OutputSerializedData;
 import org.telegram.tgnet.TLMethod;
@@ -328,9 +327,11 @@ public class TL_iv {
                 case textAutoEmail.constructor: return new textAutoEmail();
                 case textAutoPhone.constructor: return new textAutoPhone();
                 case textBankCard.constructor: return new textBankCard();
+                case textTonAddress.constructor: return new textTonAddress();
                 case textMentionName.constructor: return new textMentionName();
                 case textDate.constructor: return new textDate();
                 case textDiff.constructor: return new textDiff();
+                case textButton.constructor: return new textButton();
             }
             return null;
         }
@@ -790,6 +791,60 @@ public class TL_iv {
             old_text.serializeToStream(stream);
         }
     }
+    public static class textButton extends RichText implements TL_keyboard.KeyboardButtonProto {
+        public static final int constructor = 0xAFC79CD6;
+
+        public int flags;
+        public TL_keyboard.InlineButtonType type;
+        public TL_keyboard.RichButtonStyle style;
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
+            type = TL_keyboard.InlineButtonType.TLdeserialize(stream, stream.readInt32(exception), exception);
+            if (hasFlag(flags, FLAG_0)) {
+                style = TL_keyboard.RichButtonStyle.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, style != null);
+            stream.writeInt32(flags);
+            text.serializeToStream(stream);
+            type.serializeToStream(stream);
+            if (hasFlag(flags, FLAG_0)) {
+                style.serializeToStream(stream);
+            }
+        }
+
+        @Override
+        public TL_keyboard.ButtonTypeProto getType() {
+            return type;
+        }
+
+        @Override
+        public String getText() {
+            if (text instanceof TL_iv.textPlain) {
+                return ((TL_iv.textPlain) text).text;
+            }
+            return null;
+        }
+    }
+    public static class textTonAddress extends RichText {
+        public static final int constructor = 0x3cd2a36a;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            text.serializeToStream(stream);
+        }
+    }
 
     public static abstract class PageBlock extends TLObject {
 
@@ -826,6 +881,7 @@ public class TL_iv {
                 case pageBlockBlockquote.constructor: return new pageBlockBlockquote();
                 case pageBlockBlockquoteBlocks.constructor: return new pageBlockBlockquoteBlocks();
                 case pageBlockPullquote.constructor: return new pageBlockPullquote();
+                case pageBlockBlockquote_layer228.constructor: return new pageBlockBlockquote_layer228();
                 case pageBlockPhoto.constructor: return new pageBlockPhoto();
                 case pageBlockPhoto_layer82.constructor: return new pageBlockPhoto_layer82();
                 case pageBlockVideo.constructor: return new pageBlockVideo();
@@ -859,6 +915,8 @@ public class TL_iv {
                 case pageBlockMath.constructor: return new pageBlockMath();
                 case inputPageBlockMap.constructor: return new inputPageBlockMap();
                 case pageBlockThinking.constructor: return new pageBlockThinking();
+                case pageBlockDocument.constructor: return new pageBlockDocument();
+                case pageBlockButtonRow.constructor: return new pageBlockButtonRow();
             }
             return null;
         }
@@ -872,6 +930,48 @@ public class TL_iv {
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+        }
+    }
+    public static class pageBlockButtonRow extends PageBlock {
+        public static final int constructor = 0x6D640318;
+
+        public int flags;
+        public boolean align_left;
+        public boolean align_center;
+        public boolean align_right;
+        public ArrayList<TL_keyboard.PageButton> buttons = new ArrayList<>();
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            align_left = hasFlag(flags, FLAG_0);
+            align_center = hasFlag(flags, FLAG_1);
+            align_right = hasFlag(flags, FLAG_2);
+            buttons = Vector.deserialize(stream, TL_keyboard.PageButton::TLdeserialize, exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, align_left);
+            flags = setFlag(flags, FLAG_1, align_center);
+            flags = setFlag(flags, FLAG_2, align_right);
+            stream.writeInt32(flags);
+            Vector.serialize(stream, buttons);
+        }
+    }
+    public static class pageBlockDocument extends PageBlock {
+        public static final int constructor = 0x38FA3BA3;
+
+        public long document_id;
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            document_id = stream.readInt64(exception);
+            caption = PageCaption.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(document_id);
+            caption.serializeToStream(stream);
         }
     }
     public static class pageBlockTitle extends PageBlock {
@@ -971,6 +1071,9 @@ public class TL_iv {
         public static final int constructor = 0xc070d93e;
 
         public String language;
+        public boolean diff, continuesPrev, continuesNext; //custom
+        public int codeLength = -1; //custom
+        public int diffColumns; //custom
 
         public void readParams(InputSerializedData stream, boolean exception) {
             text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -1057,9 +1160,30 @@ public class TL_iv {
         }
     }
     public static class pageBlockBlockquote extends PageBlock {
-        public static final int constructor = 0x263d7c26;
+        public static final int constructor = 0x66D1670B;
 
+        public int flags;
+        public boolean collapsed;
         public RichText caption;
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            collapsed = hasFlag(flags, FLAG_0);
+            text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
+            caption = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, collapsed);
+            stream.writeInt32(flags);
+            text.serializeToStream(stream);
+            caption.serializeToStream(stream);
+        }
+    }
+
+    public static class pageBlockBlockquote_layer228 extends pageBlockBlockquote {
+        public static final int constructor = 0x263d7c26;
 
         public void readParams(InputSerializedData stream, boolean exception) {
             text = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
@@ -1543,6 +1667,7 @@ public class TL_iv {
         public int flags;
         public boolean bordered;
         public boolean striped;
+        public boolean compact;
         public RichText title;
         public ArrayList<pageTableRow> rows = new ArrayList<>();
 
@@ -1550,6 +1675,7 @@ public class TL_iv {
             flags = stream.readInt32(exception);
             bordered = hasFlag(flags, FLAG_0);
             striped = hasFlag(flags, FLAG_1);
+            compact = hasFlag(flags, FLAG_2);
             title = RichText.TLdeserialize(stream, stream.readInt32(exception), exception);
             rows = Vector.deserialize(stream, pageTableRow::TLdeserialize, exception);
         }
@@ -1558,6 +1684,7 @@ public class TL_iv {
             stream.writeInt32(constructor);
             flags = setFlag(flags, FLAG_0, bordered);
             flags = setFlag(flags, FLAG_1, striped);
+            flags = setFlag(flags, FLAG_2, compact);
             stream.writeInt32(flags);
             title.serializeToStream(stream);
             Vector.serialize(stream, rows);

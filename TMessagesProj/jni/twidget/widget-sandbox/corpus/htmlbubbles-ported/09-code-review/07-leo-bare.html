@@ -1,0 +1,327 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 09-code-review.chat, message 7
+  author: leo 16:20 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  p { margin: 0 0 8px 0; }
+  code { font-family: ui-monospace, monospace; font-size: 13px; padding: 1px 4px; border-radius: 4px; background-color: rgba(127,127,127,0.15); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); } .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.blue { background-color: rgba(0,122,255,0.16); color: var(--blue); } .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .badge.red { background-color: rgba(255,59,48,0.16); color: var(--red); } .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  [data-action] { cursor: pointer; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  svg { vertical-align: middle; }
+
+  .api { width: 420px; max-width: 100%; }
+  .api .meth { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background-color: #34c759; color: #ffffff; margin-right: 8px; }
+  .api .ep { font-family: ui-monospace, monospace; font-size: 14px; font-weight: 700; }
+  .api .pt { width: 100%; border-collapse: collapse; font-size: 12px; margin: 6px 0 10px 0; }
+  .api .pt th { text-align: left; font-size: 10px; text-transform: uppercase; color: #8e8e93; padding: 4px 6px; border-bottom: 1px solid rgba(127,127,127,0.3); }
+  .api .pt td { padding: 5px 6px; border-bottom: 1px solid rgba(127,127,127,0.12); vertical-align: top; }
+  .api .pt tr.p:hover td { background-color: rgba(0,122,255,0.06); }
+  .api .pt tr.on td { background-color: rgba(255,204,0,0.14); }
+  .api .pt td.n { width: 112px; }
+  .api .pn { font-family: ui-monospace, monospace; font-weight: 700; }
+  .api .ty { font-family: ui-monospace, monospace; font-size: 10px; color: light-dark(#af52de, #da8ee7); }
+  .api .req { font-size: 9px; font-weight: 800; color: #ff3b30; }
+  .api .more { font-size: 11px; color: #8e8e93; padding-top: 3px; }
+  .api .tabs { display: flex; align-items: center; }
+  .api .tab { display: inline-block; width: 64px; height: 26px; line-height: 26px; text-align: center; font-size: 12px; font-weight: 700; color: #8e8e93; border-radius: 6px 6px 0 0; }
+  .api .tab:hover { background-color: rgba(127,127,127,0.1); }
+  .api .tab.on { color: #007aff; }
+  .api .track { height: 2px; border-bottom: 1px solid rgba(127,127,127,0.25); }
+  .api .ind { height: 2px; background-color: #007aff; transition: margin-left 320ms cubic-bezier(.33,1,.68,1), width 700ms cubic-bezier(.33,1,.68,1); }
+  .api .code { background-color: #1e1e2e; border-radius: 0 0 10px 10px; padding: 8px 10px; }
+  .api pre { margin: 0; padding: 0; background-color: #1e1e2e; color: #cdd6f4; font-family: ui-monospace, monospace; font-size: 10.5px; line-height: 1.5; white-space: pre-wrap; border-radius: 0; }
+  .api .s { color: #a6e3a1; } .api .kw { color: #cba6f7; } .api .nu { color: #fab387; } .api .fl { color: #89b4fa; }
+  .api .mk { border-radius: 3px; color: #ffffff; background-color: rgba(255,214,10,0.32); transition: background-color 900ms cubic-bezier(.33,1,.68,1); }
+  .api .mk.hot { background-color: rgba(255,214,10,0.77); transition: none; }
+  .api .tbtn { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 7px; background-color: rgba(127,127,127,0.14); }
+  .api .tbtn:hover { background-color: rgba(127,127,127,0.26); }
+  .api .tbtn.ok { background-color: rgba(52,199,89,0.2); color: #34c759; animation: cpop 380ms ease-out; }
+  @keyframes cpop { 0% { font-size: 8px; } 70% { font-size: 12.2px; } 100% { font-size: 11.5px; } }
+  .api .codes { margin-top: 2px; }
+  .api .codes .c { display: inline-block; margin: 4px 4px 0 0; padding: 2px 8px; border-radius: 9px; font-size: 11px; border: 1px solid rgba(127,127,127,0.3); }
+  .api .codes .c:hover { border-color: #007aff; }
+  .api .codes .c.on { border-color: #007aff; background-color: rgba(0,122,255,0.1); }
+  .api .resp { margin-top: 10px; border-radius: 10px; background-color: #1e1e2e; color: #cdd6f4; overflow: hidden; }
+  .api .rh { display: flex; align-items: center; padding: 6px 10px; background-color: #313244; font-size: 11px; color: #a6adc8; }
+  .api .rh svg { margin-right: 6px; }
+  .api .rh .tbtn { background-color: #45475a; color: #cdd6f4; margin-left: 6px; }
+  .api .rh .tbtn:hover { background-color: #585b70; }
+  .api .rh .tbtn.ok { background-color: rgba(166,227,161,0.25); color: #a6e3a1; }
+  .api .rb { padding: 8px 10px; }
+  .api .rbar { height: 3px; background-color: #313244; }
+  .api .rbar div { height: 3px; background-color: #89b4fa; }
+  .api .off { display: inline-block; padding: 5px 13px; border-radius: 9px; font-size: 14px; font-weight: 600; background-color: rgba(127,127,127,0.12); color: #8e8e93; }
+  .api .off svg { margin-right: 6px; }
+  .spin { animation: spin 840ms steps(12) infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tr-fade { animation: trFade 220ms ease-out; } .tr-pop { animation: trPop 260ms cubic-bezier(.34,1.56,.64,1); }
+  .tr-slide-up { animation: trUp 220ms ease-out; } .tr-slide-down { animation: trDown 220ms ease-out; }
+  .tr-slide-left { animation: trLeft 220ms ease-out; } .tr-slide-right { animation: trRight 220ms ease-out; }
+  @keyframes trFade { from { opacity: 0; } }
+  @keyframes trPop { from { opacity: 0; transform: scale(0.96); } }
+  @keyframes trUp { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes trDown { from { opacity: 0; transform: translateY(-8px); } }
+  @keyframes trLeft { from { opacity: 0; transform: translateX(12px); } }
+  @keyframes trRight { from { opacity: 0; transform: translateX(-12px); } }
+</style>
+<div class="card pad api" id="root">
+  <div class="row"><span class="meth">POST</span><span class="ep grow"><span id="ep"></span>&nbsp;</span><button class="primary" id="tryBtn" data-action="try">▶ Try it</button><span class="off" id="tryOff" hidden><svg class="spin" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#8e8e93" stroke-opacity="0.35" stroke-width="2"/><path d="M8 2A6 6 0 0 1 14 8" fill="none" stroke="#89b4fa" stroke-width="2" stroke-linecap="round"/></svg>Sending…</span></div>
+  <p class="small muted" style="margin: 6px 0 4px 0">Sends a message to a conversation. HTML bodies are rendered by litehtml on every client. <span class="badge blue">v1 · stable</span></p>
+  <table class="pt"><tr><th>Parameter</th><th>Description</th></tr><tbody id="params"></tbody></table>
+  <div class="tabs"><span id="tabs"></span><span class="grow"></span><span class="tbtn" id="copyCode" data-action="copy" data-value="code">Copy</span></div>
+  <div class="track"><div class="ind" id="ind" style="margin-left: 0px; width: 0px"></div></div>
+  <div class="code"><pre id="code"></pre></div>
+  <div class="caps" style="margin-top: 10px">Responses <span class="tiny" style="text-transform: none; font-weight: 400">· pick one, then Try it</span></div>
+  <div class="codes" id="codes"></div>
+  <div id="resp"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const root = $('root');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const animate = (duration, onFrame, easing = ease.outCubic) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const TR = ['fade', 'slide-up', 'slide-down', 'slide-left', 'slide-right', 'pop'];
+function transition(kind) { for (const k of TR) root.classList.remove('tr-' + k); requestAnimationFrame(() => root.classList.add('tr-' + kind)); }
+
+const LANGS = [
+  { name: 'cURL', src: [
+    'curl https://api.litechat.dev/v1/messages \\',
+    '  -H "Authorization: Bearer $TOKEN" \\',
+    '  -H "Content-Type: application/json" \\',
+    '  -d \'{"conversation": 42, "format": "html",',
+    '       "body": "<p>Hello <b>world</b></p>"}\'',
+  ] },
+  { name: 'Swift', src: [
+    'let body = Message(conversation: 42, format: .html,',
+    '                   body: "<p>Hello <b>world</b></p>")',
+    'var req = URLRequest(url: api.appending(path: "v1/messages"))',
+    'req.httpMethod = "POST"',
+    'req.httpBody = try JSONEncoder().encode(body)',
+    'let (data, _) = try await URLSession.shared.data(for: req)',
+  ] },
+  { name: 'Python', src: [
+    'import requests',
+    '',
+    'r = requests.post(',
+    '    "https://api.litechat.dev/v1/messages",',
+    '    headers={"Authorization": f"Bearer {token}"},',
+    '    json={"conversation": 42, "format": "html",',
+    '          "body": "<p>Hello <b>world</b></p>"},',
+    ')',
+    'r.raise_for_status()',
+  ] },
+  { name: 'JS', src: [
+    'const url = "https://api.litechat.dev/v1/messages";',
+    'const res = await fetch(url, {',
+    '  method: "POST",',
+    '  headers: { Authorization: `Bearer ${token}` },',
+    '  body: JSON.stringify({ conversation: 42, format: "html",',
+    '    body: "<p>Hello <b>world</b></p>" }),',
+    '});',
+  ] },
+];
+const PARAMS = [
+  { n: 'conversation', req: true, t: 'integer', d: 'Conversation ID.', more: 'Example: 42 · you must be a member' },
+  { n: 'format', t: '"text" | "html"', d: 'Defaults to <code>text</code>. With <code>html</code>, <code>body</code> may contain any HTML and CSS.', more: 'Example: "html"' },
+  { n: 'body', req: true, t: 'string', d: 'Up to 256&nbsp;KB. A <code>&lt;script&gt;</code> runs sandboxed; clicks update the card in place.', more: 'Example: "&lt;p&gt;Hello &lt;b&gt;world&lt;/b&gt;&lt;/p&gt;"' },
+  { n: 'widget', t: 'boolean', d: 'Show inside a bubble instead of fullsize.', more: 'Not set in this example · defaults to false' },
+  { n: 'on', t: 'string[]', d: 'Initially active toggle keys, e.g. <code>["tab-1"]</code>.', more: 'Not set in this example' },
+];
+const RESP = {
+  201: { label: 'Created', short: 'Created', badge: 'green', t: 't-green', ms: 142, body: ['{', '  "id": "msg_8f2d",', '  "conversation": 42,', '  "format": "html",', '  "bytes": 34,', '  "created_at": "2026-10-08T16:20:03Z"', '}'] },
+  413: { label: 'Payload Too Large', short: 'Body too large', badge: 'orange', t: 't-orange', ms: 61, body: ['{', '  "error": "body_too_large",', '  "message": "Body is 301 KB, the limit is 256 KB"', '}'] },
+  422: { label: 'Unprocessable', short: 'Invalid HTML', badge: 'red', t: 't-red', ms: 97, body: ['{', '  "error": "invalid_html",', '  "message": "Unclosed <b> at line 1",', '  "line": 1, "column": 18', '}'] },
+  429: { label: 'Too Many Requests', short: 'Rate limited', badge: 'red', t: 't-red', ms: 38, body: ['{', '  "error": "rate_limited",', '  "retry_after": 12', '}'] },
+};
+const CODES = [201, 413, 422, 429];
+const KWS = new Set(['let', 'var', 'try', 'await', 'import', 'const', 'curl', 'new', 'true', 'false']);
+const TOK = /("(?:[^"\\]|\\.)*"|`[^`]*`)|(-[A-Za-z]\b)|([A-Za-z_$][\w$]*)|(\d+(?:\.\d+)?)|([\s\S])/g;
+function tokenize(line) {
+  const out = [];
+  let m;
+  TOK.lastIndex = 0;
+  while ((m = TOK.exec(line))) {
+    if (m[1]) out.push({ c: 's', s: m[1], w: m[1].slice(1, -1) });
+    else if (m[2]) out.push({ c: 'fl', s: m[2] });
+    else if (m[3]) out.push({ c: KWS.has(m[3]) ? 'kw' : '', s: m[3], w: m[3] });
+    else if (m[4]) out.push({ c: 'nu', s: m[4] });
+    else out.push({ c: '', s: m[5] });
+  }
+  return out;
+}
+for (const L of LANGS) L.toks = L.src.map(tokenize);
+for (const c of CODES) RESP[c].toks = RESP[c].body.map(tokenize);
+const SPINNER = '<svg class="spin" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#8e8e93" stroke-opacity="0.35" stroke-width="2"/><path d="M8 2A6 6 0 0 1 14 8" fill="none" stroke="#89b4fa" stroke-width="2" stroke-linecap="round"/></svg>';
+
+let tab = 0, param = -1, mock = 0, req = null, reqRun = 0, copied = '', copyRun = 0, retryTimer = 0;
+
+// ---- static lists ----
+$('params').innerHTML = PARAMS.map((p, i) => `<tr class="p" data-action="param" data-value="${i}"><td class="n"><div class="pn">${p.n}</div><div class="ty">${esc(p.t)}</div>${p.req ? '<div class="req">REQUIRED</div>' : ''}</td><td>${p.d}<div class="more" hidden></div></td></tr>`).join('');
+const paramRows = [...$('params').children];
+$('tabs').innerHTML = LANGS.map((l, i) => `<span class="tab" data-action="tab" data-value="${i}">${l.name}</span>`).join('');
+const tabEls = [...$('tabs').children];
+$('codes').innerHTML = CODES.map((c, i) => `<span class="c" data-action="mock" data-value="${i}"><b class="${RESP[c].t}">${c}</b> ${RESP[c].short}</span>`).join('');
+const codeEls = [...$('codes').children];
+
+function codeHtml(toks, word) {
+  return toks.map(line => line.map(t => {
+    const h = t.c ? `<span class="${t.c}">${esc(t.s)}</span>` : esc(t.s);
+    return word && t.w === word ? `<span class="mk">${h}</span>` : h;
+  }).join('')).join('\n');
+}
+function syncCode(hot) {
+  const word = param >= 0 ? PARAMS[param].n : '';
+  $('code').innerHTML = codeHtml(LANGS[tab].toks, word);
+  if (hot) {
+    const marks = [...$('code').querySelectorAll('.mk')];
+    for (const m of marks) m.classList.add('hot');
+    requestAnimationFrame(() => { for (const m of marks) m.classList.remove('hot'); });
+  }
+}
+function syncParams() {
+  paramRows.forEach((tr, i) => {
+    tr.classList.toggle('on', i === param);
+    const more = tr.querySelector('.more');
+    more.hidden = i !== param;
+    if (i === param) more.innerHTML = PARAMS[i].more + (LANGS[tab].toks.some(l => l.some(t => t.w === PARAMS[i].n)) ? ' · highlighted below' : '');
+  });
+}
+function syncTabs() {
+  tabEls.forEach((t, i) => t.classList.toggle('on', i === tab));
+  $('ind').style.marginLeft = (tab * 64) + 'px';
+  codeEls.forEach((c, i) => c.classList.toggle('on', i === mock));
+}
+function syncCopy() {
+  const cc = $('copyCode'), isC = copied === 'code';
+  cc.classList.toggle('ok', isC); cc.textContent = isC ? '✓ Copied' : 'Copy';
+  const cr = $('copyResp');
+  if (cr) { const isR = copied === 'resp'; cr.classList.toggle('ok', isR); cr.textContent = isR ? '✓ Copied' : 'Copy'; }
+}
+function syncTry() {
+  const busy = req && req.phase !== 'done';
+  $('tryBtn').hidden = !!busy; $('tryOff').hidden = !busy;
+}
+function copy(what) {
+  copied = what; syncCopy();
+  const me = ++copyRun;
+  setTimeout(() => { if (me === copyRun) { copied = ''; syncCopy(); } }, 1600);
+}
+function stopRetry() { if (retryTimer) { clearInterval(retryTimer); retryTimer = 0; } }
+
+// ---- response box ----
+function renderPending() {
+  const up = req.phase === 'up';
+  $('resp').innerHTML = `<div class="resp"><div class="rh">${SPINNER}<span class="grow">${up ? `Sending 214 B… <span id="upPct">${Math.round(req.p * 100)}</span>%` : `Waiting for api.litechat.dev… <span id="waitMs">${req.ms}</span> ms`}</span></div>
+      <div class="rbar"><div id="rbar" style="width: ${(up ? req.p * 100 : 100).toFixed(1)}%"></div></div>
+      <div class="rb"><pre>→ POST /v1/messages HTTP/2
+  Host: api.litechat.dev
+  Content-Type: application/json</pre></div></div>`;
+}
+function renderRetry() {
+  const row = $('retryRow');
+  if (!row || !req) return;
+  row.innerHTML = req.retry ? `⏳ Retry-After: <b style="margin-left: 4px">${req.retry}s</b>` : '<span class="grow">✓ You can retry now</span><span class="tbtn" data-action="try">↻ Retry</span>';
+}
+function renderDone() {
+  const R = RESP[req.code];
+  const retry = req.code === 429 ? '<div class="rh" id="retryRow" style="border-top: 1px solid #45475a"></div>' : '';
+  $('resp').innerHTML = `<div class="resp"><div class="rh"><span class="badge ${R.badge}">${req.code} ${R.label}</span><span class="grow" style="margin-left: 8px">${req.ms} ms · application/json</span>
+      <span class="tbtn" id="copyResp" data-action="copy" data-value="resp">Copy</span><span class="tbtn" data-action="close">✕</span></div>
+    <div class="rb"><pre>${codeHtml(R.toks, '')}</pre></div>${retry}</div>`;
+  renderRetry(); syncCopy();
+}
+
+async function tryIt() {
+  const me = ++reqRun, code = CODES[mock], R = RESP[code];
+  stopRetry();
+  transition(req ? 'fade' : 'slide-down');
+  req = { phase: 'up', p: 0, ms: 0, code, retry: 0 };
+  renderPending(); syncTry();
+  await animate(420, p => { if (me === reqRun) { req.p = p; $('upPct').textContent = Math.round(p * 100); $('rbar').style.width = (p * 100).toFixed(1) + '%'; } }, ease.outCubic);
+  if (me !== reqRun) return;
+  req.phase = 'wait'; renderPending();
+  await animate(480, p => { if (me === reqRun) { req.ms = Math.round(R.ms * 0.8 * p); $('waitMs').textContent = req.ms; } }, ease.linear);
+  if (me !== reqRun) return;
+  transition('pop');
+  req.phase = 'done'; req.ms = R.ms;
+  renderDone(); syncTry();
+  if (code === 429) {
+    req.retry = 12; renderRetry();
+    retryTimer = setInterval(() => {
+      if (me !== reqRun || !req) return stopRetry();
+      req.retry = Math.max(0, req.retry - 1);
+      renderRetry();
+      if (!req.retry) stopRetry();
+    }, 1000);
+  }
+}
+
+function handleAction(name, v) {
+  const i = Number(v);
+  if (name === 'tab') {
+    if (i === tab) return;
+    transition(i > tab ? 'slide-left' : 'slide-right');
+    tab = i; syncTabs(); syncParams(); syncCode(false);
+  } else if (name === 'param') {
+    transition(param === i ? 'slide-up' : 'slide-down');
+    param = param === i ? -1 : i;
+    syncParams(); syncCode(true);
+  } else if (name === 'mock') {
+    mock = i; syncTabs();
+    if (req) tryIt();
+  } else if (name === 'try') {
+    if (req && req.phase !== 'done') return;
+    tryIt();
+  } else if (name === 'close') {
+    if (!req) return;
+    reqRun++; stopRetry();
+    transition('slide-up');
+    req = null; $('resp').innerHTML = ''; syncTry();
+  } else if (name === 'copy') {
+    // copyText(...): the clipboard is a no-op in the sandbox, only the "Copied" feedback remains
+    if (v === 'resp' && !req) return;
+    copy(v);
+  }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]');
+  if (t && root.contains(t)) handleAction(t.dataset.action, t.dataset.value);
+});
+
+syncTabs(); syncParams(); syncCode(false); syncTry();
+// intro (250 ms later, 700 ms): the endpoint types itself in and the tab indicator grows
+$('ind').style.transition = 'none';
+requestAnimationFrame(() => { $('ind').style.transition = ''; });
+setTimeout(() => {
+  $('ind').style.width = '64px';
+  animate(700, p => { $('ep').textContent = '/v1/messages'.slice(0, Math.ceil(12 * clamp(p * 1.3, 0, 1))); }, ease.outCubic);
+}, 250);
+</script>

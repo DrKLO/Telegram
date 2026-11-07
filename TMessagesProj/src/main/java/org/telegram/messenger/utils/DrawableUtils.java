@@ -14,6 +14,7 @@ import org.telegram.messenger.ImageReceiver;
 
 public class DrawableUtils {
     private static final Rect tmpRect = new Rect();
+    private static final Rect tmpRect2 = new Rect();
     private static final RectF tmpRectF = new RectF();
 
     private DrawableUtils() {
@@ -34,6 +35,19 @@ public class DrawableUtils {
         }
     }
 
+    public static void setBoundsIncreasePadding(Drawable drawable, RectF bounds) {
+        bounds.round(tmpRect2);
+        if (drawable.getPadding(tmpRect)) {
+            drawable.setBounds(
+                tmpRect2.left - tmpRect.left,
+                tmpRect2.top - tmpRect.top,
+                tmpRect2.right + tmpRect.right,
+                tmpRect2.bottom + tmpRect.bottom);
+        } else {
+            drawable.setBounds(tmpRect2);
+        }
+    }
+
     public static void setBoundsIncreasePadding(Drawable drawable, Rect bounds) {
         if (drawable.getPadding(tmpRect)) {
             drawable.setBounds(
@@ -43,6 +57,18 @@ public class DrawableUtils {
                 bounds.bottom + tmpRect.bottom);
         } else {
             drawable.setBounds(bounds);
+        }
+    }
+
+    public static void setBoundsIncreasePadding(Drawable drawable, int left, int top, int right, int bottom) {
+        if (drawable.getPadding(tmpRect)) {
+            drawable.setBounds(
+                    left - tmpRect.left,
+                    top - tmpRect.top,
+                    right + tmpRect.right,
+                    bottom + tmpRect.bottom);
+        } else {
+            drawable.setBounds(left, top, right, bottom);
         }
     }
 

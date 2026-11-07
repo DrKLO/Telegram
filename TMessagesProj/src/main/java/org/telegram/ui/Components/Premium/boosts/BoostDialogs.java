@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BoostsActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.Bulletin;
@@ -626,8 +627,8 @@ public class BoostDialogs {
             bottomTextView.setTypeface(AndroidUtilities.bold());
             bottomTextView.setGravity(Gravity.CENTER);
             bottomTextView.setText(str);
-            bottomTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
-            bottomTextView.setBackground(Theme.createRoundRectDrawable(dp(10), dp(10), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider), 0.1f)));
+            ThemeBind.textColor(bottomTextView, Theme.key_text_RedRegular, resourcesProvider);
+            ThemeBind.fillBackground(bottomTextView, Theme.createRoundRectDrawable(dp(10), dp(10), Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider), 0.1f)), ThemeBind.multAlpha(Theme.key_text_RedRegular, 0.1f), resourcesProvider);
             bottomTextView.setPadding(dp(12), dp(12), dp(12), dp(12));
             builder.addBottomView(bottomTextView);
             builder.setMessage(stringBuilder);
@@ -662,11 +663,11 @@ public class BoostDialogs {
             }
             EffectsTextView topTextView = new EffectsTextView(context);
             NotificationCenter.listenEmojiLoading(topTextView);
-            topTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(topTextView, Theme.key_dialogTextBlack, resourcesProvider);
             topTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             topTextView.setGravity(Gravity.CENTER);
             topTextView.setText(str);
-            topTextView.setBackground(Theme.createRoundRectDrawable(dp(8), dp(8), Theme.getColor(Theme.key_profile_actionPressedBackground, resourcesProvider)));
+            ThemeBind.fillBackground(topTextView, Theme.createRoundRectDrawable(dp(8), dp(8), Theme.getColor(Theme.key_profile_actionPressedBackground, resourcesProvider)), ThemeBind.of(Theme.key_profile_actionPressedBackground), resourcesProvider);
             topTextView.setPadding(dp(8), dp(8), dp(8), dp(9));
             builder.aboveMessageView(topTextView);
             applyDialogStyle(builder.show(), false);

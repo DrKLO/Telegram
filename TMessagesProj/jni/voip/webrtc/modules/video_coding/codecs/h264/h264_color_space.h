@@ -23,7 +23,7 @@
 #include "api/video/color_space.h"
 
 extern "C" {
-#include "ffmpeg/include/libavcodec/avcodec.h"
+#include <libavcodec/avcodec.h>
 }  // extern "C"
 
 namespace webrtc {

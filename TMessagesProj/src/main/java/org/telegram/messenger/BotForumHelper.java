@@ -29,6 +29,8 @@ import org.telegram.ui.MultiLayoutTypingAnimator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class BotForumHelper extends BaseController {
@@ -99,9 +101,23 @@ public class BotForumHelper extends BaseController {
 
     // user_id > topic_id -> random_id - message
     private final DialogTopicIdKeyMap<BotDraftMessage> botTextDraftsByRandomIds = new DialogTopicIdKeyMap<>();
+    private final DialogTopicIdKeyMap<Object> botTextDraftsByRandomIdsBlocklist = new DialogTopicIdKeyMap<>();
 
-    public void onBotForumDraftUpdate(long userId, int topicId, long randomId, TLRPC.TL_textWithEntities text) {
+
+    public void onBotForumDraftUpdate(long userId, int topicId, TLRPC.TL_sendMessageTextDraftAction action) {
+        onBotForumDraftUpdate(userId, topicId, action.random_id, action.text, action.can_stop, action.keep_on_stop);
+    }
+
+    public void onBotForumDraftUpdate(long userId, int topicId, TLRPC.TL_sendMessageRichMessageDraftAction action) {
+        onBotForumDraftUpdate(userId, topicId, action.random_id, action.rich_message, action.can_stop, action.keep_on_stop);
+    }
+
+    private void onBotForumDraftUpdate(long userId, int topicId, long randomId, TLRPC.TL_textWithEntities text, boolean canStop, boolean keepOnStop) {
         FileLog.d("[BotForum] onDraftNewDraft " + userId + " " + topicId + " " + randomId);
+        if (botTextDraftsByRandomIdsBlocklist.get(userId, topicId, randomId) != null) {
+            FileLog.d("[BotForum] onDraftNewDraft ignore " + userId + " " + topicId + " " + randomId);
+            return;
+        }
 
         LongSparseArray<BotDraftMessage> drafts = botTextDraftsByRandomIds.get(userId, topicId);
         long[] toRemove = null;
@@ -117,6 +133,8 @@ public class BotForumHelper extends BaseController {
             draftMessage = new BotDraftMessage(userId, topicId, randomId, getUserConfig().getNewMessageId());
             botTextDraftsByRandomIds.put(userId, topicId, randomId, draftMessage);
         }
+        draftMessage.keepOnStop = keepOnStop;
+        draftMessage.canStop = canStop;
 
         if (toRemove != null) {
             for (long id: toRemove) {
@@ -146,8 +164,12 @@ public class BotForumHelper extends BaseController {
             new BotForumTextDraftUpdateNotification(userId, topicId, draftMessage.messageObject, isNew));
     }
 
-    public void onBotForumDraftUpdate(long userId, int topicId, long randomId, TL_iv.RichMessage text) {
+    private void onBotForumDraftUpdate(long userId, int topicId, long randomId, TL_iv.RichMessage text, boolean canStop, boolean keepOnStop) {
         FileLog.d("[BotForum] onDraftNewDraft (rich_message) " + userId + " " + topicId + " " + randomId);
+        if (botTextDraftsByRandomIdsBlocklist.get(userId, topicId, randomId) != null) {
+            FileLog.d("[BotForum] onDraftNewDraft (rich_message) ignore " + userId + " " + topicId + " " + randomId);
+            return;
+        }
 
         LongSparseArray<BotDraftMessage> drafts = botTextDraftsByRandomIds.get(userId, topicId);
         long[] toRemove = null;
@@ -163,6 +185,8 @@ public class BotForumHelper extends BaseController {
             draftMessage = new BotDraftMessage(userId, topicId, randomId, getUserConfig().getNewMessageId());
             botTextDraftsByRandomIds.put(userId, topicId, randomId, draftMessage);
         }
+        draftMessage.keepOnStop = keepOnStop;
+        draftMessage.canStop = canStop;
 
         if (toRemove != null) {
             for (long id: toRemove) {
@@ -192,12 +216,116 @@ public class BotForumHelper extends BaseController {
                 new BotForumTextDraftUpdateNotification(userId, topicId, draftMessage.messageObject, isNew));
     }
 
+    public enum SteamingSendButtonState {
+        NO_STREAMING, BLOCKING, STOP
+    }
+
+    public SteamingSendButtonState getStreamingSendButtonState(long userId, int topicId) {
+        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
+        if (messages != null && messages.size() > 0) {
+
+            BotDraftMessage message = null;
+            for (int a = 0, N = messages.size(); a < N; a++) {
+                message = messages.valueAt(a);
+                if (!message.removed) {
+                    break;
+                }
+            }
+
+            if (message == null || message.removed) {
+                return SteamingSendButtonState.NO_STREAMING;
+            }
+
+            return message.canStop ?
+                SteamingSendButtonState.STOP :
+                SteamingSendButtonState.BLOCKING;
+        }
+        return SteamingSendButtonState.NO_STREAMING;
+    }
+
+
+
+    public void stopStreaming(long userId, long topicId) {
+        final LongSparseArray<BotDraftMessage> drafts = botTextDraftsByRandomIds.get(userId, topicId);
+
+        if (drafts != null && drafts.size() > 0) {
+            long randomId = 0;
+            BotDraftMessage message = null;
+            for (int a = 0, N = drafts.size(); a < N; a++) {
+                randomId = drafts.keyAt(a);
+                message = drafts.valueAt(a);
+                if (!message.removed) {
+                    break;
+                }
+            }
+            if (message == null || message.removed) {
+                return;
+            }
+
+            if (message.selfDestruct != null) {
+                AndroidUtilities.cancelRunOnUIThread(message.selfDestruct);
+            }
+
+            botTextDraftsByRandomIdsBlocklist.put(userId, topicId, randomId, new Object());
+
+            if (message.keepOnStop) {
+                message.removed = true;
+            } else {
+                botTextDraftsByRandomIds.remove(userId, topicId, randomId);
+                getNotificationCenter().postNotificationName(NotificationCenter.botForumDraftDelete,
+                    new BotForumTextDraftDeleteNotification(userId, topicId, message.localMessageId));
+            }
+
+            final TLRPC.TL_sendMessageStopDraftAction action = new TLRPC.TL_sendMessageStopDraftAction();
+            action.random_id = randomId;
+
+            final TLRPC.TL_messages_setTyping req = new TLRPC.TL_messages_setTyping();
+            req.peer = getMessagesController().getInputPeer(userId);
+            req.action = action;
+            if (topicId != 0) {
+                req.flags |= TLObject.FLAG_0;
+                req.top_msg_id = (int) topicId;
+            }
+            getConnectionsManager().sendRequestTyped(req, (res, err) -> {});
+        }
+
+    }
+
+
+
     public boolean hasBotForumDrafts(long userId, int topicId) {
         LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
-        return messages != null && messages.size() > 0;
+        if (messages != null && messages.size() > 0) {
+            for (int a = 0, N = messages.size(); a < N; a++) {
+                if (!messages.valueAt(a).removed) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void removeAllMarkedAsRemovedMessages(long userId, int topicId) {
+        LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
+        if (messages == null) {
+            return;
+        }
+
+        for (int a = 0, N = messages.size(); a < N; a++) {
+            BotDraftMessage draftMessage = messages.valueAt(a);
+            if (draftMessage.removed) {
+                getNotificationCenter().postNotificationName(NotificationCenter.botForumDraftDelete,
+                        new BotForumTextDraftDeleteNotification(userId, topicId, draftMessage.localMessageId));
+                botTextDraftsByRandomIds.remove(userId, topicId, draftMessage.randomId);
+                a--;
+                N--;
+            }
+        }
     }
 
     public MessageObject onBotForumDraftCheckNewMessages(long userId, int topicId, int messageId, String message) {
+        removeAllMarkedAsRemovedMessages(userId, topicId);
+
         LongSparseArray<BotDraftMessage> messages = botTextDraftsByRandomIds.get(userId, topicId);
         if (messages == null) {
             return null;
@@ -249,6 +377,10 @@ public class BotForumHelper extends BaseController {
         public final long randomId;
         public final int localMessageId;
 
+        private boolean canStop;
+        private boolean keepOnStop;
+        private boolean removed;
+
         private Runnable selfDestruct;
         private TLRPC.TL_textWithEntities text;
         private TL_iv.RichMessage richMessage;
@@ -269,8 +401,12 @@ public class BotForumHelper extends BaseController {
         return beforeSendingFinalRequest(req, Collections.singletonList(msg), send);
     }
 
+    // requests resent without a topic after topic creation failed; they must not be intercepted again
+    private final Set<TLObject> sendWithoutTopic = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
+
     public boolean beforeSendingFinalRequest(TLObject req, List<MessageObject> messages, Runnable send) {
         if (messages == null || messages.isEmpty()) return true;
+        if (sendWithoutTopic.remove(req)) return true;
 
         final TLRPC.InputPeer inputPeer = TlUtils.getInputPeerFromSendMessageRequest(req);
         final long dialogId = DialogObject.getPeerDialogId(inputPeer);
@@ -317,6 +453,12 @@ public class BotForumHelper extends BaseController {
         }
 
         performSendBotTopicCreate(inputPeer, topicName, randomId, topicId -> {
+            if (topicId <= 0) {
+                // topic creation failed: send as is instead of binding to an invalid topic
+                sendWithoutTopic.add(req);
+                AndroidUtilities.runOnUIThread(send);
+                return;
+            }
             if (req instanceof TLRPC.TL_messages_forwardMessages) {
                 TLRPC.TL_messages_forwardMessages request = (TLRPC.TL_messages_forwardMessages) req;
                 request.top_msg_id = topicId;
@@ -373,17 +515,27 @@ public class BotForumHelper extends BaseController {
                 return;
             }
 
-            getMessagesController().processUpdates(updates, false);
-
-            TL_update.TL_updateMessageID updateMessageID = null;
+            // must be read before processUpdates, which removes TL_updateMessageID from updates.updates
+            int matchedId = 0, topicCreateId = 0;
             for (TLRPC.Update update: updates.updates) {
                 if (update instanceof TL_update.TL_updateMessageID) {
-                    updateMessageID = (TL_update.TL_updateMessageID) update;
-                    break;
+                    final TL_update.TL_updateMessageID updateMessageID = (TL_update.TL_updateMessageID) update;
+                    if (updateMessageID.random_id == randomId) {
+                        matchedId = updateMessageID.id;
+                    }
+                } else if (update instanceof TL_update.TL_updateNewMessage) {
+                    final TLRPC.Message newMessage = ((TL_update.TL_updateNewMessage) update).message;
+                    if (topicCreateId == 0 && newMessage != null && newMessage.action instanceof TLRPC.TL_messageActionTopicCreate
+                            && MessageObject.getDialogId(newMessage) == dialogId) {
+                        topicCreateId = newMessage.id;
+                    }
                 }
             }
+            final int topicId = matchedId != 0 ? matchedId : topicCreateId;
 
-            if (updateMessageID == null) {
+            getMessagesController().processUpdates(updates, false);
+
+            if (topicId == 0) {
                 performSendBotTopicCreateComplete(dialogId, -1);
                 return;
             }
@@ -397,15 +549,15 @@ public class BotForumHelper extends BaseController {
             message.action = actionMessage;
             message.peer_id = getMessagesController().getPeer(dialogId);
             message.dialog_id = dialogId;
-            message.id = updateMessageID.id;
+            message.id = topicId;
             message.date = (int) (System.currentTimeMillis() / 1000);
 
-            forumTopic.id = updateMessageID.id;
+            forumTopic.id = topicId;
             forumTopic.my = true;
             forumTopic.flags |= 2;
             forumTopic.topicStartMessage = message;
             forumTopic.title = title;
-            forumTopic.top_message = updateMessageID.id;
+            forumTopic.top_message = topicId;
             forumTopic.topMessage = message;
             forumTopic.from_id = getMessagesController().getPeer(getUserConfig().clientUserId);
             forumTopic.notify_settings = new TLRPC.TL_peerNotifySettings();
@@ -414,10 +566,10 @@ public class BotForumHelper extends BaseController {
 
             getMessagesController().getTopicsController().onTopicCreated(dialogId, forumTopic, true);
 
-            performSendBotTopicCreateComplete(dialogId, updateMessageID.id);
+            performSendBotTopicCreateComplete(dialogId, topicId);
             getNotificationCenter().postNotificationName(
                 NotificationCenter.botForumTopicDidCreate,
-                new BotForumTopicCreateNotification(dialogId, updateMessageID.id)
+                new BotForumTopicCreateNotification(dialogId, topicId)
             );
         });
     }
@@ -589,6 +741,17 @@ public class BotForumHelper extends BaseController {
             messages.put(messageId, value);
 
             return oldValue;
+        }
+
+        public LongSparseArray<T> removeAll(long dialogId, long topicId) {
+            LongSparseArray<LongSparseArray<T>> topics = map.get(dialogId);
+            if (topics == null) {
+                return null;
+            }
+
+            LongSparseArray<T> messages = topics.get(topicId);
+            topics.remove(topicId);
+            return messages;
         }
 
         public T remove(long dialogId, long topicId, long messageId) {

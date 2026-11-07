@@ -1,4 +1,0 @@
-# This is an dummy target so Chromium's tools/licenses.py script picks up the
-# extra README.chromium file. The script expects README.chromium files to be
-# associated with GN targets.
-source_set("fiat_license") { }

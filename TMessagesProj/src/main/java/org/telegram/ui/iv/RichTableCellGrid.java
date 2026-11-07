@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.text.Layout;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
@@ -58,7 +59,9 @@ public class RichTableCellGrid extends ViewGroup {
     private int bulgeRowTop, bulgeRowBot, bulgeColLeft, bulgeColRight;
     private int dotColor, dotOnSelectionColor;
 
-    private static final int MIN_COL_DP = 80;
+    private static final int MIN_COL_DP = 50;
+    private static final int COMPACT_MIN_COL_DP = 20;
+    private static final int CELL_HORIZONTAL_PADDING_DP = 12;
     public static final int GRID_PADDING_DP = 4;
     public static final int HANDLE_PAD_DP = 20;
     private static final int DOT_AWAY_DP = 6;
@@ -68,9 +71,11 @@ public class RichTableCellGrid extends ViewGroup {
     public RichTableCellGrid(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        setClipChildren(false);
+        setClipToPadding(false);
         setWillNotDraw(false);
         linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(dp(1));
+        linePaint.setStrokeWidth(dpf2(0.66f));
         selectedStrokePaint.setStyle(Paint.Style.STROKE);
         selectedStrokePaint.setStrokeWidth(dp(2));
         selectedStrokePaint.setStrokeJoin(Paint.Join.ROUND);
@@ -82,12 +87,12 @@ public class RichTableCellGrid extends ViewGroup {
     }
 
     public void applyColors() {
-        linePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider));
+        linePaint.setColor(Theme.getColor(Theme.key_table_border, resourcesProvider));
         int tint = Theme.getColor(Theme.key_switchTrack, resourcesProvider);
         int r = Color.red(tint);
         int g = Color.green(tint);
         int b = Color.blue(tint);
-        headerPaint.setColor(Color.argb(34, r, g, b));
+        headerPaint.setColor(Theme.getColor(Theme.key_table_background, resourcesProvider));
         stripPaint.setColor(Color.argb(20, r, g, b));
         selectedFillBaseAlpha = 80;
         selectedStrokeBaseAlpha = 0xFF;
@@ -129,6 +134,7 @@ public class RichTableCellGrid extends ViewGroup {
         for (int i = 0, n = model.anchors().size(); i < n; i++) {
             final TL_iv.pageTableCell cell = model.anchors().get(i);
             final RichTableCellHost host = new RichTableCellHost(getContext(), resourcesProvider);
+            host.setCompact(model.block.compact);
             host.bind(cell);
             addView(host);
         }
@@ -140,12 +146,26 @@ public class RichTableCellGrid extends ViewGroup {
         invalidate();
     }
 
+    public void refreshCompact() {
+        if (model == null) return;
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            if (child instanceof RichTableCellHost) {
+                ((RichTableCellHost) child).setCompact(model.block.compact);
+            }
+        }
+        requestLayout();
+        invalidate();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int padL = dp(HANDLE_PAD_DP);
         final int padT = dp(GRID_PADDING_DP);
         final int padR = dp(GRID_PADDING_DP);
-        final int padB = dp(HANDLE_PAD_DP);
+        // Keep a small gap between the table and the following block while allowing the
+        // bottom handles to extend beyond the grid's measured bounds.
+        final int padB = dp(10);
         if (model == null || model.rowCount == 0 || model.colCount == 0) {
             setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), padT + padB);
             colWidths = new int[0];
@@ -162,8 +182,65 @@ public class RichTableCellGrid extends ViewGroup {
         colWidths = new int[colCount];
         rowHeights = new int[rowCount];
 
-        int equalWidth = Math.max(dp(MIN_COL_DP), parentWidth / Math.max(colCount, 1));
-        for (int c = 0; c < colCount; c++) colWidths[c] = equalWidth;
+        final int minColWidth = dp(model.block.compact ? COMPACT_MIN_COL_DP : MIN_COL_DP);
+        // Match RichMessageLayout's table behavior: size columns from their content, but cap
+        // each one so very long text wraps after the table has grown to a useful width.
+        final int cellHorizontalPaddingDp = model.block.compact ? 5 : CELL_HORIZONTAL_PADDING_DP;
+        final int maxTextWidth = colCount == 2
+            ? Math.max(0, parentWidth / 2 - dp(cellHorizontalPaddingDp * 4))
+            : Math.max(0, Math.round(parentWidth / 1.5f));
+        final int maxColWidth = Math.max(minColWidth, maxTextWidth + dp(cellHorizontalPaddingDp * 2));
+        for (int c = 0; c < colCount; c++) colWidths[c] = minColWidth;
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (!(child instanceof RichTableCellHost)) continue;
+            final RichTableCellHost host = (RichTableCellHost) child;
+            if (TableModel.spanCol(host.cell) != 1) continue;
+            final int column = model.anchorColOf(host.cell);
+            if (column < 0 || column >= colCount) continue;
+            final int desired = Math.round(Layout.getDesiredWidth(host.editText.getText(), host.editText.getPaint()))
+                + dp(cellHorizontalPaddingDp * 2);
+            colWidths[column] = Math.max(colWidths[column], Math.min(maxColWidth, desired));
+        }
+        // A merged cell can also make its covered columns wider. Apply those constraints after
+        // single-column cells establish the natural width of each individual column.
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (!(child instanceof RichTableCellHost)) continue;
+            final RichTableCellHost host = (RichTableCellHost) child;
+            final int span = TableModel.spanCol(host.cell);
+            if (span <= 1) continue;
+            final int column = model.anchorColOf(host.cell);
+            final int end = Math.min(colCount, column + span);
+            if (column < 0 || column >= end) continue;
+            int coveredWidth = 0;
+            for (int c = column; c < end; c++) coveredWidth += colWidths[c];
+            final int desired = Math.min(maxColWidth * (end - column),
+                Math.round(Layout.getDesiredWidth(host.editText.getText(), host.editText.getPaint()))
+                    + dp(cellHorizontalPaddingDp * 2));
+            int deficit = desired - coveredWidth;
+            for (int c = column; c < end && deficit > 0; c++) {
+                final int columnsLeft = end - c;
+                final int extra = (deficit + columnsLeft - 1) / columnsLeft;
+                colWidths[c] += extra;
+                deficit -= extra;
+            }
+        }
+
+        int intrinsicWidth = 0;
+        for (int width : colWidths) intrinsicWidth += width;
+        if (intrinsicWidth < parentWidth && colCount > 0) {
+            int remaining = parentWidth - intrinsicWidth;
+            int remainingWeight = intrinsicWidth;
+            for (int c = 0; c < colCount; c++) {
+                final int extra = c == colCount - 1
+                    ? remaining
+                    : Math.round(remaining * colWidths[c] / (float) remainingWeight);
+                colWidths[c] += extra;
+                remaining -= extra;
+                remainingWeight -= colWidths[c] - extra;
+            }
+        }
 
         int hostUnspec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
 
@@ -299,10 +376,68 @@ public class RichTableCellGrid extends ViewGroup {
         return true;
     }
 
+    private boolean rowHasSelection(int r) {
+        if (r < 0 || r >= model.rowCount) return false;
+        for (int c = 0; c < model.colCount; c++) if (isSelected(r, c)) return true;
+        return false;
+    }
+
     private boolean isColFullySelected(int c) {
         if (c < 0 || c >= model.colCount) return false;
         for (int r = 0; r < model.rowCount; r++) if (!isSelected(r, c)) return false;
         return true;
+    }
+
+    private boolean colHasSelection(int c) {
+        if (c < 0 || c >= model.colCount) return false;
+        for (int r = 0; r < model.rowCount; r++) if (isSelected(r, c)) return true;
+        return false;
+    }
+
+    private int firstSelectedRow() {
+        for (int r = 0; r < model.rowCount; r++) if (rowHasSelection(r)) return r;
+        return -1;
+    }
+
+    private int lastSelectedRow() {
+        for (int r = model.rowCount - 1; r >= 0; r--) if (rowHasSelection(r)) return r;
+        return -1;
+    }
+
+    private int firstSelectedCol() {
+        for (int c = 0; c < model.colCount; c++) if (colHasSelection(c)) return c;
+        return -1;
+    }
+
+    private int lastSelectedCol() {
+        for (int c = model.colCount - 1; c >= 0; c--) if (colHasSelection(c)) return c;
+        return -1;
+    }
+
+    private boolean areRowsFullySelected(int first, int last) {
+        if (first < 0 || last < first) return false;
+        for (int r = first; r <= last; r++) if (!isRowFullySelected(r)) return false;
+        return true;
+    }
+
+    private boolean areColsFullySelected(int first, int last) {
+        if (first < 0 || last < first) return false;
+        for (int c = first; c <= last; c++) if (!isColFullySelected(c)) return false;
+        return true;
+    }
+
+    private boolean useCombinedRowHandle() {
+        if (!hasAnySelection()) return false;
+        final boolean fullRows = areRowsFullySelected(firstSelectedRow(), lastSelectedRow());
+        final boolean fullCols = areColsFullySelected(firstSelectedCol(), lastSelectedCol());
+        return !fullCols || fullRows;
+    }
+
+    private boolean useCombinedColHandle() {
+        if (!hasAnySelection()) return false;
+        final boolean fullRows = areRowsFullySelected(firstSelectedRow(), lastSelectedRow());
+        final boolean fullCols = areColsFullySelected(firstSelectedCol(), lastSelectedCol());
+        return !fullRows || fullCols;
     }
 
     private void computeHandlesState() {
@@ -325,76 +460,94 @@ public class RichTableCellGrid extends ViewGroup {
     }
 
     private void drawBulgeFills(Canvas canvas) {
+        if (hasAnySelection()) {
+            final int firstRow = firstSelectedRow(), lastRow = lastSelectedRow();
+            final int firstCol = firstSelectedCol(), lastCol = lastSelectedCol();
+            if (areRowsFullySelected(firstRow, lastRow)) {
+                drawLeftBulgeFill(canvas, rowStarts[firstRow], rowStarts[lastRow + 1]);
+            }
+            if (areColsFullySelected(firstCol, lastCol)) {
+                drawBottomBulgeFill(canvas, colStarts[firstCol], colStarts[lastCol + 1]);
+            }
+            return;
+        }
         if (leftBulge) {
-            final float top = bulgeRowTop - dpf2(1), bot = bulgeRowBot + dpf2(1);
-            final float outer = colStarts[0] - dp(BULGE_DP);
-            final float bR = Math.min(dpf2(BULGE_RADIUS_DP), (bot - top) / 2f);
-            final float tRtop = cornerRadiusFor(colStarts[0], bulgeRowTop);
-            final float tRbot = cornerRadiusFor(colStarts[0], bulgeRowBot);
-            bulgePath.rewind();
-            bulgePath.moveTo(colStarts[0] + tRtop, top);
-            bulgePath.lineTo(outer + bR, top);
-
-            arcRect.set(outer, top, outer + 2 * bR, top + 2 * bR);
-            bulgePath.arcTo(arcRect, 270, -90);
-            bulgePath.lineTo(outer, bot - bR);
-
-            arcRect.set(outer, bot - 2 * bR, outer + 2 * bR, bot);
-            bulgePath.arcTo(arcRect, 180, -90);
-            bulgePath.lineTo(colStarts[0] + tRbot, bot);
-
-            if (tRbot > 0) {
-                arcRect.set(colStarts[0], bot - 2 * tRbot, colStarts[0] + 2 * tRbot, bot);
-                bulgePath.arcTo(arcRect, 90, 90);
-            } else {
-                bulgePath.lineTo(colStarts[0], bot);
-            }
-
-            bulgePath.lineTo(colStarts[0], top + tRtop);
-            if (tRtop > 0) {
-                arcRect.set(colStarts[0], top, colStarts[0] + 2 * tRtop, top + 2 * tRtop);
-                bulgePath.arcTo(arcRect, 180, 90);
-            } else {
-                bulgePath.lineTo(colStarts[0], top);
-            }
-
-            bulgePath.close();
-
-            canvas.drawPath(bulgePath, bulgeFillPaint);
+            drawLeftBulgeFill(canvas, bulgeRowTop, bulgeRowBot);
         }
         if (bottomBulge) {
-            final float left = bulgeColLeft - dpf2(1), right = bulgeColRight + dpf2(1);
-            final float tableY = rowStarts[model.rowCount];
-            final float outer = tableY + dp(BULGE_DP);
-            final float bR = Math.min(dpf2(BULGE_RADIUS_DP), (right - left) / 2f);
-            final float tRleft = cornerRadiusFor(bulgeColLeft, rowStarts[model.rowCount]);
-            final float tRright = cornerRadiusFor(bulgeColRight, rowStarts[model.rowCount]);
-            bulgePath.rewind();
-            bulgePath.moveTo(left, tableY - tRleft);
-            bulgePath.lineTo(left, outer - bR);
-            arcRect.set(left, outer - 2 * bR, left + 2 * bR, outer);
-            bulgePath.arcTo(arcRect, 180, -90);
-            bulgePath.lineTo(right - bR, outer);
-            arcRect.set(right - 2 * bR, outer - 2 * bR, right, outer);
-            bulgePath.arcTo(arcRect, 90, -90);
-            bulgePath.lineTo(right, tableY - tRright);
-            if (tRright > 0) {
-                // Curve up into the table corner so the fill follows the table's rounded corner.
-                arcRect.set(right - 2 * tRright, tableY - 2 * tRright, right, tableY);
-                bulgePath.arcTo(arcRect, 0, 90);
-            } else {
-                bulgePath.lineTo(right, tableY);
-            }
-            bulgePath.lineTo(left + tRleft, tableY);
-            if (tRleft > 0) {
-                arcRect.set(left, tableY - 2 * tRleft, left + 2 * tRleft, tableY);
-                bulgePath.arcTo(arcRect, 90, 90);
-            } else {
-                bulgePath.lineTo(left, tableY);
-            }
-            bulgePath.close();
-            canvas.drawPath(bulgePath, bulgeFillPaint);
+            drawBottomBulgeFill(canvas, bulgeColLeft, bulgeColRight);
         }
+    }
+
+    private void drawLeftBulgeFill(Canvas canvas, int rowTop, int rowBottom) {
+        final float top = rowTop - dpf2(1), bot = rowBottom + dpf2(1);
+        final float outer = colStarts[0] - dp(BULGE_DP);
+        final float bR = Math.min(dpf2(BULGE_RADIUS_DP), (bot - top) / 2f);
+        final float tRtop = cornerRadiusFor(colStarts[0], rowTop);
+        final float tRbot = cornerRadiusFor(colStarts[0], rowBottom);
+        bulgePath.rewind();
+        bulgePath.moveTo(colStarts[0] + tRtop, top);
+        bulgePath.lineTo(outer + bR, top);
+
+        arcRect.set(outer, top, outer + 2 * bR, top + 2 * bR);
+        bulgePath.arcTo(arcRect, 270, -90);
+        bulgePath.lineTo(outer, bot - bR);
+
+        arcRect.set(outer, bot - 2 * bR, outer + 2 * bR, bot);
+        bulgePath.arcTo(arcRect, 180, -90);
+        bulgePath.lineTo(colStarts[0] + tRbot, bot);
+
+        if (tRbot > 0) {
+            arcRect.set(colStarts[0], bot - 2 * tRbot, colStarts[0] + 2 * tRbot, bot);
+            bulgePath.arcTo(arcRect, 90, 90);
+        } else {
+            bulgePath.lineTo(colStarts[0], bot);
+        }
+
+        bulgePath.lineTo(colStarts[0], top + tRtop);
+        if (tRtop > 0) {
+            arcRect.set(colStarts[0], top, colStarts[0] + 2 * tRtop, top + 2 * tRtop);
+            bulgePath.arcTo(arcRect, 180, 90);
+        } else {
+            bulgePath.lineTo(colStarts[0], top);
+        }
+
+        bulgePath.close();
+        canvas.drawPath(bulgePath, bulgeFillPaint);
+    }
+
+    private void drawBottomBulgeFill(Canvas canvas, int colLeft, int colRight) {
+        final float left = colLeft - dpf2(1), right = colRight + dpf2(1);
+        final float tableY = rowStarts[model.rowCount];
+        final float outer = tableY + dp(BULGE_DP);
+        final float bR = Math.min(dpf2(BULGE_RADIUS_DP), (right - left) / 2f);
+        final float tRleft = cornerRadiusFor(colLeft, rowStarts[model.rowCount]);
+        final float tRright = cornerRadiusFor(colRight, rowStarts[model.rowCount]);
+        bulgePath.rewind();
+        bulgePath.moveTo(left, tableY - tRleft);
+        bulgePath.lineTo(left, outer - bR);
+        arcRect.set(left, outer - 2 * bR, left + 2 * bR, outer);
+        bulgePath.arcTo(arcRect, 180, -90);
+        bulgePath.lineTo(right - bR, outer);
+        arcRect.set(right - 2 * bR, outer - 2 * bR, right, outer);
+        bulgePath.arcTo(arcRect, 90, -90);
+        bulgePath.lineTo(right, tableY - tRright);
+        if (tRright > 0) {
+            // Curve up into the table corner so the fill follows the table's rounded corner.
+            arcRect.set(right - 2 * tRright, tableY - 2 * tRright, right, tableY);
+            bulgePath.arcTo(arcRect, 0, 90);
+        } else {
+            bulgePath.lineTo(right, tableY);
+        }
+        bulgePath.lineTo(left + tRleft, tableY);
+        if (tRleft > 0) {
+            arcRect.set(left, tableY - 2 * tRleft, left + 2 * tRleft, tableY);
+            bulgePath.arcTo(arcRect, 90, 90);
+        } else {
+            bulgePath.lineTo(left, tableY);
+        }
+        bulgePath.close();
+        canvas.drawPath(bulgePath, bulgeFillPaint);
     }
 
     private void drawBulgeOutlines(Canvas canvas) {
@@ -436,44 +589,91 @@ public class RichTableCellGrid extends ViewGroup {
     }
 
     private void drawHandleDots(Canvas canvas) {
+        if (model == null) return;
+        final float radius = dpf2(3) / 2f;
+        final float step = dp(8);
+        final float lx = colStarts[0] - dp(DOT_AWAY_DP) - radius;
+        final float by = rowStarts[model.rowCount] + dp(DOT_AWAY_DP) + radius;
+        if (hasAnySelection()) {
+            final int firstRow = firstSelectedRow(), lastRow = lastSelectedRow();
+            final int firstCol = firstSelectedCol(), lastCol = lastSelectedCol();
+            if (firstRow < 0 || firstCol < 0) return;
+            final TL_iv.pageTableCell ac = activeCell();
+            final boolean combinedRow = useCombinedRowHandle();
+            final int activeRow = ac == null ? firstRow : model.anchorRowOf(ac);
+            final int activeRowEnd = ac == null ? activeRow + 1
+                : Math.min(activeRow + TableModel.spanRow(ac), model.rowCount);
+            final float cy = combinedRow
+                ? (rowStarts[firstRow] + rowStarts[lastRow + 1]) / 2f
+                : (rowStarts[activeRow] + rowStarts[activeRowEnd]) / 2f;
+            dotPaint.setColor(combinedRow && areRowsFullySelected(firstRow, lastRow) ? dotOnSelectionColor : dotColor);
+            for (int i = -1; i <= 1; i++) canvas.drawCircle(lx, cy + i * step, radius, dotPaint);
+            final boolean combinedCol = useCombinedColHandle();
+            final int activeCol = ac == null ? firstCol : model.anchorColOf(ac);
+            final int activeColEnd = ac == null ? activeCol + 1
+                : Math.min(activeCol + TableModel.spanCol(ac), model.colCount);
+            final float cx = combinedCol
+                ? (colStarts[firstCol] + colStarts[lastCol + 1]) / 2f
+                : (colStarts[activeCol] + colStarts[activeColEnd]) / 2f;
+            dotPaint.setColor(combinedCol && areColsFullySelected(firstCol, lastCol) ? dotOnSelectionColor : dotColor);
+            for (int i = -1; i <= 1; i++) canvas.drawCircle(cx + i * step, by, radius, dotPaint);
+            return;
+        }
         final TL_iv.pageTableCell ac = activeCell();
         if (ac == null) return;
         final int aR = model.anchorRowOf(ac), aC = model.anchorColOf(ac);
         if (aR < 0 || aC < 0) return;
         final int rs = TableModel.spanRow(ac), cs = TableModel.spanCol(ac);
-        final float radius = dpf2(3) / 2f;
-        final float step = dp(8);
         final float cy = (rowStarts[aR] + rowStarts[Math.min(aR + rs, model.rowCount)]) / 2f;
-        final float lx = colStarts[0] - dp(DOT_AWAY_DP) - radius;
         dotPaint.setColor(leftBulge ? dotOnSelectionColor : dotColor);
         for (int i = -1; i <= 1; i++) canvas.drawCircle(lx, cy + i * step, radius, dotPaint);
         final float cx = (colStarts[aC] + colStarts[Math.min(aC + cs, model.colCount)]) / 2f;
-        final float by = rowStarts[model.rowCount] + dp(DOT_AWAY_DP) + radius;
         dotPaint.setColor(bottomBulge ? dotOnSelectionColor : dotColor);
         for (int i = -1; i <= 1; i++) canvas.drawCircle(cx + i * step, by, radius, dotPaint);
     }
 
     public int rowHandleAtGrid(int gx, int gy) {
+        if (model == null || gx < colStarts[0] - dp(BULGE_DP) - dp(4) || gx >= colStarts[0]) return -1;
+        if (useCombinedRowHandle()) {
+            final int first = firstSelectedRow(), last = lastSelectedRow();
+            return first >= 0 && gy >= rowStarts[first] && gy < rowStarts[last + 1] ? first : -1;
+        }
         final TL_iv.pageTableCell ac = activeCell();
         if (ac == null) return -1;
         final int aR = model.anchorRowOf(ac);
         if (aR < 0) return -1;
         final int rs = TableModel.spanRow(ac);
         final int top = rowStarts[aR], bot = rowStarts[Math.min(aR + rs, model.rowCount)];
-        if (gx >= colStarts[0] - dp(BULGE_DP) - dp(4) && gx < colStarts[0] && gy >= top && gy < bot) return aR;
+        if (gy >= top && gy < bot) return aR;
         return -1;
     }
 
+    public int rowHandleEnd(int start) {
+        if (!useCombinedRowHandle() || start != firstSelectedRow()) return start;
+        return lastSelectedRow();
+    }
+
     public int colHandleAtGrid(int gx, int gy) {
+        if (model == null) return -1;
+        final int bottom = rowStarts[model.rowCount];
+        if (gy < bottom || gy >= bottom + dp(BULGE_DP) + dp(4)) return -1;
+        if (useCombinedColHandle()) {
+            final int first = firstSelectedCol(), last = lastSelectedCol();
+            return first >= 0 && gx >= colStarts[first] && gx < colStarts[last + 1] ? first : -1;
+        }
         final TL_iv.pageTableCell ac = activeCell();
         if (ac == null) return -1;
         final int aC = model.anchorColOf(ac);
         if (aC < 0) return -1;
         final int cs = TableModel.spanCol(ac);
         final int left = colStarts[aC], right = colStarts[Math.min(aC + cs, model.colCount)];
-        final int bottom = rowStarts[model.rowCount];
-        if (gy >= bottom && gy < bottom + dp(BULGE_DP) + dp(4) && gx >= left && gx < right) return aC;
+        if (gx >= left && gx < right) return aC;
         return -1;
+    }
+
+    public int colHandleEnd(int start) {
+        if (!useCombinedColHandle() || start != firstSelectedCol()) return start;
+        return lastSelectedCol();
     }
 
     public TL_iv.pageTableCell findFocusedCell() {

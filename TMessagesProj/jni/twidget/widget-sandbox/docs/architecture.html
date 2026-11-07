@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>widget-sandbox architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=Source+Code+Pro:wght@400;500&display=swap">
+<style>
+/* One reading column: the idea, the diagram, the layers in detail, then the gains and the costs. Zone colours: coral = foreign content, purple = shared JS, teal = per-platform and swappable. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --fg: #141a21;
+  --muted: #58646f;
+  --faint: #8a949d;
+  --line: #dbe1e7;
+  --grid: #e8edf1;
+  --accent: #0f766e;
+  --hostile: #c2690a; --hostile-bg: #fbf1e4;
+  --shared: #5b4bb5; --shared-bg: #efecfb;
+  --platform: #0f766e; --platform-bg: #e4f3f0;
+  --neutral-bg: #f1f4f7;
+  --good: #137a3a;
+  --bad: #b3261e;
+  --code-bg: #e9eef2;
+  --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "Source Code Pro", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1419; --surface: #171d24; --fg: #e9eef2; --muted: #9aa7b2; --faint: #74818c; --line: #2a333c; --grid: #222a32;
+    --accent: #3fb8ac; --hostile: #e08a2e; --hostile-bg: #3a2a16; --shared: #a99af0; --shared-bg: #2a2545; --platform: #3fb8ac; --platform-bg: #163430;
+    --neutral-bg: #1f262e; --good: #4cc27a; --bad: #f08a80; --code-bg: #212932; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1419; --surface: #171d24; --fg: #e9eef2; --muted: #9aa7b2; --faint: #74818c; --line: #2a333c; --grid: #222a32;
+  --accent: #3fb8ac; --hostile: #e08a2e; --hostile-bg: #3a2a16; --shared: #a99af0; --shared-bg: #2a2545; --platform: #3fb8ac; --platform-bg: #163430;
+  --neutral-bg: #1f262e; --good: #4cc27a; --bad: #f08a80; --code-bg: #212932; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.55; }
+.wrap { max-width: 880px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 44px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-family: var(--font-display); font-size: clamp(34px, 6vw, 52px); line-height: 1.05; letter-spacing: -0.01em; font-weight: 700; }
+h2 { font-family: var(--font-display); font-size: 27px; line-height: 1.2; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; max-width: 70ch; }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+header { display: grid; gap: 14px; }
+.lede { font-size: 19px; line-height: 1.5; max-width: 70ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 600; }
+section { display: grid; gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.scroll { overflow-x: auto; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-size: 13px; font-weight: 700; color: var(--fg); border-bottom: 1px solid var(--faint); white-space: nowrap; }
+thead th span { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+tbody th { font-weight: 400; color: var(--muted); min-width: 150px; }
+td { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; }
+td.text { font-family: var(--font-body); font-size: 14.5px; white-space: normal; min-width: 160px; }
+tr:last-child th, tr:last-child td { border-bottom: 0; }
+.ok { color: var(--good); font-weight: 600; } .no { color: var(--bad); font-weight: 600; } .so { color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); max-width: 72ch; }
+.diagram svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font-body); }
+.diagram text { font-size: 13px; fill: var(--fg); }
+.diagram text.sub { font-size: 12px; fill: var(--muted); }
+.diagram text.zone { font-size: 14px; font-weight: 700; fill: var(--fg); }
+.diagram text.mono { font-family: var(--font-mono); font-size: 12px; fill: var(--muted); }
+.diagram .z { fill: var(--neutral-bg); stroke: var(--line); stroke-dasharray: 4 3; }
+.diagram .hostile { fill: var(--hostile-bg); stroke: var(--hostile); }
+.diagram .shared { fill: var(--shared-bg); stroke: var(--shared); }
+.diagram .platform { fill: var(--platform-bg); stroke: var(--platform); stroke-dasharray: 4 3; }
+.diagram .neutral { fill: var(--surface); stroke: var(--faint); }
+.diagram .arr { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.diagram .arr.back { stroke-dasharray: 5 4; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.two > * { min-width: 0; }
+.big { font-family: var(--font-display); font-size: 34px; line-height: 1.1; font-weight: 600; }
+.small-label { font-size: 13px; color: var(--muted); }
+ol.steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 72ch; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 8px; max-width: 72ch; }
+ul.plain b { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Telegram messages · a sandbox for HTML widgets · how it works</div>
+  <h1>widget-sandbox architecture</h1>
+  <p class="lede">A bot sends an ordinary HTML file with a script into the chat. widget-sandbox runs it whole, but in a cage: the script executes in the small QuickJS engine against its own copy of the DOM, with no screen and no network. Everything the script changes in that copy becomes a list of operations, the list is checked against allowlists, and only then does trusted code apply it to the real page in the system WebView. Three zones, one trust boundary, the same three JS files on five platforms.</p>
+  <div class="meta">
+    <span><b>State</b> 9 October 2026</span>
+    <span><b>Platforms</b> web, iOS, macOS, Android, C++ for Telegram Desktop</span>
+    <span><b>Checks</b> 22 compat, 40 generated, 89 attacks</span>
+    <span><b>Code</b> 6,300 lines of TypeScript, 1,800 Swift, 1,800 Kotlin, 2,000 C++</span>
+  </div>
+</header>
+
+<section>
+  <h2>The idea in three sentences</h2>
+  <ul class="plain">
+    <li><b>The widget thinks it is in a browser.</b> It has <code>document</code>, events, timers and canvas. Nothing has to be rewritten.</li>
+    <li><b>But its browser is not real.</b> It is a DOM inside QuickJS on a dedicated thread. It cannot draw and it cannot reach the network. All it can do is report what changed.</li>
+    <li><b>A real WebView draws, but it receives validated operations, not HTML.</b> Between the sandbox and the screen stands a validator that passes only known tags, attributes and CSS properties and strips every address except embedded images.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Three zones</h2>
+  <div class="panel diagram">
+    <svg viewBox="0 0 840 600" role="img" aria-label="The three widget-sandbox zones: sandbox, trusted glue, renderer">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <rect class="z" x="20" y="20" width="800" height="160" rx="16"/>
+      <text class="zone" x="40" y="46">Sandbox. A dedicated thread; everything inside is treated as hostile</text>
+      <text class="sub" x="40" y="66">quickjs-ng, 8 MB stack, 64 MB memory cap, 500 ms per call, 300 ms of CPU per second, no network objects</text>
+      <rect class="hostile" x="40" y="84" width="340" height="72" rx="8" stroke-width="1"/>
+      <text x="210" y="110" text-anchor="middle" font-weight="700">The widget file as sent</text>
+      <text class="sub" x="210" y="130" text-anchor="middle">script, DOM calls, canvas, localStorage</text>
+      <rect class="shared" x="440" y="84" width="360" height="72" rx="8" stroke-width="1"/>
+      <text x="620" y="110" text-anchor="middle" font-weight="700">sandbox-bundle.js</text>
+      <text class="sub" x="620" y="130" text-anchor="middle">DOM (linkedom + parse5), browser API shim, network stubs</text>
+      <path class="arr" d="M380 120 L436 120" marker-end="url(#a)"/>
+
+      <rect class="z" x="20" y="220" width="800" height="160" rx="16"/>
+      <text class="zone" x="40" y="246">Trusted glue. One copy per platform, one policy for all</text>
+      <text class="sub" x="40" y="266">worker.ts, SandboxEngine.swift, SandboxEngine.kt, sandbox_engine.cpp; CpuBudget in four copies against one fixture</text>
+      <rect class="platform" x="40" y="284" width="340" height="72" rx="8" stroke-width="1"/>
+      <text x="210" y="310" text-anchor="middle" font-weight="700">Engine glue</text>
+      <text class="sub" x="210" y="330" text-anchor="middle">CPU budget, timers, visibility, kill, Intl from the host</text>
+      <rect class="shared" x="440" y="284" width="360" height="72" rx="8" stroke-width="1"/>
+      <text x="620" y="310" text-anchor="middle" font-weight="700">validator-bundle.js</text>
+      <text class="sub" x="620" y="330" text-anchor="middle">schema, tag and attribute allowlists, CSS sanitizer, URL policy</text>
+      <path class="arr" d="M620 156 L620 280" marker-start="url(#a)" marker-end="url(#a)"/>
+      <text class="mono" x="634" y="192">ops ↓   events and answers ↑</text>
+
+      <rect class="z" x="20" y="420" width="800" height="160" rx="16"/>
+      <text class="zone" x="40" y="446">Renderer. Trusted code only, never sees a foreign string</text>
+      <text class="sub" x="40" y="466">strict CSP, every navigation cancelled, network requests blocked by the platform, the test canary must stay silent</text>
+      <rect class="shared" x="440" y="484" width="360" height="72" rx="8" stroke-width="1"/>
+      <text x="620" y="510" text-anchor="middle" font-weight="700">renderer-bundle.js</text>
+      <text class="sub" x="620" y="530" text-anchor="middle">applies validated operations, returns events and sizes</text>
+      <rect class="platform" x="40" y="484" width="340" height="72" rx="8" stroke-width="1"/>
+      <text x="210" y="510" text-anchor="middle" font-weight="700">WKWebView · Android WebView · iframe</text>
+      <text class="sub" x="210" y="530" text-anchor="middle">or a native backend where there is no WebView</text>
+      <path class="arr" d="M620 356 L620 480" marker-start="url(#a)" marker-end="url(#a)"/>
+      <text class="mono" x="634" y="392">validated ops ↓   events ↑</text>
+      <path class="arr" d="M440 520 L384 520" marker-end="url(#a)"/>
+    </svg>
+    <div class="legend"><span><i style="background: var(--hostile-bg); border-color: var(--hostile)"></i>bot content</span><span><i style="background: var(--shared-bg); border-color: var(--shared)"></i>shared JS, identical on every platform</span><span><i style="background: var(--platform-bg); border-color: var(--platform); border-style: dashed"></i>per platform, swappable</span></div>
+  </div>
+  <p>There is one trust boundary: between the first and the second zone. Everything that leaves QuickJS is hostile until the validator says otherwise. The renderer is protected once more in case the validator fails: it refuses forbidden tags on its own, and CSP plus request blocking keep the page off the network even if something slips through.</p>
+</section>
+
+<section>
+  <h2>Who does what</h2>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>Part</th><th>Where it lives</th><th>Size</th><th>What it does</th><th>Trust</th></tr></thead>
+      <tbody>
+        <tr><th>Shim and DOM</th><td class="text"><code>src/sandbox/</code> → <code>sandbox-bundle.js</code></td><td>499 KB</td><td class="text">Gives the widget <code>document</code>, events, forms, styles, canvas as a command stream, in-memory <code>localStorage</code>, timers and rAF through the host. Network APIs throw <code>NetworkDisabledError</code>. Collects mutation diffs into batches.</td><td class="text"><span class="no">hostile environment</span>, runs next to the bot's code</td></tr>
+        <tr><th>Validator</th><td class="text"><code>src/host/validator.ts</code>, <code>allowlist.ts</code>, <code>css-sanitizer.ts</code>, <code>url-policy.ts</code> → <code>validator-bundle.js</code></td><td>226 KB</td><td class="text">Checks every operation against a strict schema: tags, attributes and CSS properties by allowlist, URLs only <code>data:</code> and <code>#fragment</code>, caps on nodes and sizes. Natively it runs in a second, trusted QuickJS runtime.</td><td class="text"><span class="ok">trusted</span>, hostile input</td></tr>
+        <tr><th>Renderer</th><td class="text"><code>src/renderer/</code> → <code>renderer-bundle.js</code></td><td>17 KB</td><td class="text">Holds the live DOM in the WebView, applies operations, listens to events at document level, answers size queries, tracks the theme and the height.</td><td class="text"><span class="ok">trusted</span>, receives no foreign strings</td></tr>
+        <tr><th>Glue</th><td class="text"><code>src/host/worker.ts</code>, <code>widget-host.ts</code>; Swift, Kotlin, C++</td><td class="text">400–1,800 lines per platform</td><td class="text">Starts QuickJS on its own thread, accounts the CPU quota, drives timers and frames, knows whether the bubble is visible, kills the runtime, provides Intl and the bridge to the chat. This is the only part that gets ported.</td><td class="text"><span class="ok">trusted</span></td></tr>
+        <tr><th>Limit policy</th><td class="text"><code>cpu-budget.ts</code>, <code>CpuBudget.swift</code>, <code>CpuBudget.kt</code>, <code>cpu_budget.cpp</code></td><td class="text">4 copies</td><td class="text">A pure function: "how many milliseconds does the next task get". All copies are checked against one fixture, <code>tests/fixtures/cpu-budget.json</code>.</td><td class="text"><span class="ok">trusted</span></td></tr>
+        <tr><th>Libraries</th><td class="text"><code>libs/chart.umd.js</code>, <code>libs/d3.min.js</code></td><td>209 + 280 KB</td><td class="text">The widget writes the usual CDN URL, the loader substitutes the bundled copy. Nothing is downloaded.</td><td class="text"><span class="so">trusted code in the hostile zone</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>The path of one click</h2>
+  <p>The user tapped a button in the widget. This is what happens in the next few milliseconds.</p>
+  <div class="panel diagram">
+    <svg viewBox="0 0 840 310" role="img" aria-label="The path of a click from the WebView through the glue into the sandbox and back">
+      <defs><marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <rect class="platform" x="20" y="40" width="180" height="64" rx="8" stroke-width="1"/>
+      <text x="110" y="66" text-anchor="middle" font-weight="700">1. WebView</text>
+      <text class="sub" x="110" y="86" text-anchor="middle">click on node #17</text>
+      <rect class="neutral" x="250" y="40" width="160" height="64" rx="8" stroke-width="1"/>
+      <text x="330" y="66" text-anchor="middle" font-weight="700">2. Glue</text>
+      <text class="sub" x="330" y="86" text-anchor="middle">"event" task, CPU slice</text>
+      <rect class="hostile" x="460" y="40" width="360" height="64" rx="8" stroke-width="1"/>
+      <text x="640" y="66" text-anchor="middle" font-weight="700">3. Sandbox</text>
+      <text class="sub" x="640" y="86" text-anchor="middle">the widget's handler changes its DOM, the shim collects a diff</text>
+      <path class="arr" d="M200 72 L246 72" marker-end="url(#b)"/>
+      <path class="arr" d="M410 72 L456 72" marker-end="url(#b)"/>
+
+      <rect class="hostile" x="460" y="150" width="360" height="64" rx="8" stroke-width="1"/>
+      <text x="640" y="176" text-anchor="middle" font-weight="700">4. Batch of operations</text>
+      <text class="sub" x="640" y="196" text-anchor="middle">text #23 "5", attr #17 class, ins #40 …</text>
+      <rect class="shared" x="250" y="150" width="160" height="64" rx="8" stroke-width="1"/>
+      <text x="330" y="176" text-anchor="middle" font-weight="700">5. Validator</text>
+      <text class="sub" x="330" y="196" text-anchor="middle">schema, allowlist, CSS, URL</text>
+      <rect class="platform" x="20" y="150" width="180" height="64" rx="8" stroke-width="1"/>
+      <text x="110" y="176" text-anchor="middle" font-weight="700">6. WebView</text>
+      <text class="sub" x="110" y="196" text-anchor="middle">applies, WebKit draws</text>
+      <path class="arr" d="M640 104 L640 146" marker-end="url(#b)"/>
+      <path class="arr" d="M460 182 L414 182" marker-end="url(#b)"/>
+      <path class="arr" d="M250 182 L204 182" marker-end="url(#b)"/>
+
+      <path class="arr back" d="M560 214 L560 250 L110 250 L110 218" marker-end="url(#b)"/>
+      <text class="mono" x="420" y="274" text-anchor="middle">Sync query: getBoundingClientRect, getBBox, measureText.</text>
+      <text class="sub" x="420" y="294" text-anchor="middle">The sandbox thread waits for the answer for at most 3 s; the answer is cached until the next batch of operations.</text>
+    </svg>
+  </div>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>What flows</th><th>From → to</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><th>Operations</th><td class="text">sandbox → glue → validator → renderer</td><td class="text"><code>el</code>, <code>ins</code>, <code>rm</code>, <code>text</code>, <code>attr</code>, <code>style</code>, <code>css</code>, <code>prop</code>, <code>canvas</code>, <code>call</code></td></tr>
+        <tr><th>Events</th><td class="text">renderer → glue → sandbox</td><td class="text"><code>click</code>, <code>input</code> with the field value, <code>submit</code>, keys, pointer, <code>scroll</code>, <code>transitionend</code>, <code>visibilitychange</code>, <code>theme</code></td></tr>
+        <tr><th>Sync queries</th><td class="text">the sandbox waits, the glue asks the renderer</td><td class="text"><code>rect</code>, <code>box</code>, <code>cs</code> (computed style), <code>svg</code> (getBBox, getCTM, getTotalLength…), <code>measureText</code>, <code>imageData</code>, <code>matchMedia</code>, <code>elementFromPoint</code>, <code>validity</code></td></tr>
+        <tr><th>Ticks</th><td class="text">glue → sandbox</td><td class="text">timers, rAF frames (only while the bubble is visible), viewport, theme</td></tr>
+        <tr><th>Bridge to the chat</th><td class="text">sandbox → glue → host app</td><td class="text"><code>TelegramWidget.sendMessage</code>, <code>openLink</code> through a native dialog, <code>onTheme</code></td></tr>
+        <tr><th>Diagnostics</th><td class="text">validator and glue → panel</td><td class="text"><code>url-blocked</code>, <code>tag-dropped</code>, <code>network-blocked</code>, <code>cpu-throttled</code>, <code>timer-limit-enforced</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Every message is flat JSON that can be logged and replayed in tests. Nodes are addressed by numeric ids handed out by the sandbox; the renderer never receives an HTML string, only "create a <code>div</code> element with id 17". On the web, sync queries go through <code>SharedArrayBuffer</code> and <code>Atomics.wait</code>; natively through a semaphore. The sandbox thread is the one that waits, never the main thread.</p>
+</section>
+
+<section>
+  <h2>Lifecycle and limits</h2>
+  <p>Every decision about how much the widget may do is made by the glue, that is by trusted code. The sandbox learns about it after the fact: a frame did not arrive, a timer fired late, an "out of memory" exception.</p>
+  <div class="panel diagram">
+    <svg viewBox="0 0 840 230" role="img" aria-label="Widget states: loading, visible, hidden, frozen">
+      <defs><marker id="c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <rect class="neutral" x="20" y="40" width="170" height="64" rx="8" stroke-width="1"/>
+      <text x="105" y="66" text-anchor="middle" font-weight="700">Loading</text>
+      <text class="sub" x="105" y="86" text-anchor="middle">boot ≈ 40 ms, first render</text>
+      <rect class="platform" x="250" y="40" width="170" height="64" rx="8" stroke-width="1"/>
+      <text x="335" y="66" text-anchor="middle" font-weight="700">Visible</text>
+      <text class="sub" x="335" y="86" text-anchor="middle">frames, timers, events</text>
+      <rect class="neutral" x="480" y="40" width="170" height="64" rx="8" stroke-width="1"/>
+      <text x="565" y="66" text-anchor="middle" font-weight="700">Hidden</text>
+      <text class="sub" x="565" y="86" text-anchor="middle">no frames, timers at 1 Hz</text>
+      <rect class="hostile" x="710" y="40" width="110" height="64" rx="8" stroke-width="1"/>
+      <text x="765" y="66" text-anchor="middle" font-weight="700">Frozen</text>
+      <text class="sub" x="765" y="86" text-anchor="middle">runtime killed</text>
+      <path class="arr" d="M190 72 L246 72" marker-end="url(#c)"/>
+      <path class="arr" d="M420 64 L476 64" marker-end="url(#c)"/>
+      <path class="arr" d="M480 80 L424 80" marker-end="url(#c)"/>
+      <path class="arr" d="M335 104 L335 150 L765 150 L765 108" marker-end="url(#c)"/>
+      <text class="mono" x="550" y="172" text-anchor="middle">a limit was broken: 500 ms in one call, 64 MB, sustained quota overrun</text>
+      <text class="sub" x="550" y="196" text-anchor="middle">the last rendered DOM stays on screen with an error badge; on hidden → visible one frame is requested if the shim asked for it</text>
+    </svg>
+  </div>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>Limit</th><th>Default</th><th>What happens when it is broken</th></tr></thead>
+      <tbody>
+        <tr><th>One synchronous call</th><td>500 ms (<code>cpuLimitMs</code>)</td><td class="text">the interrupt handler stops the engine, the runtime is killed, the frozen last render stays</td></tr>
+        <tr><th>CPU per second</th><td>300 ms of 1000 (<code>cpuQuotaMs</code>)</td><td class="text">frames and timers are deferred to the next window; the widget animates less often but stays alive; <code>cpu-throttled</code> diagnostic; killing on sustained overrun is enabled by config</td></tr>
+        <tr><th>Runtime memory</th><td>64 MB (<code>JS_SetMemoryLimit</code>)</td><td class="text">the allocation throws, the runtime is killed</td></tr>
+        <tr><th>Timers</th><td>256 active, delay ≤ 24 h</td><td class="text">an extra timer is refused in the glue even if the shim let it through</td></tr>
+        <tr><th>Tree size</th><td>50,000 nodes, text ≤ 2 MB, attribute ≤ 4 MB, 200,000 operations per batch</td><td class="text">the batch is rejected by the validator with a diagnostic</td></tr>
+        <tr><th>Boot</th><td>up to 5 s, the full <code>cpuLimitMs</code> per task</td><td class="text">loading the bundle and the first run of the scripts are not cut by the quota, otherwise every widget would start throttled</td></tr>
+        <tr><th>Sync query</th><td>3 s</td><td class="text">the answer is <code>{error: 'timeout'}</code>, the widget keeps running</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>What the widget author sees</h2>
+  <div class="two">
+    <div class="panel">
+      <h3>Works</h3>
+      <ul class="plain">
+        <li>All the markup and CSS WebKit knows: grid, flex, custom properties, <code>transition</code>, <code>@keyframes</code>, <code>@container</code>, inline SVG, forms, <code>&lt;details&gt;</code>, <code>&lt;dialog&gt;</code>.</li>
+        <li>Inline scripts in document order, ES2023, Promise, timers, rAF, <code>MutationObserver</code>, <code>ResizeObserver</code>, Intl, <code>crypto.randomUUID</code>.</li>
+        <li>DOM API: selectors, <code>innerHTML</code>, <code>classList</code>, <code>dataset</code>, forms with <code>value</code> and <code>checkValidity</code>, size measurements, <code>getComputedStyle</code>.</li>
+        <li>Canvas 2D (no bundled libraries since widget profile 1).</li>
+        <li>The chat theme through <code>prefers-color-scheme</code>, <code>light-dark()</code> and <code>TelegramWidget.onTheme</code>.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Does not work, by design</h3>
+      <ul class="plain">
+        <li>Any network: scripts, images, fonts, stylesheets, <code>fetch</code>, WebSocket, WebRTC. Images and fonts only as <code>data:</code>.</li>
+        <li>WebGL, Web Audio, workers, navigation, <code>window.open</code> (replaced by a host dialog).</li>
+        <li><code>localStorage</code> lives only as long as the widget does.</li>
+        <li><code>preventDefault()</code> from the sandbox is asynchronous: navigation and submit are always cancelled; the first checkbox toggle or text input may show its native behaviour for one frame.</li>
+        <li><code>Intl.formatToParts</code> is not there yet.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">This list is published as the runtime profile (<code>docs/widget-runtime-profile.md</code>). A model that gets it in the tool description generates widgets that pass without a single blocked request: 20 of 20 in the test.</p>
+</section>
+
+<section>
+  <h2>Platforms</h2>
+  <p>The three JS bundles are built once and copied into every port by <code>scripts/build-native-bundles.ts</code>. Only the glue is ported.</p>
+  <div class="panel scroll">
+    <table>
+      <thead><tr><th>Platform</th><th>Engine and thread</th><th>Glue</th><th>Renderer</th><th>Verified</th></tr></thead>
+      <tbody>
+        <tr><th>Web</th><td class="text">QuickJS-wasm in a Worker; sync via SharedArrayBuffer</td><td>worker.ts, widget-host.ts</td><td class="text">sandboxed iframe, <code>allow-scripts allow-forms</code>, CSP</td><td class="text">compat 20/20, generated 40/40 pixel-matched, 89 attacks with 0 hits</td></tr>
+        <tr><th>iOS and macOS</th><td class="text">quickjs-ng in C, its own <code>JSThread</code> with an 8 MB stack</td><td class="text">SandboxEngine.swift, one package, <code>#if canImport(UIKit)</code> branches</td><td class="text">WKWebView, navigation cancelled, requests blocked</td><td class="text">21 tests, generated 40/40 on the simulator and an iPhone, macOS autorun, pause on window occlusion</td></tr>
+        <tr><th>Android</th><td class="text">quickjs-ng via JNI, <code>JSThread.kt</code></td><td>SandboxEngine.kt</td><td class="text">Android WebView, <code>shouldInterceptRequest</code>, gesture interception</td><td class="text">27 instrumented tests, 82 attacks with 0 hits, both corpora on the emulator and a phone</td></tr>
+        <tr><th>Telegram Desktop</th><td class="text">quickjs-ng, <code>std::thread</code> with 8 MB, no Qt needed</td><td>sandbox_engine.cpp, trusted_validator</td><td class="text">no WebView in the chat: the Web App window, or a native backend on QPainter over the same operations</td><td class="text">21 tests, 89 attacks with 0 leaks into validated operations, both corpora load</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>What this architecture gives</h2>
+  <ul class="plain">
+    <li><b>The format stays standard.</b> A widget is an ordinary HTML file, written by models, bots and people with no knowledge of our API. 40 of 40 generated widgets passed without a rewrite.</li>
+    <li><b>The picture is real.</b> The system WebView draws, so the widget looks the way its author saw it in a browser. The comparison with native rendering is pixel-level and automatic.</li>
+    <li><b>Restrictions are policy, not incapacity.</b> The allowlists can be narrowed to any profile in a day and widened back. Whatever a bot throws at it, only the list gets through.</li>
+    <li><b>Foreign HTML is never parsed in the messenger's process.</b> The sandbox parses it; WebKit receives operations and works in its own isolated process. A renderer bug lands in a process that is already sandboxed.</li>
+    <li><b>There is no network by construction.</b> Network objects do not exist in the sandbox, the validator passes no addresses, the renderer blocks requests, the test canary stays silent. Four independent layers.</li>
+    <li><b>One engine everywhere.</b> The same bundles and the same limit policy on five platforms; a difference between platforms is a bug with a fixture, not a quirk.</li>
+    <li><b>Parts are swappable.</b> The engine, the renderer, the policy, the Intl provider. On tdesktop the renderer can be a native backend; the format and the trust boundary do not change.</li>
+    <li><b>Animations are free.</b> CSS transitions and keyframes run on the compositor, 0 ms of script. A JS frame sends a diff of a few operations, not the whole page.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>What it costs</h2>
+  <ul class="plain">
+    <li><b>Memory.</b> 1.8–3.7 MB per widget runtime (DOM, parser, library) plus a WebView per visible widget. The WebView is the main cost. Hidden widgets are already paused; replacing them with a snapshot and killing the runtime is not done yet.</li>
+    <li><b>Startup.</b> About 40 ms to load the DOM bundle in a release build, 150 ms in an iOS debug build. Bytecode precompilation should bring it to a few milliseconds; still open.</li>
+    <li><b>Sync measurements.</b> Every <code>getBoundingClientRect</code> or <code>getBBox</code> is a hop between threads. D3 with hundreds of measurements in a loop is the known bottleneck, covered by a cache until the next mutation, but not free.</li>
+    <li><b>More code at the boundary.</b> The browser API shim, the validator, the CSS sanitizer and the URL policy are 6,300 lines of TypeScript that have to follow what widgets use. "A string in, a string out" is simpler.</li>
+    <li><b>Asynchronous <code>preventDefault</code>.</b> The sandbox cannot cancel a native action in the same frame. Navigation and submit are always cancelled; the rest by learned cases.</li>
+    <li><b>Errors are not visible to the user.</b> Widget exceptions go to the diagnostics panel; the badge and restart exist only for killed runtimes.</li>
+    <li><b>The web client needs cross-origin isolation</b> for <code>SharedArrayBuffer</code>, which may interfere with other embeddings.</li>
+    <li><b>Nothing where there is no WebView.</b> The Telegram Desktop chat has no renderer; there is the sandbox core and two paths: the Web App window, or a native backend that still has to be written.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How it is tested</h2>
+  <div class="two">
+    <div class="panel"><div class="big">89</div><div class="small-label">attack files: network through APIs, markup, CSS and navigation; CPU burn; fallback on kill. The canary on 127.0.0.1:9999 must record 0 requests on every platform</div></div>
+    <div class="panel"><div class="big">22 + 40</div><div class="small-label">compat widgets and model-generated widgets, each compared with native rendering pixel by pixel and by behaviour after clicks</div></div>
+    <div class="panel"><div class="big">1 fixture</div><div class="small-label">for four copies of the limit policy; plus the lifecycle test: off screen, frames stop, timers at 1 Hz, <code>visibilitychange</code> arrives</div></div>
+  </div>
+  <p class="note">Working rules: the shim is fixed in general, never for one widget; a regression in the corpus is a shim bug until proven otherwise; the invariants (JS only inside QuickJS, everything from the sandbox is hostile, the renderer receives only validated operations, no URLs other than <code>data:</code> and <code>#</code>, no network, defence in depth) are not relaxed without discussion.</p>
+</section>
+
+</div>
+</body>
+</html>

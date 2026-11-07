@@ -44,6 +44,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
@@ -76,6 +77,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -111,6 +113,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.HashSet;
 
 public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPaintView, PaintToolsView.Delegate, EntityView.EntityViewDelegate, PaintTextOptionsView.Delegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, NotificationCenter.NotificationCenterDelegate {
     public PaintCancelView cancelButton;
@@ -219,6 +222,8 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
     private Runnable onDoneButtonClickedListener;
 
+    private final PersistColorPalette palette;
+
     @SuppressLint("NotifyDataSetChanged")
     public LPhotoPaintView(Context context, Activity activity, int currentAccount, Bitmap bitmap, Bitmap originalBitmap, int originalRotation, ArrayList<VideoEditedInfo.MediaEntity> entities, MediaController.CropState cropState, Runnable onInit, Theme.ResourcesProvider resourcesProvider) {
         super(context, activity, true);
@@ -288,7 +293,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         inBubbleMode = context instanceof BubbleActivity;
 
-        PersistColorPalette palette = PersistColorPalette.getInstance(currentAccount);
+        palette = PersistColorPalette.getInstance(currentAccount);
         palette.resetCurrentColor();
         colorSwatch.color = palette.getCurrentColor();
         colorSwatch.brushWeight = palette.getCurrentWeight();
@@ -632,131 +637,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         doneTextButton.setVisibility(View.GONE);
         topLayout.addView(doneTextButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.RIGHT, 0, 0, 4, 0));
 
-        bottomLayout = new FrameLayout(context) {
-            private float lastRainbowX, lastRainbowY;
-            private Path path = new Path();
-
-            {
-                setWillNotDraw(false);
-                colorPickerRainbowPaint.setStyle(Paint.Style.STROKE);
-                colorPickerRainbowPaint.setStrokeWidth(dp(2));
-            }
-
-            private void checkRainbow(float cx, float cy) {
-                if (cx != lastRainbowX || cy != lastRainbowY) {
-                    lastRainbowX = cx;
-                    lastRainbowY = cy;
-
-                    int[] colors = {
-                            0xffeb4b4b,
-                            0xffee82ee,
-                            0xff6080e4,
-                            Color.CYAN,
-                            0xff8fce00,
-                            Color.YELLOW,
-                            0xffffa500,
-                            0xffeb4b4b
-                    };
-                    colorPickerRainbowPaint.setShader(new SweepGradient(cx, cy, colors, null));
-                }
-            }
-
-            @Override
-            public void setTranslationY(float translationY) {
-                super.setTranslationY(translationY);
-                if (overlayLayout != null) {
-                    overlayLayout.invalidate();
-                }
-            }
-
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-
-                ViewGroup barView = getBarView();
-                AndroidUtilities.rectTmp2.set(
-                        AndroidUtilities.lerp(barView.getLeft(), colorsListView.getLeft(), toolsTransformProgress),
-                        AndroidUtilities.lerp(barView.getTop(), colorsListView.getTop(), toolsTransformProgress),
-                        AndroidUtilities.lerp(barView.getRight(), colorsListView.getRight(), toolsTransformProgress),
-                        AndroidUtilities.lerp(barView.getBottom(), colorsListView.getBottom(), toolsTransformProgress)
-                );
-                AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
-
-                final float radius = AndroidUtilities.lerp(dp(32), dp(24), toolsTransformProgress);
-                if (blurredBackgroundDrawableForTools != null) {
-                    AndroidUtilities.rectTmp2.inset(-dp(4), -dp(4));
-                    blurredBackgroundDrawableForTools.setRadius(radius);
-                    blurredBackgroundDrawableForTools.setBounds(AndroidUtilities.rectTmp2);
-                    blurredBackgroundDrawableForTools.draw(canvas);
-                } else {
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, toolsPaint);
-                }
-
-                if (barView != null && barView.getChildCount() >= 1 && toolsTransformProgress != 1f) {
-                    canvas.save();
-                    canvas.translate(barView.getLeft(), barView.getTop());
-
-                    View child = barView.getChildAt(0);
-                    if (barView instanceof PaintTextOptionsView) {
-                        child = ((PaintTextOptionsView) barView).getColorClickableView();
-                    }
-
-                    if (child.getAlpha() != 0f) {
-                        canvas.scale(child.getScaleX(), child.getScaleY(), child.getPivotX(), child.getPivotY());
-
-                        colorPickerRainbowPaint.setAlpha((int) ((1f - toolsTransformProgress) * child.getAlpha() * 0xFF));
-
-                        int childWidth = child.getWidth() - child.getPaddingLeft() - child.getPaddingRight();
-                        int childHeight = child.getHeight() - child.getPaddingTop() - child.getPaddingBottom();
-                        float cx = child.getX() + child.getPaddingLeft() + childWidth / 2f, cy = child.getY() + child.getPaddingTop() + childHeight / 2f;
-                        int colorCircle = colorSwatch.color;
-                        if (tabsNewSelectedIndex != -1) {
-                            ViewGroup barView2 = (ViewGroup) getBarView(tabsNewSelectedIndex);
-                            View newView = (barView2 == null ? barView : barView2).getChildAt(0);
-                            if (barView2 instanceof PaintTextOptionsView) {
-                                newView = ((PaintTextOptionsView) barView2).getColorClickableView();
-                            }
-                            cx = AndroidUtilities.lerp(cx, newView.getX() + newView.getPaddingLeft() + (newView.getWidth() - newView.getPaddingLeft() - newView.getPaddingRight()) / 2f, tabsSelectionProgress);
-                            cy = AndroidUtilities.lerp(cy, newView.getY() + newView.getPaddingTop() + (newView.getHeight() - newView.getPaddingTop() - newView.getPaddingBottom()) / 2f, tabsSelectionProgress);
-                        }
-                        if (colorsListView != null && colorsListView.getChildCount() > 0) {
-                            View animateToView = colorsListView.getChildAt(0);
-                            cx = AndroidUtilities.lerp(cx, colorsListView.getX() - barView.getLeft() + animateToView.getX() + animateToView.getWidth() / 2f, toolsTransformProgress);
-                            cy = AndroidUtilities.lerp(cy, colorsListView.getY() - barView.getTop() + animateToView.getY() + animateToView.getHeight() / 2f, toolsTransformProgress);
-                            int paletteFirstColor = palette.getColor(0);
-                            colorCircle = ColorUtils.blendARGB(colorSwatch.color, paletteFirstColor, toolsTransformProgress);
-                        }
-                        checkRainbow(cx, cy);
-
-                        float rad = Math.min(childWidth, childHeight) / 2f - dp(0.5f);
-                        if (colorsListView != null && colorsListView.getChildCount() > 0) {
-                            View animateToView = colorsListView.getChildAt(0);
-                            rad = AndroidUtilities.lerp(rad, Math.min(animateToView.getWidth() - animateToView.getPaddingLeft() - animateToView.getPaddingRight(), animateToView.getHeight() - animateToView.getPaddingTop() - animateToView.getPaddingBottom()) / 2f - dp(2f), toolsTransformProgress);
-                        }
-                        AndroidUtilities.rectTmp.set(cx - rad, cy - rad, cx + rad, cy + rad);
-                        canvas.drawArc(AndroidUtilities.rectTmp, 0, 360, false, colorPickerRainbowPaint);
-
-                        colorSwatchPaint.setColor(colorCircle);
-                        colorSwatchPaint.setAlpha((int) (colorSwatchPaint.getAlpha() * child.getAlpha()));
-                        colorSwatchOutlinePaint.setColor(colorCircle);
-                        colorSwatchOutlinePaint.setAlpha((int) (0xFF * child.getAlpha()));
-
-                        float rad2 = rad - dp(3f);
-                        if (colorsListView != null && colorsListView.getSelectedColorIndex() != 0) {
-                            rad2 = AndroidUtilities.lerp(rad - dp(3f), rad + dp(2), toolsTransformProgress);
-                        }
-                        PaintColorsListView.drawColorCircle(canvas, cx, cy, rad2, colorSwatchPaint.getColor());
-
-                        if (colorsListView != null && colorsListView.getSelectedColorIndex() == 0) {
-                            colorSwatchOutlinePaint.setAlpha((int) (colorSwatchOutlinePaint.getAlpha() * toolsTransformProgress * child.getAlpha()));
-                            canvas.drawCircle(cx, cy, rad - (dp(3f) + colorSwatchOutlinePaint.getStrokeWidth()) * (1f - toolsTransformProgress), colorSwatchOutlinePaint);
-                        }
-                    }
-
-                    canvas.restore();
-                }
-            }
-        };
+        bottomLayout = new BottomLayout(context);
         bottomLayout.setPadding(dp(8), dp(8), dp(8), 0);
         bottomLayout.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0x00000000, 0x80000000}));
         addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44 + 60, Gravity.BOTTOM));
@@ -1296,7 +1177,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         drawTab = new TextView(context);
         drawTab.setText(LocaleController.getString(R.string.PhotoEditorDraw).toUpperCase());
-        drawTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(drawTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         drawTab.setPadding(0, dp(8), 0, dp(8));
         drawTab.setTextColor(Color.WHITE);
         drawTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1314,7 +1195,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         stickerTab = new TextView(context);
         stickerTab.setText(LocaleController.getString(R.string.PhotoEditorSticker).toUpperCase());
-        stickerTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(stickerTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         stickerTab.setPadding(0, dp(8), 0, dp(8));
         stickerTab.setOnClickListener(v -> openStickersView());
         stickerTab.setTextColor(Color.WHITE);
@@ -1327,7 +1208,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         textTab = new TextView(context);
         textTab.setText(LocaleController.getString(R.string.PhotoEditorText).toUpperCase());
-        textTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(textTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         textTab.setPadding(0, dp(8), 0, dp(8));
         textTab.setTextColor(Color.WHITE);
         textTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1862,6 +1743,32 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     @Override
     public void updateColors() {
         toolsPaint.setColor(0xff191919);
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_actionBarDefaultSubmenuBackground);
+        colors.add(Theme.key_dialogBackground);
+        colors.add(Theme.key_dialogTextBlack);
+        colors.add(Theme.key_dialogTextGray3);
+        colors.add(Theme.key_chat_emojiPanelBackground);
+        colors.add(Theme.key_chat_emojiPanelShadowLine);
+        colors.add(Theme.key_chat_emojiBottomPanelIcon);
+        colors.add(Theme.key_chat_emojiPanelBackspace);
+        colors.add(Theme.key_chat_emojiPanelIcon);
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_featuredStickers_addedIcon);
+        colors.add(Theme.key_profile_tabSelectedText);
+        colors.add(Theme.key_profile_tabText);
+        colors.add(Theme.key_profile_tabSelectedLine);
+        colors.add(Theme.key_profile_tabSelector);
+        colors.add(Theme.key_chat_emojiSearchIcon);
+        colors.add(Theme.key_chat_emojiSearchBackground);
+        colors.add(Theme.key_windowBackgroundGray);
+        colors.add(Theme.key_fastScrollInactive);
+        colors.add(Theme.key_fastScrollActive);
+        colors.add(Theme.key_fastScrollText);
+        colors.add(Theme.key_windowBackgroundWhite);
+        colors.add(Theme.key_divider);
     }
 
     private BlurredBackgroundDrawable blurredBackgroundDrawableForTools;
@@ -2527,23 +2434,23 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.colorFilter(imageView, Theme.key_actionBarDefaultSubmenuItem, LPhotoPaintView.this.resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             imagesView.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
             image2View = new ImageView(context);
             image2View.setScaleType(ImageView.ScaleType.CENTER);
-            image2View.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.colorFilter(image2View, Theme.key_actionBarDefaultSubmenuItem, LPhotoPaintView.this.resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             image2View.setVisibility(View.GONE);
             imagesView.addView(image2View, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             textView = new TextView(context);
-            textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, LPhotoPaintView.this.resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
             checkView = new ImageView(context);
             checkView.setImageResource(R.drawable.msg_text_check);
             checkView.setScaleType(ImageView.ScaleType.CENTER);
-            checkView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(checkView, Theme.key_radioBackgroundChecked, LPhotoPaintView.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
             checkView.setVisibility(View.GONE);
             addView(checkView, LayoutHelper.createLinear(50, LayoutHelper.MATCH_PARENT));
         }
@@ -2733,7 +2640,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             parent.setOrientation(LinearLayout.HORIZONTAL);
 
             TextView deleteView = new TextView(getContext());
-            deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.textColor(deleteView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
             deleteView.setBackground(Theme.getSelectorDrawable(false));
             deleteView.setGravity(Gravity.CENTER_VERTICAL);
             deleteView.setPadding(dp(16), 0, dp(14), 0);
@@ -2752,7 +2659,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
             if (entityView instanceof TextPaintView) {
                 TextView editView = new TextView(getContext());
-                editView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(editView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 editView.setBackground(Theme.getSelectorDrawable(false));
                 editView.setGravity(Gravity.CENTER_VERTICAL);
                 editView.setPadding(dp(16), 0, dp(16), 0);
@@ -2772,7 +2679,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
             if (entityView instanceof StickerView) {
                 TextView flipView = new TextView(getContext());
-                flipView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(flipView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 flipView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 flipView.setGravity(Gravity.CENTER_VERTICAL);
                 flipView.setEllipsize(TextUtils.TruncateAt.END);
@@ -2792,7 +2699,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
             if (!(entityView instanceof PhotoView)) {
                 TextView duplicateView = new TextView(getContext());
-                duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(duplicateView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 duplicateView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 duplicateView.setGravity(Gravity.CENTER_VERTICAL);
                 duplicateView.setEllipsize(TextUtils.TruncateAt.END);
@@ -2813,7 +2720,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
             if (entityView instanceof PhotoView && ((PhotoView) entityView).hasSegmentedImage()) {
                 PhotoView photoView = (PhotoView) entityView;
                 TextView cutView = new TextView(getContext());
-                cutView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(cutView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 cutView.setBackgroundDrawable(Theme.getSelectorDrawable(false));
                 cutView.setGravity(Gravity.CENTER_VERTICAL);
                 cutView.setEllipsize(TextUtils.TruncateAt.END);
@@ -3730,7 +3637,7 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
     protected void onAttachedToWindow() {
         destroyed = false;
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.customTypefacesLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.customTypefacesLoaded);
     }
 
     @Override
@@ -3813,5 +3720,137 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
         thanosEffect.animate(matrix, bitmap, () -> {
             photoView.onSwitchSegmentedAnimationStarted(true);
         }, () -> {});
+    }
+
+
+    private class BottomLayout extends FrameLayout {
+
+        public BottomLayout(@NonNull Context context) {
+            super(context);
+        }
+
+        private float lastRainbowX, lastRainbowY;
+        private Path path = new Path();
+
+        {
+            setWillNotDraw(false);
+            colorPickerRainbowPaint.setStyle(Paint.Style.STROKE);
+            colorPickerRainbowPaint.setStrokeWidth(dp(2));
+        }
+
+        private void checkRainbow(float cx, float cy) {
+            if (cx != lastRainbowX || cy != lastRainbowY) {
+                lastRainbowX = cx;
+                lastRainbowY = cy;
+
+                int[] colors = {
+                        0xffeb4b4b,
+                        0xffee82ee,
+                        0xff6080e4,
+                        Color.CYAN,
+                        0xff8fce00,
+                        Color.YELLOW,
+                        0xffffa500,
+                        0xffeb4b4b
+                };
+                colorPickerRainbowPaint.setShader(new SweepGradient(cx, cy, colors, null));
+            }
+        }
+
+        @Override
+        public void setTranslationY(float translationY) {
+            super.setTranslationY(translationY);
+            if (overlayLayout != null) {
+                overlayLayout.invalidate();
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+
+            ViewGroup barView = getBarView();
+            AndroidUtilities.rectTmp2.set(
+                    AndroidUtilities.lerp(barView.getLeft(), colorsListView.getLeft(), toolsTransformProgress),
+                    AndroidUtilities.lerp(barView.getTop(), colorsListView.getTop(), toolsTransformProgress),
+                    AndroidUtilities.lerp(barView.getRight(), colorsListView.getRight(), toolsTransformProgress),
+                    AndroidUtilities.lerp(barView.getBottom(), colorsListView.getBottom(), toolsTransformProgress)
+            );
+            AndroidUtilities.rectTmp.set(AndroidUtilities.rectTmp2);
+
+            final float radius = AndroidUtilities.lerp(dp(32), dp(24), toolsTransformProgress);
+            if (blurredBackgroundDrawableForTools != null) {
+                AndroidUtilities.rectTmp2.inset(-dp(4), -dp(4));
+                blurredBackgroundDrawableForTools.setRadius(radius);
+                blurredBackgroundDrawableForTools.setBounds(AndroidUtilities.rectTmp2);
+                blurredBackgroundDrawableForTools.draw(canvas);
+            } else {
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, toolsPaint);
+            }
+
+            if (barView != null && barView.getChildCount() >= 1 && toolsTransformProgress != 1f) {
+                canvas.save();
+                canvas.translate(barView.getLeft(), barView.getTop());
+
+                View child = barView.getChildAt(0);
+                if (barView instanceof PaintTextOptionsView) {
+                    child = ((PaintTextOptionsView) barView).getColorClickableView();
+                }
+
+                if (child.getAlpha() != 0f) {
+                    canvas.scale(child.getScaleX(), child.getScaleY(), child.getPivotX(), child.getPivotY());
+
+                    colorPickerRainbowPaint.setAlpha((int) ((1f - toolsTransformProgress) * child.getAlpha() * 0xFF));
+
+                    int childWidth = child.getWidth() - child.getPaddingLeft() - child.getPaddingRight();
+                    int childHeight = child.getHeight() - child.getPaddingTop() - child.getPaddingBottom();
+                    float cx = child.getX() + child.getPaddingLeft() + childWidth / 2f, cy = child.getY() + child.getPaddingTop() + childHeight / 2f;
+                    int colorCircle = colorSwatch.color;
+                    if (tabsNewSelectedIndex != -1) {
+                        ViewGroup barView2 = (ViewGroup) getBarView(tabsNewSelectedIndex);
+                        View newView = (barView2 == null ? barView : barView2).getChildAt(0);
+                        if (barView2 instanceof PaintTextOptionsView) {
+                            newView = ((PaintTextOptionsView) barView2).getColorClickableView();
+                        }
+                        cx = AndroidUtilities.lerp(cx, newView.getX() + newView.getPaddingLeft() + (newView.getWidth() - newView.getPaddingLeft() - newView.getPaddingRight()) / 2f, tabsSelectionProgress);
+                        cy = AndroidUtilities.lerp(cy, newView.getY() + newView.getPaddingTop() + (newView.getHeight() - newView.getPaddingTop() - newView.getPaddingBottom()) / 2f, tabsSelectionProgress);
+                    }
+                    if (colorsListView != null && colorsListView.getChildCount() > 0) {
+                        View animateToView = colorsListView.getChildAt(0);
+                        cx = AndroidUtilities.lerp(cx, colorsListView.getX() - barView.getLeft() + animateToView.getX() + animateToView.getWidth() / 2f, toolsTransformProgress);
+                        cy = AndroidUtilities.lerp(cy, colorsListView.getY() - barView.getTop() + animateToView.getY() + animateToView.getHeight() / 2f, toolsTransformProgress);
+                        int paletteFirstColor = palette.getColor(0);
+                        colorCircle = ColorUtils.blendARGB(colorSwatch.color, paletteFirstColor, toolsTransformProgress);
+                    }
+                    checkRainbow(cx, cy);
+
+                    float rad = Math.min(childWidth, childHeight) / 2f - dp(0.5f);
+                    if (colorsListView != null && colorsListView.getChildCount() > 0) {
+                        View animateToView = colorsListView.getChildAt(0);
+                        rad = AndroidUtilities.lerp(rad, Math.min(animateToView.getWidth() - animateToView.getPaddingLeft() - animateToView.getPaddingRight(), animateToView.getHeight() - animateToView.getPaddingTop() - animateToView.getPaddingBottom()) / 2f - dp(2f), toolsTransformProgress);
+                    }
+                    AndroidUtilities.rectTmp.set(cx - rad, cy - rad, cx + rad, cy + rad);
+                    canvas.drawArc(AndroidUtilities.rectTmp, 0, 360, false, colorPickerRainbowPaint);
+
+                    colorSwatchPaint.setColor(colorCircle);
+                    colorSwatchPaint.setAlpha((int) (colorSwatchPaint.getAlpha() * child.getAlpha()));
+                    colorSwatchOutlinePaint.setColor(colorCircle);
+                    colorSwatchOutlinePaint.setAlpha((int) (0xFF * child.getAlpha()));
+
+                    float rad2 = rad - dp(3f);
+                    if (colorsListView != null && colorsListView.getSelectedColorIndex() != 0) {
+                        rad2 = AndroidUtilities.lerp(rad - dp(3f), rad + dp(2), toolsTransformProgress);
+                    }
+                    PaintColorsListView.drawColorCircle(canvas, cx, cy, rad2, colorSwatchPaint.getColor());
+
+                    if (colorsListView != null && colorsListView.getSelectedColorIndex() == 0) {
+                        colorSwatchOutlinePaint.setAlpha((int) (colorSwatchOutlinePaint.getAlpha() * toolsTransformProgress * child.getAlpha()));
+                        canvas.drawCircle(cx, cy, rad - (dp(3f) + colorSwatchOutlinePaint.getStrokeWidth()) * (1f - toolsTransformProgress), colorSwatchOutlinePaint);
+                    }
+                }
+
+                canvas.restore();
+            }
+        }
     }
 }

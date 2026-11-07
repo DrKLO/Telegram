@@ -22,8 +22,15 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     public Icon3D model;
     public float angleX = 0;
     public float angleX2 = 0;
-    public float angleX3 = 0;
+    public volatile float angleX3 = 0;
+    public volatile float diamondRoll = 0;
+    public volatile float diamondResolutionScale = 1f;
+    public static final int DIAMOND_BLUE = 0;
+    public static final int DIAMOND_COOL = 2;
+    public volatile int diamondAppearance = DIAMOND_BLUE;
     public float angleY = 0;
+    // Additive page-scroll tilt, independent of touch/idle animation angles.
+    public volatile float headerTilt = 0;
     public float white = 0;
     public float golden = 0;
 
@@ -128,13 +135,19 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
 
         Matrix.translateM(mRotationMatrix, 0, 0, angleX2, 0);
 
-        Matrix.rotateM(mRotationMatrix, 0, -angleY, 1f, 0, 0f);
+        Matrix.rotateM(mRotationMatrix, 0, -angleY - headerTilt, 1f, 0, 0f);
         Matrix.rotateM(mRotationMatrix, 0, -angleX - angleX3, 0, 1.0f, 0);
 
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mRotationMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
 
         if (model != null) {
+            model.diamondYaw = (float) Math.toRadians(angleX + angleX3);
+            // The Swift mesh renderer applies the resting pitch itself.
+            model.diamondPitch = (float) Math.toRadians(angleY + headerTilt);
+            model.diamondRoll = (float) Math.toRadians(diamondRoll);
+            model.diamondResolutionScale = diamondResolutionScale;
+            model.diamondAppearance = diamondAppearance;
             model.night = night;
             model.gradientColor1 = color1;
             model.gradientColor2 = color2;

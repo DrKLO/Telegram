@@ -11,6 +11,8 @@ public sealed class TlGen_Username : TlGen_Object {
   public data class TL_username(
     public val editable: Boolean,
     public val active: Boolean,
+    public val deletable: Boolean,
+    public val expired: Boolean,
     public val username: String,
   ) : TlGen_Username() {
     internal val flags: UInt
@@ -18,6 +20,8 @@ public sealed class TlGen_Username : TlGen_Object {
         var result = 0U
         if (editable) result = result or 1U
         if (active) result = result or 2U
+        if (deletable) result = result or 4U
+        if (expired) result = result or 8U
         return result
       }
 

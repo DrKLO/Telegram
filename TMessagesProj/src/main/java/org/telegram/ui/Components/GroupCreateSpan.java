@@ -30,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
@@ -42,7 +43,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 
-public class GroupCreateSpan extends View {
+public class GroupCreateSpan extends View implements Theme.Colorable {
 
     private String countryIso2;
     private long uid;
@@ -153,11 +154,13 @@ public class GroupCreateSpan extends View {
                 case "premium":
                     isFlag = true;
                     avatarDrawable.setColor(Theme.getColor(Theme.key_premiumGradientBackground2, resourcesProvider));
+                    avatarThemeColorType = 1;
                     firstName = LocaleController.getString(R.string.PrivacyPremium);
                     break;
                 case "miniapps":
                     isFlag = true;
                     avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundBlue, resourcesProvider), Theme.getColor(Theme.key_avatar_background2Blue, resourcesProvider));
+                    avatarThemeColorType = 2;
                     firstName = LocaleController.getString(R.string.PrivacyMiniapps);
                     break;
                 case "archived":
@@ -207,6 +210,7 @@ public class GroupCreateSpan extends View {
             avatarDrawable.setTextSize(dp(24));
             avatarDrawable.setInfo(0, flag, null, null);
             avatarDrawable.setColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider), 0.7f));
+            avatarThemeColorType = 3;
             avatarDrawable.setDrawAvatarBackground(drawAvatarBackground = false);
             uid = country.default_name.hashCode();
             countryIso2 = country.iso2;
@@ -253,12 +257,32 @@ public class GroupCreateSpan extends View {
         } else {
             imageReceiver.setImage(imageLocation, "50_50", avatarDrawable, 0, null, imageParent, 1);
         }
-        updateColors();
+        updateColorsInternal();
 
         NotificationCenter.listenEmojiLoading(this);
     }
 
+    private int avatarThemeColorType;
+
     public void updateColors() {
+        try {
+            if (avatarDrawable != null) {
+                if (avatarThemeColorType == 1) {
+                    avatarDrawable.setColor(Theme.getColor(Theme.key_premiumGradientBackground2, resourcesProvider));
+                } else if (avatarThemeColorType == 2) {
+                    avatarDrawable.setColor(Theme.getColor(Theme.key_avatar_backgroundBlue, resourcesProvider), Theme.getColor(Theme.key_avatar_background2Blue, resourcesProvider));
+                } else if (avatarThemeColorType == 3) {
+                    avatarDrawable.setColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular, resourcesProvider), 0.7f));
+                }
+            }
+            updateColorsInternal();
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void updateColorsInternal() {
         int color = avatarDrawable.getColor();
         int back = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.05f);
         int delete = Theme.getColor(Theme.key_groupcreate_spanDelete, resourcesProvider);
@@ -270,9 +294,16 @@ public class GroupCreateSpan extends View {
         colors[5] = Color.blue(color);
         colors[6] = Color.alpha(back);
         colors[7] = Color.alpha(color);
-        deleteDrawable.setColorFilter(new PorterDuffColorFilter(delete, PorterDuff.Mode.MULTIPLY));
+        if (!deleteColorApplied || delete != appliedDeleteColor) {
+            deleteColorApplied = true;
+            appliedDeleteColor = delete;
+            deleteDrawable.setColorFilter(new PorterDuffColorFilter(delete, PorterDuff.Mode.MULTIPLY));
+        }
         backPaint.setColor(back);
     }
+
+    private boolean deleteColorApplied;
+    private int appliedDeleteColor;
 
     public String getCountryIso2() {
         return countryIso2;

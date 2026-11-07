@@ -32,6 +32,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class RichMapCell extends RichBlockCell
     implements Theme.Colorable, TextSelectionHelper.ArticleSelectableView, RichCaptionHost {
@@ -81,7 +82,7 @@ public class RichMapCell extends RichBlockCell
 
         placeholderIcon = getContext().getResources().getDrawable(R.drawable.msg_map).mutate();
 
-        setBlockPadding(0, dp(6), 0, dp(4));
+        setBlockPadding(dp(16), dp(6), dp(16), dp(4));
 
         clickView = new View(context);
         clickView.setOnClickListener(v -> {
@@ -110,7 +111,7 @@ public class RichMapCell extends RichBlockCell
 
     @Override
     protected int nestedContentMargin() {
-        return dp(16); // edge-to-edge map at top level; inside a quote/list it needs the page margin
+        return 0;
     }
 
     public void bind(BlockRow row, Delegate delegate) {
@@ -210,6 +211,13 @@ public class RichMapCell extends RichBlockCell
         hintPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.5f));
         placeholderIcon.setColorFilter(new PorterDuffColorFilter(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.5f), PorterDuff.Mode.SRC_IN));
         if (caption != null) caption.applyColors();
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inLocationBackground);
+        colors.add(Theme.key_chat_inFileBackground);
+        colors.add(Theme.key_chat_inTextSelectionHighlight);
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
     }
 
     @Override

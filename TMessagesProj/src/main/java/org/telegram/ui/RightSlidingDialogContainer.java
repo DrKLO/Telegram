@@ -62,7 +62,7 @@ public abstract class RightSlidingDialogContainer extends FrameLayout {
         if (fragment.onFragmentCreate()) {
             fragment.setInPreviewMode(true);
             fragment.setParentLayout(navigationLayout);
-            View view = fragment.createView(getContext());
+            View view = fragment.performCreateView(getContext());
 
             fragment.onResume();
             addView(currentFragmentView = view);

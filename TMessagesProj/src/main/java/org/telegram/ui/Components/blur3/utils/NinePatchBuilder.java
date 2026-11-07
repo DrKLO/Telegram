@@ -163,6 +163,41 @@ public class NinePatchBuilder {
     }
 
     /**
+     * Creates a NinePatchDrawable from an existing bitmap with a 1x1 stretch
+     * section at the specified pixel. The central color hint is read directly
+     * from the bitmap; all other sections use NO_COLOR.
+     */
+    public static NinePatchDrawable createNinePatch(Bitmap bitmap, Rect padding, int centerX, int centerY) {
+        if (bitmap == null) {
+            throw new IllegalArgumentException("bitmap == null");
+        }
+        if (bitmap.isRecycled()) {
+            throw new IllegalArgumentException("bitmap is recycled");
+        }
+        if (centerX < 0 || centerX >= bitmap.getWidth() || centerY < 0 || centerY >= bitmap.getHeight()) {
+            throw new IllegalArgumentException(
+                    "center pixel is outside bitmap: (" + centerX + ", " + centerY + ") for "
+                            + bitmap.getWidth() + "x" + bitmap.getHeight());
+        }
+
+        final int centralColor = bitmap.getPixel(centerX, centerY);
+        final byte[] chunk = createNinePatchChunk(
+                centerX, centerX + 1,
+                centerY, centerY + 1,
+                padding.left, padding.top, padding.right, padding.bottom,
+                centralColor
+        ).array();
+
+        return new NinePatchDrawable(
+                ApplicationLoader.applicationContext.getResources(),
+                bitmap,
+                chunk,
+                padding,
+                null
+        );
+    }
+
+    /**
      * One stretch segment on X (x1..x2) and on Y (y1..y2).
      * Padding defines content insets (typically equal to shadow pads).
      */
@@ -207,15 +242,15 @@ public class NinePatchBuilder {
         buffer.putInt(y2);
 
         // color hint
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
         buffer.putInt(centralColorHint);
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
-        buffer.putInt(0x00000001);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
+        buffer.putInt(NO_COLOR);
 
         return buffer;
     }

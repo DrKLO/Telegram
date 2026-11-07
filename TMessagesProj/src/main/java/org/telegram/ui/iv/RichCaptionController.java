@@ -1,6 +1,7 @@
 package org.telegram.ui.iv;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,9 +12,11 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 
 import java.util.ArrayList;
@@ -54,7 +57,7 @@ class RichCaptionController {
         );
         editText.setGravity(Gravity.TOP | Gravity.START);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(8, SharedConfig.fontSize - 2));
-        editText.setHint("Add caption…");
+        editText.setHint(getString(R.string.AddCaption));
         editText.setListener(new RichEditText.Listener() {
             @Override public void onEnterPressed(RichEditText et) { host.onCaptionEnter(); }
             @Override public void onTextWillChange(RichEditText et, int removed, int added) { host.onCaptionWillChange(removed, added); }
@@ -119,8 +122,8 @@ class RichCaptionController {
     void applyColors() {
         editText.updateColors();
         final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
-        editText.setTextColor(Theme.multAlpha(color, 0.5f));
-        editText.setHintTextColor(Theme.multAlpha(color, 0.35f));
+        ThemeBind.textColor(editText, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, 0.5f), resourcesProvider);
+        ThemeBind.hintTextColor(editText, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, 0.35f), resourcesProvider);
     }
 
     void setLocked(boolean locked) {

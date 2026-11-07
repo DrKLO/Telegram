@@ -1,3 +1,0 @@
------ Certificate i=0 (CN=Invalid pre2000 UTC EE notAfter Date EE Certificate Test7,O=Test Certificates 2011,C=US) -----
-ERROR: Time is after notAfter
-

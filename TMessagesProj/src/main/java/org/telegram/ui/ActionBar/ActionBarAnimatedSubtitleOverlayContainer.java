@@ -52,8 +52,8 @@ public class ActionBarAnimatedSubtitleOverlayContainer extends FrameLayout imple
         }
 
         final SimpleTextViewReplaceable overlayTextView = new SimpleTextViewReplaceable(getContext());
-        overlayTextView.setTextColor(Theme.getColor(Theme.key_telegram_color_dialogsLogo, resourcesProvider));
-        overlayTextView.setLinkTextColor(Theme.getColor(Theme.key_telegram_color_dialogsLogo, resourcesProvider));
+        ThemeBind.textColor(overlayTextView, Theme.key_telegram_color_dialogsLogo, resourcesProvider);
+        ThemeBind.linkTextColor(overlayTextView, Theme.key_telegram_color_dialogsLogo, resourcesProvider);
         overlayTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         overlayTextView.setAlpha(0);
         overlayTextView.setText(text);

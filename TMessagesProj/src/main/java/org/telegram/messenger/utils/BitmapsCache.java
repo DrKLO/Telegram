@@ -3,10 +3,6 @@ package org.telegram.messenger.utils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.os.SystemClock;
-
-import com.google.android.exoplayer2.util.Log;
-import com.google.common.util.concurrent.AtomicDouble;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
@@ -82,6 +78,10 @@ public class BitmapsCache {
     };
 
     public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h, boolean noLimit) {
+        this(sourceFile, source, options, w, h, noLimit, 0);
+    }
+
+    public BitmapsCache(File sourceFile, Cacheable source, CacheOptions options, int w, int h, boolean noLimit, int fitz) {
         this.source = source;
         this.w = w;
         this.h = h;
@@ -96,7 +96,7 @@ public class BitmapsCache {
             fileTmo.mkdir();
             mkdir = true;
         }
-        file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + ".pcache2");
+        file = new File(fileTmo, fileName + "_" + w + "_" + h + (noLimit ? "_nolimit" : " ") + (fitz != 0 ? "_fitz" + fitz : "") + ".pcache2");
         useSharedBuffers = w < AndroidUtilities.dp(60) && h < AndroidUtilities.dp(60);
 
         // check cache created in file load queue only for high devices
@@ -284,7 +284,13 @@ public class BitmapsCache {
                     return;
                 }
 
-                if (source.getNextFrame(bitmap[index]) != 1) {
+                int frameResult = source.getNextFrame(bitmap[index]);
+                if (frameResult == -1) {
+                    // render failed: abort without marking the cache as complete
+                    closed.set(true);
+                    continue;
+                }
+                if (frameResult != 1) {
                     break;
                 }
                 countDownLatch[index] = new CountDownLatch(1);
@@ -443,6 +449,8 @@ public class BitmapsCache {
         return cacheCreated;
     }
 
+    private Bitmap tmpRgbaBitmap;
+
     public int getFrame(int index, Bitmap bitmap) {
         if (error) {
             return FRAME_RESULT_NO_FRAME;
@@ -497,8 +505,20 @@ public class BitmapsCache {
             if (options == null) {
                 options = new BitmapFactory.Options();
             }
-            options.inBitmap = bitmap;
+
+            final boolean singleChannel = bitmap.getConfig() == Bitmap.Config.ALPHA_8;
+            if (singleChannel) {
+                if (tmpRgbaBitmap == null || tmpRgbaBitmap.getWidth() != bitmap.getWidth() || tmpRgbaBitmap.getHeight() != bitmap.getHeight()) {
+                    tmpRgbaBitmap = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+                }
+                options.inBitmap = tmpRgbaBitmap;
+            } else {
+                options.inBitmap = bitmap;
+            }
             BitmapFactory.decodeByteArray(bufferTmp, 0, selectedFrame.frameSize, options);
+            if (singleChannel) {
+                Utilities.extractAlpha(tmpRgbaBitmap, bitmap);
+            }
             options.inBitmap = null;
             return FRAME_RESULT_OK;
         } catch (FileNotFoundException e) {
@@ -597,8 +617,6 @@ public class BitmapsCache {
         int getNextFrame(Bitmap bitmap);
 
         void releaseForGenerateCache();
-
-        Bitmap getFirstFrame(Bitmap bitmap);
     }
 
     public static class Metadata {

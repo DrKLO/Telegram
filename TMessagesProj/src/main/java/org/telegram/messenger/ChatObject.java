@@ -12,12 +12,13 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.annotation.IntDef;
 import androidx.collection.LongSparseArray;
 
-import com.google.android.exoplayer2.util.Log;
+
 
 import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.messenger.voip.Instance;
@@ -78,9 +79,9 @@ public class ChatObject {
 
     public static final int ACTION_MANAGE_DIRECT = 24;
     public static final int ACTION_MANAGE_TAGS = 25;
-
     public static final int ACTION_SEND_REACTIONS = 26;
     public static final int ACTION_MANAGE_LINKED_CHATS = 27;
+    public static final int ACTION_MANAGE_WELCOME = 28;
 
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
@@ -1824,6 +1825,9 @@ public class ChatObject {
         if (chat.admin_rights != null) {
             boolean value;
             switch (action) {
+                case ACTION_MANAGE_WELCOME:
+                    value = chat.admin_rights.manage_welcome_messages;
+                    break;
                 case ACTION_MANAGE_DIRECT:
                     value = chat.admin_rights.manage_direct_messages;
                     break;
@@ -1996,7 +2000,7 @@ public class ChatObject {
             return false;
         }
 
-        final TLRPC.ChatFull communityFull = MessagesController.getInstance(currentAccount).getChatFull(-dialogId);
+        final TLRPC.ChatFull communityFull = MessagesController.getInstance(currentAccount).getChatFull(communityId);
         if (communityFull == null || communityFull.linked_peers == null) {
             return false;
         }
@@ -2626,5 +2630,10 @@ public class ChatObject {
 
     public static boolean areTabsEnabled(TLRPC.Chat chat) {
         return SharedConfig.forceForumTabs || chat != null && chat.forum_tabs;
+    }
+
+    /** The topics in a panel that slides in from the right: a forum's own choice, apart from its tabs; always in direct messages. */
+    public static boolean isSidebarEnabled(TLRPC.Chat chat) {
+        return chat != null && (chat.forum && chat.forum_sidebar || chat.monoforum);
     }
 }

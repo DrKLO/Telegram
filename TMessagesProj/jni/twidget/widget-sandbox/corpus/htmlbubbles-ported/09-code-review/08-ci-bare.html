@@ -1,0 +1,325 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 09-code-review.chat, message 8
+  author: ci 16:30 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --green: #34c759; --red: #ff3b30; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  code { font-family: ui-monospace, monospace; font-size: 13px; padding: 1px 4px; border-radius: 4px; background-color: rgba(127,127,127,0.15); }
+  pre { font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.45; background-color: rgba(127,127,127,0.13); padding: 8px 10px; border-radius: 8px; margin: 4px 0 8px 0; white-space: pre-wrap; }
+  table { border-collapse: collapse; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .badge.red { background-color: rgba(255,59,48,0.16); color: var(--red); } .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button:active { background-color: rgba(127,127,127,0.40); }
+  [data-action] { cursor: pointer; }
+  svg { vertical-align: middle; }
+
+  .cr { width: 420px; max-width: 100%; overflow: hidden; }
+  .cr .crh { padding: 10px 14px; border-radius: 13px 13px 0 0; border-bottom: 1px solid rgba(255,59,48,0.25); background-color: rgba(255,59,48,0.10); transition: background-color 650ms cubic-bezier(.33,1,.68,1), border-bottom-color 650ms cubic-bezier(.33,1,.68,1); }
+  .cr.res .crh { background-color: rgba(52,199,89,0.12); border-bottom-color: rgba(52,199,89,0.3); }
+  .cr .spark { display: flex; align-items: flex-end; height: 18px; margin-right: 8px; }
+  .cr .spark div { width: 4px; margin-right: 2px; border-radius: 1px; background-color: rgba(255,59,48,0.85); transition: background-color 650ms cubic-bezier(.33,1,.68,1); }
+  .cr.res .spark div { background-color: rgba(52,199,89,0.85); }
+  .cr .fbar { display: flex; align-items: center; padding: 8px 14px 4px 14px; }
+  .cr .sw { display: inline-block; width: 30px; height: 18px; border-radius: 9px; margin-right: 6px; background-color: rgba(127,127,127,0.35); transition: background-color 300ms cubic-bezier(.33,1,.68,1); }
+  .cr .sw.on { background-color: #34c759; }
+  .cr .knob { width: 14px; height: 14px; margin-top: 2px; margin-left: 2px; border-radius: 7px; background-color: #ffffff; transition: margin-left 300ms cubic-bezier(.34,1.56,.64,1); }
+  .cr .sw.on .knob { margin-left: 16px; }
+  .cr .tgl { display: flex; align-items: center; font-size: 12px; padding: 2px 4px; border-radius: 8px; }
+  .cr .tgl:hover { background-color: rgba(127,127,127,0.12); }
+  .cr .symb { display: flex; align-items: center; margin: 4px 8px 4px 8px; padding: 6px 8px; border-radius: 9px; font-size: 12px; background-color: rgba(255,149,0,0.12); }
+  .cr .symb.ok { background-color: rgba(52,199,89,0.12); }
+  .cr .sbar { height: 3px; margin-top: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.2); }
+  .cr .sbar div { height: 3px; border-radius: 2px; background-color: #ff9500; }
+  .cr .lnk { font-weight: 600; color: #007aff; padding: 1px 6px; border-radius: 6px; }
+  .cr .lnk:hover { background-color: rgba(0,122,255,0.12); }
+  .cr .st2 { width: 100%; border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 10px; }
+  .cr .st2 td { padding: 3px 4px; white-space: nowrap; border-bottom: 1px solid rgba(127,127,127,0.08); vertical-align: top; }
+  .cr .st2 td.i { color: #8e8e93; width: 16px; text-align: right; }
+  .cr .st2 td.m { width: 84px; color: #8e8e93; }
+  .cr .st2 td.ours { width: 84px; color: #ff3b30; font-weight: 700; }
+  .cr .st2 tr.f:hover td { background-color: rgba(255,59,48,0.07); }
+  .cr .st2 tr.op td { background-color: rgba(0,122,255,0.07); }
+  .cr .st2 tr.hid td { color: #8e8e93; text-align: center; font-family: system-ui, sans-serif; font-size: 11px; }
+  .cr .st2 tr.hid:hover td { color: #007aff; background-color: rgba(0,122,255,0.06); }
+  .cr .st2 tr.flash td { background-color: rgba(52,199,89,0.3) !important; transition: none !important; }
+  .cr .st2 tr.flash-out td { background-color: rgba(52,199,89,0); transition: background-color 700ms cubic-bezier(.11,0,.5,0) !important; }
+  .cr .det { padding: 4px 6px 8px 6px; white-space: normal; font-size: 10px; }
+  .cr .det .where { font-family: system-ui, sans-serif; font-size: 11px; }
+  .cr .src { margin: 4px 0 0 0; padding: 4px 6px; font-size: 10px; border-radius: 6px; white-space: pre-wrap; }
+  .cr .acts { display: flex; align-items: center; padding: 8px 14px 12px 14px; border-top: 1px solid rgba(127,127,127,0.15); }
+  .cr .pick { display: flex; padding: 0 14px 8px 14px; }
+  .cr .who { display: flex; align-items: center; padding: 3px 8px 3px 3px; margin-right: 6px; border-radius: 14px; font-size: 12px; border: 1px solid rgba(127,127,127,0.3); }
+  .cr .who:hover { border-color: #007aff; }
+  .cr .who .av { margin-right: 5px; }
+  .cr button.done { background-color: #34c759; color: #ffffff; }
+  .cr button.done:hover { background-color: #2db24f; }
+  .cr button.done:active { background-color: #248a3d; }
+  .cr #assignBtn .av { width: 18px; height: 18px; line-height: 18px; font-size: 8px; margin-right: 4px; }
+  #badge.pop { animation: bpop 420ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes bpop { 0% { font-size: 4.4px; } 70% { font-size: 12.1px; } 100% { font-size: 11px; } }
+  .tr-fade { animation: trFade 220ms ease-out; } .tr-pop { animation: trPop 260ms cubic-bezier(.34,1.56,.64,1); }
+  .tr-slide-up { animation: trUp 220ms ease-out; } .tr-slide-down { animation: trDown 220ms ease-out; }
+  @keyframes trFade { from { opacity: 0; } }
+  @keyframes trPop { from { opacity: 0; transform: scale(0.96); } }
+  @keyframes trUp { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes trDown { from { opacity: 0; transform: translateY(-8px); } }
+</style>
+<div class="card cr" id="root">
+  <div class="crh">
+    <div class="row">
+      <svg id="icNew" width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px" aria-hidden="true"><path d="M5.6 1h6.8L17 5.6v6.8L12.4 17H5.6L1 12.4V5.6z" fill="#ff3b30"/><path d="M6 6l6 6M12 6l-6 6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg id="icRes" width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px; display: none" aria-hidden="true"><path d="M9 1l1.9 1.4 2.3-.4.9 2.2 2.2.9-.4 2.3L17 9l-1.4 1.9.4 2.3-2.2.9-.9 2.2-2.3-.4L9 17l-1.9-1.4-2.3.4-.9-2.2-2.2-.9.4-2.3L1 9l1.4-1.9-.4-2.3 2.2-.9.9-2.2 2.3.4z" fill="#34c759"/><path d="M5.6 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <b class="grow" style="font-size: 14px">Crash in nightly 0.2.0 (318)</b><span class="badge red" id="badge">NEW · 0 users</span>
+    </div>
+    <div class="small" style="margin-top: 4px"><code>EXC_BAD_ACCESS (SIGSEGV)</code> at <code>0x18</code> · Thread 0</div>
+    <div class="row" style="margin-top: 6px"><div class="spark" id="spark"></div><span class="tiny muted"><span id="events">0</span> events in 12 h · last seen 4 min ago</span></div>
+  </div>
+  <div class="pad" style="padding-bottom: 2px">
+    <div class="small"><b>Likely cause:</b> a bubble's <code>LHDocument</code> was laid out after its container was destroyed during a conversation switch; the document holds a <i>raw</i> pointer to its container.</div>
+    <div class="small muted" style="margin-top: 4px">Fix: destroy the document before the container (<code>_doc.reset()</code> in <code>-dealloc</code>), already on main in a1b2c3d.</div>
+  </div>
+  <div class="fbar"><span class="caps grow">Thread 0 · <span id="nFrames">0</span> frames</span><span class="tgl" data-action="apponly"><span class="sw on" id="sw"><div class="knob"></div></span>App frames only</span></div>
+  <div class="symb" id="symbWait"><span class="grow">⚠ <span id="unres">0</span> app frames are not symbolicated</span><button data-action="sym">Symbolicate</button></div>
+  <div class="symb" id="symbRun" hidden><div class="grow">Symbolicating with LiteChat.app.dSYM… <span id="symDone">0</span>/<span id="symTotal">0</span><div class="sbar"><div id="symBar" style="width: 0%"></div></div></div></div>
+  <div class="symb ok" id="symbOk" hidden><span class="grow">✓ Symbolicated · LiteChat.app.dSYM · UUID 4F2A9C1E</span><span class="lnk" data-action="unsym">↺ Raw</span></div>
+  <div style="padding: 0 8px 6px 8px"><table class="st2"><tbody id="rows"></tbody></table></div>
+  <div class="pick" id="pick" hidden></div>
+  <div class="acts"><button id="assignBtn" data-action="assign" style="margin-right: 6px">👤 Assign ▾</button><button id="resolveBtn" class="done" data-action="resolve">✓ Resolve</button><span class="grow"></span><span class="tiny muted" id="note">Unassigned</span></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const root = $('root'), rowsEl = $('rows');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const animate = (duration, onFrame, easing = ease.outCubic) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const TR = ['fade', 'slide-up', 'slide-down', 'pop'];
+function transition(kind) { for (const k of TR) root.classList.remove('tr-' + k); requestAnimationFrame(() => root.classList.add('tr-' + kind)); }
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+const BASE = 0x1029e0000;
+const FR = [
+  ['LiteChat', '0x0000000102a4c1f0', 'litehtml::render_item::render_positioned(render_type) + 212', 'render_item.cpp:742', 'auto* ctr = el->get_document()->container(); // dangling'],
+  ['LiteChat', '0x0000000102a4b9c4', 'litehtml::render_item::render_positioned(render_type) + 96', 'render_item.cpp:705', 'for(auto& el : m_positioned) el->render_positioned(rt);'],
+  ['LiteChat', '0x0000000102a31e08', 'litehtml::document::render(pixel_t, render_type) + 388', 'document.cpp:1018', 'm_root_render->render_positioned(rt);'],
+  ['LiteChat', '0x00000001029f72d4', '-[LHDocument layoutWithMaxWidth:] + 284', 'LHDocument.mm:48', 'lh::pixel_t natural = _doc->render(width);'],
+  ['LiteChat', '0x00000001029f9c10', '-[HTMLBubbleView sizeForMaxWidth:] + 120', 'HTMLBubbleView.mm:131', 'CGSize size = [_document layoutWithMaxWidth:maxWidth];'],
+  ['LiteChat', '0x00000001029fbe44', '-[TranscriptView relayout] + 1104', 'TranscriptView.mm:402', 'row.height = [bubble sizeForMaxWidth:width].height;'],
+  ['LiteChat', '0x00000001029fc5a8', '-[TranscriptView clipViewFrameChanged:] + 28', 'TranscriptView.mm:377', '[self relayout];'],
+  ['CoreFoundation', '0x000000018a2b3c84', '__CFNOTIFICATIONCENTER_IS_CALLING_OUT_TO_AN_OBSERVER__ + 148'],
+  ['CoreFoundation', '0x000000018a34a1d8', '___CFXRegistrationPost_block_invoke + 88'],
+  ['CoreFoundation', '0x000000018a34a120', '_CFXRegistrationPost + 436'],
+  ['Foundation', '0x000000018b51e6c4', '-[NSNotificationCenter postNotificationName:object:userInfo:] + 88'],
+  ['AppKit', '0x000000018dd1a2f0', '-[NSView _postFrameChangeNotification] + 384'],
+  ['AppKit', '0x000000018dd19e5c', '-[NSView setFrameSize:] + 2048'],
+  ['AppKit', '0x000000018de4a7a8', '-[NSClipView setFrameSize:] + 236'],
+  ['AppKit', '0x000000018dd5c3d0', '-[NSScrollView tile] + 2112'],
+  ['AppKit', '0x000000018dd30f00', '-[NSView layoutSubtreeIfNeeded] + 112'],
+  ['AppKit', '0x000000018dd2a8b4', '-[NSWindow(NSDisplayCycle) _layoutViewTree] + 108'],
+  ['AppKit', '0x000000018dd2a670', '__NSWindowGetDisplayCycleObserverForLayout_block_invoke + 364'],
+  ['AppKit', '0x000000018dd29f1c', 'NSDisplayCycleObserverInvoke + 168'],
+  ['QuartzCore', '0x000000019153a4c0', 'CA::Transaction::run_commit_handlers(CATransactionPhase) + 120'],
+  ['CoreFoundation', '0x000000018a2d2b70', '__CFRUNLOOP_IS_CALLING_OUT_TO_AN_OBSERVER_CALLBACK_FUNCTION__ + 36'],
+  ['HIToolbox', '0x0000000195e5c8a8', 'RunCurrentEventLoopInMode + 292'],
+  ['AppKit', '0x000000018dc6a2c4', '-[NSApplication run] + 476'],
+  ['LiteChat', '0x00000001029e1a40', 'main + 132', 'main.m:14', 'return NSApplicationMain(argc, argv);'],
+];
+const APP = FR.map((f, i) => f[0] === 'LiteChat' ? i : -1).filter(i => i >= 0);
+const PEOPLE = [['LP', 'Leo', '#34c759'], ['RS', 'Rin', '#ff9500'], ['MC', 'Maya', '#af52de'], ['ME', 'You', '#007aff']];
+const EVENTS = [1, 0, 2, 1, 1, 3, 1, 0, 2, 1, 3, 2];
+const TOTAL = EVENTS.reduce((a, b) => a + b, 0);
+const NOISE = '0123456789abcdef_:<>[]';
+const short = (s, n = 44) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+const raw = i => `0x1029e0000 + ${parseInt(FR[i][1], 16) - BASE}`;
+
+let appOnly = true, open = -1, symbolicated = false, symRun = 0, symIdx = -1, symP = 0, symProg = 0;
+let assignee = -1, picking = false, state = 'new', intro = 0;
+const resolved = FR.map(f => f[0] !== 'LiteChat');
+
+// static parts built once
+$('nFrames').textContent = FR.length;
+$('symTotal').textContent = APP.length;
+const maxE = Math.max(...EVENTS);
+$('spark').innerHTML = EVENTS.map(() => '<div style="height: 2px"></div>').join('');
+const bars = [...$('spark').children];
+$('pick').innerHTML = PEOPLE.map((p, i) => `<span class="who" data-action="who" data-value="${i}"><span class="av" style="background-color: ${p[2]}">${p[0]}</span>${p[1]}</span>`).join('');
+
+// intro: the sparkline grows in and the counters count up (850 ms outCubic, after 250 ms)
+function syncIntro() {
+  const k = clamp(intro, 0, 1);
+  EVENTS.forEach((e, i) => { bars[i].style.height = `${Math.max(2, 18 * e / maxE * clamp(k * 1.6 - i * 0.05, 0, 1)).toFixed(1)}px`; });
+  $('events').textContent = Math.round(TOTAL * k);
+  if (state === 'new') $('badge').textContent = `NEW · ${Math.round(3 * k)} users`;
+}
+setTimeout(() => animate(850, p => { intro = p; syncIntro(); }, ease.outCubic), 250);
+
+function symText(i) {
+  if (resolved[i]) return esc(short(FR[i][2]));
+  if (i !== symIdx) return raw(i);
+  const target = short(FR[i][2]), n = Math.floor(symP * target.length);
+  let noise = '';
+  for (let k = n; k < Math.min(target.length, n + 14); k++) noise += NOISE[Math.floor(Math.random() * NOISE.length)];
+  return `${esc(target.slice(0, n))}<span style="color: #ff9500">${esc(noise)}</span>`;
+}
+
+function frameRow(i) {
+  const f = FR[i], app = f[0] === 'LiteChat';
+  let row = `<tr class="f ${open === i ? 'op' : ''}" data-i="${i}" data-action="frame" data-value="${i}"><td class="i">${i}</td><td class="${app ? 'ours' : 'm'}">${f[0]}</td><td class="sym">${symText(i)}</td></tr>`;
+  if (open === i) {
+    const where = !app ? `${f[0]} · system image · ${f[1]}`
+      : resolved[i] ? `<b>${f[3]}</b> · ${f[1]}` : `${f[1]} · no debug symbols yet, symbolicate to see the file`;
+    const src = app && resolved[i] ? `<pre class="src">${f[3].split(':')[1]} │ ${esc(f[4])}</pre>` : '';
+    row += `<tr class="dt"><td>&nbsp;</td><td colspan="2"><div class="det"><div>${resolved[i] ? esc(f[2]) : raw(i)}</div><div class="muted where">${where}</div>${src}</div></td></tr>`;
+  }
+  return row;
+}
+// the frame table is a list, rebuilt on fold / filter / symbolication changes
+function buildRows() {
+  const rows = [];
+  for (let i = 0; i < FR.length; i++) {
+    if (appOnly && FR[i][0] !== 'LiteChat') {
+      if (i === 7) rows.push(`<tr class="hid" data-action="apponly"><td colspan="3">⋯ ${FR.length - APP.length} system frames hidden · show all</td></tr>`);
+      continue;
+    }
+    rows.push(frameRow(i));
+  }
+  rowsEl.innerHTML = rows.join('');
+}
+const rowOf = i => rowsEl.querySelector(`tr.f[data-i="${i}"]`);
+function flash(i) {
+  const tr = rowOf(i);
+  if (!tr) return;
+  tr.classList.remove('flash-out'); tr.classList.add('flash');
+  requestAnimationFrame(() => { tr.classList.remove('flash'); tr.classList.add('flash-out'); });
+  setTimeout(() => tr.classList.remove('flash-out'), 700);
+}
+
+function syncSymb() {
+  const unresolved = APP.filter(i => !resolved[i]).length;
+  $('symbRun').hidden = symIdx < 0;
+  $('symbOk').hidden = symIdx >= 0 || !symbolicated;
+  $('symbWait').hidden = symIdx >= 0 || symbolicated;
+  $('unres').textContent = unresolved;
+  $('symDone').textContent = APP.length - unresolved;
+  $('symBar').style.width = `${(symProg * 100).toFixed(1)}%`;
+}
+
+async function symbolicate() {
+  if (symbolicated || symIdx >= 0) return;
+  const me = ++symRun;
+  const todo = APP.filter(i => !resolved[i]);
+  for (let k = 0; k < todo.length; k++) {
+    symIdx = todo[k];
+    syncSymb();
+    await animate(260, p => {
+      if (me !== symRun) return;
+      symP = p; symProg = (k + p) / todo.length;
+      $('symBar').style.width = `${(symProg * 100).toFixed(1)}%`;
+      const tr = rowOf(symIdx);
+      if (tr) tr.querySelector('.sym').innerHTML = symText(symIdx);
+    }, ease.linear);
+    if (me !== symRun) return;
+    resolved[symIdx] = true;
+    const tr = rowOf(symIdx);
+    if (tr) {
+      tr.querySelector('.sym').innerHTML = symText(symIdx);
+      if (open === symIdx) { buildRows(); }
+    }
+    flash(symIdx);
+    syncSymb();
+  }
+  symIdx = -1; symbolicated = true;
+  syncSymb();
+}
+
+function syncState() {
+  const who = assignee >= 0 ? PEOPLE[assignee] : null;
+  const res = state === 'resolved';
+  root.classList.toggle('res', res);
+  $('icNew').style.display = res ? 'none' : ''; $('icRes').style.display = res ? '' : 'none'; // SVG has no hidden attribute
+  const badge = $('badge');
+  if (res) { badge.className = 'badge green'; badge.textContent = 'RESOLVED'; }
+  else if (state === 'assigned') { badge.className = 'badge orange'; badge.textContent = `ASSIGNED · ${who[1]}`; }
+  else { badge.className = 'badge red'; badge.textContent = `NEW · ${Math.round(3 * clamp(intro, 0, 1))} users`; }
+  $('assignBtn').hidden = res;
+  $('assignBtn').innerHTML = who ? `<span class="av" style="background-color: ${who[2]}">${who[0]}</span>${who[1]} ▾` : '👤 Assign ▾';
+  $('pick').hidden = !picking;
+  const rb = $('resolveBtn');
+  rb.className = res ? '' : 'done';
+  rb.textContent = res ? '↺ Reopen' : '✓ Resolve';
+  $('note').textContent = res ? 'Fixed in a1b2c3d · ships in 0.2.1' : who ? `${who[1]} is on it` : 'Unassigned';
+}
+
+function handleAction(name, v) {
+  const i = Number(v);
+  if (name === 'apponly') {
+    transition(appOnly ? 'slide-down' : 'slide-up');
+    appOnly = !appOnly;
+    $('sw').classList.toggle('on', appOnly);
+    buildRows();
+  } else if (name === 'frame') {
+    transition(open === i ? 'slide-up' : 'slide-down');
+    open = open === i ? -1 : i;
+    buildRows();
+  } else if (name === 'sym') {
+    symbolicate();
+  } else if (name === 'unsym') {
+    if (!symbolicated) return;
+    transition('fade');
+    symbolicated = false; symRun++;
+    for (const a of APP) resolved[a] = false;
+    buildRows();
+    syncSymb();
+  } else if (name === 'assign') {
+    if (state === 'resolved') return;
+    transition(picking ? 'slide-up' : 'slide-down');
+    picking = !picking;
+    $('pick').hidden = !picking;
+  } else if (name === 'who') {
+    transition('fade');
+    assignee = i; picking = false;
+    if (state === 'new') state = 'assigned';
+    syncState();
+    replay($('badge'), 'pop');
+  } else if (name === 'resolve') {
+    const resolving = state !== 'resolved';
+    transition(resolving ? 'pop' : 'fade');
+    state = resolving ? 'resolved' : assignee >= 0 ? 'assigned' : 'new';
+    picking = false;
+    syncState();
+  }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]');
+  if (t && root.contains(t)) handleAction(t.dataset.action, t.dataset.value);
+});
+
+buildRows();
+syncSymb();
+syncState();
+syncIntro();
+</script>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: #111; color: #fff; text-align: center; }
+  #time { font: 700 40px/1 ui-monospace, monospace; letter-spacing: 2px; }
+  #date { color: #9ca3af; margin-top: 6px; }
+  #ticks { color: #6b7280; font-size: 12px; margin-top: 8px; }
+  button { margin-top: 10px; padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: #fff; cursor: pointer; }
+</style></head><body>
+<div id="time">--:--:--</div><div id="date"></div><div id="ticks">0 ticks</div><button id="pause">Pause</button>
+<script>
+  var ticks = 0, timer = null;
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function tick() {
+    var d = new Date();
+    document.getElementById('time').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    document.getElementById('date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('ticks').textContent = (++ticks) + ' ticks';
+  }
+  function start() { tick(); timer = setInterval(tick, 1000); }
+  document.getElementById('pause').addEventListener('click', function () {
+    if (timer) { clearInterval(timer); timer = null; this.textContent = 'Resume'; } else { start(); this.textContent = 'Pause'; }
+  });
+  start();
+</script>
+</body></html>

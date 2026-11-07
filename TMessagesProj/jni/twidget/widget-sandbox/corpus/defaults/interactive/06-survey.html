@@ -1,0 +1,51 @@
+<!--
+  defaults: a few CSS rules for the result bars; text, buttons and spacing are the renderer's UA layer (corpus/defaults/README.md)
+  idea: a small survey without a form: one question, an answer per <button>, then the results; the vote is kept in localStorage
+-->
+<title>Survey</title>
+<style>
+  .bar { height: 6px; margin: 2px 0 8px; border-radius: 3px; background: var(--tg-theme-button-color) }
+  #results p { margin: 0 }
+</style>
+<h3>How was the meetup?</h3>
+<p id="ask">Tap one answer.</p>
+<p id="choices"></p>
+<div id="results" hidden></div>
+<p id="again" hidden><button>Change my answer</button></p>
+<script>
+var options = ['Great', 'Good', 'So-so', 'Not for me'];
+var others = [21, 13, 5, 2];
+var vote = localStorage.getItem('vote');
+var choices = document.getElementById('choices');
+options.forEach(function (o, i) {
+  var b = document.createElement('button');
+  b.textContent = o;
+  b.addEventListener('click', function () { localStorage.setItem('vote', String(i)); vote = String(i); show(); });
+  choices.appendChild(b);
+  choices.appendChild(document.createTextNode(' '));
+});
+function show() {
+  var voted = vote !== null;
+  document.getElementById('ask').textContent = voted ? 'Thanks! Everyone so far:' : 'Tap one answer.';
+  choices.hidden = voted;
+  document.getElementById('again').hidden = !voted;
+  var results = document.getElementById('results');
+  results.hidden = !voted;
+  if (!voted) return;
+  var counts = others.map(function (n, i) { return n + (String(i) === vote ? 1 : 0); });
+  var total = counts.reduce(function (a, b) { return a + b; }, 0);
+  results.textContent = '';
+  counts.forEach(function (n, i) {
+    var pct = Math.round(n * 100 / total);
+    var line = document.createElement('p');
+    line.textContent = options[i] + (String(i) === vote ? ' (you)' : '') + ' · ' + pct + '%';
+    var bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.width = Math.max(pct, 2) + '%';
+    results.appendChild(line);
+    results.appendChild(bar);
+  });
+}
+document.querySelector('#again button').addEventListener('click', function () { localStorage.removeItem('vote'); vote = null; show(); });
+show();
+</script>

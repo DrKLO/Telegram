@@ -170,30 +170,6 @@ public sealed class TlGen_InputInvoice : TlGen_Object {
     }
   }
 
-  public data class TL_inputInvoiceStarGiftResale(
-    public val ton: Boolean,
-    public val slug: String,
-    public val to_id: TlGen_InputPeer,
-  ) : TlGen_InputInvoice() {
-    internal val flags: UInt
-      get() {
-        var result = 0U
-        if (ton) result = result or 1U
-        return result
-      }
-
-    public override fun serializeToStream(stream: OutputSerializedData) {
-      stream.writeInt32(MAGIC.toInt())
-      stream.writeInt32(flags.toInt())
-      stream.writeString(slug)
-      to_id.serializeToStream(stream)
-    }
-
-    public companion object {
-      public const val MAGIC: UInt = 0xC39F5324U
-    }
-  }
-
   public data class TL_inputInvoiceStarGiftPrepaidUpgrade(
     public val peer: TlGen_InputPeer,
     public val hash: String,
@@ -264,6 +240,35 @@ public sealed class TlGen_InputInvoice : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x1ECAFA10U
+    }
+  }
+
+  public data class TL_inputInvoiceStarGiftResale(
+    public val ton: Boolean,
+    public val show_name: Boolean,
+    public val slug: String,
+    public val to_id: TlGen_InputPeer,
+    public val message: TlGen_TextWithEntities?,
+  ) : TlGen_InputInvoice() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (ton) result = result or 1U
+        if (message != null) result = result or 2U
+        if (show_name) result = result or 4U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeString(slug)
+      to_id.serializeToStream(stream)
+      message?.serializeToStream(stream)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xE9B0C658U
     }
   }
 }

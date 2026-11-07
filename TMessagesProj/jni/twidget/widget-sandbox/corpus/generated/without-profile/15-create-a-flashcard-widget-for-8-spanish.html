@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spanish Flashcards</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #fdf4ff; text-align: center; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  .prog { font-size: 13px; color: #6b7280; margin-bottom: 14px; }
+  .scene { width: 100%; max-width: 340px; height: 180px; margin: 0 auto; }
+  .card { position: relative; width: 100%; height: 100%; cursor: pointer; }
+  /* No 3D transforms in a widget: the flip is 2D, the visible face folds to a line (scaleX 0) and the other unfolds. */
+  .face { position: absolute; inset: 0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 30px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.12); transition: transform .25s ease-in .25s; }
+  .front { background: #a21caf; color: #fff; }
+  .back { background: #fff; color: #581c87; transform: scaleX(0); border: 2px solid #e9d5ff; transition-delay: 0s; transition-timing-function: ease-out; }
+  .card.flipped .front { transform: scaleX(0); transition-delay: 0s; transition-timing-function: ease-out; }
+  .card.flipped .back { transform: none; transition-delay: .25s; transition-timing-function: ease-in; }
+  .face small { font-size: 12px; font-weight: 400; opacity: .7; margin-top: 8px; }
+  .btns { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  button { padding: 10px 18px; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; color: #fff; }
+  .no { background: #ef4444; } .yes { background: #22c55e; }
+  .done { padding: 30px 10px; }
+  .done b { font-size: 40px; display: block; color: #a21caf; }
+</style>
+</head>
+<body>
+<h2>🇪🇸 Spanish Flashcards</h2>
+<div class="prog" id="prog"></div>
+<div id="stage">
+  <div class="scene"><div class="card" id="card"><div class="face front" id="front"></div><div class="face back" id="back"></div></div></div>
+  <div class="btns"><button class="no" id="no">✗ Don't know</button><button class="yes" id="yes">✓ Know</button></div>
+</div>
+<script>
+  const words = [['hola', 'hello'], ['gracias', 'thank you'], ['perro', 'dog'], ['gato', 'cat'], ['agua', 'water'], ['libro', 'book'], ['casa', 'house'], ['amigo', 'friend']];
+  let i = 0, known = 0;
+  const card = document.getElementById('card');
+  function show() {
+    card.classList.remove('flipped');
+    document.getElementById('prog').textContent = `Card ${i + 1} of ${words.length} · ${known} known`;
+    document.getElementById('front').innerHTML = `${words[i][0]}<small>tap to flip</small>`;
+    document.getElementById('back').innerHTML = `${words[i][1]}<small>${words[i][0]}</small>`;
+  }
+  card.onclick = () => card.classList.toggle('flipped');
+  function next(k) {
+    if (k) known++;
+    i++;
+    if (i < words.length) show();
+    else document.getElementById('stage').innerHTML = `<div class="done">You know<b>${known} / ${words.length}</b>words. ${known === words.length ? '¡Excelente!' : '¡Sigue practicando!'}</div>`;
+  }
+  document.getElementById('yes').onclick = () => next(true);
+  document.getElementById('no').onclick = () => next(false);
+  show();
+</script>
+</body>
+</html>

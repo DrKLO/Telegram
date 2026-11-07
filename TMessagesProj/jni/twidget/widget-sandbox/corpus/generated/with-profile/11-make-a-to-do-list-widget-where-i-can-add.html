@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do List</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111827; --muted: #6b7280; --line: #e5e7eb; --accent: #f59e0b; --danger: #ef4444; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --accent: #fbbf24; --danger: #f87171; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { margin: 0 0 12px; font-size: 17px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--line); }
+  li.done span { text-decoration: line-through; color: var(--muted); }
+  li span { flex: 1; font-size: 15px; }
+  li .check { width: 20px; height: 20px; padding: 0; border: 2px solid var(--line); border-radius: 5px; background: transparent; color: #111; font-size: 13px; line-height: 16px; font-weight: 700; cursor: pointer; }
+  li.done .check { background: var(--accent); border-color: var(--accent); }
+  li .del { background: none; border: none; padding: 0 4px; color: var(--danger); font-size: 18px; cursor: pointer; opacity: .7; }
+  .empty { text-align: center; color: var(--muted); padding: 14px; font-size: 14px; }
+  .add { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chips button { padding: 6px 10px; background: var(--accent); color: #111; border: none; border-radius: 999px; font-size: 13px; cursor: pointer; }
+  .footer { font-size: 12px; color: var(--muted); margin-top: 10px; display: flex; justify-content: space-between; gap: 10px; }
+  .footer button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0; text-decoration: underline; }
+</style>
+</head>
+<body>
+<h2>✅ To-Do</h2>
+<ul id="list"></ul>
+<div class="add">Add a task:</div>
+<div class="chips" id="chips"></div>
+<div class="footer"><span id="count"></span><span><button type="button" id="clear">Clear completed</button> · <button type="button" id="reset">Reset list</button></span></div>
+<script>
+  // No text input in a widget: tasks are added from suggestion chips. The list is kept in this
+  // message's localStorage, so it survives the widget being re-created.
+  var defaults = [
+    { text: 'Buy groceries', done: false },
+    { text: 'Call the dentist', done: true },
+    { text: 'Finish the report', done: false },
+  ];
+  var ideas = ['Water the plants', 'Pay the bills', 'Go for a run', 'Read 20 pages', 'Book a haircut', 'Reply to emails'];
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var todos = store.get('todo-list');
+  if (!Array.isArray(todos)) todos = defaults.map(function (t) { return { text: t.text, done: t.done }; });
+  var list = document.getElementById('list');
+  function render() {
+    store.set('todo-list', todos);
+    list.innerHTML = '';
+    if (!todos.length) list.innerHTML = '<li class="empty">Nothing to do 🎉</li>';
+    todos.forEach(function (t, i) {
+      var li = document.createElement('li');
+      li.className = t.done ? 'done' : '';
+      li.id = 'todo-' + i;
+      li.innerHTML = '<button type="button" class="check" aria-label="Done">' + (t.done ? '✓' : '') + '</button><span></span><button type="button" class="del" title="Delete">×</button>';
+      li.querySelector('span').textContent = t.text;
+      li.querySelector('.check').onclick = function () { t.done = !t.done; render(); };
+      li.querySelector('.del').onclick = function () { todos.splice(i, 1); render(); };
+      list.appendChild(li);
+    });
+    var have = todos.map(function (t) { return t.text; });
+    document.getElementById('chips').innerHTML = ideas.filter(function (x) { return have.indexOf(x) < 0; }).slice(0, 4).map(function (x) { return '<button type="button">+ ' + x + '</button>'; }).join('');
+    var left = todos.filter(function (t) { return !t.done; }).length;
+    document.getElementById('count').textContent = left + ' item' + (left === 1 ? '' : 's') + ' left';
+  }
+  document.getElementById('chips').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    todos.push({ text: b.textContent.slice(2), done: false });
+    render();
+  });
+  document.getElementById('clear').onclick = function () { todos = todos.filter(function (t) { return !t.done; }); render(); };
+  document.getElementById('reset').onclick = function () { todos = defaults.map(function (t) { return { text: t.text, done: t.done }; }); render(); };
+  render();
+</script>
+</body>
+</html>

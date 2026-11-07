@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.FileLog;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -34,6 +35,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -58,7 +60,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         rLottieImageView.setScaleType(ImageView.ScaleType.CENTER);
         rLottieImageView.setAnimation(R.raw.silent_unmute, 46, 46);
         rLottieImageView.playAnimation();
-        rLottieImageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(72), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        ThemeBind.fillBackground(rLottieImageView, Theme.createCircleDrawable(AndroidUtilities.dp(72), Theme.getColor(Theme.key_featuredStickers_addButton)), ThemeBind.of(Theme.key_featuredStickers_addButton));
         block.addView(rLottieImageView, LayoutHelper.createFrame(72, 72, Gravity.CENTER));
         block.addView(counterView = new CounterView(context), LayoutHelper.createFrame(64, 32, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 29, 16, 0, 0));
         counterView.setCount(0);
@@ -71,7 +73,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         linearLayout.addView(block, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 110));
 
         TextView textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -80,7 +82,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(Gravity.CENTER_HORIZONTAL);
         textView.setText(LocaleController.getString(R.string.NotificationsPermissionAlertSubtitle));
@@ -92,15 +94,15 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         linearLayout.addView(new SectionView(context, R.drawable.msg_customize_s,   LocaleController.getString(R.string.NotificationsPermissionAlert3)), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         setCustomView(linearLayout);
-        fixNavigationBar(getThemedColor(Theme.key_dialogBackground));
+        fixNavigationBarKey(Theme.key_dialogBackground);
 
         textView = new TextView(context);
         textView.setText(LocaleController.getString(settings ? R.string.NotificationsPermissionSettings : R.string.NotificationsPermissionContinue));
         textView.setGravity(Gravity.CENTER);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        textView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 24));
+        ThemeBind.textColor(textView, Theme.key_featuredStickers_buttonText);
+        ThemeBind.selectorBackground(textView, Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 24), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.adaptiveRipple(Theme.key_featuredStickers_addButton));
         textView.setOnClickListener(e -> {
             if (this.whenGranted != null) {
                 this.whenGranted.run(true);
@@ -112,7 +114,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
 
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; ++a) {
             try {
-                NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
+                NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.updateInterfaces);
             } catch (Exception ignore) {}
         }
     }
@@ -166,7 +168,7 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         }
     }
 
-    private static class CounterView extends View {
+    private static class CounterView extends View implements Theme.Colorable {
         private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG), strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final AnimatedFloat alpha = new AnimatedFloat(this, 0, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
 
@@ -258,7 +260,19 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
         protected boolean verifyDrawable(@NonNull Drawable who) {
             return who == textDrawable || super.verifyDrawable(who);
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                fillPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                strokePaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
 
     private static class SectionView extends FrameLayout {
@@ -270,11 +284,11 @@ public class NotificationPermissionDialog extends BottomSheet implements Notific
             ImageView imageView = new ImageView(context);
             imageView.setImageResource(resId);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
             addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 22, 0, LocaleController.isRTL ? 22 : 0, 0));
 
             TextView textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setText(text);

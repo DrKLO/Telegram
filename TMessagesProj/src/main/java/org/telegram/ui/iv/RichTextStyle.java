@@ -7,6 +7,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.CharacterStyle;
 
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_iv;
@@ -14,6 +15,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.FormattedDateSpan;
+import org.telegram.ui.Components.SquigglyLinesSpan;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanReplacement;
@@ -34,24 +36,83 @@ public class RichTextStyle {
 
     public static final int SUPPORTED = BOLD | ITALIC | UNDERLINE | STRIKE | MONO | SPOILER | SUBSCRIPT | SUPERSCRIPT | MARKED;
 
+    public static int emojiOnlyCount(CharSequence text) {
+        if (!(text instanceof Spanned) || text.length() == 0) return 0;
+        final Spanned spanned = (Spanned) text;
+        final ArrayList<Object> emojiSpans = new ArrayList<>();
+        final AnimatedEmojiSpan[] animated = spanned.getSpans(0, text.length(), AnimatedEmojiSpan.class);
+        for (AnimatedEmojiSpan span : animated) {
+            emojiSpans.add(span);
+        }
+        final Emoji.EmojiSpan[] standard = spanned.getSpans(0, text.length(), Emoji.EmojiSpan.class);
+        for (Emoji.EmojiSpan span : standard) {
+            final int start = spanned.getSpanStart(span);
+            final int end = spanned.getSpanEnd(span);
+            boolean overlapsAnimated = false;
+            for (AnimatedEmojiSpan animatedSpan : animated) {
+                if (spanned.getSpanStart(animatedSpan) == start && spanned.getSpanEnd(animatedSpan) == end) {
+                    overlapsAnimated = true;
+                    break;
+                }
+            }
+            if (!overlapsAnimated) emojiSpans.add(span);
+        }
+        if (emojiSpans.isEmpty()) return 0;
+        for (int i = 0; i < text.length(); i++) {
+            boolean covered = false;
+            for (Object span : emojiSpans) {
+                if (spanned.getSpanStart(span) <= i && spanned.getSpanEnd(span) > i) {
+                    covered = true;
+                    break;
+                }
+            }
+            if (!covered) return 0;
+        }
+        return emojiSpans.size();
+    }
+
     // ---------- model -> Spannable ----------
 
     public static CharSequence toSpannable(TL_iv.RichText rt) {
         return toSpannable(rt, null);
     }
     public static CharSequence toSpannable(TL_iv.RichText rt, TL_iv.PageBlock block) {
+        return toSpannable(rt, block, true);
+    }
+    public static CharSequence toSimpleSpannable(TL_iv.RichText rt, TL_iv.PageBlock block) {
+        return toSpannable(rt, block, false);
+    }
+    private static CharSequence toSpannable(TL_iv.RichText rt, TL_iv.PageBlock block, boolean allowInlineButtons) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
-        append(sb, rt, 0, block);
+        append(sb, rt, 0, block, allowInlineButtons);
         return sb;
     }
 
-    private static void append(SpannableStringBuilder sb, TL_iv.RichText rt, int flags, TL_iv.PageBlock block) {
+    private static void append(SpannableStringBuilder sb, TL_iv.RichText rt, int flags, TL_iv.PageBlock block, boolean allowInlineButtons) {
         if (rt == null || rt instanceof TL_iv.textEmpty) {
             return;
         }
         if (rt instanceof TL_iv.textConcat) {
             for (TL_iv.RichText child : ((TL_iv.textConcat) rt).texts) {
-                append(sb, child, flags, block);
+                append(sb, child, flags, block, allowInlineButtons);
+            }
+            return;
+        }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            boolean textEmpty = isEmpty(diff.text);
+            boolean oldTextEmpty = isEmpty(diff.old_text);
+            int start = sb.length();
+            if (textEmpty) {
+                append(sb, diff.old_text, flags, block, allowInlineButtons);
+                setDiffStyle(sb, start, TextStyleSpan.FLAG_STYLE_STRIKE_RED);
+            } else {
+                append(sb, diff.text, flags, block, allowInlineButtons);
+                if (oldTextEmpty) {
+                    setDiffStyle(sb, start, TextStyleSpan.FLAG_STYLE_ACCENT);
+                } else if (sb.length() > start) {
+                    sb.setSpan(new SquigglyLinesSpan(), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
             return;
         }
@@ -75,16 +136,16 @@ public class RichTextStyle {
         if (rt instanceof TL_iv.textUrl) {
             TL_iv.textUrl url = (TL_iv.textUrl) rt;
             int start = sb.length();
-            append(sb, url.text, flags, block);
+            append(sb, url.text, flags, block, allowInlineButtons);
             if (sb.length() > start && url.url != null) {
-                sb.setSpan(new URLSpanReplacement(url.url), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.setSpan(linkSpan(url.url), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             return;
         }
         if (rt instanceof TL_iv.textDate) {
             TL_iv.textDate date = (TL_iv.textDate) rt;
             int start = sb.length();
-            append(sb, date.text, flags, block);
+            append(sb, date.text, flags, block, allowInlineButtons);
             if (sb.length() > start) {
                 sb.setSpan(dateSpan(date, sb.subSequence(start, sb.length()).toString()), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
@@ -105,12 +166,29 @@ public class RichTextStyle {
             }
             return;
         }
+        if (rt instanceof TL_iv.textButton) {
+            final TL_iv.textButton button = (TL_iv.textButton) rt;
+            final int start = sb.length();
+            append(sb, button.text, flags, block, allowInlineButtons);
+            if (allowInlineButtons && sb.length() > start && RichInlineButtonSpan.isSupported(button.type)) {
+                sb.setSpan(new RichInlineButtonSpan(button), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            return;
+        }
         int childFlag = flagOf(rt);
         if (childFlag != 0) {
-            append(sb, rt.text, flags | childFlag, block);
+            append(sb, rt.text, flags | childFlag, block, allowInlineButtons);
             return;
         }
         appendLeaf(sb, plainOf(rt), flags, block);
+    }
+
+    private static void setDiffStyle(SpannableStringBuilder sb, int start, int flags) {
+        if (sb.length() > start) {
+            TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+            run.flags = flags;
+            sb.setSpan(new TextStyleSpan(run), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
     }
 
     private static void appendLeaf(SpannableStringBuilder sb, String text, int flags, TL_iv.PageBlock block) {
@@ -159,7 +237,42 @@ public class RichTextStyle {
             }
             return s.toString();
         }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            String text = plainOf(diff.text);
+            return isEmpty(diff.text) ? plainOf(diff.old_text) : text;
+        }
         return plainOf(rt.text);
+    }
+
+    public static boolean isEmpty(TL_iv.RichText rt) {
+        if (rt == null || rt instanceof TL_iv.textEmpty) {
+            return true;
+        }
+        if (rt instanceof TL_iv.textPlain) {
+            String text = ((TL_iv.textPlain) rt).text;
+            return text == null || text.isEmpty();
+        }
+        if (rt instanceof TL_iv.textCustomEmoji) {
+            return false;
+        }
+        if (rt instanceof TL_iv.textMath) {
+            String source = ((TL_iv.textMath) rt).source;
+            return source == null || source.isEmpty();
+        }
+        if (rt instanceof TL_iv.textConcat) {
+            for (TL_iv.RichText child : ((TL_iv.textConcat) rt).texts) {
+                if (!isEmpty(child)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (rt instanceof TL_iv.textDiff) {
+            TL_iv.textDiff diff = (TL_iv.textDiff) rt;
+            return isEmpty(diff.text) && isEmpty(diff.old_text);
+        }
+        return isEmpty(rt.text);
     }
 
     private static FormattedDateSpan dateSpan(TL_iv.textDate date, String text) {
@@ -210,6 +323,9 @@ public class RichTextStyle {
     }
 
     private static TL_iv.RichText wrap(String text, Run run) {
+        if (run.button != null) {
+            return run.button.getButton();
+        }
         if (run.mathSource != null) {
             TL_iv.textMath math = new TL_iv.textMath();
             math.source = run.mathSource;
@@ -386,9 +502,15 @@ public class RichTextStyle {
             int s = sb.getSpanStart(span);
             int e = sb.getSpanEnd(span);
             sb.removeSpan(span);
-            if (s < from) sb.setSpan(new URLSpanReplacement(span.getURL()), s, from, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            if (e > to) sb.setSpan(new URLSpanReplacement(span.getURL()), to, e, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (s < from) sb.setSpan(linkSpan(span.getURL()), s, from, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (e > to) sb.setSpan(linkSpan(span.getURL()), to, e, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+    }
+
+    static URLSpanReplacement linkSpan(String url) {
+        TextStyleSpan.TextStyleRun run = new TextStyleSpan.TextStyleRun();
+        run.flags = TextStyleSpan.FLAG_STYLE_TEXT_URL;
+        return new URLSpanReplacement(url, run);
     }
 
     /** Removes any date span overlapping [from, to]. Dates wrap a single rendered token, so any
@@ -437,6 +559,8 @@ public class RichTextStyle {
         if (emoji.length > 0) run.emojiDocId = emoji[0].getDocumentId();
         MathSpan[] math = sp.getSpans(start, end, MathSpan.class);
         if (math.length > 0) run.mathSource = math[0].source;
+        RichInlineButtonSpan[] buttons = sp.getSpans(start, end, RichInlineButtonSpan.class);
+        if (buttons.length > 0) run.button = buttons[0];
         return run;
     }
 
@@ -463,8 +587,12 @@ public class RichTextStyle {
         FormattedDateSpan date;
         long emojiDocId;
         String mathSource;
+        RichInlineButtonSpan button;
 
         boolean equals(Run o) {
+            if (button != null || o.button != null) {
+                return button != null && button == o.button;
+            }
             if (emojiDocId != 0 || o.emojiDocId != 0) {
                 return false;
             }

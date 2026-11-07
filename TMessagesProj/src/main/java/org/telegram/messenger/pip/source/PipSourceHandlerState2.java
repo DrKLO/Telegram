@@ -10,6 +10,8 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 
+import androidx.media3.common.Player;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
@@ -294,6 +296,27 @@ public class PipSourceHandlerState2 implements IPipActivityListener, IPipActivit
 
     public boolean isAttachedToPip() {
         return state != STATE_DETACHED;
+    }
+
+
+    @Override
+    public void onPipStashStart() {
+        if (source != null) {
+            Player player = source.getPlayer();
+            if (player != null) {
+                player.pause();
+            }
+        }
+    }
+
+    @Override
+    public void onPipStashEnd() {
+        if (source != null) {
+            Player player = source.getPlayer();
+            if (player != null) {
+                player.play();
+            }
+        }
     }
 
     @Override

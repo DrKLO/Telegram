@@ -1,0 +1,190 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 09-code-review.chat, message 9
+  author: me 16:35
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  [data-action] { cursor: pointer; }
+
+  .sc { width: 300px; max-width: 100%; }
+  .sc .seg { display: flex; border-radius: 9px; padding: 2px; margin: 6px 0; background-color: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.08)); }
+  .sc .seg span { flex-grow: 1; text-align: center; padding: 3px 0; border-radius: 7px; font-size: 12px; font-weight: 600; }
+  .sc .seg span:hover { background-color: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.1)); }
+  .sc .seg span.on { background-color: light-dark(#ffffff, rgba(255,255,255,0.22)); color: light-dark(#1c1c1e, #ffffff); }
+  .sc .chips { display: flex; align-items: center; flex-wrap: wrap; margin-bottom: 4px; font-size: 12px; }
+  .sc .fc { display: inline-block; padding: 1px 9px; margin: 2px 4px 2px 0; border-radius: 11px; border: 1px solid rgba(127,127,127,0.5); font-size: 12px; }
+  .sc .fc:hover { background-color: light-dark(rgba(0,0,0,0.08), rgba(255,255,255,0.1)); }
+  .sc .fc.on { background-color: light-dark(rgba(0,0,0,0.72), rgba(255,255,255,0.85)); border-color: rgba(0,0,0,0); color: light-dark(#ffffff, #1c1c1e); }
+  .sc .r { display: flex; align-items: center; height: 30px; padding: 0 6px; margin: 0 -6px; border-radius: 8px; border-bottom: 1px solid rgba(127,127,127,0.22); font-size: 13px; }
+  .sc .r:hover { background-color: light-dark(rgba(0,0,0,0.07), rgba(255,255,255,0.08)); }
+  .sc .r.shake { animation: shake 450ms linear; }
+  .sc .keys { display: flex; align-items: flex-start; height: 24px; }
+  .sc .kc { display: inline-block; margin-left: 3px; margin-top: 0; border-radius: 5px; border: 1px solid light-dark(rgba(0,0,0,0.22), rgba(0,0,0,0.6)); border-bottom-width: 3px; background-color: light-dark(#ffffff, #3a3a3c); color: light-dark(#1c1c1e, #f2f2f7); font-family: ui-monospace, monospace; font-size: 11.5px; transition: margin-top 260ms cubic-bezier(.34,1.56,.64,1), border-bottom-width 260ms cubic-bezier(.34,1.56,.64,1); }
+  .sc .kc span { display: inline-block; min-width: 10px; padding: 1px 5px; text-align: center; border-radius: 4px; background-color: rgba(255,214,10,0); transition: background-color 260ms cubic-bezier(.34,1.56,.64,1), color 260ms cubic-bezier(.34,1.56,.64,1); }
+  .sc .kc.dn { margin-top: 2px; border-bottom-width: 1px; transition-duration: 110ms; transition-timing-function: cubic-bezier(.5,1,.89,1); }
+  .sc .kc.dn span { background-color: rgba(255,214,10,0.9); color: #1c1c1e; transition-duration: 110ms; transition-timing-function: cubic-bezier(.5,1,.89,1); }
+  .sc .kc.wv { animation: wave 260ms ease-in-out both; } .sc .kc.wv span { animation: waveGlow 260ms ease-in-out both; animation-delay: inherit; }
+  @keyframes wave { 0%, 100% { margin-top: 0; border-bottom-width: 3px; } 50% { margin-top: 2px; border-bottom-width: 1px; } }
+  @keyframes waveGlow { 0%, 100% { background-color: rgba(255,214,10,0); } 50% { background-color: rgba(255,214,10,0.9); color: #1c1c1e; } }
+  @keyframes shake { 0% { transform: translateX(0); } 8.33% { transform: translateX(6.4px); } 16.67% { transform: translateX(0); } 25% { transform: translateX(-5.25px); } 33.33% { transform: translateX(0); } 41.67% { transform: translateX(4.1px); } 50% { transform: translateX(0); } 58.33% { transform: translateX(-2.9px); } 66.67% { transform: translateX(0); } 75% { transform: translateX(1.75px); } 83.33% { transform: translateX(0); } 91.67% { transform: translateX(-0.6px); } 100% { transform: translateX(0); } }
+  .sc .last { margin-top: 6px; font-size: 12px; }
+  .sc .last b.pop { animation: pop12 380ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop12 { 0% { font-size: 6px; } 70% { font-size: 13.2px; } 100% { font-size: 12px; } }
+  .sc #verdict b.pop { animation: pop13 420ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop13 { 0% { font-size: 6.5px; } 70% { font-size: 14.3px; } 100% { font-size: 13px; } }
+  .sc .nx { font-weight: 700; padding: 2px 8px; border-radius: 8px; background-color: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.12)); }
+  .sc .nx:hover { background-color: light-dark(rgba(0,0,0,0.18), rgba(255,255,255,0.2)); }
+  .tr-fade { animation: trFade 220ms ease-out; }
+  .tr-slide-left { animation: trLeft 220ms ease-out; } .tr-slide-right { animation: trRight 220ms ease-out; }
+  @keyframes trFade { from { opacity: 0; } }
+  @keyframes trLeft { from { opacity: 0; transform: translateX(12px); } }
+  @keyframes trRight { from { opacity: 0; transform: translateX(-12px); } }
+</style>
+<div class="sc" id="root">
+  <div>Cheat sheet for the team ⌨️</div>
+  <div class="seg" id="seg"></div>
+  <div id="list">
+    <div class="chips" id="chips"></div>
+    <div id="rows"></div>
+    <div class="last" id="status">Tap a shortcut to press its keys</div>
+  </div>
+  <div id="quiz" hidden>
+    <div style="margin: 2px 0 4px 0">Which keys <b id="qName"></b>?</div>
+    <div id="opts"></div>
+    <div class="row" style="margin-top: 8px"><span class="grow" id="verdict">Pick the right keys</span><span style="margin-right: 8px"><span id="score">0</span>/<span id="asked">0</span></span><span class="nx" data-action="next" id="next" hidden>Next →</span></div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const root = $('root');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+const CATS = [
+  { name: 'Chat', items: [['Send message', ['Return']], ['New line', ['⇧', 'Return']], ['Edit last message', ['↑']], ['Search in chat', ['⌘', 'F']], ['Jump to latest', ['⌘', '↓']]] },
+  { name: 'Edit', items: [['Copy', ['⌘', 'C']], ['Paste', ['⌘', 'V']], ['Undo', ['⌘', 'Z']], ['Redo', ['⇧', '⌘', 'Z']], ['Bold', ['⌘', 'B']], ['Select all', ['⌘', 'A']]] },
+  { name: 'App', items: [['Open .chat / .html', ['⌘', 'O']], ['Reload chats', ['⌘', 'R']], ['Toggle sidebar', ['⌃', '⌘', 'S']], ['Next chat', ['⌃', 'Tab']], ['Settings', ['⌘', ',']], ['Quit', ['⌘', 'Q']]] },
+];
+const FILTERS = [['⌘', '⌘ Command'], ['⇧', '⇧ Shift'], ['⌃', '⌃ Control'], ['none', 'No modifier']];
+const MODS = ['⌘', '⇧', '⌃'];
+const ALL = CATS.flatMap(c => c.items);
+const QUIZ = CATS.length;
+
+let tab = 0, filter = '', last = null, pressed = 0, pressRun = 0, quiz = null, score = 0, asked = 0;
+const match = it => !filter || (filter === 'none' ? !it[1].some(k => MODS.includes(k)) : it[1].includes(filter));
+
+// intro wave: 250 ms after load every visible key cap bobs once (260 ms sine, staggered 90 ms per row and 45 ms per key, over 850 ms)
+const waveStart = performance.now() + 250, waveEnd = waveStart + 850;
+
+// key caps: pressing is the `dn` class (110 ms down, 260 ms release), the wave an inline-delayed animation
+const capEl = key => root.querySelector(`.kc[data-key="${key}"]`);
+function cap(k, key, r, j) {
+  const now = performance.now();
+  let wave = '';
+  if (r !== undefined && now < waveEnd) {
+    const delay = waveStart + r * 90 + j * 45 - now;
+    if (delay > -260) wave = ` style="animation-delay: ${delay.toFixed(0)}ms"`;
+  }
+  return `<span class="kc${wave ? ' wv' : ''}" data-key="${key}"${wave}><span>${esc(k)}</span></span>`;
+}
+async function press(prefix, keys) {
+  const me = ++pressRun;
+  for (let j = 0; j < keys.length; j++) {
+    const el = capEl(prefix + ':' + j);
+    if (el) { el.classList.remove('wv'); el.classList.add('dn'); }
+    await sleep(120);
+    if (me !== pressRun) break;
+  }
+  await sleep(260);
+  for (let j = 0; j < keys.length; j++) { const el = capEl(prefix + ':' + j); if (el) el.classList.remove('dn'); }
+}
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function newQuestion() {
+  const target = ALL[Math.floor(Math.random() * ALL.length)];
+  const others = shuffle(ALL.filter(it => it[1].join() !== target[1].join())).slice(0, 2);
+  quiz = { target, opts: shuffle([target, ...others]), pick: -1 };
+}
+
+function syncTabs() {
+  $('seg').innerHTML = [...CATS.map((c, i) => {
+    const n = c.items.filter(match).length;
+    return `<span class="${i === tab ? 'on' : ''}" data-action="tab" data-value="${i}">${c.name}${filter ? ` ${n}` : ''}</span>`;
+  }), `<span class="${tab === QUIZ ? 'on' : ''}" data-action="tab" data-value="${QUIZ}">🎯 Quiz</span>`].join('');
+  $('list').hidden = tab === QUIZ;
+  $('quiz').hidden = tab !== QUIZ;
+}
+function syncStatus(pop) {
+  $('status').innerHTML = last ? `↳ <b>${last[1].map(esc).join(' ')}</b> · ${esc(last[0])} <span style="float: right">${pressed}×</span>` : 'Tap a shortcut to press its keys';
+  if (pop) replay($('status').querySelector('b'), 'pop');
+}
+// the shortcut list is rebuilt on tab / filter changes; pressed keys are class toggles on the caps
+function buildList() {
+  const items = CATS[tab].items.map((it, i) => ({ it, i })).filter(x => match(x.it));
+  $('chips').innerHTML = FILTERS.map(([f, label]) => `<span class="fc ${filter === f ? 'on' : ''}" data-action="filter" data-value="${f}">${filter === f ? '✓ ' : ''}${label}</span>`).join('');
+  $('rows').innerHTML = items.length ? items.map(({ it, i }, r) => `<div class="r" data-action="press" data-value="${tab}:${i}"><span class="grow">${esc(it[0])}</span><span class="keys">${it[1].map((k, j) => cap(k, `${tab}:${i}:${j}`, r, j)).join('')}</span></div>`).join('')
+    : `<div class="r" style="justify-content: center">Nothing with ${esc(FILTERS.find(f => f[0] === filter)[1])} in ${CATS[tab].name}</div>`;
+}
+function buildQuiz(pop) {
+  const q = quiz, done = q.pick >= 0, right = done && q.opts[q.pick] === q.target;
+  $('qName').textContent = q.target[0].toLowerCase();
+  $('opts').innerHTML = q.opts.map((o, i) => {
+    const isT = o === q.target;
+    let style = '', cls = 'r';
+    if (done && isT) style = ' style="background-color: rgba(52,199,89,0.35)"';
+    else if (done && i === q.pick) { style = ' style="background-color: rgba(255,59,48,0.35)"'; cls = 'r shake'; }
+    return `<div class="${cls}"${done ? '' : ` data-action="answer" data-value="${i}"`}${style}><span class="keys">${o[1].map((k, j) => cap(k, `q${i}:${j}`)).join('')}</span><span class="grow"></span>${done && isT ? '✓' : done && i === q.pick ? '✗' : ''}</div>`;
+  }).join('');
+  $('verdict').innerHTML = !done ? 'Pick the right keys' : right ? '<b>🎉 Correct!</b>' : `<b>Not quite</b> · it's ${q.target[1].map(esc).join(' ')}`;
+  if (pop) replay($('verdict').querySelector('b'), 'pop');
+  $('score').textContent = score; $('asked').textContent = asked;
+  $('next').hidden = !done;
+}
+
+function handleAction(name, v) {
+  if (name === 'tab') {
+    const t = Number(v);
+    if (t === tab) return;
+    tab = t;
+    if (t === QUIZ && !quiz) { newQuestion(); buildQuiz(); }
+    syncTabs();
+    if (t !== QUIZ) buildList();
+  } else if (name === 'filter') {
+    filter = filter === v ? '' : v;
+    syncTabs();
+    buildList();
+  } else if (name === 'press') {
+    const [t, i] = String(v).split(':').map(Number);
+    const it = CATS[t] && CATS[t].items[i];
+    if (!it) return;
+    last = it; pressed++;
+    syncStatus(true);
+    press(`${t}:${i}`, it[1]);
+  } else if (name === 'answer') {
+    if (!quiz || quiz.pick >= 0) return;
+    quiz.pick = Number(v); asked++;
+    const right = quiz.opts[quiz.pick] === quiz.target;
+    if (right) score++;
+    buildQuiz(right);
+    if (right) press('q' + quiz.pick, quiz.target[1]);
+  } else if (name === 'next') {
+    newQuestion();
+    buildQuiz();
+  }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]');
+  if (t && root.contains(t)) handleAction(t.dataset.action, t.dataset.value);
+});
+
+syncTabs();
+buildList();
+syncStatus();
+</script>

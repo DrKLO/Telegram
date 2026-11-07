@@ -34,6 +34,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
@@ -57,6 +58,22 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 public class WearAuthSheet {
+
+    private static class SheetContainer extends FrameLayout implements Theme.Colorable {
+        public SheetContainer(Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+        }
+
+        @Override
+        public void updateColors() {
+            // sheet background / navigation bar: setBackgroundColorKey / fixNavigationBarKey
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundGray);
+        }
+    }
 
     private static final String PATH_ANSWER = "/tg-wear-auth/answer";
     private static final String PATH_TOKEN = "/tg-wear-auth/token";
@@ -195,7 +212,7 @@ public class WearAuthSheet {
 
         final BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider);
 
-        final FrameLayout container = new FrameLayout(context);
+        final SheetContainer container = new SheetContainer(context, resourcesProvider);
         b.setCustomView(container);
 
         int nonTestAccount = UserConfig.selectedAccount;
@@ -224,7 +241,7 @@ public class WearAuthSheet {
 
         final FrameLayout accountSelectorLayout = new FrameLayout(context);
         final FrameLayout accountSelectorInnerLayout = new FrameLayout(context);
-        accountSelectorInnerLayout.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider)));
+        ThemeBind.fillBackground(accountSelectorInnerLayout, Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider)), ThemeBind.of(Theme.key_dialogBackgroundGray), resourcesProvider);
         final BackupImageView accountImageView = new BackupImageView(context);
         accountImageView.setRoundRadius(dp(14));
         accountImageView.getImageReceiver().setCrossfadeWithOldImage(true);
@@ -238,7 +255,7 @@ public class WearAuthSheet {
         accountSelectorInnerLayout.addView(accountImageView, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.FILL_VERTICAL));
         final ImageView accountSelectorIconView = new ImageView(context);
         accountSelectorIconView.setScaleType(ImageView.ScaleType.CENTER);
-        accountSelectorIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(accountSelectorIconView, Theme.key_dialogTextGray3, resourcesProvider, PorterDuff.Mode.SRC_IN);
         accountSelectorIconView.setImageResource(R.drawable.arrows_select);
         accountSelectorInnerLayout.addView(accountSelectorIconView, LayoutHelper.createFrame(18, 18, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
         accountSelectorLayout.addView(accountSelectorInnerLayout, LayoutHelper.createFrame(52, 28, Gravity.CENTER));
@@ -272,8 +289,8 @@ public class WearAuthSheet {
         layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 12, 12, 12, 8));
 
         final BottomSheet sheet = b.create();
-        sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
-        sheet.fixNavigationBar(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        sheet.setBackgroundColorKey(Theme.key_windowBackgroundGray);
+        sheet.fixNavigationBarKey(Theme.key_windowBackgroundGray);
 
         accountSelectorLayout.setOnClickListener(v -> {
             ItemOptions i = ItemOptions.makeOptions(sheet.container, sheet.getResourcesProvider(), accountSelectorInnerLayout);
@@ -342,7 +359,7 @@ public class WearAuthSheet {
         cancel();
 
         final BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider);
-        final FrameLayout container = new FrameLayout(context);
+        final SheetContainer container = new SheetContainer(context, resourcesProvider);
         b.setCustomView(container);
 
         final LinearLayout layout = new LinearLayout(context);
@@ -362,7 +379,7 @@ public class WearAuthSheet {
             final ImageView imageView = new ImageView(context);
             imageView.setImageDrawable(emojiDrawable);
             NotificationCenter.listenEmojiLoading(imageView);
-            imageView.setBackground(Theme.createCircleDrawable(dp(80), Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .15f)));
+            ThemeBind.fillBackground(imageView, Theme.createCircleDrawable(dp(80), Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .15f)), ThemeBind.multAlpha(Theme.key_featuredStickers_addButton, .15f), resourcesProvider);
             emojisLayout.addView(imageView, LayoutHelper.createLinear(80, 80, i == 0 ? 0 : 5, 0, 0, 0));
         }
         layout.addView(emojisLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 12, 32, 12));
@@ -372,8 +389,8 @@ public class WearAuthSheet {
         layout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL_HORIZONTAL, 12, 12, 12, 8));
 
         final BottomSheet sheet = b.create();
-        sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
-        sheet.fixNavigationBar(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        sheet.setBackgroundColorKey(Theme.key_windowBackgroundGray);
+        sheet.fixNavigationBarKey(Theme.key_windowBackgroundGray);
 
         currentSheet = sheet;
         sheet.show();

@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<!-- The first script hangs: the whole static markup was parsed and sent to the
+     renderer before any script ran (unlike a browser, which would stop at the
+     script), so it must be visible, and the widget is reported dead. -->
+<html><head><meta charset="utf-8"></head><body>
+<h3 id="static">Weather in Lisbon</h3><p id="temp">21 °C, clear</p>
+<script>for (;;) {}</script>
+<p id="after">markup after the hanging script is shown too (the document is parsed before scripts run)</p>
+</body></html>

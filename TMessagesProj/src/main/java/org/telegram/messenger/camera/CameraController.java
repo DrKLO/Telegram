@@ -22,11 +22,9 @@ import android.os.Build;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.Bitmaps;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -38,7 +36,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.SerializedData;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -441,7 +438,9 @@ public class CameraController implements MediaRecorder.OnInfoListener {
                                 }
                                 orientation = 0;
                                 matrix.postScale(-1, 1);
-                                Bitmap scaled = Bitmaps.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                                int width = bitmap.getWidth();
+                                int height = bitmap.getHeight();
+                                Bitmap scaled = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
                                 if (scaled != bitmap) {
                                     bitmap.recycle();
                                 }

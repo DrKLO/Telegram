@@ -34,6 +34,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.GraySectionCell;
@@ -179,7 +180,7 @@ public class CountrySelectBottomSheet extends BottomSheetWithRecyclerListView im
                 super.onDraw(canvas);
             }
         };
-        doneItem.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(doneItem, Theme.key_featuredStickers_buttonText, resourcesProvider);
         doneItem.setText(getString(R.string.Save));
         doneItem.setTypeface(AndroidUtilities.bold());
         doneItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

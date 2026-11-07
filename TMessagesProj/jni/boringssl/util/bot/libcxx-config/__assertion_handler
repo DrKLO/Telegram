@@ -1,9 +1,0 @@
-#ifndef BORINGSSL_LIBCXX_ASSERTION_HANDLER_
-#define BORINGSSL_LIBCXX_ASSERTION_HANDLER_
-
-#include <__verbose_abort>
-
-// We use only bundle libc++ for testing, so we can use the verbose aborts.
-#define _LIBCPP_ASSERTION_HANDLER(message) _LIBCPP_VERBOSE_ABORT("%s", message)
-
-#endif  // BORINGSSL_LIBCXX_ASSERTION_HANDLER_

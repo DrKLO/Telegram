@@ -1,0 +1,14 @@
+<div class="widget"><a id="a" href="chat:send?html=%3Cdiv%20class%3D%22widget%22%3Eworm%3C%2Fdiv%3E">worm</a><form id="f"><input id="i"><button id="b">go</button></form></div><script>
+var a = document.getElementById('a');
+document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); TelegramWidget.openLink('http://127.0.0.1:9999/hit/activation-submit'); });
+document.getElementById('b').click();
+document.getElementById('f').requestSubmit();
+document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+a.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+a.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+var e = new MouseEvent('click', { bubbles: true }); try { Object.defineProperty(e, 'isTrusted', { value: true }); } catch (x) {}
+a.dispatchEvent(e);
+try { __host('bridge', JSON.stringify(['openLink', ['http://127.0.0.1:9999/hit/activation-raw-host']])); } catch (x) {}
+try { __twDispatch('event', JSON.stringify({ type: 'click', targetId: 5 })); } catch (x) {}
+try { __twDispatch('activation', JSON.stringify({ type: 'click', targetId: 5 })); } catch (x) {}
+</script>

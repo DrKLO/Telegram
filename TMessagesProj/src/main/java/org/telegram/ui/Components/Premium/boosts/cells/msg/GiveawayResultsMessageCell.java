@@ -682,7 +682,7 @@ public class GiveawayResultsMessageCell {
     private void setGiftImage() {
         giftReceiver.setAllowStartLottieAnimation(false);
         if (giftDrawable == null) {
-            giftDrawable = new RLottieDrawable(R.raw.giveaway_results, "" + R.raw.giveaway_results, dp(120), dp(120));
+            giftDrawable = new RLottieDrawable(R.raw.giveaway_results, dp(120), dp(120));
         }
         giftReceiver.setImageBitmap(giftDrawable);
     }

@@ -439,6 +439,7 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
     bool offer_extmap_allow_mixed;
     std::string turn_logging_id;
     bool enable_implicit_rollback;
+    bool disable_payload_type_demuxing;  // TGCALLS SEAM
     absl::optional<int> report_usage_pattern_delay_ms;
     absl::optional<int> stable_writable_connection_ping_interval_ms;
     VpnPreference vpn_preference;
@@ -499,6 +500,7 @@ bool PeerConnectionInterface::RTCConfiguration::operator==(
          offer_extmap_allow_mixed == o.offer_extmap_allow_mixed &&
          turn_logging_id == o.turn_logging_id &&
          enable_implicit_rollback == o.enable_implicit_rollback &&
+         disable_payload_type_demuxing == o.disable_payload_type_demuxing &&
          report_usage_pattern_delay_ms == o.report_usage_pattern_delay_ms &&
          stable_writable_connection_ping_interval_ms ==
              o.stable_writable_connection_ping_interval_ms &&
@@ -590,6 +592,7 @@ PeerConnection::PeerConnection(
           std::move(dependencies.async_dns_resolver_factory)),
       port_allocator_(std::move(dependencies.allocator)),
       ice_transport_factory_(std::move(dependencies.ice_transport_factory)),
+      dtls_transport_factory_(std::move(dependencies.dtls_transport_factory)),
       tls_cert_verifier_(std::move(dependencies.tls_cert_verifier)),
       call_(std::move(call)),
       worker_thread_safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
@@ -743,7 +746,10 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
   config.redetermine_role_on_ice_restart =
       configuration.redetermine_role_on_ice_restart;
   config.ssl_max_version = options_.ssl_max_version;
-  config.disable_encryption = options_.disable_encryption;
+  // TGCALLS SEAM (Options::external_transport_security): the plain
+  // RtpTransport without turning DTLS off at the PeerConnection level.
+  config.disable_encryption =
+      options_.disable_encryption || options_.external_transport_security;
   config.bundle_policy = configuration.bundle_policy;
   config.rtcp_mux_policy = configuration.rtcp_mux_policy;
   // TODO(bugs.webrtc.org/9891) - Remove options_.crypto_options then remove
@@ -753,7 +759,8 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
                               : options_.crypto_options;
   config.transport_observer = this;
   config.rtcp_handler = InitializeRtcpCallback();
-  config.un_demuxable_packet_handler = InitializeUnDemuxablePacketHandler();
+  config.un_demuxable_packet_handler =
+      InitializeUnDemuxablePacketHandler(dependencies.observer);
   config.event_log = &env_.event_log();
 #if defined(ENABLE_EXTERNAL_AUTH)
   config.enable_external_auth = true;
@@ -766,6 +773,8 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
   }
 
   config.ice_transport_factory = ice_transport_factory_.get();
+  // TGCALLS SEAM: null keeps the stock cricket::DtlsTransport.
+  config.dtls_transport_factory = dtls_transport_factory_.get();
   config.on_dtls_handshake_error_ =
       [weak_ptr = weak_factory_.GetWeakPtr()](rtc::SSLHandshakeError s) {
         if (weak_ptr) {
@@ -2104,6 +2113,29 @@ void PeerConnection::DestroyDataChannelTransport(RTCError error) {
   SetSctpTransportName("");
 }
 
+void PeerConnection::ResetSctpDataMidAfterRollback() {
+  // TGCALLS SEAM (rollback releases an unnegotiated sctp_mid): see
+  // PeerConnectionSdpMethods. Unlike DestroyDataChannelTransport this keeps
+  // the data channels alive (they never had a transport to lose), so
+  // HasDataChannels() stays true and the next offer re-adds a data section.
+  RTC_DCHECK_RUN_ON(signaling_thread());
+  network_thread()->BlockingCall([&] {
+    RTC_DCHECK_RUN_ON(network_thread());
+    if (sctp_mid_n_) {
+      RTC_LOG(LS_INFO) << "Releasing rolled-back data channel mid="
+                       << *sctp_mid_n_;
+      sctp_mid_n_.reset();
+    }
+    // JsepTransportCollection::RollbackTransports already dropped the mapping
+    // for a mid the rolled-back description introduced
+    // (map_change_callback_(mid, nullptr) -> OnTransportChanged(nullptr));
+    // repeat it unconditionally in case the mid was re-mapped meanwhile.
+    data_channel_controller_.OnTransportChanged(nullptr);
+  });
+  sctp_mid_s_.reset();
+  SetSctpTransportName("");
+}
+
 void PeerConnection::OnSctpDataChannelStateChanged(
     int channel_id,
     DataChannelInterface::DataState state) {
@@ -2702,7 +2734,9 @@ void PeerConnection::ReportRemoteIceCandidateAdded(
 
 bool PeerConnection::SrtpRequired() const {
   RTC_DCHECK_RUN_ON(signaling_thread());
-  return dtls_enabled_;
+  // TGCALLS SEAM (Options::external_transport_security): SRTP is not required
+  // when an external layer secures the transport; DTLS stays enabled for SDP.
+  return dtls_enabled_ && !options_.external_transport_security;
 }
 
 void PeerConnection::OnTransportControllerGatheringState(
@@ -2981,9 +3015,17 @@ PeerConnection::InitializeRtcpCallback() {
 }
 
 std::function<void(const RtpPacketReceived& parsed_packet)>
-PeerConnection::InitializeUnDemuxablePacketHandler() {
+PeerConnection::InitializeUnDemuxablePacketHandler(
+    PeerConnectionObserver* observer) {
   RTC_DCHECK_RUN_ON(network_thread());
-  return [this](const RtpPacketReceived& parsed_packet) {
+  return [this, observer](const RtpPacketReceived& parsed_packet) {
+    // TGCALLS SEAM (PeerConnectionObserver::OnUnDemuxableRtpPacket): the
+    // observer outlives this PeerConnection by API contract, and Close()
+    // destroys the transport controller before clearing the observer, so no
+    // packet can reach here afterwards. Network thread, per dropped packet.
+    if (observer) {
+      observer->OnUnDemuxableRtpPacket(parsed_packet);
+    }
     worker_thread()->PostTask(
         SafeTask(worker_thread_safety_, [this, parsed_packet]() {
           // Deliver the packet anyway to Call to allow Call to do BWE.

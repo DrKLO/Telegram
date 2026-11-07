@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- No permissions: the library never touches the network itself, and
+         WebSettings.setBlockNetworkLoads(true) is legal without INTERNET. -->
+    <application>
+        <!-- Safe Browsing would make the renderer WebView talk to Google on its own. -->
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="false" />
+    </application>
+</manifest>

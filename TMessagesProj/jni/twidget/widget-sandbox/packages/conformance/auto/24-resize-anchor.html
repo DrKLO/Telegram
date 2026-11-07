@@ -1,0 +1,53 @@
+<!doctype html>
+<html data-test="auto/24-resize-anchor">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: the resize anchor</title>
+<!-- conformance {"title":"TelegramWidget.setResizeAnchor (v0.1.3): the method exists, takes 'top' and 'bottom', throws TypeError on anything else; the widget grows and shrinks with either anchor"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var x=document,y=x.documentElement,h=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(h?"sandbox":"native"),a=[],b={},l=[];var j,c,f,u,k,d,w,p;var M=()=>{p=p||setTimeout(A,0)};function i(t,e,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),m=b[t+"|"+e]||(b[t+"|"+e]=a[a.length]=[t,e]);return m[2]=s,m[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function C(t,e,o,n){if(n&&n.sandboxOnly&&!h)return i(t,e,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(t,e,!1,"threw "+s,n)}return r==null?i(t,e,null,"not applicable",n):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],n)}var D=(t,e,o,n,r)=>C(t,e,[o,n],r);var O=t=>{l.push(t)};var R=()=>{},B=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(o=>Math.round(o*10)/10)};function A(){p=0,f&&!u&&R();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)t[n[2]]++;let e=f&&!l.length,o=u||e&&!t.pending?"done":e&&k?"awaiting":"running";u=o=="done",y.setAttribute("data-conformance",JSON.stringify({v:1,id:y.getAttribute("data-test"),mode:S,status:o,n:t,checks:a,targets:j,stages:c})),g&&g(o,t)}var g;function T(){g=(t,e)=>{let o=[t];for(let n in e)e[n]&&o.push(n+" "+e[n]);x.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(x.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=B(e)})),!l.length)return f=1,d&&w&&setTimeout(w,d),M();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(q,t||0)}function E(t){t=t||{},k=t.awaitInput,d=t.awaitInput||t.deadline,A();let e=()=>{e=()=>{},setTimeout(q,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(o){}setTimeout(()=>e(),400)}T();return{ok:D,run:E,sandbox:h,step:O}}();</script><!-- /conformance:harness -->
+<style>
+#grow{background:#bdf}
+#grow div{height:20px}
+</style>
+</head>
+<body>
+<div class="conf-head">24 · Resize anchor</div>
+<div class="conf-probes"><div id="grow"></div></div>
+<div id="conf-list"></div>
+<script>
+var TW = typeof TelegramWidget !== 'undefined' ? TelegramWidget : null;
+var S = T.sandbox ? {} : { sandboxOnly: true };
+var has = !!TW && typeof TW.setResizeAnchor === 'function';
+var throwsType = function (fn) { try { fn(); return false; } catch (e) { return !!e && e.name === 'TypeError'; } };
+var noThrow = function (fn) { try { return fn() === undefined; } catch (e) { return false; } };
+
+T.step(function () {
+  T.ok('tw.resize-anchor', 'typeof TelegramWidget.setResizeAnchor is "function"', has, TW ? typeof TW.setResizeAnchor : 'no SDK', S);
+  T.ok('tw.resize-anchor', "setResizeAnchor('bottom') and ('top') return undefined and throw nothing", has && noThrow(function () { return TW.setResizeAnchor('bottom'); }) && noThrow(function () { return TW.setResizeAnchor('top'); }), '', S);
+  var bad = [undefined, null, '', 'left', 'center', 'Bottom', ' top', 'top ', 1, true, ['top'], { edge: 'top' }];
+  var wrong = has ? bad.filter(function (v) { return !throwsType(function () { TW.setResizeAnchor(v); }); }) : bad;
+  T.ok('tw.resize-anchor', "anything but exactly 'top' or 'bottom' throws TypeError", has && !wrong.length, wrong.map(function (v) { return JSON.stringify(v) === undefined ? String(v) : JSON.stringify(v); }).join(', '), S);
+});
+// Bottom, grow by three lines, top, shrink back: the content height follows either way (what the client does with the
+// edge is behaviour.resize-anchor in visual/sdk/18).
+var g = document.getElementById('grow');
+T.step(function () {
+  if (has) TW.setResizeAnchor('bottom');
+  for (var i = 0; i < 3; i++) g.appendChild(document.createElement('div'));
+  return 60;
+});
+T.step(function () {
+  T.ok('tw.resize-anchor', "with 'bottom' the widget grows: three lines are 60 px", g.offsetHeight === 60, g.offsetHeight + ' px', S);
+  if (has) TW.setResizeAnchor('top');
+  g.replaceChildren();
+  return 60;
+});
+T.step(function () {
+  T.ok('tw.resize-anchor', "with 'top' it shrinks back to 0 px", g.offsetHeight === 0, g.offsetHeight + ' px', S);
+});
+T.run();
+</script>
+</body>
+</html>

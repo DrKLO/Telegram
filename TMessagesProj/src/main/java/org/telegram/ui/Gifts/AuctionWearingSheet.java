@@ -41,6 +41,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
@@ -260,7 +261,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
         ImageView imageView = new ImageView(context);
         imageView.setImageResource(R.drawable.ic_ab_back);
         imageView.setScaleX(-1);
-        imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
         horizontalLayout.addView(imageView, LayoutHelper.createLinear(24, 24, 0f, Gravity.CENTER_VERTICAL, 12, 0, 12, 0));
 
         giftCell2 = new GiftSheet.GiftCell(context, currentAccount, resourcesProvider) {
@@ -333,19 +334,19 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
         hint1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         hint1.setGravity(Gravity.CENTER);
         hint1.setText(getString(R.string.Gift2WearingHint));
-        hint1.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(hint1, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
 
         FrameLayout limitContainer = null;
         {
             final float limitedProgress = Utilities.clamp((float) starGift.availability_remains / starGift.availability_total, 1f, 0);
             limitContainer = new FrameLayout(context);
-            limitContainer.setBackground(Theme.createRoundRectDrawable(dp(14), ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.2f)));
+            ThemeBind.fillBackground(limitContainer, Theme.createRoundRectDrawable(dp(14), ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.2f)), ThemeBind.blend(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhiteBlackText, 0.2f), resourcesProvider);
 
             TextView leftTextView = new TextView(context);
             leftTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             leftTextView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             leftTextView.setTypeface(AndroidUtilities.bold());
-            leftTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(leftTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             leftTextView.setText(LocaleController.formatPluralStringComma("Gift2AvailabilityLeft", starGift.availability_remains));
             limitContainer.addView(leftTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 11, 0, 11, 0));
 
@@ -353,7 +354,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             soldTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             soldTextView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
             soldTextView.setTypeface(AndroidUtilities.bold());
-            soldTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(soldTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             soldTextView.setText(LocaleController.formatPluralStringComma("Gift2AvailabilitySold", starGift.availability_total - starGift.availability_remains));
             limitContainer.addView(soldTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT, 11, 0, 11, 0));
 
@@ -363,7 +364,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
                     super.onMeasure(MeasureSpec.makeMeasureSpec((int) (MeasureSpec.getSize(widthMeasureSpec) * limitedProgress), MeasureSpec.EXACTLY), heightMeasureSpec);
                 }
             };
-            limitProgressView.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            ThemeBind.fillBackground(limitProgressView, Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
             limitContainer.addView(limitProgressView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
             FrameLayout valueContainerView = new FrameLayout(context) {
@@ -401,14 +402,14 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             hint2 = new LinkSpanDrawable.LinksTextView(context);
             hint2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             hint2.setGravity(Gravity.CENTER);
-            hint2.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(hint2, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             hint2.setText(AndroidUtilities.replaceTags(formatSpannable(R.string.Gift2AuctionInfo3,
                 formatNumber(starGift.availability_total, ','),
                 auction.auctionStateActive.total_rounds,
                 starGift.gifts_per_round,
                 AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2AuctionInfoLearnMore), () -> AuctionJoinSheet.showMoreInfo(context, resourcesProvider, starGift)), true, dp(8f / 3f), dp(1))
             )));
-            hint2.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            ThemeBind.linkTextColor(hint2, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         }
 
         if (isInfo) {
@@ -493,6 +494,22 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
     }
 
 
+    private int themedBackgroundColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int color = getBackgroundColor();
+            if (color != themedBackgroundColor) { // setBackgroundColor allocates a color filter
+                themedBackgroundColor = color;
+                setBackgroundColor(color);
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
+
     private int getBackgroundColor() {
         return ColorUtils.blendARGB(
                 getThemedColor(Theme.key_dialogBackgroundGray),
@@ -510,14 +527,14 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
         titleView.setGravity(Gravity.CENTER);
         titleView.setText(formatString(R.string.GiftAuctionWearInfoHeader, starGift.title));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 14, 20, 6));
 
         final TextView titleView2 = new TextView(context);
         titleView2.setGravity(Gravity.CENTER);
         titleView2.setText(getString(R.string.GiftAuctionWearInfoText));
         titleView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView2, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linearLayout.addView(titleView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 16));
 
         {
@@ -526,7 +543,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             cell.description.setText(getString(R.string.GiftAuctionWearInfo1Text));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.msg_emoji_gem);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, -2));
         }
         {
@@ -535,7 +552,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             cell.description.setText(getString(R.string.GiftAuctionWearInfo2Text));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_feature_cover_24);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, -2));
         }
         {
@@ -544,7 +561,7 @@ public class AuctionWearingSheet extends BottomSheetWithRecyclerListView impleme
             cell.description.setText(getString(R.string.GiftAuctionWearInfo3Text));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_verification);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, 14));
         }
     }

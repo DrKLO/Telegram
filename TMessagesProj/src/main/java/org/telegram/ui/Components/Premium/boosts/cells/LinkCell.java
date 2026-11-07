@@ -1,5 +1,6 @@
 package org.telegram.ui.Components.Premium.boosts.cells;
 
+import android.graphics.PorterDuff;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -22,6 +23,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -46,18 +48,18 @@ public class LinkCell extends FrameLayout {
         linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         linkView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
         linkView.setSingleLine(true);
-        linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(linkView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linkView.allowClickSpoilers = false;
 
         linkContainer.addView(linkView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-        linkContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
+        ThemeBind.selectorBackground(linkContainer, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))), ThemeBind.of(Theme.key_graySection), ThemeBind.alpha(Theme.key_listSelector, (int) (255 * 0.3f)), resourcesProvider);
         addView(linkContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 14, 0, 14, 0));
 
         linkContainer.setOnClickListener(v -> AndroidUtilities.addToClipboard(link));
 
         imageView = new ImageView(getContext());
         imageView.setImageResource(R.drawable.menu_copy_s);
-        imageView.setColorFilter(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.colorFilter(imageView, Theme.key_dialogTextBlack, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         imageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         imageView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
         addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 15, 0, 17, 0));

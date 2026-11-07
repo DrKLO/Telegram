@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!-- Runtime death after a click: the renderer must keep the last render as a
+     static fallback (data-tw-frozen + badge), stop forwarding events, and the
+     host must not remove the frame. -->
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; }
+  #card { border: 1px solid #ccc; border-radius: 10px; padding: 12px; }
+  button { padding: 6px 12px; }
+</style></head><body>
+<div id="card"><h3 id="title">Order #4821</h3><p id="text">Delivered to the front desk at 14:32.</p><button id="go">Confirm</button> <span id="clicks">0</span></div>
+<script>
+  var n = 0;
+  document.getElementById('go').addEventListener('click', function () {
+    document.getElementById('clicks').textContent = ++n;
+    // Hang the runtime: the CPU limit kills it, the card must stay on screen.
+    for (;;) {}
+  });
+</script>
+</body></html>

@@ -1,16 +1,16 @@
 package org.telegram.messenger.pip;
 
 import android.app.Activity;
-import android.support.v4.media.session.MediaSessionCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector;
+import androidx.media3.session.MediaSession;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.pip.activity.IPipActivityActionListener;
 import org.telegram.messenger.pip.activity.IPipActivityAnimationListener;
 import org.telegram.messenger.pip.activity.IPipActivityHandler;
@@ -30,58 +30,70 @@ public class PipActivityController {
         this.activity = activity;
         this.handler = new PipActivityHandler(activity);
 
-        handler.addPipListener(new IPipActivityListener() {
-            @Override
-            public void onStartEnterToPip() {
-                Log.d(PipUtils.TAG, "onStartEnterToPip");
-            }
+        if (BuildConfig.DEBUG_PRIVATE_VERSION) {
+            handler.addPipListener(new IPipActivityListener() {
+                @Override
+                public void onStartEnterToPip() {
+                    Log.d(PipUtils.TAG, "onStartEnterToPip");
+                }
 
-            @Override
-            public void onCompleteEnterToPip() {
-                Log.d(PipUtils.TAG, "onCompleteEnterToPip");
-            }
+                @Override
+                public void onCompleteEnterToPip() {
+                    Log.d(PipUtils.TAG, "onCompleteEnterToPip");
+                }
 
-            @Override
-            public void onStartExitFromPip(boolean byActivityStop) {
-                Log.d(PipUtils.TAG, "onStartExitFromPip: byActivityStop=" + byActivityStop);
-            }
+                @Override
+                public void onPipStashStart() {
+                    Log.d(PipUtils.TAG, "onPipStashStart");
+                }
 
-            @Override
-            public void onCompleteExitFromPip(boolean byActivityStop) {
-                Log.d(PipUtils.TAG, "onCompleteExitFromPip: byActivityStop=" + byActivityStop);
-            }
-        });
-        handler.addAnimationListener(new IPipActivityAnimationListener() {
-            @Override
-            public void onEnterAnimationStart(long estimatedDuration) {
-                Log.d(PipUtils.TAG, "onEnterAnimationStart: estimatedDuration=" + estimatedDuration);
-            }
+                @Override
+                public void onPipStashEnd() {
+                    Log.d(PipUtils.TAG, "onPipStashStop");
+                }
 
-            @Override
-            public void onEnterAnimationEnd(long duration) {
-                Log.d(PipUtils.TAG, "onEnterAnimationEnd: duration=" + duration);
-            }
+                @Override
+                public void onStartExitFromPip(boolean byActivityStop) {
+                    Log.d(PipUtils.TAG, "onStartExitFromPip: byActivityStop=" + byActivityStop);
+                }
 
-            @Override
-            public void onLeaveAnimationStart(long estimatedDuration) {
-                Log.d(PipUtils.TAG, "onLeaveAnimationStart: estimatedDuration=" + estimatedDuration);
-            }
+                @Override
+                public void onCompleteExitFromPip(boolean byActivityStop) {
+                    Log.d(PipUtils.TAG, "onCompleteExitFromPip: byActivityStop=" + byActivityStop);
+                }
+            });
+            handler.addAnimationListener(new IPipActivityAnimationListener() {
+                @Override
+                public void onEnterAnimationStart(long estimatedDuration) {
+                    Log.d(PipUtils.TAG, "onEnterAnimationStart: estimatedDuration=" + estimatedDuration);
+                }
 
-            @Override
-            public void onLeaveAnimationEnd(long duration) {
-                Log.d(PipUtils.TAG, "onLeaveAnimationEnd: duration=" + duration);
-            }
+                @Override
+                public void onEnterAnimationEnd(long duration) {
+                    Log.d(PipUtils.TAG, "onEnterAnimationEnd: duration=" + duration);
+                }
 
-            @Override
-            public void onTransitionAnimationFrame() {
-                Log.d(PipUtils.TAG, "onTransitionAnimationFrame");
-            }
+                @Override
+                public void onLeaveAnimationStart(long estimatedDuration) {
+                    Log.d(PipUtils.TAG, "onLeaveAnimationStart: estimatedDuration=" + estimatedDuration);
+                }
 
-            @Override
-            public void onTransitionAnimationProgress(float estimatedProgress) {
-                Log.d(PipUtils.TAG, "onTransitionAnimationProgress: estimatedProgress=" + estimatedProgress);
-            }
-        });
+                @Override
+                public void onLeaveAnimationEnd(long duration) {
+                    Log.d(PipUtils.TAG, "onLeaveAnimationEnd: duration=" + duration);
+                }
+
+                @Override
+                public void onTransitionAnimationFrame() {
+                    Log.d(PipUtils.TAG, "onTransitionAnimationFrame");
+                }
+
+                @Override
+                public void onTransitionAnimationProgress(float estimatedProgress) {
+                    Log.d(PipUtils.TAG, "onTransitionAnimationProgress: estimatedProgress=" + estimatedProgress);
+                }
+            });
+        }
     }
 
     public IPipActivityHandler getHandler() {
@@ -136,22 +148,16 @@ public class PipActivityController {
         final boolean oldMediaSession = oldSource != null && oldSource.needMediaSession;
         final boolean newMediaSession = newSource != null && newSource.needMediaSession;
         if (oldMediaSession != newMediaSession) {
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(null);
-                mediaSessionConnector = null;
-            }
             if (mediaSession != null) {
-                mediaSession.setActive(false);
                 mediaSession.release();
                 mediaSession = null;
                 // Log.i(PipSource.TAG, "[MEDIA] stop media session");
             }
 
             if (newSource != null) {
-                mediaSession = new MediaSessionCompat(activity, "pip-media-session");
-                mediaSession.setQueue(null);
-                mediaSession.setActive(true);
-                mediaSessionConnector = new MediaSessionConnector(mediaSession);
+                mediaSession = new MediaSession.Builder(activity, newSource.player)
+                        .setId("pip-media-session")
+                        .build();
 
                 // Log.i(PipSource.TAG, "[MEDIA] start media session");
             }
@@ -162,8 +168,8 @@ public class PipActivityController {
         }
 
         if (newSource != null) {
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(newSource.player);
+            if (mediaSession != null && mediaSession.getPlayer() != newSource.player) {
+                mediaSession.setPlayer(newSource.player);
             }
             pipContentView.bringToFront();
             newSource.state2.onReceiveMaxPriority();
@@ -178,8 +184,7 @@ public class PipActivityController {
         pipContentView.invalidate();
     }
 
-    private MediaSessionCompat mediaSession;
-    MediaSessionConnector mediaSessionConnector;
+    private MediaSession mediaSession;
 
 
 
@@ -206,8 +211,8 @@ public class PipActivityController {
     void dispatchSourceParamsChanged(PipSource source) {
         if (maxPrioritySource == source) {
             PipUtils.applyPictureInPictureParams(activity, source);
-            if (mediaSessionConnector != null) {
-                mediaSessionConnector.setPlayer(source.player);
+            if (mediaSession != null && mediaSession.getPlayer() != source.player) {
+                mediaSession.setPlayer(source.player);
             }
         }
         pipContentView.invalidate();

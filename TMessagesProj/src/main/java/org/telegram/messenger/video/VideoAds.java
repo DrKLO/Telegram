@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -72,7 +73,6 @@ import org.telegram.ui.RevenueSharingAdsInfoBottomSheet;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Objects;
 
 public class VideoAds {
@@ -86,6 +86,9 @@ public class VideoAds {
     private final ArrayList<TLRPC.TL_sponsoredMessage> ads = new ArrayList<>();
     private long lastTime = 0;
     private boolean first = true;
+    private long currentBulletinPassedTime;
+
+    private final VideoAdsCache cache;
 
     private static class VideoAdsLocation {
         public VideoAdsLocation(int currentAccount,
@@ -108,37 +111,49 @@ public class VideoAds {
         }
     }
 
-//    private static LruCache<VideoAdsLocation, VideoAds> cached = new LruCache<>(3);
-    private static HashMap<VideoAdsLocation, VideoAds> cached = new HashMap<>();
+    private static class VideoAdsCache {
+        final int msgId;
+        int startDelay, betweenDelay;
+        final ArrayList<TLRPC.TL_sponsoredMessage> ads = new ArrayList<>();
+        long loadTime;
+        boolean loaded;
 
-    public static void dropCache() {
-        cached.clear();
+        VideoAdsCache(int msgId) {
+            this.msgId = msgId;
+        }
     }
 
-    public static VideoAds make(
+    private static final LruCache<VideoAdsLocation, VideoAdsCache> cached = new LruCache<>(3);
+
+    public static void dropCache() {
+        cached.evictAll();
+    }
+
+public static VideoAds make(
         int currentAccount,
         long dialogId,
         int msg_id,
         BulletinFactory bulletinFactory
     ) {
         final VideoAdsLocation key = new VideoAdsLocation(currentAccount, dialogId);
-        VideoAds ads = cached.get(key);
-        if (ads == null || (ads.msg_id != msg_id || System.currentTimeMillis() - ads.lastTime > 3 * 60 * 1000) && ads.ads.isEmpty()) {
-            cached.put(key, ads = new VideoAds(currentAccount, dialogId, msg_id, bulletinFactory));
+        VideoAdsCache cache = cached.get(key);
+        if (cache == null || cache.msgId != msg_id || System.currentTimeMillis() - cache.loadTime > 3 * 60 * 1000) {
+            cached.put(key, cache = new VideoAdsCache(msg_id));
         }
-        ads.init(bulletinFactory);
-        return ads;
+        return new VideoAds(currentAccount, dialogId, msg_id, bulletinFactory, cache);
     }
 
     private VideoAds(
         int currentAccount,
         long dialogId,
         int msg_id,
-        BulletinFactory bulletinFactory
+        BulletinFactory bulletinFactory,
+        VideoAdsCache cache
     ) {
         this.currentAccount = currentAccount;
         this.dialogId = dialogId;
         this.msg_id = msg_id;
+        this.cache = cache;
         this.lastTime = System.currentTimeMillis();
         init(bulletinFactory);
     }
@@ -163,17 +178,16 @@ public class VideoAds {
 
     private void init(BulletinFactory bulletinFactory) {
         this.bulletinFactory = bulletinFactory;
-        if (currentBulletinPassedTime <= 0) {
-            this.lastTime = System.currentTimeMillis();
-            if (waitingPaused) {
-                waitingTimeSince = System.currentTimeMillis();
-            }
-            this.first = true;
-        }
-        if (!loaded) {
-            load();
-        } else {
+        this.lastTime = System.currentTimeMillis();
+        this.first = true;
+        if (cache.loaded) {
+            start_delay = cache.startDelay;
+            between_delay = cache.betweenDelay;
+            ads.addAll(cache.ads);
+            loaded = true;
             schedule();
+        } else {
+            load();
         }
     }
 
@@ -202,8 +216,15 @@ public class VideoAds {
                 ads.addAll(r.messages);
                 start_delay = r.start_delay;
                 between_delay = r.between_delay;
+
+                cache.ads.clear();
+                cache.ads.addAll(r.messages);
+                cache.startDelay = r.start_delay;
+                cache.betweenDelay = r.between_delay;
             }
 
+            cache.loadTime = System.currentTimeMillis();
+            cache.loaded = true;
             loaded = true;
             loading = false;
 
@@ -238,7 +259,6 @@ public class VideoAds {
 
     private Bulletin bulletin;
     private long bulletinShowTime;
-    private long currentBulletinPassedTime;
     private final Runnable showRunnable = this::show;
 
     private ItemOptions currentMenu;
@@ -421,13 +441,13 @@ public class VideoAds {
 
                 if (ad.url != null && !TextUtils.equals(AndroidUtilities.getHostAuthority(ad.url), MessagesController.getInstance(currentAccount).linkPrefix)) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     Uri uri = Uri.parse(ad.url);
                     textView.setText(Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null));
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider1);
                     textView.setOnClickListener(e -> {
                         o.dismiss();
                         logSponsoredClicked(ad);
@@ -442,12 +462,12 @@ public class VideoAds {
 
                 if (ad.sponsor_info != null) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     textView.setText(ad.sponsor_info);
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider1);
                     textView.setOnClickListener(e -> {
                         if (AndroidUtilities.addToClipboard(ad.sponsor_info)) {
 //                            BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider1).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -458,12 +478,12 @@ public class VideoAds {
 
                 if (ad.additional_info != null) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     textView.setText(ad.additional_info);
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
                     textView.setOnClickListener(e -> {
                         if (AndroidUtilities.addToClipboard(ad.additional_info)) {
 //                            BulletinFactory.of(Bulletin.BulletinWindow.make(activityContext), resourcesProvider1).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -476,7 +496,7 @@ public class VideoAds {
                     View section = sections.get(i);
                     if (i > 0) {
                         FrameLayout separator = new FrameLayout(context);
-                        separator.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider1));
+                        ThemeBind.backgroundColor(separator, Theme.key_divider, resourcesProvider1);
                         LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1);
                         params.height = 1;
                         info.addView(separator, params);
@@ -814,22 +834,22 @@ public class VideoAds {
 
             titleTextView = new SimpleTextView(context);
             titleTextView.setPadding(dp(4), 0, dp(4), 0);
-            titleTextView.setTextColor(undoInfoColor);
+            ThemeBind.textColor(titleTextView, Theme.key_undo_infoColor, resourcesProvider);
             titleTextView.setTextSize(14);
             titleTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
             subtitleTextView.setPadding(dp(4), 0, dp(4), 0);
-            subtitleTextView.setTextColor(undoInfoColor);
-            subtitleTextView.setLinkTextColor(undoLinkColor);
+            ThemeBind.textColor(subtitleTextView, Theme.key_undo_infoColor, resourcesProvider);
+            ThemeBind.linkTextColor(subtitleTextView, Theme.key_undo_cancelColor, resourcesProvider);
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
 
             buttonView = new ImageView(context);
             buttonView.setScaleType(ImageView.ScaleType.CENTER);
-            buttonView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+            ThemeBind.selectorBackground(buttonView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.multAlpha(Theme.key_featuredStickers_addButton, .15f), resourcesProvider);
             addView(buttonView, LayoutHelper.createFrameRelatively(32, 32, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
         }
 

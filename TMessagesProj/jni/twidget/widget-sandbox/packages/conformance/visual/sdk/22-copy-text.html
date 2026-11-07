@@ -1,0 +1,54 @@
+<!doctype html>
+<html data-test="visual/sdk/22-copy-text">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- conformance {"title": "copyText: the client copies on a tap and shows what it copied", "hint": "Tap Copy: the client's toast shows CONF-2026-OK, and that is what you paste. Tap Copy later: nothing is copied a second later (no tap). Tap Copy twice: one tap, one toast.", "expect": "copyText on a tap: copy the text and show a toast with the text itself (truncated if long); outside a tap nothing (activation-blocked); one copy per tap. The widget is not told.", "contract": "docs/sdk-v1.md §2.15, §5.11", "covers": ["tw.copy-text"], "message": [{"kind": "private"}]} -->
+<!-- conformance:mini --><style>html,body{margin:0;padding:0}body{font:14px/1.4 system-ui,sans-serif;color:var(--tg-theme-text-color,#111)}@media (prefers-color-scheme:dark){body{color:var(--tg-theme-text-color,#eee)}}.h{font-weight:600;font-size:15px;margin:10px 12px 2px}.i{margin:0 12px 8px;font-size:13px;color:var(--tg-theme-hint-color,#888)}.r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 12px}.big{font-size:22px;font-weight:600;margin:4px 12px}#log{margin:8px 12px 10px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><script>var S = (function () {
+  var r = document.documentElement, c = [], tg = {}, st = 'running';
+  function rc(e) { var b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map(function (v) { return Math.round(v * 10) / 10; }); }
+  function pub() {
+    var t = {};
+    for (var k in tg) { var e = document.getElementById(tg[k]); if (e) t[k] = rc(e); }
+    r.setAttribute('data-conformance', JSON.stringify({ v: 1, id: r.getAttribute('data-test'), status: st, checks: c, targets: t }));
+  }
+  function log(m, ok) {
+    var l = document.getElementById('log');
+    if (!l) return;
+    var d = document.createElement('div');
+    d.textContent = (ok === true ? '✓ ' : ok === false ? '✗ ' : '· ') + m;
+    l.appendChild(d);
+  }
+  return {
+    TW: typeof TelegramWidget !== 'undefined' ? TelegramWidget : null,
+    check: function (id, name, ok, d) { c.push([id, name, ok ? 'pass' : 'fail', d || '']); log(name + (d ? ' (' + d + ')' : ''), !!ok); pub(); },
+    log: log,
+    target: function (n, id) { tg[n] = id; },
+    start: function () { st = 'awaiting'; pub(); },
+    done: function () { st = 'done'; pub(); },
+  };
+})();</script><!-- /conformance:mini -->
+<style>
+.v{margin:2px 12px;font-size:14px}.v b{font-weight:600}
+</style>
+</head>
+<body>
+<div class="h">SDK 22 · copyText</div>
+<div class="i">The toast must show exactly what is copied.</div>
+<div class="v">Code: <b>CONF-2026-OK</b></div>
+<div class="r"><button id="copy">Copy</button><button id="later">Copy later</button><button id="twice">Copy twice</button></div>
+<div id="log"></div>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var TW = S.TW;
+
+function copy(t) { try { TW.copyText(t); } catch (e) { S.log('copyText threw ' + e, false); } }
+$('copy').onclick = function () { if (TW) copy('CONF-2026-OK'); };
+$('later').onclick = function () { if (TW) setTimeout(function () { copy('NOT COPIED: no tap'); }, 1000); };
+$('twice').onclick = function () { if (TW) { copy('CONF-2026-OK'); copy('NOT COPIED: second call'); } };
+S.check('tw.copy-text', 'copyText exists', !!TW && typeof TW.copyText === 'function', '');
+S.target('copy', 'copy');
+S.done();
+</script>
+</body>
+</html>

@@ -488,7 +488,7 @@ public class DialogObject {
         return null;
     }
 
-    public static TL_bots.botVerification getBotVerification(TLObject object) {
+    public static TL_bots.BotVerification getBotVerification(TLObject object) {
         if (object instanceof TLRPC.UserFull) {
             return ((TLRPC.UserFull) object).bot_verification;
         } else if (object instanceof TLRPC.ChatFull) {

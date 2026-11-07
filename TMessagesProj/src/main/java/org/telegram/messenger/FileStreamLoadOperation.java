@@ -8,15 +8,21 @@
 
 package org.telegram.messenger;
 
+
+import static androidx.media3.common.util.Assertions.checkNotNull;
+import static androidx.media3.common.util.Util.castNonNull;
+
 import android.net.Uri;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.upstream.BaseDataSource;
-import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.TransferListener;
-import com.google.android.exoplayer2.util.Log;
+import androidx.annotation.OptIn;
+import androidx.media3.common.C;
+import androidx.media3.common.util.UnstableApi;
+import androidx.media3.common.util.Util;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSpec;
+import androidx.media3.datasource.TransferListener;
 
 import org.telegram.tgnet.TLRPC;
 
@@ -26,11 +32,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-public class FileStreamLoadOperation extends BaseDataSource implements FileLoadOperationStream {
+@OptIn(markerClass = UnstableApi.class)
+public class FileStreamLoadOperation implements DataSource, FileLoadOperationStream {
 
     public static final ConcurrentHashMap<Long, FileStreamLoadOperation> allStreams = new ConcurrentHashMap<>();
 
@@ -52,7 +60,8 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
     private static final ConcurrentHashMap<Long, Integer> priorityMap = new ConcurrentHashMap<>();
 
     public FileStreamLoadOperation() {
-        super(/* isNetwork= */ true);
+        this.isNetwork = true;
+        this.listeners = new ArrayList<>(/* initialCapacity= */ 1);
     }
 
     @Deprecated
@@ -113,7 +122,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                     file = new RandomAccessFile(currentFile, "r");
                     file.seek(currentOffset);
                     if (loadOperation.isFinished()) {
-                        super.isNetwork = false;
+                        isNetwork = false;
                         bytesRemaining = currentFile.length() - currentOffset;
                         if (requestedLength != C.LENGTH_UNSET) {
                             bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
@@ -187,7 +196,7 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
                                 file = new RandomAccessFile(currentFile, "r");
                                 file.seek(currentOffset);
                                 if (loadOperation.isFinished()) {
-                                    super.isNetwork = false;
+                                    isNetwork = false;
                                     bytesRemaining = currentFile.length() - currentOffset;
                                     if (requestedLength != C.LENGTH_UNSET) {
                                         bytesRemaining = Math.min(bytesRemaining, requestedLength - bytesTransferred);
@@ -302,5 +311,70 @@ public class FileStreamLoadOperation extends BaseDataSource implements FileLoadO
             FileLog.e(e);
         }
         return null;
+    }
+
+
+
+
+    protected boolean isNetwork;
+    private final ArrayList<TransferListener> listeners;
+
+    private int listenerCount;
+    @Nullable private DataSpec dataSpec;
+
+    @Override
+    public final void addTransferListener(TransferListener transferListener) {
+        checkNotNull(transferListener);
+        if (!listeners.contains(transferListener)) {
+            listeners.add(transferListener);
+            listenerCount++;
+        }
+    }
+
+    /**
+     * Notifies listeners that data transfer for the specified {@link DataSpec} is being initialized.
+     *
+     * @param dataSpec {@link DataSpec} describing the data for initializing transfer.
+     */
+    protected final void transferInitializing(DataSpec dataSpec) {
+        for (int i = 0; i < listenerCount; i++) {
+            listeners.get(i).onTransferInitializing(/* source= */ this, dataSpec, isNetwork);
+        }
+    }
+
+    /**
+     * Notifies listeners that data transfer for the specified {@link DataSpec} started.
+     *
+     * @param dataSpec {@link DataSpec} describing the data being transferred.
+     */
+    protected final void transferStarted(DataSpec dataSpec) {
+        this.dataSpec = dataSpec;
+        for (int i = 0; i < listenerCount; i++) {
+            listeners.get(i).onTransferStart(/* source= */ this, dataSpec, isNetwork);
+        }
+    }
+
+    /**
+     * Notifies listeners that bytes were transferred.
+     *
+     * @param bytesTransferred The number of bytes transferred since the previous call to this method
+     *     (or if the first call, since the transfer was started).
+     */
+    protected final void bytesTransferred(int bytesTransferred) {
+        DataSpec dataSpec = castNonNull(this.dataSpec);
+        for (int i = 0; i < listenerCount; i++) {
+            listeners
+                    .get(i)
+                    .onBytesTransferred(/* source= */ this, dataSpec, isNetwork, bytesTransferred);
+        }
+    }
+
+    /** Notifies listeners that a transfer ended. */
+    protected final void transferEnded() {
+        DataSpec dataSpec = castNonNull(this.dataSpec);
+        for (int i = 0; i < listenerCount; i++) {
+            listeners.get(i).onTransferEnd(/* source= */ this, dataSpec, isNetwork);
+        }
+        this.dataSpec = null;
     }
 }

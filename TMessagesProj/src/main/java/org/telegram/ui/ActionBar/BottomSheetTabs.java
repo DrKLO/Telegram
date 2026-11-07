@@ -430,6 +430,8 @@ public class BottomSheetTabs extends FrameLayout {
         TLRPC.User user = MessagesController.getInstance(tab.props.currentAccount).getUser(tab.props.botId);
         if (user != null) {
             botName = ContactsController.formatName(user.first_name, user.last_name);
+        } else if (tab.props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+            botName = tab.props.buttonText;
         }
 
         final boolean[] clicked = new boolean[] { false };
@@ -457,7 +459,7 @@ public class BottomSheetTabs extends FrameLayout {
         });
         dialog[0].show();
         TextView textView = (TextView) dialog[0].getButton(AlertDialog.BUTTON_POSITIVE);
-        textView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        ThemeBind.textColor(textView, Theme.key_text_RedBold);
     }
 
     public boolean removeTab(WebTabData tab, boolean destroy) {
@@ -578,7 +580,7 @@ public class BottomSheetTabs extends FrameLayout {
         }
 
         backgroundPaint.setColor(backgroundColorAnimated.set(backgroundColor));
-        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
+        // canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
         super.dispatchDraw(canvas);
 
         final int tabColor = tabColorAnimated.set(this.tabColor);
@@ -598,6 +600,10 @@ public class BottomSheetTabs extends FrameLayout {
                 drawable.draw(canvas, rect, dp(18), alpha, 1f);
             }
         }
+    }
+
+    public Paint getBackgroundPaint() {
+        return backgroundPaint;
     }
 
     public void setupTab(TabDrawable drawable) {
@@ -936,6 +942,8 @@ public class BottomSheetTabs extends FrameLayout {
         public BotWebViewContainer.MyWebView webView;
         public View view2;
         public Object proxy;
+        public boolean sameOrigin;
+        public String trustedOrigin;
         public int viewWidth, viewHeight;
         public int viewScroll;
         public boolean expanded;
@@ -1015,6 +1023,9 @@ public class BottomSheetTabs extends FrameLayout {
                 return title;
             }
             if (props == null) return "";
+            if (props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+                return props.buttonText;
+            }
             TLRPC.User user = MessagesController.getInstance(props.currentAccount).getUser(props.botId);
             return UserObject.getUserName(user);
         }

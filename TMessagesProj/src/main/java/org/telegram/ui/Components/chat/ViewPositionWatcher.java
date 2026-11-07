@@ -84,7 +84,7 @@ public final class ViewPositionWatcher implements
         ensureListening();
 
         if (multiwindow) {
-            view.getViewTreeObserver().addOnPreDrawListener(this);
+            new ViewOnPreDraw(view, this);
         }
     }
 
@@ -217,6 +217,29 @@ public final class ViewPositionWatcher implements
      * @return false if parentView is not an ancestor of view.
      */
 
+    private static final float[] tmpOffset = new float[2];
+
+    /** The position of {@code view} in {@code root} by the sum of the positions of its ancestors; false if not under it. */
+    private static boolean computeOffsetInRoot(@NonNull View view, @NonNull View root, float[] out) {
+        float left = 0f, top = 0f;
+        View current = view;
+        while (current != root) {
+            left += current.getX();
+            top += current.getY();
+            final ViewParent vp = current.getParent();
+            if (!(vp instanceof View)) {
+                return false;
+            }
+            final View parent = (View) vp;
+            left -= parent.getScrollX();
+            top -= parent.getScrollY();
+            current = parent;
+        }
+        out[0] = left;
+        out[1] = top;
+        return true;
+    }
+
     public static boolean computeRectInParent(@NonNull View view,
                                                @NonNull View parentView,
                                                @NonNull RectF out) {
@@ -230,7 +253,7 @@ public final class ViewPositionWatcher implements
 
             ViewParent vp = current.getParent();
             if (!(vp instanceof View)) {
-                return false; // parentView not found in hierarchy
+                break; // the root: parentView is not an ancestor
             }
             View parent = (View) vp;
             left -= parent.getScrollX();
@@ -240,8 +263,13 @@ public final class ViewPositionWatcher implements
         }
 
         if (current != parentView) {
-            // parentView not found in ancestor chain
-            return false;
+            // parentView is not an ancestor (e.g. a menu over the tabs of a page whose glass it is): through their
+            // common root, both positions summed up to it
+            if (current == null || !computeOffsetInRoot(parentView, current, tmpOffset)) {
+                return false;
+            }
+            left -= tmpOffset[0];
+            top -= tmpOffset[1];
         }
 
         final float l = left;
@@ -250,5 +278,76 @@ public final class ViewPositionWatcher implements
         final float b = t + view.getHeight();
         out.set(l, t, r, b);
         return true;
+    }
+
+
+
+
+
+
+
+    private static class ViewOnPreDraw {
+
+        private final View view;
+        private final ViewTreeObserver.OnPreDrawListener listener;
+
+        private ViewTreeObserver viewTreeObserver;
+
+        public ViewOnPreDraw(
+                @NonNull View view,
+                @NonNull ViewTreeObserver.OnPreDrawListener listener
+        ) {
+            this.view = view;
+            this.listener = listener;
+
+            view.addOnAttachStateChangeListener(attachStateChangeListener);
+
+            if (view.isAttachedToWindow()) {
+                attach();
+            }
+        }
+
+        private final View.OnAttachStateChangeListener attachStateChangeListener =
+                new View.OnAttachStateChangeListener() {
+                    @Override
+                    public void onViewAttachedToWindow(@NonNull View v) {
+                        attach();
+                    }
+
+                    @Override
+                    public void onViewDetachedFromWindow(@NonNull View v) {
+                        detach();
+                    }
+                };
+
+        private void attach() {
+            ViewTreeObserver observer = view.getViewTreeObserver();
+            if (viewTreeObserver == observer) {
+                return;
+            }
+
+            detach();
+
+            viewTreeObserver = observer;
+            if (observer.isAlive()) {
+                observer.addOnPreDrawListener(listener);
+            }
+        }
+
+        private void detach() {
+            if (viewTreeObserver == null) {
+                return;
+            }
+
+            if (viewTreeObserver.isAlive()) {
+                viewTreeObserver.removeOnPreDrawListener(listener);
+            }
+            viewTreeObserver = null;
+        }
+
+        public void destroy() {
+            detach();
+            view.removeOnAttachStateChangeListener(attachStateChangeListener);
+        }
     }
 }

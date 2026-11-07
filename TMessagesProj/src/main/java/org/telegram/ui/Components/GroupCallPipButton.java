@@ -81,7 +81,7 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
         blobDrawable.generateBlob();
         blobDrawable2.generateBlob();
 
-        bigMicDrawable = new RLottieDrawable(R.raw.voice_outlined, "" + R.raw.voice_outlined, AndroidUtilities.dp(22), AndroidUtilities.dp(30), true, null);
+        bigMicDrawable = new RLottieDrawable(R.raw.voice_outlined, AndroidUtilities.dp(22), AndroidUtilities.dp(30), true, null);
         setWillNotDraw(false);
 
         muteButton = new RLottieImageView(context);
@@ -439,8 +439,8 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
         super.onAttachedToWindow();
         if (!stub) {
             setAmplitude(0);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupCallUpdated);
+            NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.groupCallUpdated);
 
             boolean isMuted = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute();
             if (VoIPService.getSharedInstance() != null) {

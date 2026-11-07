@@ -10,7 +10,7 @@ import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
-import com.google.android.exoplayer2.ExoPlayer;
+import androidx.media3.exoplayer.ExoPlayer;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
@@ -262,16 +262,6 @@ public class VideoPlayerHolderBase {
                         onReadyListener = null;
                     }
                 }, surface != null ? 0 : surfaceView == null ? 16 : 32);
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
-            }
-
-            @Override
-            public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                return false;
             }
         });
         videoPlayer.setIsStory();

@@ -26,6 +26,7 @@ public sealed class TlGen_ChatAdminRights : TlGen_Object {
     public val manage_direct_messages: Boolean,
     public val manage_ranks: Boolean,
     public val manage_linked_peers: Boolean,
+    public val manage_welcome_messages: Boolean,
   ) : TlGen_ChatAdminRights() {
     internal val flags: UInt
       get() {
@@ -48,6 +49,7 @@ public sealed class TlGen_ChatAdminRights : TlGen_Object {
         if (manage_direct_messages) result = result or 131072U
         if (manage_ranks) result = result or 262144U
         if (manage_linked_peers) result = result or 524288U
+        if (manage_welcome_messages) result = result or 1048576U
         return result
       }
 

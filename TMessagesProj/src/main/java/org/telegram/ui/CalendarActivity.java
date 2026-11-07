@@ -1,5 +1,7 @@
 package org.telegram.ui;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -7,11 +9,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import me.vkryl.android.animator.FactorAnimator;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import android.graphics.RectF;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.TextPaint;
 import android.util.SparseArray;
@@ -26,7 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -52,6 +56,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -61,9 +66,11 @@ import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharedMediaLayout;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoryViewer;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -124,7 +131,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     private boolean isOpened;
     int selectedYear;
     int selectedMonth;
-    private FrameLayout bottomBar;
+    private BottomButton bottomBar;
     private int minDate;
     private boolean canClearHistory;
 
@@ -134,6 +141,8 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     private StoryViewer.PlaceProvider storiesPlaceProvider;
     private int storiesPlaceDay;
     private StoryViewer.HolderDrawAbove storiesPlaceDrawAbove;
+    private View calendarSignatureView;
+    private View listTopOverlay;
 
     private Path path = new Path();
     private SpoilerEffect mediaSpoilerEffect = new SpoilerEffect();
@@ -151,7 +160,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
 
         selectOutlinePaint.setStyle(Paint.Style.STROKE);
         selectOutlinePaint.setStrokeCap(Paint.Cap.ROUND);
-        selectOutlinePaint.setStrokeWidth(AndroidUtilities.dp(2));
+        selectOutlinePaint.setStrokeWidth(dp(2));
     }
 
     @Override
@@ -204,9 +213,9 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                                             int oldAlpha = activeTextPaint.getAlpha();
                                             activeTextPaint.setAlpha((int) (oldAlpha * textAlpha));
                                             canvas.save();
-                                            float scale = Math.min(2, Math.min(bounds.height(), bounds.width()) / AndroidUtilities.dp(44));
+                                            float scale = Math.min(2, Math.min(bounds.height(), bounds.width()) / dp(44));
                                             canvas.scale(scale, scale, bounds.centerX(), bounds.centerY());
-                                            canvas.drawText(Integer.toString(1 + storiesPlaceDay), bounds.centerX(), bounds.centerY() + AndroidUtilities.dp(5), activeTextPaint);
+                                            canvas.drawText(Integer.toString(1 + storiesPlaceDay), bounds.centerX(), bounds.centerY() + dp(5), activeTextPaint);
                                             canvas.restore();
                                             activeTextPaint.setAlpha(oldAlpha);
                                         }
@@ -215,7 +224,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                                 holder.drawAbove = storiesPlaceDrawAbove;
                                 holder.view = monthView;
                                 holder.clipParent = fragmentView;
-                                holder.clipTop = AndroidUtilities.dp(36);
+                                holder.clipTop = dp(36);
                                 holder.clipBottom = fragmentView.getBottom();
                                 holder.avatarImage = null;
                                 return true;
@@ -243,7 +252,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
         }
 
         if (storiesList != null) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesListUpdated);
         }
 
         return super.onFragmentCreate();
@@ -259,15 +268,20 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        textPaint.setTextSize(AndroidUtilities.dp(16));
+        textPaint.setTextSize(dp(16));
         textPaint.setTextAlign(Paint.Align.CENTER);
 
-        textPaint2.setTextSize(AndroidUtilities.dp(11));
+        textPaint2.setTextSize(dp(11));
         textPaint2.setTextAlign(Paint.Align.CENTER);
         textPaint2.setTypeface(AndroidUtilities.bold());
 
-        activeTextPaint.setTextSize(AndroidUtilities.dp(16));
+        activeTextPaint.setTextSize(dp(16));
         activeTextPaint.setTypeface(AndroidUtilities.bold());
         activeTextPaint.setTextAlign(Paint.Align.CENTER);
 
@@ -284,10 +298,9 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                 }
             }
         };
-        createActionBar(context);
-        contentView.addView(actionBar);
-        actionBar.setTitle(LocaleController.getString(R.string.Calendar));
-        actionBar.setCastShadows(false);
+        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        contentView.addView(simpleActionBar);
+        simpleActionBar.setTitle(LocaleController.getString(R.string.Calendar));
 
         listView = new RecyclerListView(context) {
             @Override
@@ -320,27 +333,30 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                 LocaleController.getString(R.string.CalendarWeekNameShortSunday),
         };
 
-
-        Drawable headerShadowDrawable = ContextCompat.getDrawable(context, R.drawable.header_shadow).mutate();
-
-        View calendarSignatureView = new View(context) {
-
+        calendarSignatureView = new View(context) {
             @Override
-            protected void onDraw(Canvas canvas) {
+            protected void onDraw(@NonNull Canvas canvas) {
                 super.onDraw(canvas);
-                float xStep = getMeasuredWidth() / 7f;
+
+                final int left = getPaddingLeft();
+                final int width = getWidth() - left - getPaddingRight();
+                float xStep = width / 7f;
                 for (int i = 0; i < 7; i++) {
-                    float cx = xStep * i + xStep / 2f;
-                    float cy = (getMeasuredHeight() - AndroidUtilities.dp(2)) / 2f;
-                    canvas.drawText(daysOfWeek[i], cx, cy + AndroidUtilities.dp(5), textPaint2);
+                    float cx = left + xStep * i + xStep / 2f;
+                    float cy = (getMeasuredHeight() - dp(2)) / 2f;
+                    canvas.drawText(daysOfWeek[i], cx, cy + dp(5), textPaint2);
                 }
-                headerShadowDrawable.setBounds(0, getMeasuredHeight() - AndroidUtilities.dp(3), getMeasuredWidth(), getMeasuredHeight());
-                headerShadowDrawable.draw(canvas);
             }
         };
+        calendarSignatureView.setPadding(dp(4), 0, dp(4), 0);
+        calendarSignatureView.setBackground(getBaseSimpleGlass().factory
+            .create(calendarSignatureView)
+            .setColorProvider(BlurredBackgroundProviderImpl.simpleActionBar(resourceProvider))
+            .setPadding(dp(9.66f))
+            .setRadius(dp(18)));
+        calendarSignatureView.setTranslationY(BaseFragmentSimpleGlass.getPillGlassTop(0) - dp(9.66f));
 
-        contentView.addView(calendarSignatureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, 0, 0, 0, 0, 0));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -365,14 +381,14 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
 
         if (selectedYear != 0) {
             monthCount = (startFromYear - selectedYear) * 12 + startFromMonth - selectedMonth + 1;
-            layoutManager.scrollToPositionWithOffset(monthCount - 1, AndroidUtilities.dp(120));
+            layoutManager.scrollToPositionWithOffset(monthCount - 1, dp(120));
         }
         if (monthCount < 3) {
             monthCount = 3;
         }
 
         backDrawable = new BackDrawable(false);
-        actionBar.setBackButtonDrawable(backDrawable);
+        simpleActionBar.setBackButtonDrawable(backDrawable);
         backDrawable.setRotation(0f, false);
 
         loadNext();
@@ -380,17 +396,11 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
         activeTextPaint.setColor(Color.WHITE);
 
         if (showBottomPanel) {
-            bottomBar = new FrameLayout(context) {
-                @Override
-                public void onDraw(Canvas canvas) {
-                    canvas.drawRect(0, 0, getMeasuredWidth(), AndroidUtilities.getShadowHeight(), Theme.dividerPaint);
-                }
-            };
-            bottomBar.setWillNotDraw(false);
-            bottomBar.setPadding(0, AndroidUtilities.getShadowHeight(), 0, 0);
-            bottomBar.setClipChildren(false);
+            bottomBar = new BottomButton(context);
             selectDaysButton = new TextView(context);
             selectDaysButton.setGravity(Gravity.CENTER);
+            selectDaysButton.setPadding(dp(BOTTOM_BUTTON_TEXT_PADDING), 0, dp(BOTTOM_BUTTON_TEXT_PADDING), 0);
+            selectDaysButton.setSingleLine();
             selectDaysButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             selectDaysButton.setTypeface(AndroidUtilities.bold());
             selectDaysButton.setOnClickListener(view -> {
@@ -398,18 +408,19 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                 updateTitle();
             });
             selectDaysButton.setText(LocaleController.getString(R.string.SelectDays));
-            selectDaysButton.setAllCaps(true);
-            bottomBar.addView(selectDaysButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0f, 0, 0));
+            bottomBar.addView(selectDaysButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, BOTTOM_BUTTON_HEIGHT, Gravity.CENTER));
 
             removeDaysButton = new TextView(context);
             removeDaysButton.setGravity(Gravity.CENTER);
+            removeDaysButton.setPadding(dp(BOTTOM_BUTTON_TEXT_PADDING), 0, dp(BOTTOM_BUTTON_TEXT_PADDING), 0);
+            removeDaysButton.setSingleLine();
             removeDaysButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             removeDaysButton.setTypeface(AndroidUtilities.bold());
             removeDaysButton.setOnClickListener(view -> {
                 if (lastDaysSelected == 0) {
                     if (selectDaysHint == null) {
                         selectDaysHint = new HintView(contentView.getContext(), 8);
-                        selectDaysHint.setExtraTranslationY(AndroidUtilities.dp(24));
+                        selectDaysHint.setExtraTranslationY(dp(24));
                         contentView.addView(selectDaysHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
                         selectDaysHint.setText(LocaleController.getString(R.string.SelectDaysTooltip));
                     }
@@ -431,31 +442,120 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     }
                 }, null);
             });
-            removeDaysButton.setAllCaps(true);
-
             removeDaysButton.setVisibility(View.GONE);
-            bottomBar.addView(removeDaysButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 0, 0f, 0, 0));
-            contentView.addView(bottomBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 0, 0, 0, 0));
+            bottomBar.addView(removeDaysButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, BOTTOM_BUTTON_HEIGHT, Gravity.CENTER));
+            contentView.addView(bottomBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, BOTTOM_BUTTON_HEIGHT + BOTTOM_BUTTON_GLASS_PADDING * 2, Gravity.BOTTOM));
+            bottomBar.setButton(selectDaysButton, false);
 
 
-            selectDaysButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_fieldOverlayText), (int) (0.2f * 255)), 2));
-            removeDaysButton.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_text_RedBold), (int) (0.2f * 255)), 2));
-            selectDaysButton.setTextColor(Theme.getColor(Theme.key_chat_fieldOverlayText));
-            removeDaysButton.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            final int radius = dp(BOTTOM_BUTTON_HEIGHT / 2f);
+            ThemeBind.selectorBackground(selectDaysButton, Theme.createRadSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_fieldOverlayText), (int) (0.2f * 255)), radius, radius), null, ThemeBind.alpha(Theme.key_chat_fieldOverlayText, (int) (0.2f * 255)));
+            ThemeBind.selectorBackground(removeDaysButton, Theme.createRadSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_text_RedBold), (int) (0.2f * 255)), radius, radius), null, ThemeBind.alpha(Theme.key_text_RedBold, (int) (0.2f * 255)));
+            ThemeBind.textColor(selectDaysButton, Theme.key_chat_fieldOverlayText);
+            ThemeBind.textColor(removeDaysButton, Theme.key_text_RedBold);
         }
+
+        listTopOverlay = new View(context);
+        contentView.addView(listTopOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
+        ViewGroup.LayoutParams layoutParams = listTopOverlay.getLayoutParams();
+        layoutParams.height = mSystemInsets.top + ActionBar.getCurrentActionBarHeight() + dp(44);
+
+        contentView.addView(calendarSignatureView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, 0, -4, 0, -4, 0));
 
         return fragmentView;
     }
 
+    @Override
+    protected void onViewCreated(View view) {
+        super.onViewCreated(view);
+        listTopOverlay.setBackground(simpleActionBar.getBackground());
+        simpleActionBar.setBackground(null);
+
+        checkUi_insets(mSystemInsets.top, mSystemInsets.bottom);
+    }
+
+    // the size of the blue button of the profile gifts (ProfileGiftsContainer)
+    private static final int BOTTOM_BUTTON_HEIGHT = 38;
+    private static final int BOTTOM_BUTTON_TEXT_PADDING = 16;
+    private static final int BOTTOM_BUTTON_MARGIN = 12;
+    private static final int BOTTOM_BUTTON_GLASS_PADDING = 6;
+
+    /**
+     * Liquid glass pill floating above the navigation bar: as wide as the text of its visible button, the width animates
+     * when the text changes ("Select Days" / "Clear History for these days").
+     */
+    private class BottomButton extends FrameLayout implements FactorAnimator.Target {
+        private final BlurredBackgroundDrawable glass;
+        private final FactorAnimator widthAnimator = new FactorAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 350, 0);
+        private final RectF rect = new RectF();
+        private TextView button;
+
+        public BottomButton(Context context) {
+            super(context);
+            setWillNotDraw(false);
+            glass = getBaseSimpleGlass().factory.create(this)
+                .setColorProvider(BlurredBackgroundProviderImpl.simpleActionBar(resourceProvider))
+                .setPadding(dp(BOTTOM_BUTTON_GLASS_PADDING))
+                .setRadius(dp(BOTTOM_BUTTON_HEIGHT / 2f));
+        }
+
+        /** The button whose text sets the width of the pill. */
+        public void setButton(TextView button, boolean animated) {
+            this.button = button;
+            final CharSequence text = button.getText();
+            final float width = (text != null ? button.getPaint().measureText(text, 0, text.length()) : 0) + dp(BOTTOM_BUTTON_TEXT_PADDING * 2);
+            if (animated && widthAnimator.getFactor() > 0) {
+                widthAnimator.animateTo(width);
+            } else {
+                widthAnimator.forceFactor(width);
+                invalidate();
+            }
+        }
+
+        public void updateWidth() {
+            if (button != null) {
+                setButton(button, true);
+            }
+        }
+
+        @Override
+        public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(@NonNull Canvas canvas) {
+            final float width = Math.min(widthAnimator.getFactor(), getWidth() - dp(BOTTOM_BUTTON_MARGIN * 2));
+            final float cx = getWidth() / 2f, cy = getHeight() / 2f;
+            rect.set(cx - width / 2f, cy - dp(BOTTOM_BUTTON_HEIGHT) / 2f, cx + width / 2f, cy + dp(BOTTOM_BUTTON_HEIGHT) / 2f);
+            final int p = dp(BOTTOM_BUTTON_GLASS_PADDING);
+            glass.setBounds((int) rect.left - p, (int) rect.top - p, (int) rect.right + p, (int) rect.bottom + p);
+            glass.draw(canvas);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent ev) {
+            if (ev.getAction() == MotionEvent.ACTION_DOWN && !rect.contains(ev.getX(), ev.getY())) {
+                return false; // around the pill the calendar gets the touch
+            }
+            return super.dispatchTouchEvent(ev);
+        }
+    }
+
+    /** The list scrolls under the header and under the bottom button, the button floats above the navigation bar. */
+    private void checkUi_insets(int top, int bottom) {
+        final int buttonSpace = bottomBar != null ? dp(BOTTOM_BUTTON_HEIGHT + BOTTOM_BUTTON_MARGIN) : 0;
+        BaseFragmentSimpleGlass.setListViewParams(listView, top, bottom, ActionBar.getCurrentActionBarHeight() + dp(42), buttonSpace);
+        if (bottomBar != null) {
+            bottomBar.setTranslationY(-bottom - dp(BOTTOM_BUTTON_MARGIN - BOTTOM_BUTTON_GLASS_PADDING));
+        }
+    }
+
     private void updateColors() {
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         activeTextPaint.setColor(Color.WHITE);
         textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         textPaint2.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         backDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_listSelector), false);
     }
 
     private void loadNext() {
@@ -788,11 +888,11 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     }
                 });
             }
-            titleView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2));
+            ThemeBind.selectorBackground(titleView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 2), null, ThemeBind.of(Theme.key_listSelector));
             titleView.setTextSize(15);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setGravity(Gravity.CENTER);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 28, 0, 0, 12, 0, 4));
 
             gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
@@ -876,11 +976,11 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     int currentColumn = startDayOfWeek;
 
                     float xStep = getMeasuredWidth() / 7f;
-                    float yStep = AndroidUtilities.dp(44 + 8);
-                    int hrad = AndroidUtilities.dp(44) / 2;
+                    float yStep = dp(44 + 8);
+                    int hrad = dp(44) / 2;
                     for (int i = 0; i < daysInMonth; i++) {
                         float cx = xStep * currentColumn + xStep / 2f;
-                        float cy = yStep * currentCell + yStep / 2f + AndroidUtilities.dp(44);
+                        float cy = yStep * currentCell + yStep / 2f + dp(44);
 
                         if (pressedX >= cx - hrad && pressedX <= cx + hrad && pressedY >= cy - hrad && pressedY <= cy + hrad) {
                             PeriodDay day = messagesByDays.get(i, null);
@@ -922,7 +1022,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                         ChatActivity chatActivity = new ChatActivity(bundle);
 
                         ActionBarPopupWindow.ActionBarPopupWindowLayout previewMenu = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert, getResourceProvider());
-                        previewMenu.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+                        ThemeBind.backgroundColor(previewMenu, Theme.key_actionBarDefaultSubmenuBackground, CalendarActivity.this.getResourceProvider());
 
                         ActionBarMenuSubItem cellJump = new ActionBarMenuSubItem(getParentActivity(), true, false);
                         cellJump.setTextAndIcon(LocaleController.getString(R.string.JumpToDate), R.drawable.msg_message);
@@ -1171,7 +1271,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                                 }
                             }
                         }
-                        receiver.setRoundRadius(AndroidUtilities.dp(22));
+                        receiver.setRoundRadius(dp(22));
                         imagesByDays.put(key, receiver);
                     }
                 }
@@ -1195,7 +1295,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(cellCount * (44 + 8) + 44), MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(cellCount * (44 + 8) + 44), MeasureSpec.EXACTLY));
         }
 
         @Override
@@ -1205,30 +1305,30 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
             int currentCell = 0;
             int currentColumn = startDayOfWeek;
             float xStep = getMeasuredWidth() / 7f;
-            float yStep = AndroidUtilities.dp(44 + 8);
+            float yStep = dp(44 + 8);
 
-            int selSize = AndroidUtilities.dp(44);
+            int selSize = dp(44);
             for (int row = 0; row < Math.ceil((startDayOfWeek + daysInMonth) / 7f); row++) {
-                float cy = yStep * row + yStep / 2f + AndroidUtilities.dp(44);
+                float cy = yStep * row + yStep / 2f + dp(44);
                 RowAnimationValue v = rowSelectionPos.get(row);
                 if (v != null) {
                     selectPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
                     selectPaint.setAlpha((int) (v.alpha * (255 * 0.16f)));
                     AndroidUtilities.rectTmp.set(v.startX - selSize / 2f, cy - selSize / 2f, v.endX + selSize / 2f, cy + selSize / 2f);
-                    int dp = AndroidUtilities.dp(32);
+                    int dp = dp(32);
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, dp, dp, selectPaint);
                 }
             }
             for (int i = 0; i < daysInMonth; i++) {
                 float cx = xStep * currentColumn + xStep / 2f;
-                float cy = yStep * currentCell + yStep / 2f + AndroidUtilities.dp(44);
+                float cy = yStep * currentCell + yStep / 2f + dp(44);
                 int nowTime = (int) (System.currentTimeMillis() / 1000L);
 
                 PeriodDay day = messagesByDays != null ? messagesByDays.get(i, null) : null;
                 if (nowTime < startMonthTime + (i + 1) * 86400 || (minDate > 0 && minDate > startMonthTime + (i + 2) * 86400)) {
                     int oldAlpha = textPaint.getAlpha();
                     textPaint.setAlpha((int) (oldAlpha * 0.3f));
-                    canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), textPaint);
+                    canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), textPaint);
                     textPaint.setAlpha(oldAlpha);
                 } else if (day != null && day.hasImage) {
                     float alpha = 1f;
@@ -1259,23 +1359,23 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                             float s = 0.8f + 0.2f * alpha;
                             canvas.scale(s, s, cx, cy);
                         }
-                        int pad = (int) (AndroidUtilities.dp(7f) * day.selectProgress);
+                        int pad = (int) (dp(7f) * day.selectProgress);
                         if (day.selectStartEndProgress >= 0.01f) {
                             selectPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                             selectPaint.setAlpha((int) (day.selectStartEndProgress * 0xFF));
-                            canvas.drawCircle(cx, cy, AndroidUtilities.dp(44) / 2f, selectPaint);
+                            canvas.drawCircle(cx, cy, dp(44) / 2f, selectPaint);
 
                             selectOutlinePaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-                            AndroidUtilities.rectTmp.set(cx - AndroidUtilities.dp(44) / 2f, cy - AndroidUtilities.dp(44) / 2f, cx + AndroidUtilities.dp(44) / 2f, cy + AndroidUtilities.dp(44) / 2f);
+                            AndroidUtilities.rectTmp.set(cx - dp(44) / 2f, cy - dp(44) / 2f, cx + dp(44) / 2f, cy + dp(44) / 2f);
                             canvas.drawArc(AndroidUtilities.rectTmp, -90, day.selectStartEndProgress * 360, false, selectOutlinePaint);
                         }
 
                         imagesByDays.get(i).setAlpha(day.enterAlpha);
-                        imagesByDays.get(i).setImageCoords(cx - (AndroidUtilities.dp(44) - pad) / 2f, cy - (AndroidUtilities.dp(44) - pad) / 2f, AndroidUtilities.dp(44) - pad, AndroidUtilities.dp(44) - pad);
+                        imagesByDays.get(i).setImageCoords(cx - (dp(44) - pad) / 2f, cy - (dp(44) - pad) / 2f, dp(44) - pad, dp(44) - pad);
                         imagesByDays.get(i).draw(canvas);
 
                         if (messagesByDays.get(i) != null && messagesByDays.get(i).messageObject != null && messagesByDays.get(i).messageObject.hasMediaSpoilers()) {
-                            float rad = (AndroidUtilities.dp(44) - pad) / 2f;
+                            float rad = (dp(44) - pad) / 2f;
                             path.rewind();
                             path.addCircle(cx, cy, rad, Path.Direction.CW);
 
@@ -1293,7 +1393,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                         }
 
                         blackoutPaint.setColor(ColorUtils.setAlphaComponent(Color.BLACK, (int) (day.enterAlpha * 80)));
-                        canvas.drawCircle(cx, cy, (AndroidUtilities.dp(44) - pad) / 2f, blackoutPaint);
+                        canvas.drawCircle(cx, cy, (dp(44) - pad) / 2f, blackoutPaint);
                         day.wasDrawn = true;
                         if (alpha != 1f) {
                             canvas.restore();
@@ -1302,47 +1402,47 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     if (alpha != 1f) {
                         int oldAlpha = textPaint.getAlpha();
                         textPaint.setAlpha((int) (oldAlpha * (1f - alpha)));
-                        canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), textPaint);
+                        canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), textPaint);
                         textPaint.setAlpha(oldAlpha);
 
                         oldAlpha = textPaint.getAlpha();
                         activeTextPaint.setAlpha((int) (oldAlpha * alpha));
-                        canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), activeTextPaint);
+                        canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), activeTextPaint);
                         activeTextPaint.setAlpha(oldAlpha);
                     } else {
-                        canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), activeTextPaint);
+                        canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), activeTextPaint);
                     }
                 } else {
                     if (day != null && day.selectStartEndProgress >= 0.01f) {
                         selectPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                         selectPaint.setAlpha((int) (day.selectStartEndProgress * 0xFF));
-                        canvas.drawCircle(cx, cy, AndroidUtilities.dp(44) / 2f, selectPaint);
+                        canvas.drawCircle(cx, cy, dp(44) / 2f, selectPaint);
 
                         selectOutlinePaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-                        AndroidUtilities.rectTmp.set(cx - AndroidUtilities.dp(44) / 2f, cy - AndroidUtilities.dp(44) / 2f, cx + AndroidUtilities.dp(44) / 2f, cy + AndroidUtilities.dp(44) / 2f);
+                        AndroidUtilities.rectTmp.set(cx - dp(44) / 2f, cy - dp(44) / 2f, cx + dp(44) / 2f, cy + dp(44) / 2f);
                         canvas.drawArc(AndroidUtilities.rectTmp, -90, day.selectStartEndProgress * 360, false, selectOutlinePaint);
 
-                        int pad = (int) (AndroidUtilities.dp(7f) * day.selectStartEndProgress);
+                        int pad = (int) (dp(7f) * day.selectStartEndProgress);
                         selectPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
                         selectPaint.setAlpha((int) (day.selectStartEndProgress * 0xFF));
-                        canvas.drawCircle(cx, cy, (AndroidUtilities.dp(44) - pad) / 2f, selectPaint);
+                        canvas.drawCircle(cx, cy, (dp(44) - pad) / 2f, selectPaint);
 
                         float alpha = day.selectStartEndProgress;
                         if (alpha != 1f) {
                             int oldAlpha = textPaint.getAlpha();
                             textPaint.setAlpha((int) (oldAlpha * (1f - alpha)));
-                            canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), textPaint);
+                            canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), textPaint);
                             textPaint.setAlpha(oldAlpha);
 
                             oldAlpha = textPaint.getAlpha();
                             activeTextPaint.setAlpha((int) (oldAlpha * alpha));
-                            canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), activeTextPaint);
+                            canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), activeTextPaint);
                             activeTextPaint.setAlpha(oldAlpha);
                         } else {
-                            canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), activeTextPaint);
+                            canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), activeTextPaint);
                         }
                     } else {
-                        canvas.drawText(Integer.toString(i + 1), cx, cy + AndroidUtilities.dp(5), textPaint);
+                        canvas.drawText(Integer.toString(i + 1), cx, cy + dp(5), textPaint);
                     }
                 }
 
@@ -1382,7 +1482,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
 
     private void updateTitle() {
         if (!canClearHistory) {
-            actionBar.setTitle(LocaleController.getString(R.string.Calendar));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.Calendar));
             backDrawable.setRotation(0f, true);
             return;
         }
@@ -1413,7 +1513,8 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
             } else if (daysSelected > 0 || inSelectionMode) {
                 removeDaysButton.setText(LocaleController.formatString("ClearHistoryForThisDay", R.string.ClearHistoryForThisDay));
             }
-            actionBar.setTitleAnimated(title, fromBottom, 150);
+            bottomBar.setButton(daysSelected > 0 || inSelectionMode ? removeDaysButton : selectDaysButton, true);
+            simpleActionBar.setTitleAnimated(title, fromBottom, 150);
 
 
             if ((!inSelectionMode || daysSelected > 0) && selectDaysHint != null) {
@@ -1422,25 +1523,25 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
             if (daysSelected > 0 || inSelectionMode) {
                 if (removeDaysButton.getVisibility() == View.GONE) {
                     removeDaysButton.setAlpha(0f);
-                    removeDaysButton.setTranslationY(-AndroidUtilities.dp(20));
+                    removeDaysButton.setTranslationY(-dp(20));
                 }
                 removeDaysButton.setVisibility(View.VISIBLE);
                 selectDaysButton.animate().setListener(null).cancel();
                 removeDaysButton.animate().setListener(null).cancel();
-                selectDaysButton.animate().alpha(0f).translationY(AndroidUtilities.dp(20)).setDuration(150).setListener(new HideViewAfterAnimation(selectDaysButton)).start();
+                selectDaysButton.animate().alpha(0f).translationY(dp(20)).setDuration(150).setListener(new HideViewAfterAnimation(selectDaysButton)).start();
                 removeDaysButton.animate().alpha(daysSelected == 0 ? 0.5f : 1f).translationY(0).start();
                 selectDaysButton.setEnabled(false);
                 removeDaysButton.setEnabled(true);
             } else {
                 if (selectDaysButton.getVisibility() == View.GONE) {
                     selectDaysButton.setAlpha(0f);
-                    selectDaysButton.setTranslationY(AndroidUtilities.dp(20));
+                    selectDaysButton.setTranslationY(dp(20));
                 }
                 selectDaysButton.setVisibility(View.VISIBLE);
                 selectDaysButton.animate().setListener(null).cancel();
                 removeDaysButton.animate().setListener(null).cancel();
                 selectDaysButton.animate().alpha(1f).translationY(0).start();
-                removeDaysButton.animate().alpha(0f).translationY(-AndroidUtilities.dp(20)).setDuration(150).setListener(new HideViewAfterAnimation(removeDaysButton)).start();
+                removeDaysButton.animate().alpha(0f).translationY(-dp(20)).setDuration(150).setListener(new HideViewAfterAnimation(removeDaysButton)).start();
                 selectDaysButton.setEnabled(true);
                 removeDaysButton.setEnabled(false);
             }
@@ -1484,8 +1585,8 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
         ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = new ThemeDescription.ThemeDescriptionDelegate() {
             @Override
             public void didSetColor() {
-                updateColors();
-            }
+            descriptionDelegateThemeColors();
+        }
         };
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
         new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhite);
@@ -1664,5 +1765,48 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     public boolean isLightStatusBar() {
         int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
         return ColorUtils.calculateLuminance(color) > 0.7f;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        ViewGroup.LayoutParams layoutParams = listTopOverlay.getLayoutParams();
+        layoutParams.height = top + ActionBar.getCurrentActionBarHeight() + dp(44);
+
+        calendarSignatureView.setTranslationY(BaseFragmentSimpleGlass.getPillGlassTop(top) - dp(9.66f));
+        checkUi_insets(top, bottom);
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        descriptionDelegateThemeColors();
+    }
+
+    private int themedColor1, themedColor2, themedColor3;
+
+    private void descriptionDelegateThemeColors() {
+        if (actionBar == null || backDrawable == null || textPaint == null || textPaint2 == null || activeTextPaint == null) {
+            return;
+        }
+        // every theme frame: the action bar setters allocate (selectors, filters), so only when a color changed
+        final int c1 = Theme.getColor(Theme.key_windowBackgroundWhite), c2 = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), c3 = Theme.getColor(Theme.key_listSelector);
+        if (c1 == themedColor1 && c2 == themedColor2 && c3 == themedColor3) {
+            return;
+        }
+        themedColor1 = c1;
+        themedColor2 = c2;
+        themedColor3 = c3;
+        updateColors();
     }
 }

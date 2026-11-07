@@ -1,0 +1,8 @@
+html,body{margin:0;padding:0}
+body{font:14px/1.4 system-ui,sans-serif;color:var(--tg-theme-text-color,#111)}
+@media (prefers-color-scheme:dark){body{color:var(--tg-theme-text-color,#eee)}}
+.h{font-weight:600;font-size:15px;margin:10px 12px 2px}
+.i{margin:0 12px 8px;font-size:13px;color:var(--tg-theme-hint-color,#888)}
+.r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 12px}
+.big{font-size:22px;font-weight:600;margin:4px 12px}
+#log{margin:8px 12px 10px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}

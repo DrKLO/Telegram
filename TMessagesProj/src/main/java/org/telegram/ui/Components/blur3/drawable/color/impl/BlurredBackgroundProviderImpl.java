@@ -9,8 +9,10 @@ import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProviderBuilder;
@@ -48,6 +50,16 @@ public class BlurredBackgroundProviderImpl {
             .build();
     }
 
+    public static BlurredBackgroundProvider tabsPanelNoShadow(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) ->
+                Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite, r), 0.88f))
+            .setStrokeColorTop(0, 0)
+            .setStrokeColorBottom(0, 0)
+            .setShadowColor(0, 0)
+            .build();
+    }
+
     public static BlurredBackgroundProvider emojiViewButton(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
                 .setBackgroundColor((r, isDark) -> {
@@ -78,12 +90,32 @@ public class BlurredBackgroundProviderImpl {
                 .build();
     }
 
+    public static BlurredBackgroundProvider messageMenuReactionsBackground(Theme.ResourcesProvider resourcesProvider) {
+        return messageMenuBackground(resourcesProvider);
+    }
+
+    public static BlurredBackgroundProvider messageMenuBackground(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+                .setBackgroundColor((r, isDark) -> {
+                    if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR)) {
+                        return Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground);
+                    }
+                    return Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.825f);
+                })
+                .setStrokeColorTop(0x44FFFFFF, 0)
+                .setStrokeColorBottom(0x22FFFFFF, 0)
+                .setShadowColor(0x38000000, 0)
+                .setShadowLayer(dpf2(3.5f), 0, 0)
+                .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
+                .build();
+    }
+
     public static BlurredBackgroundProvider scrimMenuBackground(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) ->
-                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.76f))
-            .setStrokeColorTop(0xFFFFFFFF, 0)
-            .setStrokeColorBottom(0xFFFFFFFF, 0)
+                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.825f))
+            .setStrokeColorTop(0x44FFFFFF, 0)
+            .setStrokeColorBottom(0x22FFFFFF, 0)
             .setShadowColor(0x26000000, 0)
             .setShadowLayer(dpf2(4f), 0, 0)
             .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
@@ -135,7 +167,48 @@ public class BlurredBackgroundProviderImpl {
     }
 
     public static BlurredBackgroundProvider topPanelChatActivity(Theme.ResourcesProvider resourcesProvider) {
-        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+        // compact mode's glass follows the design: no white outline, a soft shadow and a tight one as its outline
+        return new BlurredBackgroundProviderBuilder(resourcesProvider) {
+                @Override
+                public int getStrokeColorTop() {
+                    return compactGlassStroke(super.getStrokeColorTop(), resourcesProvider);
+                }
+
+                @Override
+                public int getStrokeColorBottom() {
+                    return compactGlassStroke(super.getStrokeColorBottom(), resourcesProvider);
+                }
+
+                @Override
+                public int getShadowColor() {
+                    return Theme.isCompactMode(resourcesProvider) ? Theme.getColor(Theme.key_chat_compact_glassShadow, resourcesProvider) : super.getShadowColor();
+                }
+
+                @Override
+                public float getShadowRadius() {
+                    return Theme.isCompactMode(resourcesProvider) ? dpf2(2.25f) : super.getShadowRadius();
+                }
+
+                @Override
+                public float getShadowDy() {
+                    return Theme.isCompactMode(resourcesProvider) ? dpf2(1) : super.getShadowDy();
+                }
+
+                @Override
+                public int getOutlineShadowColor() {
+                    return Theme.isCompactMode(resourcesProvider) ? Theme.getColor(Theme.key_chat_compact_glassHairline, resourcesProvider) : 0;
+                }
+
+                @Override
+                public int getOutlineColor() {
+                    return Theme.isCompactMode(resourcesProvider) ? Theme.getColor(Theme.key_chat_compact_glassOutline, resourcesProvider) : 0;
+                }
+
+                @Override
+                public float getOutlineWidth() {
+                    return dpf2(0.6f);
+                }
+            }
                 .setBackgroundColor((r, isDark) -> {
                     if (!checkBlurEnabled(resourcesProvider)) {
                         return ColorUtils.setAlphaComponent(Theme.getColor(isDark ?
@@ -154,20 +227,38 @@ public class BlurredBackgroundProviderImpl {
                 .build();
     }
 
-    public static BlurredBackgroundProvider attachMenuActionBar(Theme.ResourcesProvider resourcesProvider) {
+    // with the design's outline there is no white highlight on the glass
+    private static int compactGlassStroke(int color, Theme.ResourcesProvider resourcesProvider) {
+        if (!Theme.isCompactMode(resourcesProvider)) return color;
+        return Color.alpha(Theme.getColor(Theme.key_chat_compact_glassOutline, resourcesProvider)) != 0 ? 0 : color;
+    }
+
+    public static BlurredBackgroundProvider simpleActionBar(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
-                .setBackgroundColor((r, isDark) -> {
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
-                    final int colorBg = Theme.getColor(isDark ? Theme.key_windowBackgroundGray : Theme.key_dialogBackgroundGray, r);
-                    final int colorTarget = Theme.getColor(Theme.key_windowBackgroundWhite, r);
-                    return solveSrcColor(colorBg, colorTarget, alpha);
-                })
-                .setStrokeColorTop(0xFFFFFFFF, 0x28FFFFFF)
-                .setStrokeColorBottom(0xFFFFFFFF, 0x14FFFFFF)
-                .setShadowColor(0x20000000, 0)
-                //.setShadowLayer(dpf2(10 / 3f), 0, dpf2(2 / 3f))
-                .setStrokeWidth(dpf2(1), dpf2(2 / 3f))
-                .build();
+            .setBackgroundColor((r, isDark) -> {
+                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.80f;
+                final int colorBg = Theme.getColor(Theme.key_windowBackgroundGray, r);
+                final int colorTarget = Theme.getColor(Theme.key_windowBackgroundWhite, r);
+                return solveSrcColor(colorBg, colorTarget, alpha);
+            })
+            .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
+            .setStrokeColorBottom(0xFFFFFFFF, 0x14FFFFFF)
+            .setShadowColor(0x16333333, 0)
+            .setShadowLayer(dpf2(24 / 3f), 0, dpf2(7f / 3f))
+            .setStrokeWidth(dpf2(0.55f), dpf2(0.55f))
+            .build();
+    }
+
+    /** A frosted sheet over the content, e.g. the list over the map: the content shows through its blur. */
+    public static BlurredBackgroundProvider frostedSheet(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) -> Theme.multAlpha(Theme.getColor(Theme.key_dialogBackground, r), isDark ? 0.82f : 0.78f))
+            .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
+            .setStrokeColorBottom(0, 0)
+            .setShadowColor(0x16333333, 0)
+            .setShadowLayer(dpf2(24 / 3f), 0, -dpf2(2f / 3f))
+            .setStrokeWidth(dpf2(0.55f), 0)
+            .build();
     }
 
     public static BlurredBackgroundProvider topPanelChatActivityTags(Theme.ResourcesProvider resourcesProvider) {
@@ -269,8 +360,8 @@ public class BlurredBackgroundProviderImpl {
                 Theme.multAlpha(Theme.getColor(Theme.key_dialogBackground, r), 0.78f))
             .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
             .setStrokeColorBottom(0, 0x20FFFFFF)
-            .setShadowColor(0x30000000, 0x04FFFFFF)
-            .setShadowLayer(dpf2(12 / 3f), 0, dpf2(1 / 3f))
+            .setShadowColor(0x48000000, 0x04FFFFFF)
+            .setShadowLayer(dpf2(2 / 3f), 0, 0)
             .setStrokeWidth(dpf2(0.67f), dpf2(0.67f))
             .build();
     }

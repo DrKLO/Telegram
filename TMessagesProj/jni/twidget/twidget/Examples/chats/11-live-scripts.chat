@@ -1,0 +1,956 @@
+@chat Live Scripts
+@subtitle JavaScript inside messages: state → render() → HTML
+@icon curlybraces
+@participant me | You | #007aff | me
+@participant nora | Nora Patel | #ff2d55
+@participant theo | Theo Brandt | #34c759
+@participant pixel | Pixel | #5e5ce6
+
+--- nora 10:00
+These cards are <b>scripted messages</b>. Each one carries a <code>&lt;script&gt;</code> that runs in its own JavaScriptCore sandbox. It defines <code>render()</code> (state → HTML) and <code>onAction(name, value)</code>, which is called when you click anything with a <code>data-action</code>. Every click updates the same bubble in place: <code>tween()</code> and <code>animate()</code> move numbers, sizes and colours at up to 60 fps, and <code>transition('pop')</code> or <code>'slide-left'</code> lets the bubble animate natively when its content swaps. Right-click a card and pick <i>Script Log…</i> to see its console.
+
+--- pixel 10:01 bare
+<style>
+  .ctr { width: 320px; max-width: 100%; }
+  .ctr .seg { position: relative; width: 150px; height: 26px; border-radius: 8px; background-color: rgba(127,127,127,0.14); }
+  .ctr .pill { position: absolute; top: 2px; width: 46px; height: 22px; border-radius: 6px; background-color: #ffffff; }
+  .lc-dark .ctr .pill { background-color: #5a5a5f; }
+  .ctr .opt { position: absolute; top: 0; width: 50px; height: 26px; line-height: 26px; text-align: center; font-size: 12px; font-weight: 700; }
+  .ctr .opt:hover { color: #af52de; }
+  .ctr .num { text-align: center; height: 68px; line-height: 68px; font-weight: 800; }
+  .ctr .btns { text-align: center; }
+  .ctr .btns button { width: 66px; margin: 0 4px; font-size: 16px; }
+  .ctr .spark { margin-top: 12px; padding: 6px 8px; }
+  .ctr .stats { display: flex; justify-content: space-between; font-size: 11px; margin-top: 3px; }
+  .ctr .undo:hover { text-decoration: underline; }
+</style>
+<div class="card pad ctr"><b>Counter</b><p class="small muted">Static fallback: shown if the script can't run.</p></div>
+<script>
+const STEPS = [1, 5, 10], SLOTS = 24, W = 276, H = 44;
+let count = 0, step = 1, history = [0];
+const shown = { v: 0 }, pop = { s: 1 }, pill = { x: 2 }, spark = { k: 1, u: 1, lo: -1.2, hi: 1.2, tail: null };
+
+function bounds() {
+  const vals = history.slice(-SLOTS - 1);
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), pad = Math.max(1.2, (hi - lo) * 0.15);
+  return { lo: lo - pad, hi: hi + pad };
+}
+
+function show(next) {
+  count = next;
+  console.log('count is now', count);
+  tween(shown, { v: count }, 320, ease.outCubic);
+  pop.s = 1.3;
+  tween(pop, { s: 1 }, 420, ease.outBack);
+}
+
+function onAction(name, value) {
+  if (name === 'step') {
+    step = Number(value);
+    tween(pill, { x: 2 + STEPS.indexOf(step) * 50 }, 320, ease.outBack);
+    return;
+  }
+  if (name === 'undo') {
+    if (history.length < 2) return;
+    const tail = { v: history.pop() };
+    show(history[history.length - 1]);
+    spark.tail = tail;
+    spark.u = 1;
+    tween(spark, bounds(), 320, ease.outCubic);
+    animate(320, (p, raw) => {
+      if (spark.tail !== tail) return;
+      spark.u = 1 - p;
+      if (raw >= 1) spark.tail = null;
+    }, ease.outCubic);
+    return;
+  }
+  const next = name === 'add' ? count + Number(value) * step : 0;
+  if (next === count && name === 'reset') return;
+  history.push(next);
+  if (history.length > 400) history.shift();
+  show(next);
+  spark.tail = null;
+  spark.k = 0;
+  tween(spark, { k: 1, ...bounds() }, 360, ease.outCubic);
+}
+
+setTimeout(() => {
+  pop.s = 0.2;
+  tween(pop, { s: 1 }, 650, ease.outBack);
+  spark.k = 0;
+  tween(spark, { k: 1 }, 650, ease.outCubic);
+}, 250);
+
+function sparkURI() {
+  const series = spark.tail ? [...history, spark.tail.v] : history;
+  const pts = series.slice(-SLOTS - 1), n = pts.length, dx = (W - 8) / (SLOTS - 1), k = spark.tail ? spark.u : spark.k;
+  const y = v => H - 4 - (v - spark.lo) / (spark.hi - spark.lo) * (H - 8);
+  const P = pts.map((v, i) => [W - 4 - (n - 1 - i) * dx + (1 - k) * dx,
+                               i === n - 1 && n > 1 ? lerp(y(pts[n - 2]), y(v), k) : y(v)]);
+  const d = P.map(([a, b], i) => `${i ? 'L' : 'M'}${a.toFixed(1)} ${b.toFixed(1)}`).join(' ');
+  const [lx, ly] = P[n - 1], zero = y(0).toFixed(1);
+  const area = n > 1 ? `<path d='${d} L${lx.toFixed(1)} ${H} L${P[0][0].toFixed(1)} ${H} Z' fill='#af52de' fill-opacity='0.14'/>
+    <path d='${d}' fill='none' stroke='#af52de' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/>` : '';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${W}' height='${H}' viewBox='0 0 ${W} ${H}'>
+    <line x1='0' y1='${zero}' x2='${W}' y2='${zero}' stroke='#8e8e93' stroke-opacity='0.55' stroke-dasharray='3 3'/>${area}
+    <circle cx='${lx.toFixed(1)}' cy='${ly.toFixed(1)}' r='3.5' fill='#af52de'/></svg>`);
+}
+
+function render() {
+  const tone = count > 0 ? 't-green' : count < 0 ? 't-red' : 'fg';
+  const seg = STEPS.map((s, i) => `<div class="opt ${s === step ? 'fg' : 'muted'}" style="left: ${i * 50}px" data-action="step" data-value="${s}">×${s}</div>`).join('');
+  const lo = Math.min(...history), hi = Math.max(...history);
+  return `<div class="card pad ctr">
+    <div class="row between"><b>Counter</b>
+      <div class="seg"><div class="pill" style="left: ${pill.x.toFixed(1)}px"></div>${seg}</div></div>
+    <div class="num ${tone}" style="font-size: ${Math.max(1, Math.round(46 * pop.s))}px">${Math.round(shown.v)}</div>
+    <div class="btns">
+      <button data-action="add" data-value="-1">−${step}</button>
+      <button data-action="reset">↺</button>
+      <button class="primary" data-action="add" data-value="1">+${step}</button>
+    </div>
+    <div class="panel spark"><img src="${sparkURI()}" width="${W}" height="${H}">
+      <div class="stats muted"><span>min ${lo} · max ${hi} · ${history.length - 1} changes</span>
+        ${history.length > 1 ? '<a class="undo" href="#" data-action="undo">↶ Undo</a>' : '<span>history</span>'}</div></div>
+  </div>`;
+}
+</script>
+
+--- theo 10:03
+Where should the offsite be? Vote, and click again to take it back 👇
+
+--- theo 10:03 bare
+<style>[hidden]{display:none!important}
+  .poll { width: 380px; max-width: 100%; }
+  .poll .bar2 { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .poll .tab { display: inline-block; padding: 2px 10px; margin-right: 4px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+  .poll .tab:hover { background-color: rgba(127,127,127,0.14); }
+  .poll .tab.on { background-color: rgba(0,122,255,0.16); color: #007aff; }
+  .poll .lnk { font-size: 12px; }
+  .poll .lnk:hover { text-decoration: underline; }
+  .poll .list { position: relative; margin-top: 8px; }
+  .poll .opt { position: absolute; left: 0; width: 328px; height: 36px; line-height: 36px; padding: 0 12px; display: flex; align-items: center; border-radius: 10px; font-size: 14px; }
+  .poll .opt.mine { border: 2px solid #007aff; padding: 0 10px; height: 32px; line-height: 32px; }
+  .poll .lbl { flex-grow: 1; font-weight: 600; }
+  .poll .open:hover .lbl { color: #007aff; }
+  .poll .pc { width: 44px; text-align: right; font-weight: 700; }
+  .poll .plus { width: 26px; font-size: 12px; font-weight: 800; }
+  .poll .who { padding: 7px 0; border-top: 1px solid rgba(127,127,127,0.16); }
+  .poll .who:first-child { border-top: 0; }
+  .poll .who .av { margin: 4px 4px 0 0; }
+  .poll .win { margin-top: 8px; padding: 9px 12px; border-radius: 10px; background-color: rgba(52,199,89,0.16); }
+  .poll .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .poll .ticker { font-size: 11.5px; margin-top: 2px; }
+</style>
+<div class="card pad poll"><b>📍 Offsite location</b><p class="small muted">Lisbon · Kyoto · Mexico City · Reykjavík</p></div>
+<script>
+const SEED = [
+  { id: 'lis', label: '🇵🇹 Lisbon', voters: ['Nora', 'Gus', 'Ivo', 'Pia'] },
+  { id: 'kyo', label: '🇯🇵 Kyoto', voters: ['Theo', 'Hana', 'Jun', 'Kai', 'Lea', 'Omar'] },
+  { id: 'mex', label: '🇲🇽 Mexico City', voters: ['Rui', 'Sam', 'Uma'] },
+  { id: 'rey', label: '🇮🇸 Reykjavík', voters: ['Vik', 'Wren'] },
+];
+const INCOMING = [['Ana', 'lis'], ['Ben', 'mex'], ['Chloé', 'lis'], ['Dev', 'rey'], ['Emil', 'lis']];
+const COLORS = ['#ff2d55', '#ff9500', '#34c759', '#00c7be', '#5e5ce6', '#af52de', '#a2845e'];
+const ROW = 42;
+let options, mine = null, closed = false, tab = 'results', sortTop = true, queue = [], timer = 0;
+const total = { v: 0 }, ticker = { text: 'Votes are coming in…', k: 0 };
+
+const count = () => options.reduce((s, o) => s + o.voters.length, 0);
+const byId = id => options.find(o => o.id === id);
+const order = () => sortTop ? options.slice().sort((a, b) => b.voters.length - a.voters.length || a.idx - b.idx) : options;
+function seed() {
+  const old = options;
+  options = SEED.map((o, idx) => ({ ...o, idx, voters: o.voters.slice(), fx: old ? old[idx].fx : { share: 0, y: 0, flash: 0 } }));
+  if (!old) order().forEach((o, rank) => { o.fx.y = rank * ROW; });
+}
+seed();
+
+function relayout(ms = 650) {
+  const sum = count();
+  order().forEach((o, rank) => tween(o.fx, { y: rank * ROW, share: o.voters.length / sum }, ms, ease.outCubic));
+  tween(total, { v: sum }, 450, ease.outCubic);
+}
+
+function arrive() {
+  timer = 0;
+  if (closed || !queue.length) return;
+  const [name, id] = queue.shift();
+  const o = byId(id);
+  o.voters.push(name);
+  o.fx.flash = 1;
+  tween(o.fx, { flash: 0 }, 1100, ease.outQuad);
+  ticker.text = `${name} voted ${o.label}`;
+  ticker.k = 1;
+  tween(ticker, { k: 0 }, 1800, ease.inQuad);
+  relayout();
+  if (queue.length) timer = setTimeout(arrive, 1700 + Math.random() * 1500);
+}
+function startArrivals(delay) {
+  if (timer) clearTimeout(timer);
+  timer = queue.length && !closed ? setTimeout(arrive, delay) : 0;
+}
+
+setTimeout(() => {
+  relayout(800);
+  queue = INCOMING.slice();
+  startArrivals(1600);
+}, 250);
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    if (value === tab) return;
+    transition(value === 'voters' ? 'slide-left' : 'slide-right');
+    tab = value;
+    return;
+  }
+  if (name === 'sort') { sortTop = !sortTop; return relayout(); }
+  if (name === 'close') {
+    transition(closed ? 'fade' : 'pop');
+    closed = !closed;
+    if (!closed) startArrivals(1400);
+    else if (timer) { clearTimeout(timer); timer = 0; }
+    return;
+  }
+  if (name === 'reset') {
+    transition('fade');
+    seed();
+    mine = null; closed = false; tab = 'results';
+    queue = INCOMING.slice();
+    ticker.text = 'Poll reset · votes are coming in…'; ticker.k = 0;
+    relayout(800);
+    startArrivals(1600);
+    return;
+  }
+  if (closed) return;
+  if (mine) byId(mine).voters = byId(mine).voters.filter(v => v !== 'You');
+  mine = mine === value ? null : value;
+  if (mine) {
+    byId(mine).voters.push('You');
+    byId(mine).fx.flash = 0.8;
+    tween(byId(mine).fx, { flash: 0 }, 700, ease.outQuad);
+  }
+  relayout();
+}
+
+const initials = n => esc(n.slice(0, 2));
+const color = n => n === 'You' ? '#007aff' : COLORS[[...n].reduce((s, c) => s + c.charCodeAt(0), 0) % COLORS.length];
+
+function results() {
+  const sum = count();
+  const [lead, second] = options.slice().sort((a, b) => b.voters.length - a.voters.length);
+  const tie = lead.voters.length === second.voters.length;
+  const rows = options.map(o => {
+    const pc = o.fx.share * 100, me = o.id === mine, won = closed && (o === lead || (tie && o === second));
+    const base = won ? '52,199,89' : '0,122,255';
+    const fill = `rgba(${base},${((me ? 0.3 : 0.16) + 0.26 * o.fx.flash).toFixed(3)})`;
+    const plus = o.fx.flash > 0.05 ? `<span class="plus" style="color: ${alpha('#34c759', o.fx.flash)}">+1</span>` : '<span class="plus"></span>';
+    return `<div class="opt ${me ? 'mine' : ''} ${closed ? '' : 'open'}" ${closed ? '' : `data-action="vote" data-value="${o.id}"`}
+                 style="top: ${o.fx.y.toFixed(1)}px; background: linear-gradient(90deg, ${fill} ${pc.toFixed(1)}%, rgba(127,127,127,0.10) ${pc.toFixed(1)}%)">
+      <span class="lbl">${o.label}${me ? ' ✓' : ''}${won ? ' 🏆' : ''}</span>${plus}
+      <span class="small muted">${o.voters.length}</span><span class="pc">${Math.round(pc)}%</span></div>`;
+  }).join('');
+  const banner = closed ? `<div class="win"><b>${tie ? `🤝 Tie: ${lead.label} and ${second.label}` : `🏆 ${lead.label} wins`}</b>
+      <div class="small muted">${lead.voters.length} of ${sum} votes · ${Math.round(lead.voters.length / sum * 100)}%${mine ? ` · you picked ${byId(mine).label}` : ''}</div></div>` : '';
+  return `<div class="list" style="height: ${options.length * ROW - 6}px">${rows}</div>${banner}`;
+}
+
+function voters() {
+  return '<div style="margin-top: 6px">' + order().map(o => {
+    const avs = o.voters.slice(-8).map(n => `<span class="av" style="background-color: ${color(n)}">${initials(n)}</span>`).join('');
+    const more = o.voters.length > 8 ? `<span class="small muted">+${o.voters.length - 8}</span>` : '';
+    return `<div class="who"><div class="row between"><b class="small">${o.label}</b><span class="small muted">${o.voters.length} · ${esc(o.voters.slice(-3).join(', '))}</span></div>
+      <div>${avs || '<span class="small muted">No votes yet</span>'}${more}</div></div>`;
+  }).join('') + '</div>';
+}
+
+function render() {
+  const tabs = [['results', 'Results'], ['voters', 'Voters']].map(([id, label]) =>
+    `<span class="tab ${tab === id ? 'on' : ''}" data-action="tab" data-value="${id}">${label}</span>`).join('');
+  const tick = ticker.k > 0.01 ? mix('#8e8e93', '#007aff', ticker.k) : '#8e8e93';
+  return `<div class="card pad poll">
+    <div class="row between"><b>📍 Offsite location</b>
+      <span><span class="small muted">${Math.round(total.v)} votes</span> <span class="badge ${closed ? '' : 'red'}">${closed ? 'closed' : '● live'}</span></span></div>
+    <div class="ticker" style="color: ${tick}">${esc(ticker.text)}</div>
+    <div class="bar2"><span>${tabs}</span>${tab === 'results' ? `<a class="lnk" href="#" data-action="sort">⇅ ${sortTop ? 'Top first' : 'Original order'}</a>` : ''}</div>
+    ${tab === 'results' ? results() : voters()}
+    <div class="foot"><span class="tiny muted">${closed ? 'Voting is closed' : mine ? 'You voted · tap your choice again to take it back' : 'Tap an option to vote'}</span>
+      <span><a class="lnk" href="#" data-action="reset">↻ Reset</a>&nbsp; <button ${closed ? '' : 'class="primary"'} data-action="close">${closed ? 'Reopen' : 'Close poll'}</button></span></div>
+  </div>`;
+}
+</script>
+
+--- nora 10:06
+Tic-tac-toe against Pixel. Pick Easy or Hard (Hard is a full minimax, it never loses) and who starts. The bot thinks for a moment (a <code>setTimeout</code>), pieces spring in with <code>tween()</code>, the winning line pulses, and the result card arrives with <code>transition('pop')</code>.
+
+--- nora 10:06 bare
+<style>[hidden]{display:none!important}
+  .ttt { width: 300px; max-width: 100%; }
+  .ttt .opts { display: flex; justify-content: space-between; margin-top: 8px; }
+  .ttt .seg span { display: inline-block; padding: 2px 9px; margin-right: 3px; border-radius: 7px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .ttt .seg span:hover { background-color: rgba(127,127,127,0.24); }
+  .ttt .seg span.on { background-color: #5e5ce6; color: #ffffff; }
+  .ttt table { border-collapse: collapse; margin: 10px auto 8px auto; }
+  .ttt td { width: 66px; height: 66px; padding: 0; text-align: center; vertical-align: middle; line-height: 66px; font-weight: 800; border: 2px solid rgba(127,127,127,0.35); }
+  .ttt tr:first-child td { border-top: 0; } .ttt tr:last-child td { border-bottom: 0; }
+  .ttt td:first-child { border-left: 0; } .ttt td:last-child { border-right: 0; }
+  .ttt td.free:hover { background-color: rgba(127,127,127,0.10); }
+  .ttt .x { color: #ff2d55; } .ttt .o { color: #5e5ce6; }
+  .ttt .score { display: flex; justify-content: space-around; align-items: center; height: 24px; font-size: 13px; }
+  .ttt .foot { text-align: center; margin-top: 8px; }
+  .ttt .foot button { margin: 0 3px; }
+  .ttt .result { margin-top: 8px; padding: 10px; border-radius: 12px; text-align: center; }
+  .ttt .result .t { font-size: 18px; font-weight: 800; }
+</style>
+<div class="card pad ttt"><b>Tic-tac-toe</b></div>
+<script>
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let board, pops, winner, line, thinking, flash = 0, game = 0, hint = -1, moves = 0, level = 'hard', first = 'you', streak = 0, hints = 0;
+const score = { X: 0, O: 0, draw: 0 }, bump = { X: 1, O: 1, draw: 1 }, glow = { h: 0 };
+const memo = new Map();
+const pick = list => list[Math.floor(Math.random() * list.length)];
+
+function outcome(b) {
+  for (const l of LINES) if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[0]] === b[l[2]]) return { who: b[l[0]], line: l };
+  return b.every(Boolean) ? { who: 'draw', line: [] } : null;
+}
+
+function solve(b, turn) {
+  let key = turn === 'X' ? 1 : 2;
+  for (let i = 0; i < 9; i++) key = key * 3 + (b[i] === 'X' ? 1 : b[i] === 'O' ? 2 : 0);
+  let hit = memo.get(key);
+  if (hit) return hit;
+  const r = outcome(b);
+  if (r) { let empty = 1; for (let i = 0; i < 9; i++) if (!b[i]) empty++; hit = { v: r.who === 'draw' ? 0 : -empty, moves: [] }; }
+  else {
+    const other = turn === 'X' ? 'O' : 'X';
+    let best = -Infinity, moves = [];
+    for (let i = 0; i < 9; i++) if (!b[i]) {
+      b[i] = turn;
+      const v = -solve(b, other).v;
+      b[i] = '';
+      if (v > best) { best = v; moves = [i]; } else if (v === best) moves.push(i);
+    }
+    hit = { v: best, moves };
+  }
+  memo.set(key, hit);
+  return hit;
+}
+
+function botMove() {
+  const free = board.map((v, i) => v ? -1 : i).filter(i => i >= 0);
+  if (level === 'hard') return free.length === 9 ? pick([0, 2, 4, 6, 8]) : pick(solve(board.slice(), 'O').moves);
+  for (const i of free) { const b = board.slice(); b[i] = 'O'; if (outcome(b)?.who === 'O') return i; }
+  if (Math.random() < 0.5) for (const i of free) { const b = board.slice(); b[i] = 'X'; if (outcome(b)?.who === 'X') return i; }
+  return pick(free);
+}
+
+function pulse() {
+  const me = game;
+  animate(1680, p => { if (me === game) flash = p >= 1 ? 0.6 : Math.abs(Math.sin(p * 4 * Math.PI)); }, ease.linear);
+}
+
+function place(i, who) {
+  board[i] = who; moves++; hint = -1;
+  pops[i].s = 0;
+  tween(pops[i], { s: 1 }, 340, ease.outBack);
+  const r = outcome(board);
+  if (!r) return;
+  transition('pop');
+  winner = r.who; line = r.line; score[r.who]++;
+  streak = r.who === 'X' ? streak + 1 : 0;
+  bump[r.who] = 1.7;
+  tween(bump, { [r.who]: 1 }, 520, ease.outBack);
+  if (r.who !== 'draw') pulse();
+}
+
+function botTurn() {
+  thinking = true;
+  const me = game;
+  setTimeout(() => {
+    if (me !== game || winner) return;
+    place(botMove(), 'O');
+    thinking = false;
+  }, 380 + Math.random() * 300);
+}
+
+function newGame() {
+  game++;
+  board = Array(9).fill('');
+  pops = board.map(() => ({ s: 1 }));
+  winner = null; line = []; thinking = false; flash = 0; hint = -1; moves = 0;
+  if (first === 'pixel') botTurn();
+}
+newGame();
+const intro = { ms: -1 };
+setTimeout(() => animate(1000, (_, t) => { intro.ms = t < 1 ? t * 1000 : -1; }, ease.linear), 250);
+const ghost = i => {
+  if (intro.ms < 0) return 0;
+  const k = (intro.ms - (Math.floor(i / 3) + i % 3) * 110) / 420;
+  return k > 0 && k < 1 ? Math.sin(k * Math.PI) : 0;
+};
+
+function onAction(name, value) {
+  if (name === 'new') { transition('pop'); return newGame(); }
+  if (name === 'level' || name === 'first') {
+    if ((name === 'level' ? level : first) === value) return;
+    if (name === 'level') level = value; else first = value;
+    transition('fade');
+    return newGame();
+  }
+  if (name === 'hint') {
+    if (winner || thinking) return;
+    hint = pick(solve(board.slice(), 'X').moves);
+    hints++;
+    const me = game, mine = hint;
+    animate(1140, p => { if (me === game && hint === mine) glow.h = p >= 1 ? 0.5 : Math.abs(Math.sin(p * 3 * Math.PI)); }, ease.linear);
+    return;
+  }
+  const i = Number(value);
+  if (winner || thinking || board[i]) return;
+  place(i, 'X');
+  if (!winner) botTurn();
+}
+
+function render() {
+  const cells = board.map((v, i) => {
+    const bg = line.includes(i) ? `background-color: ${alpha('#34c759', 0.12 + 0.4 * flash)};`
+             : i === hint ? `background-color: ${alpha('#ffcc00', 0.15 + 0.35 * glow.h)};` : '';
+    const size = Math.max(1, Math.round(40 * pops[i].s));
+    const open = !v && !winner && !thinking;
+    const g = v ? 0 : ghost(i);
+    const mark = v === 'X' ? '✕' : v === 'O' ? '◯' : g > 0.02 ? (i % 2 ? '◯' : '✕') : '&nbsp;';
+    const tint = g > 0.02 ? ` color: ${alpha(i % 2 ? '#5e5ce6' : '#ff2d55', 0.4 * g)};` : '';
+    return `<td class="${open ? 'free' : ''}" ${open ? `data-action="cell" data-value="${i}"` : ''} style="${bg}">
+      <span class="${v === 'X' ? 'x' : 'o'}" style="font-size: ${v ? size : 40}px;${tint}">${mark}</span></td>`;
+  });
+  const rows = [0, 3, 6].map(r => `<tr>${cells.slice(r, r + 3).join('')}</tr>`).join('');
+  const status = winner ? `${moves} moves` : thinking ? 'Pixel is thinking…' : 'Your move (✕)';
+  const chip = (act, val, label, on) => `<span class="${on ? 'on' : ''}" data-action="${act}" data-value="${val}">${label}</span>`;
+  const big = k => `font-size: ${Math.round(13 * bump[k])}px`;
+  const result = winner === 'X' ? ['You win! 🎉', streak > 1 ? `${streak} wins in a row` : 'Nicely played', 'rgba(52,199,89,0.16)']
+               : winner === 'O' ? ['Pixel wins 🤖', level === 'hard' ? 'Hard mode never loses. Try Easy?' : 'Best of three?', 'rgba(94,92,230,0.16)']
+               : ['Draw 🤝', level === 'hard' ? 'The best you can do against Hard' : 'Evenly matched', 'rgba(127,127,127,0.14)'];
+  const foot = winner
+    ? `<div class="result" style="background-color: ${result[2]}"><div class="t">${result[0]}</div><div class="small muted">${result[1]}</div>
+         <button class="primary" data-action="new" style="margin-top: 8px">Play again</button></div>`
+    : `<div class="foot"><button data-action="hint">💡 Hint${hints ? ` · ${hints}` : ''}</button><button data-action="new">↻ Restart</button></div>`;
+  return `<div class="card pad ttt">
+    <div class="row between"><b>Tic-tac-toe</b><span class="small muted">${status}</span></div>
+    <div class="opts"><span class="seg">${chip('level', 'easy', 'Easy', level === 'easy')}${chip('level', 'hard', 'Hard', level === 'hard')}</span>
+      <span class="seg">${chip('first', 'you', '✕ first', first === 'you')}${chip('first', 'pixel', '◯ first', first === 'pixel')}</span></div>
+    <table>${rows}</table>
+    <div class="score"><span style="${big('X')}"><b class="x">You</b> ${score.X}</span><span class="muted" style="${big('draw')}">Draws ${score.draw}</span><span style="${big('O')}"><b class="o">Pixel</b> ${score.O}</span></div>
+    ${foot}
+  </div>`;
+}
+</script>
+
+--- theo 10:09 bare
+<style>[hidden]{display:none!important}
+  .wam { width: 330px; max-width: 100%; }
+  .wam .timer { height: 6px; border-radius: 3px; background-color: rgba(127,127,127,0.2); margin-top: 8px; }
+  .wam .timer div { height: 6px; border-radius: 3px; }
+  .wam .field { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; margin: 10px 0 0 0; }
+  .wam .hole { width: 96px; height: 70px; margin-bottom: 10px; overflow: hidden; text-align: center; border-radius: 12px;
+               background: radial-gradient(ellipse at 50% 100%, #5b3a1e 0%, #5b3a1e 34%, rgba(91,58,30,0.18) 36%, rgba(127,127,127,0.08) 70%); }
+  .wam .hole.live:hover { background: radial-gradient(ellipse at 50% 100%, #6e4726 0%, #6e4726 34%, rgba(91,58,30,0.26) 36%, rgba(127,127,127,0.16) 70%); }
+  .wam .mole { font-size: 40px; line-height: 50px; height: 50px; }
+  .wam .fx { position: absolute; width: 96px; text-align: center; font-size: 15px; font-weight: 900; }
+  .wam .count { position: absolute; left: 0; top: 0; width: 302px; height: 240px; line-height: 240px; text-align: center; font-weight: 900; }
+  .wam .hud { display: flex; justify-content: space-between; font-size: 13px; }
+  .wam .seg span { display: inline-block; padding: 3px 10px; margin-right: 4px; border-radius: 8px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .wam .seg span:hover { background-color: rgba(127,127,127,0.24); }
+  .wam .seg span.on { background-color: #ff9500; color: #ffffff; }
+  .wam .menu { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .wam .stats { display: flex; justify-content: space-between; text-align: center; margin: 6px 0 2px 0; }
+  .wam .stats div { width: 25%; }
+  .wam .stats b { display: block; font-size: 19px; }
+</style>
+<div class="card pad wam"><b>🔨 Whack-a-mole</b></div>
+<script>
+const LEVELS = {
+  easy:   { label: 'Easy',   stay: 1100, gap: [560, 950], gold: 0.10, bomb: 0 },
+  normal: { label: 'Normal', stay: 800,  gap: [380, 820], gold: 0.10, bomb: 0.10 },
+  hard:   { label: 'Hard',   stay: 560,  gap: [260, 560], gold: 0.12, bomb: 0.16 },
+};
+const RISE = 150, FALL = 160, GAME = 20000, COUNT = 2400, FACE = { mole: '🐹', gold: '🌟', bomb: '💣' };
+let mode = 'idle', level = 'normal', t = 0, looping = false, holes = [], fx = [], introMs = -1, newBest = false;
+let score = 0, hits = 0, escaped = 0, whiffs = 0, bombs = 0, combo = 0, bestCombo = 0, endsAt = 0, nextSpawn = 0, countFrom = 0;
+const best = { easy: 0, normal: 0, hard: 0 }, shown = { v: 0 };
+const clearHoles = () => { holes = Array.from({ length: 9 }, () => ({ live: false, t0: 0, hit: false, stay: 800, kind: 'mole' })); };
+clearHoles();
+
+function height(h) {
+  if (!h.live) return 0;
+  const dt = t - h.t0;
+  if (dt < RISE) return ease.outBack(dt / RISE);
+  if (dt < RISE + h.stay) return 1;
+  return Math.max(0, 1 - ease.inQuad((dt - RISE - h.stay) / FALL));
+}
+
+function spawn() {
+  const L = LEVELS[level], idle = holes.filter(h => !h.live), h = idle[Math.floor(Math.random() * idle.length)];
+  if (h) {
+    const r = Math.random();
+    Object.assign(h, { live: true, t0: t, hit: false, stay: L.stay * (0.85 + Math.random() * 0.3),
+                       kind: r < L.bomb ? 'bomb' : r < L.bomb + L.gold ? 'gold' : 'mole' });
+  }
+  const speedup = 1 - 0.35 * clamp(1 - (endsAt - t) / GAME, 0, 1);
+  nextSpawn = t + (L.gap[0] + Math.random() * (L.gap[1] - L.gap[0])) * speedup;
+}
+
+function finish() {
+  transition('pop');
+  mode = 'over';
+  clearHoles();
+  newBest = score > best[level];
+  best[level] = Math.max(best[level], score);
+  shown.v = 0;
+  tween(shown, { v: score }, 800, ease.outCubic);
+}
+
+function tick(now) {
+  t = now;
+  if (mode === 'count' && t >= countFrom + COUNT) { mode = 'play'; endsAt = t + GAME; nextSpawn = t + 120; }
+  if (mode === 'play') {
+    for (const h of holes) if (h.live && t - h.t0 > RISE + h.stay + FALL) {
+      if (!h.hit && h.kind !== 'bomb') { escaped++; combo = 0; }
+      h.live = false;
+    }
+    if (t >= nextSpawn) spawn();
+    if (t >= endsAt) finish();
+  }
+  fx = fx.filter(f => t - f.born < 750);
+  if (mode === 'play' || mode === 'count' || fx.length) requestAnimationFrame(tick); else looping = false;
+}
+function loop() { if (!looping) { looping = true; requestAnimationFrame(tick); } }
+
+function pop(i, text, color) {
+  fx.push({ i, text, color, born: t });
+  if (fx.length > 12) fx.shift();
+  loop();
+}
+
+function whack(i) {
+  const h = holes[i];
+  if (!(h.live && !h.hit && height(h) > 0.3)) { whiffs++; combo = 0; return pop(i, 'miss', '#8e8e93'); }
+  h.hit = true;
+  h.t0 = t - RISE - h.stay + 140;
+  if (h.kind === 'bomb') { bombs++; combo = 0; score = Math.max(0, score - 5); return pop(i, '−5', '#ff3b30'); }
+  hits++; combo++;
+  bestCombo = Math.max(bestCombo, combo);
+  const pts = (h.kind === 'gold' ? 3 : 1) * (1 + Math.floor(combo / 5));
+  score += pts;
+  pop(i, `+${pts}`, h.kind === 'gold' ? '#ff9500' : '#34c759');
+}
+
+function onAction(name, value) {
+  t = performance.now();
+  if (name === 'level') { level = value; return; }
+  if (name === 'start') {
+    transition('fade');
+    mode = 'count'; countFrom = t; introMs = -1;
+    score = hits = escaped = whiffs = bombs = combo = bestCombo = 0;
+    clearHoles(); fx = [];
+    return loop();
+  }
+  if (name === 'stop' && mode === 'play') return finish();
+  if (name === 'whack' && mode === 'play') whack(Number(value));
+}
+
+setTimeout(() => animate(1150, (_, k) => { introMs = mode === 'idle' && k < 1 ? k * 1150 : -1; }, ease.linear), 250);
+
+function render() {
+  const cells = holes.map((h, i) => {
+    let up = height(h), face = h.hit ? '💥' : FACE[h.kind];
+    if (introMs >= 0) { const k = (introMs - i * 70) / 520; up = k > 0 && k < 1 ? 0.85 * Math.sin(k * Math.PI) : 0; face = '🐹'; }
+    const live = mode === 'play';
+    return `<div class="hole ${live ? 'live' : ''}" ${live ? `data-action="whack" data-value="${i}"` : ''}>
+      <div class="mole" style="margin-top: ${Math.round(70 - 56 * up)}px">${up > 0 ? face : ''}</div></div>`;
+  }).join('');
+  const floats = fx.map(f => {
+    const k = (t - f.born) / 750;
+    return `<div class="fx" style="left: ${(f.i % 3) * 103}px; top: ${Math.round(Math.floor(f.i / 3) * 80 + 6 - 30 * ease.outCubic(k))}px; color: ${alpha(f.color, 1 - k * k)}">${f.text}</div>`;
+  }).join('');
+  let overlay = '';
+  if (mode === 'count') {
+    const phase = (t - countFrom) / 600, n = 3 - Math.floor(phase), f = phase % 1;
+    overlay = `<div class="count" style="font-size: ${Math.round(28 + 44 * ease.outBack(Math.min(1, f * 3)))}px; color: ${alpha('#ff9500', 1 - 0.7 * f)}">${n > 0 ? n : 'Go!'}</div>`;
+  }
+  const left = mode === 'play' ? Math.max(0, endsAt - t) : mode === 'count' ? GAME : 0;
+  const chips = Object.keys(LEVELS).map(k => `<span class="${k === level ? 'on' : ''}" data-action="level" data-value="${k}">${LEVELS[k].label}</span>`).join('');
+  let bottom;
+  if (mode === 'idle') bottom = `<div class="small muted center">🐹 +1 · 🌟 +3 · 💣 −5 · every 5 hits in a row raises the multiplier</div>
+    <div class="menu"><span class="seg">${chips}</span><button class="primary" data-action="start">Start</button></div>`;
+  else if (mode === 'over') {
+    const shots = hits + whiffs + bombs;
+    bottom = `<div class="panel"><div class="row between"><b>Time's up!</b>${newBest ? '<span class="badge green">New best 🏆</span>' : `<span class="small muted">Best ${best[level]}</span>`}</div>
+      <div class="stats"><div><b>${Math.round(shown.v)}</b><span class="tiny muted">score</span></div><div><b>${hits}</b><span class="tiny muted">hits</span></div>
+        <div><b>${shots ? Math.round(hits / shots * 100) : 0}%</b><span class="tiny muted">accuracy</span></div><div><b>×${bestCombo}</b><span class="tiny muted">best combo</span></div></div>
+      <div class="tiny muted center">${escaped} got away${bombs ? ` · ${bombs} 💣 hit` : ''}</div></div>
+      <div class="menu"><span class="seg">${chips}</span><button class="primary" data-action="start">Play again</button></div>`;
+  } else {
+    const mult = 1 + Math.floor(combo / 5);
+    bottom = `<div class="hud"><span>Score <b>${score}</b></span><span class="${mult > 1 ? 't-orange' : 'muted'}">Combo ${combo}${mult > 1 ? ` · ×${mult}` : ''}</span><span>Best <b>${best[level]}</b></span></div>`;
+  }
+  const head = mode === 'play' ? `<span><span class="badge orange">${Math.ceil(left / 1000)} s</span> <button data-action="stop">■</button></span>`
+             : `<span class="badge">${LEVELS[level].label}</span>`;
+  return `<div class="card pad wam">
+    <div class="row between"><b>🔨 Whack-a-mole</b>${head}</div>
+    ${mode === 'play' || mode === 'count' ? `<div class="timer"><div style="width: ${(left / GAME * 100).toFixed(1)}%; background-color: ${mix('#ff3b30', '#34c759', left / GAME)}"></div></div>` : ''}
+    <div class="field">${cells}${floats}${overlay}</div>
+    ${bottom}
+  </div>`;
+}
+</script>
+
+--- me 10:11
+How does the stopwatch stay accurate if it's paused while scrolled away?
+
+--- pixel 10:11
+It never counts ticks. It stores <code>startedAt</code> and computes <code>performance.now() - startedAt</code> in <code>render()</code>, up to 60 times a second while it runs. Animation frames stop while a message is off screen and pick up again when it comes back, and the frame loop ends as soon as you press Stop.
+
+--- pixel 10:12 bare
+<style>
+  .sw { width: 100%; box-sizing: border-box; }
+  .sw .ring { width: 128px; height: 128px; border-radius: 75px; margin: 12px auto 10px auto; padding: 11px; }
+  .sw .face { width: 128px; height: 128px; border-radius: 64px; background-color: #ffffff; text-align: center; }
+  .lc-dark .sw .face { background-color: #1c1c1e; }
+  .sw .big { font-size: 28px; font-weight: 700; font-family: ui-monospace; padding-top: 30px; line-height: 32px; }
+  .sw .cs { font-size: 15px; color: #8e8e93; font-family: ui-monospace; }
+  .sw .now { font-size: 11px; font-family: ui-monospace; margin-top: 3px; }
+  .sw .btns { display: flex; justify-content: center; gap: 8px; }
+  .sw .btns button { flex: 1; min-width: 0; max-width: 104px; padding: 5px 10px; white-space: nowrap; }
+  .sw .tabs { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .sw .tab { display: inline-block; padding: 2px 9px; margin-right: 3px; border-radius: 7px; font-size: 12px; font-weight: 600; }
+  .sw .tab:hover { background-color: rgba(127,127,127,0.16); }
+  .sw .tab.on { background-color: rgba(255,149,0,0.18); color: #ff9500; }
+  .sw .laps { margin-top: 4px; font-family: ui-monospace; font-size: 12.5px; }
+  .sw .l { display: flex; padding: 4px 4px; border-top: 1px solid rgba(127,127,127,0.18); }
+  .sw .l .a { width: 40%; } .sw .l .b { width: 30%; text-align: right; } .sw .l .c { width: 30%; text-align: right; }
+  .sw .bars { margin-top: 6px; }
+  .sw .br { display: flex; align-items: center; height: 18px; font-size: 11px; font-family: ui-monospace; }
+  .sw .br .n { width: 30px; } .sw .br .v { width: 64px; text-align: right; }
+  .sw .br .track { flex: 1; min-width: 0; height: 10px; }
+  .sw .br .fill { height: 10px; border-radius: 3px; }
+</style>
+<div class="card pad sw"><b>⏱ Stopwatch</b></div>
+<script>
+let running = false, startedAt = 0, banked = 0, laps = [], view = 'laps', looping = false, unwind = null;
+const sweep = { a: -1 }, grow = { k: 1 }, fresh = { a: 0 };
+const elapsed = () => banked + (running ? performance.now() - startedAt : 0);
+const lapBase = () => laps.length ? laps[laps.length - 1].total : 0;
+const fmt = ms => {
+  const m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60, cs = Math.floor(ms / 10) % 100;
+  return [String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'), String(cs).padStart(2, '0')];
+};
+const full = ms => fmt(ms).join('.');
+function frame() { if (running) requestAnimationFrame(frame); else looping = false; }
+
+function onAction(name, value) {
+  if (name === 'toggle') {
+    if (running) { banked = elapsed(); running = false; return; }
+    unwind = null;
+    startedAt = performance.now(); running = true;
+    if (!looping) { looping = true; requestAnimationFrame(frame); }
+  } else if (name === 'lap' && running) {
+    transition('slide-up');
+    const total = elapsed();
+    laps.push({ t: total - lapBase(), total });
+    fresh.a = 1;
+    tween(fresh, { a: 0 }, 900, ease.outQuad);
+    if (view === 'chart') { grow.k = 0.6; tween(grow, { k: 1 }, 500, ease.outCubic); }
+  } else if (name === 'reset' && !running) {
+    if (laps.length) transition('fade');
+    const u = unwind = { from: banked, k: 1 };
+    animate(550, (p, raw) => { if (unwind === u) { u.k = 1 - p; if (raw >= 1) unwind = null; } }, ease.outCubic);
+    banked = 0; laps = []; view = 'laps';
+  } else if (name === 'view' && value !== view) {
+    transition(value === 'chart' ? 'slide-left' : 'slide-right');
+    view = value;
+    grow.k = 0;
+    tween(grow, { k: 1 }, 650, ease.outCubic);
+  }
+}
+setTimeout(() => { if (!running && !banked) animate(800, (p, raw) => { sweep.a = raw >= 1 ? -1 : p; }, ease.inOutCubic); }, 250);
+
+function lapList(best, worst) {
+  const rows = laps.slice().reverse().slice(0, 5).map((l, k) => {
+    const n = laps.length - k, i = n - 1;
+    const tone = i === best ? 't-green' : i === worst ? 't-red' : '';
+    const tag = i === best ? ' ▲' : i === worst ? ' ▼' : '';
+    const bg = k === 0 && fresh.a > 0.01 ? ` style="background-color: ${alpha('#ff9500', 0.22 * fresh.a)}"` : '';
+    return `<div class="l"${bg}><span class="a ${tone}">Lap ${n}${tag}</span><span class="b ${tone}">${full(l.t)}</span><span class="c muted">${full(l.total)}</span></div>`;
+  }).join('');
+  const more = laps.length > 5 ? `<div class="tiny muted center" style="margin-top: 3px">+${laps.length - 5} earlier laps</div>` : '';
+  return `<div class="laps">${rows}</div>${more}`;
+}
+
+function lapChart(best, worst) {
+  const shown = laps.slice(-8), max = Math.max(...shown.map(l => l.t));
+  const offset = laps.length - shown.length;
+  return `<div class="bars">${shown.map((l, k) => {
+    const i = offset + k, c = i === best ? '#34c759' : i === worst ? '#ff3b30' : '#ff9500';
+    const d = clamp(grow.k * 1.6 - k * 0.08, 0, 1);
+    return `<div class="br"><span class="n muted">L${i + 1}</span><div class="track"><div class="fill" style="width: ${Math.max(2, 100 * l.t / max * ease.outCubic(d)).toFixed(1)}%; background-color: ${c}"></div></div><span class="v">${full(l.t)}</span></div>`;
+  }).join('')}</div>`;
+}
+
+function render() {
+  const ms = unwind ? unwind.from * unwind.k : elapsed();
+  const deg = (ms % 60000) / 60000 * 360;
+  const [main, cs] = fmt(ms);
+  let ring = deg < 0.5 ? 'background-color: rgba(127,127,127,0.18)' : `background: conic-gradient(#ff9500 ${deg.toFixed(1)}deg, rgba(127,127,127,0.18) ${deg.toFixed(1)}deg)`;
+  if (sweep.a >= 0 && !ms) {
+    const s = sweep.a * 360;
+    ring = `background: conic-gradient(${alpha('#ff9500', 0.15 + 0.6 * (1 - sweep.a))} ${s.toFixed(1)}deg, rgba(127,127,127,0.18) ${s.toFixed(1)}deg)`;
+  }
+  let best = -1, worst = -1;
+  if (laps.length > 1) laps.forEach((l, i) => { if (best < 0 || l.t < laps[best].t) best = i; if (worst < 0 || l.t > laps[worst].t) worst = i; });
+  const cur = ms - lapBase();
+  const delta = laps.length > 1 && running ? cur - laps[best].t : null;
+  const now = laps.length ? `<div class="now ${delta === null ? 'muted' : delta > 0 ? 't-red' : 't-green'}">L${laps.length + 1} ${full(cur)}</div>` : '';
+  const tabs = laps.length ? `<div class="tabs"><span>${[['laps', 'Laps'], ['chart', 'Chart']].map(([id, label]) =>
+    `<span class="tab ${view === id ? 'on' : ''}" data-action="view" data-value="${id}">${label}</span>`).join('')}</span>
+    <span class="tiny muted">${laps.length} lap${laps.length > 1 ? 's' : ''}${best >= 0 ? ` · best ${full(laps[best].t)}` : ''}</span></div>` : '';
+  return `<div class="card pad sw">
+    <div class="row between"><b>⏱ Stopwatch</b><span class="badge ${running ? 'green' : ms ? 'orange' : ''}">${running ? 'running' : ms ? 'paused' : 'ready'}</span></div>
+    <div class="ring" style="${ring}">
+      <div class="face"><div class="big">${main}</div><div class="cs">.${cs}</div>${now}</div>
+    </div>
+    <div class="btns">
+      <button data-action="${running ? 'lap' : 'reset'}">${running ? 'Lap' : 'Reset'}</button>
+      <button class="primary" data-action="toggle">${running ? 'Stop' : ms ? 'Resume' : 'Start'}</button>
+    </div>
+    ${tabs}${laps.length ? (view === 'laps' ? lapList(best, worst) : lapChart(best, worst)) : ''}
+  </div>`;
+}
+</script>
+
+--- nora 10:14 bare
+<style>
+  .dice { width: 340px; max-width: 100%; }
+  .dice .tray { height: 132px; text-align: center; margin: 8px 0 6px 0; border-radius: 14px; background: radial-gradient(ellipse at 50% 35%, #2f8a57 0%, #1d5a39 100%); }
+  .dice .d { display: inline-block; vertical-align: top; margin: 0 3px; border-radius: 10px; }
+  .dice .d.can:hover { background-color: rgba(255,255,255,0.14); }
+  .dice .tag { height: 12px; line-height: 12px; font-size: 9px; font-weight: 800; color: #ffd60a; }
+  .dice .sum { display: flex; justify-content: space-between; align-items: center; height: 34px; }
+  .dice .total { font-weight: 800; }
+  .dice .step { display: flex; align-items: center; }
+  .dice .step button { width: 28px; padding: 3px 0; }
+  .dice .step b { width: 30px; text-align: center; }
+  .dice .lnk { font-size: 12px; }
+  .dice .lnk:hover { text-decoration: underline; }
+  .dice .hist { margin-top: 6px; }
+  .dice .hist span { display: inline-block; width: 26px; line-height: 22px; margin: 2px; border-radius: 6px; text-align: center; font-size: 12px; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .dice .hist span.hi { background-color: rgba(52,199,89,0.22); }
+</style>
+<div class="card pad dice"><b>🎲 Dice</b></div>
+<script>
+const PIPS = {
+  1: [[50, 50]], 2: [[30, 30], [70, 70]], 3: [[30, 30], [50, 50], [70, 70]],
+  4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[30, 30], [70, 30], [50, 50], [30, 70], [70, 70]],
+  6: [[30, 28], [70, 28], [30, 50], [70, 50], [30, 72], [70, 72]],
+};
+const PIP = ['#ff2d55', '#5e5ce6', '#34c759', '#ff9500', '#00c7be'], SIZE = [84, 84, 76, 64, 54];
+const die = (n, angle, pip, held) => 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'>
+     <g transform='rotate(${angle.toFixed(1)} 50 50)'>
+       <rect x='14' y='14' width='72' height='72' rx='15' fill='#ffffff' stroke='${held ? '#ffd60a' : '#c7c7cc'}' stroke-width='${held ? 6 : 2}'/>
+       ${PIPS[n].map(([x, y]) => `<circle cx='${x}' cy='${y}' r='7.5' fill='${pip}'/>`).join('')}
+     </g></svg>`);
+const d6 = () => 1 + Math.floor(Math.random() * 6);
+
+let n = 2, faces = [3, 5, 1, 6, 2], spin = [0, 0, 0, 0, 0], drop = [1, 1, 1, 1, 1], held = [false, false, false, false, false];
+let rolling = false, rolled = false, history = [], label = '';
+const lift = [0, 1, 2, 3, 4].map(() => ({ y: 0 })), total = { v: 0 }, pop = { s: 1 }, glow = { a: 0 };
+const sum = () => faces.slice(0, n).reduce((s, f) => s + f, 0);
+
+function settle(i, ms, delay = 0) {
+  return animate(ms, (_, raw) => { drop[i] = 1 - ease.outBounce(clamp(raw * (1 + delay), 0, 1)); }, ease.linear);
+}
+setTimeout(() => {
+  for (let i = 0; i < n; i++) settle(i, 900, i * 0.15);
+  tween(total, { v: sum() }, 700, ease.outCubic);
+}, 250);
+
+function judge(f) {
+  if (f.length < 2) return '';
+  const s = f.slice().sort();
+  if (s.every(v => v === s[0])) return ['', '', 'Doubles!', 'Triple!', 'Four of a kind!', 'Yahtzee! 🎉'][f.length];
+  if (f.length === 5 && s.every((v, i) => i === 0 || v === s[i - 1] + 1)) return 'Straight! 🔥';
+  return '';
+}
+
+function roll() {
+  const idx = [...Array(n).keys()].filter(i => !held[i]);
+  if (rolling || !idx.length) return;
+  rolling = true; label = '';
+  const final = faces.slice();
+  idx.forEach(i => { final[i] = d6(); });
+  const turns = idx.map((_, k) => (k % 2 ? -1 : 1) * (360 + Math.random() * 360));
+  animate(1100, (p, raw) => {
+    idx.forEach((i, k) => {
+      spin[i] = turns[k] * (1 - p);
+      drop[i] = 1 - ease.outBounce(clamp(raw * (1 + 0.07 * k), 0, 1));
+      faces[i] = raw >= 0.8 ? final[i] : Math.random() < 0.5 ? d6() : faces[i];
+    });
+    if (raw >= 1) land(final);
+  }, ease.outCubic);
+}
+
+function land(final) {
+  faces = final; rolling = false; rolled = true;
+  transition('pop');
+  const s = sum();
+  label = judge(faces.slice(0, n));
+  history = [{ s, n, special: !!label }, ...history].slice(0, 12);
+  total.v = 0;
+  tween(total, { v: s }, 450, ease.outCubic);
+  pop.s = 1.5;
+  tween(pop, { s: 1 }, 520, ease.outBack);
+  if (label) { glow.a = 1; tween(glow, { a: 0 }, 1400, ease.inQuad); }
+}
+
+function onAction(name, value) {
+  if (name === 'roll') return roll();
+  if (rolling) return;
+  if (name === 'hold' && rolled) {
+    const i = Number(value);
+    held[i] = !held[i];
+    tween(lift[i], { y: held[i] ? 1 : 0 }, 260, ease.outBack);
+  } else if (name === 'release') {
+    held = held.map(() => false);
+    lift.forEach(l => tween(l, { y: 0 }, 260, ease.outCubic));
+  } else if (name === 'dice') {
+    const next = clamp(n + Number(value), 1, 5);
+    if (next === n) return;
+    if (next < n) { transition('fade'); held[n - 1] = false; lift[n - 1].y = 0; }
+    else { faces[next - 1] = d6(); spin[next - 1] = 0; settle(next - 1, 800); }
+    n = next; label = '';
+    tween(total, { v: sum() }, 400, ease.outCubic);
+  } else if (name === 'clear') {
+    transition('slide-up');
+    history = [];
+  }
+}
+
+function render() {
+  const size = SIZE[n - 1], room = 132 - size - 18;
+  const tray = faces.slice(0, n).map((f, i) => {
+    const top = Math.round(4 + room * (1 - drop[i]) - 8 * lift[i].y);
+    return `<span class="d ${rolled && !rolling ? 'can' : ''}" ${rolled && !rolling ? `data-action="hold" data-value="${i}"` : ''} style="margin-top: ${top}px">
+      <img src="${die(f, spin[i], PIP[i], held[i])}" width="${size}" height="${size}"><div class="tag">${held[i] ? 'HELD' : '&nbsp;'}</div></span>`;
+  }).join('');
+  const all = held.slice(0, n).every(Boolean), anyHeld = held.slice(0, n).some(Boolean);
+  const avg = history.length ? (history.reduce((s, h) => s + h.s, 0) / history.length).toFixed(1) : '–';
+  const tint = glow.a > 0.01 ? `background-color: ${alpha('#ffd60a', 0.25 * glow.a)}; border-radius: 8px;` : '';
+  return `<div class="card pad dice">
+    <div class="row between"><b>🎲 Dice</b>
+      <span class="step"><span class="small muted">Dice&nbsp;</span><button data-action="dice" data-value="-1">−</button><b>${n}</b><button data-action="dice" data-value="1">+</button></span></div>
+    <div class="tray">${tray}</div>
+    <div class="sum" style="${tint}">
+      <span>${rolling ? '<span class="muted">Rolling…</span>' : `Total <span class="total" style="font-size: ${Math.round(20 * pop.s)}px">${Math.round(total.v)}</span>`}
+        ${label && !rolling ? `<span class="badge orange">${label}</span>` : ''}</span>
+      <span>${anyHeld && !rolling ? '<a class="lnk" href="#" data-action="release">Release all</a>&nbsp; ' : ''}<button class="primary" data-action="roll">${rolling ? '…' : all ? 'All held' : 'Roll'}</button></span>
+    </div>
+    <div class="tiny muted">${rolled ? 'Tap a die to hold it between rolls' : 'Roll, then tap dice to hold them'}</div>
+    ${history.length ? `<div class="hist">${history.map(h => `<span class="${h.special ? 'hi' : ''}">${h.s}</span>`).join('')}</div>
+      <div class="row between tiny muted"><span>${history.length} rolls · avg ${avg}</span><a class="lnk" href="#" data-action="clear">Clear</a></div>` : ''}
+  </div>`;
+}
+</script>
+
+--- theo 10:17
+OK but what stops a message from freezing my app? 🤔
+
+--- pixel 10:17
+Every call into a script is capped at <b>50 ms</b>, and a message gets at most <b>200 ms of JS per second</b>. Break either rule and the script is stopped for good. The card keeps its last HTML, or the static HTML around the <code>&lt;script&gt;</code>. Here are some badly behaved messages:
+
+--- pixel 10:18 bare
+<div class="card pad" style="width: 330px"><b>🛑 Runaway at load</b><p class="small muted" style="margin: 4px 0 0 0">This script is just <code>while (true) {}</code>. JavaScriptCore terminates it after 50 ms, and this static HTML around the <code>&lt;script&gt;</code> stays as the fallback.</p></div>
+<script>
+while (true) {}
+</script>
+
+--- pixel 10:18 bare
+<div class="card pad" style="width: 330px"><b>Don't press</b></div>
+<script>
+let presses = 0;
+function render() {
+  return `<div class="card pad" style="width: 330px">
+    <div class="row between"><b>🧨 Don't press</b><span class="small muted">pressed ${presses}×</span></div>
+    <p class="small muted" style="margin: 6px 0 8px 0">“Safe” counts up. “Hang” runs <code>for (;;) {}</code> inside <code>onAction</code>.</p>
+    <button data-action="safe">Safe</button> <button class="primary" data-action="hang" style="background-color: #ff3b30">Hang</button>
+  </div>`;
+}
+function onAction(name) {
+  presses++;
+  if (name === 'hang') for (;;) {}
+}
+</script>
+
+--- pixel 10:19 bare
+<div class="card pad" style="width: 330px"><b>Greedy timer</b></div>
+<script>
+let ticks = 0, greedy = false;
+function busy(ms) { const end = Date.now() + ms; while (Date.now() < end) {} }
+function render() {
+  return `<div class="card pad" style="width: 330px">
+    <div class="row between"><b>🐷 Greedy timer</b><span class="badge ${greedy ? 'orange' : ''}">${ticks} ticks</span></div>
+    <p class="small muted" style="margin: 6px 0 8px 0">Each tick burns 40 ms of CPU, 10 times a second. Every call is under 50 ms, but together they blow the 200 ms per second budget.</p>
+    <button class="primary" data-action="go">${greedy ? 'Burning…' : 'Start'}</button>
+  </div>`;
+}
+function onAction() {
+  if (greedy) return;
+  greedy = true;
+  setInterval(() => { busy(40); ticks++; }, 100);
+}
+</script>
+
+--- pixel 10:20 bare
+<div class="card pad" style="width: 330px"><b>Buggy button</b></div>
+<script>
+let ok = 0;
+function render() {
+  return `<div class="card pad" style="width: 330px">
+    <div class="row between"><b>🐛 Buggy button</b><span class="small muted">${ok} good clicks</span></div>
+    <p class="small muted" style="margin: 6px 0 8px 0">An exception isn't fatal. The error shows under the card until a later action succeeds.</p>
+    <button data-action="bug">Throw</button> <button class="primary" data-action="ok">Works</button>
+  </div>`;
+}
+function onAction(name) {
+  if (name === 'bug') frobnicate(42); // ReferenceError
+  ok++;
+}
+</script>
+
+--- pixel 10:21 bare
+<style>
+  .seen { width: 380px; }
+  .seen .g { display: flex; flex-wrap: wrap; }
+  .seen .g span { width: 50%; font-size: 12px; font-family: ui-monospace; padding: 1px 0; white-space: nowrap; }
+</style>
+<div class="card pad seen"><b>What can a script see?</b></div>
+<script>
+const absent = ['fetch', 'XMLHttpRequest', 'WebSocket', 'document', 'window', 'localStorage', 'require', 'process', 'WebAssembly', 'navigator'];
+const present = ['setTimeout', 'setInterval', 'requestAnimationFrame', 'animate', 'tween', 'transition', 'ease', 'sleep', 'lerp', 'clamp', 'mix', 'alpha', 'esc', 'performance', 'update', 'console'];
+const check = name => { try { return typeof globalThis[name] !== 'undefined'; } catch (e) { return false; } };
+function render() {
+  const rows = (names, want) => names.map(n => {
+    const has = check(n);
+    return `<span class="${has === want ? 't-green' : 't-red'}">${has ? '●' : '○'} ${n}</span>`;
+  }).join('');
+  return `<div class="card pad seen">
+    <b>🔍 What can a script see?</b>
+    <div class="caps" style="margin: 8px 0 3px 0">Not there: no I/O at all</div><div class="g">${rows(absent, false)}</div>
+    <div class="caps" style="margin: 8px 0 3px 0">Provided by LiteChat</div><div class="g">${rows(present, true)}</div>
+    <div class="tiny muted" style="margin-top: 6px">Plus the standard built-ins: Math, Date, JSON, Map, Promise, Intl…</div>
+  </div>`;
+}
+</script>
+
+--- nora 10:24
+Try your own: <i>Insert Snippet ▸ Script Counter</i> in the composer, edit it, and send. A <code>&lt;script&gt;</code> in any message makes it live.

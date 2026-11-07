@@ -1,0 +1,63 @@
+<!doctype html>
+<html data-test="auto/01-html-elements-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: HTML elements (1/3)</title>
+<!-- conformance {"title":"HTML elements and their UA styles: text structure, headings, sections, inline text"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var f=document,b=f.documentElement,M=typeof TelegramWidget!="undefined",O=window.__conformanceMode||(M?"sandbox":"native"),a=[],w={},l=[];var R,c,d,p,q,g,k,x,A=t=>typeof t=="string"?f.querySelector(t):t,u=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),T=()=>{x=x||setTimeout(j,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),y=w[t+"|"+e]||(w[t+"|"+e]=a[a.length]=[t,e]);return y[2]=s,y[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),T(),s}function m(t,e,n,o){if(o&&o.sandboxOnly&&!M)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var B=(t,e,n,o,r)=>m(t,e,[n,o],r),E=(t,e,n,o,r)=>m(t,e,[n===o,"got "+u(n)+", want "+u(o)],r),I=(t,e,n,o,r,s)=>m(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+u(n)+", want "+u(o)+" ±"+r],s);var S=(t,e,n)=>getComputedStyle(A(t),n).getPropertyValue(e).trim();function F(t){let e=A(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}function J(t,e,n){let o=S(t,e||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var N=t=>{l.push(t)};var _=()=>{},v=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function j(){x=0,d&&!p&&_();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=d&&!l.length,n=p||e&&!t.pending?"done":e&&q?"awaiting":"running";p=n=="done",b.setAttribute("data-conformance",JSON.stringify({v:1,id:b.getAttribute("data-test"),mode:O,status:n,n:t,checks:a,targets:R,stages:c})),h&&h(n,t)}var h;function C(){h=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);f.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function D(){if(c||(c={},[].forEach.call(f.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=v(e)})),!l.length)return d=1,g&&k&&setTimeout(k,g),T();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(D,t||0)}function K(t){t=t||{},q=t.awaitInput,g=t.awaitInput||t.deadline,j();let e=()=>{e=()=>{},setTimeout(D,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}C();return{color:J,cs:S,eq:E,near:I,ok:B,rect:F,run:K,step:N}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif;color:#111}
+.row{display:block;margin:0 0 2px;width:340px}
+#narrow{width:40px;font:13px/16px monospace}
+h1,h2,h3,h4,h5,h6,p{margin-top:0;margin-bottom:2px}
+#marg p{margin:revert}
+</style>
+</head>
+<body>
+<div class="conf-head">01a · HTML elements (1/3)</div>
+<div class="conf-probes">
+  <div class="row" id="marg"><p id="p1">p</p></div>
+  <div class="row"><span id="br-a">a</span><br><span id="br-b">b</span></div>
+  <div class="row"><hr id="hr"></div>
+  <div class="row" id="narrow">aaaaaaaa<wbr>bbbbbbbb</div>
+  <div class="row" id="heads"><h1>H</h1><h2>H</h2><h3>H</h3><h4>H</h4><h5>H</h5><h6>H</h6></div>
+  <div class="row" id="secs"><header>h</header><footer>f</footer><main>m</main><nav>n</nav><section>s</section><article>a</article><aside>a</aside><hgroup>g</hgroup><search>s</search><address id="addr">ad</address></div>
+  <div class="row" id="inl"><b>b</b> <strong>s</strong> <i>i</i> <em>e</em> <cite>c</cite> <dfn>d</dfn> <var>v</var> <u>u</u> <ins>i</ins> <s>s</s> <del>d</del> <code>c</code> <kbd>k</kbd> <samp>s</samp> <mark>m</mark> <small>sm</small> <span id="q-plain">qq</span><q id="q">qq</q> <abbr title="x">ab</abbr> <time>t</time> <data value="1">d</data></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect, CS = T.cs;
+var fw = function (sel) { var w = CS(sel, 'font-weight'); return w === 'bold' ? 700 : parseInt(w, 10); };
+var px = function (sel, prop, pseudo) { return parseFloat(CS(sel, prop, pseudo)); };
+var deco = function (el) { return CS(el, 'text-decoration-line') || CS(el, 'text-decoration'); };
+var inl = function (tag) { return document.querySelector('#inl ' + tag); };
+
+T.step(function () {
+  T.near('html.el.structure', 'p has 1em block margins', px('#p1', 'margin-top'), 13, 0.5);
+  T.ok('html.el.structure', 'br starts a new line', R('#br-b').y >= R('#br-a').b - 0.5, R('#br-a').y + ' → ' + R('#br-b').y);
+  T.ok('html.el.structure', 'hr draws a rule', R('#hr').h > 0 && R('#hr').w > 100, R('#hr').w + 'x' + R('#hr').h);
+  T.ok('html.el.structure', 'wbr is a break opportunity', R('#narrow').h >= 31, 'h ' + R('#narrow').h);
+
+  var hs = document.querySelectorAll('#heads > *');
+  var sizes = Array.prototype.map.call(hs, function (h) { return parseFloat(getComputedStyle(h).fontSize); });
+  T.ok('html.el.headings', 'h1 > h2 > … > h6 font sizes', sizes.every(function (s, i) { return i === 0 || s < sizes[i - 1]; }), sizes.join(','));
+  T.ok('html.el.headings', 'headings are bold', fw(hs[0]) >= 600 && fw(hs[5]) >= 600, fw(hs[0]) + ',' + fw(hs[5]));
+
+  var secs = document.querySelectorAll('#secs > *');
+  T.ok('html.el.sections', 'sectioning elements are blocks', Array.prototype.every.call(secs, function (e) { return getComputedStyle(e).display === 'block'; }), Array.prototype.map.call(secs, function (e) { return getComputedStyle(e).display; }).join(','));
+  T.eq('html.el.sections', 'address is italic', CS('#addr', 'font-style'), 'italic');
+
+  T.ok('html.el.inline-text', 'b, strong are bold', fw(inl('b')) >= 600 && fw(inl('strong')) >= 600, fw(inl('b')) + ',' + fw(inl('strong')));
+  T.ok('html.el.inline-text', 'i, em, cite, dfn, var are italic', ['i', 'em', 'cite', 'dfn', 'var'].every(function (t) { return CS(inl(t), 'font-style') === 'italic'; }), '');
+  T.ok('html.el.inline-text', 'u, ins underline; s, del strike', /underline/.test(deco(inl('u'))) && /underline/.test(deco(inl('ins'))) && /line-through/.test(deco(inl('s'))) && /line-through/.test(deco(inl('del'))), deco(inl('u')) + ' / ' + deco(inl('s')));
+  T.ok('html.el.inline-text', 'code, kbd, samp are monospace', ['code', 'kbd', 'samp'].every(function (t) { return /monospace/.test(CS(inl(t), 'font-family')); }), CS(inl('code'), 'font-family'));
+  T.ok('html.el.inline-text', 'mark has a highlight', T.color(inl('mark')) !== '0,0,0,0', T.color(inl('mark')));
+  T.ok('html.el.inline-text', 'small is smaller', px(inl('small'), 'font-size') < 13, CS(inl('small'), 'font-size'));
+  T.ok('html.el.inline-text', 'q adds quotation marks', R('#q').w > R('#q-plain').w + 2, R('#q').w + ' vs ' + R('#q-plain').w);
+});
+T.run();
+</script>
+</body>
+</html>

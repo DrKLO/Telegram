@@ -1,3 +1,0 @@
------ Certificate i=0 (emailAddress=Test29EE@invalidcertificates.gov,CN=Invalid DN and RFC822 nameConstraints EE Certificate Test29,OU=permittedSubtree1,O=Test Certificates 2011,C=US) -----
-ERROR: Not permitted by name constraints
-

@@ -4,7 +4,6 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -20,7 +19,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
-import android.os.LocaleList;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -28,16 +26,12 @@ import android.util.Pair;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.graphics.ColorUtils;
-
-import com.google.android.exoplayer2.util.MimeTypes;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -50,36 +44,27 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LoadingSpan;
 import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.GradientClip;
 import org.telegram.ui.LaunchActivity;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 public class BotDownloads {
 
@@ -416,7 +401,7 @@ public class BotDownloads {
 
         final ImageView imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setBackground(Theme.createCircleDrawable(dp(44), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        ThemeBind.fillBackground(imageView, Theme.createCircleDrawable(dp(44), Theme.getColor(Theme.key_featuredStickers_addButton)), ThemeBind.of(Theme.key_featuredStickers_addButton));
         imageView.setImageResource(R.drawable.msg_round_file_s);
         layout.addView(imageView, LayoutHelper.createLinear(44, 44, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
@@ -427,7 +412,7 @@ public class BotDownloads {
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setText(file_name);
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlue2);
         textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 3));
 
         final AnimatedTextView subtitleView = new AnimatedTextView(context, true, true, true);
@@ -453,7 +438,7 @@ public class BotDownloads {
             if (sb.length() <= 0) sb.append(LocaleController.getString(R.string.AttachDocument));
             subtitleView.setText(sb);
         });
-        subtitleView.setTextColor(Theme.getColor(Theme.key_chat_inFileInfoText));
+        ThemeBind.textColor(subtitleView, Theme.key_chat_inFileInfoText);
         textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 15));
 
         layout.addView(textLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 0, 0, 0, 2));
@@ -549,6 +534,19 @@ public class BotDownloads {
         private final TextView titleView;
         private final TextView subtitleView;
 
+        @Override
+        public void updateColors() {
+            super.updateColors();
+            try {
+                if (background != null) {
+                    background.setColor(Theme.getColor(Theme.key_undo_background, resourcesProvider));
+                    background.invalidateSelf();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
         public DownloadBulletin(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, resourcesProvider);
 
@@ -566,13 +564,13 @@ public class BotDownloads {
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleView.setTextColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_undo_infoColor, resourcesProvider);
             titleView.setTypeface(AndroidUtilities.bold());
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 2));
 
             subtitleView = new TextView(context);
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            subtitleView.setTextColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+            ThemeBind.textColor(subtitleView, Theme.key_undo_infoColor, resourcesProvider);
             textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
         }
 
@@ -711,7 +709,7 @@ public class BotDownloads {
                 if (this.done) return;
                 this.done = true;
                 this.cancelled = cancelled;
-                doneDrawable = new RLottieDrawable(cancelled ? R.raw.error : R.raw.contact_check, cancelled ? "error" : "contact_check", dp(40), dp(40));
+                doneDrawable = new RLottieDrawable(cancelled ? R.raw.error : R.raw.contact_check, dp(40), dp(40));
                 doneDrawable.setMasterParent(view);
                 doneDrawable.setAllowDecodeSingleFrame(true);
                 doneDrawable.start();

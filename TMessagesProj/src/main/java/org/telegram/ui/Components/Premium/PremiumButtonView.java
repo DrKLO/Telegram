@@ -23,6 +23,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BadWayToMakeButtonRound;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -38,6 +39,9 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 public class PremiumButtonView extends FrameLayout implements Loadable {
 
     private Paint paintOverlayPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // paintOverlayPaint is featuredStickers_addButton (read on every draw) once the overlay is created
+    private boolean themedOverlayPaint;
+    private Theme.ResourcesProvider overlayResourcesProvider;
 
     private float progress;
     private boolean inc;
@@ -171,7 +175,7 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             };
             overlayTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             overlayTextView.setGravity(Gravity.CENTER);
-            overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            ThemeBind.textColor(overlayTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
             overlayTextView.setTextSize(AndroidUtilities.dp(14));
             overlayTextView.setTypeface(AndroidUtilities.bold());
             overlayTextView.getDrawable().setAllowCancel(true);
@@ -179,6 +183,8 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
             addView(overlayTextView);
 
             paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            themedOverlayPaint = true;
+            overlayResourcesProvider = resourcesProvider;
             updateOverlayProgress();
         }
     }
@@ -281,6 +287,9 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
                 PremiumGradient.getInstance().updateMainGradientMatrix(0, 0, getMeasuredWidth(), getMeasuredHeight(), -getMeasuredWidth() * 0.1f * progress, 0);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, PremiumGradient.getInstance().getMainGradientPaint());
             } else {
+                if (themedOverlayPaint) {
+                    paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, overlayResourcesProvider));
+                }
                 paintOverlayPaint.setAlpha(255);
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paintOverlayPaint);
             }
@@ -293,6 +302,9 @@ public class PremiumButtonView extends FrameLayout implements Loadable {
         }
 
         if (overlayProgress != 0 && drawOverlayColor) {
+            if (themedOverlayPaint) {
+                paintOverlayPaint.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, overlayResourcesProvider));
+            }
             paintOverlayPaint.setAlpha((int) (255 * overlayProgress));
             if (overlayProgress != 1f) {
                 path.rewind();

@@ -1,5 +1,6 @@
 package org.telegram.tgnet.model.generated
 
+import kotlin.Boolean
 import kotlin.Int
 import kotlin.Long
 import kotlin.String
@@ -198,32 +199,67 @@ public sealed class TlGen_SendMessageAction : TlGen_Object {
   }
 
   public data class TL_sendMessageTextDraftAction(
+    public val can_stop: Boolean,
+    public val keep_on_stop: Boolean,
     public val random_id: Long,
     public val text: TlGen_TextWithEntities,
   ) : TlGen_SendMessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (can_stop) result = result or 1U
+        if (keep_on_stop) result = result or 2U
+        return result
+      }
+
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
       stream.writeInt64(random_id)
       text.serializeToStream(stream)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0x376D975CU
+      public const val MAGIC: UInt = 0x3630B85AU
     }
   }
 
   public data class TL_sendMessageRichMessageDraftAction(
+    public val can_stop: Boolean,
+    public val keep_on_stop: Boolean,
     public val random_id: Long,
     public val rich_message: TlGen_RichMessage,
   ) : TlGen_SendMessageAction() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (can_stop) result = result or 1U
+        if (keep_on_stop) result = result or 2U
+        return result
+      }
+
     public override fun serializeToStream(stream: OutputSerializedData) {
       stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
       stream.writeInt64(random_id)
       rich_message.serializeToStream(stream)
     }
 
     public companion object {
-      public const val MAGIC: UInt = 0xA2CB24F9U
+      public const val MAGIC: UInt = 0x52564893U
+    }
+  }
+
+  public data class TL_sendMessageStopDraftAction(
+    public val random_id: Long,
+  ) : TlGen_SendMessageAction() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt64(random_id)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xFBF902B0U
     }
   }
 

@@ -1,0 +1,47 @@
+<!doctype html>
+<html data-test="visual/sdk/06-haptics-rate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- conformance {"title":"Haptics rate limit: a burst of 5, then 10 per second","hint":"On a phone: Burst asks for 20 at once, you feel 5. Stream asks for 100 over 2 s, you feel about 25. Hidden: tap, scroll the bubble away within a second, nothing is felt.","expect":"A bucket of 5 refilled at 10 per second; the rest dropped silently; nothing from a hidden widget.","contract":"docs/sdk-v1.md §2.6","covers":["limit.haptic-rate","tw.haptic"]} -->
+<!-- conformance:mini --><style>html,body{margin:0;padding:0}body{font:14px/1.4 system-ui,sans-serif;color:var(--tg-theme-text-color,#111)}@media (prefers-color-scheme:dark){body{color:var(--tg-theme-text-color,#eee)}}.h{font-weight:600;font-size:15px;margin:10px 12px 2px}.i{margin:0 12px 8px;font-size:13px;color:var(--tg-theme-hint-color,#888)}.r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 12px}.big{font-size:22px;font-weight:600;margin:4px 12px}#log{margin:8px 12px 10px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><script>var S = (function () {
+  var r = document.documentElement, c = [], tg = {}, st = 'running';
+  function rc(e) { var b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map(function (v) { return Math.round(v * 10) / 10; }); }
+  function pub() {
+    var t = {};
+    for (var k in tg) { var e = document.getElementById(tg[k]); if (e) t[k] = rc(e); }
+    r.setAttribute('data-conformance', JSON.stringify({ v: 1, id: r.getAttribute('data-test'), status: st, checks: c, targets: t }));
+  }
+  function log(m, ok) {
+    var l = document.getElementById('log');
+    if (!l) return;
+    var d = document.createElement('div');
+    d.textContent = (ok === true ? '✓ ' : ok === false ? '✗ ' : '· ') + m;
+    l.appendChild(d);
+  }
+  return {
+    TW: typeof TelegramWidget !== 'undefined' ? TelegramWidget : null,
+    check: function (id, name, ok, d) { c.push([id, name, ok ? 'pass' : 'fail', d || '']); log(name + (d ? ' (' + d + ')' : ''), !!ok); pub(); },
+    log: log,
+    target: function (n, id) { tg[n] = id; },
+    start: function () { st = 'awaiting'; pub(); },
+    done: function () { st = 'done'; pub(); },
+  };
+})();</script><!-- /conformance:mini -->
+</head>
+<body>
+<div class="h">SDK 06 · Haptics rate limit</div>
+<div class="i">Burst: feel 5 of 20. Stream: feel about 25 of 100. Hidden: feel none.</div>
+<div class="r"><button id="b">Burst 20</button><button id="s">Stream 100 / 2 s</button><button id="h">Hidden in 1.5 s</button></div>
+<div id="log"></div>
+<script>
+var H = S.TW && S.TW.HapticFeedback;
+function hit() { try { H.impactOccurred('rigid'); } catch (e) {} }
+document.getElementById('b').onclick = function () { for (var i = 0; i < 20; i++) hit(); S.log('20 calls in one task'); };
+document.getElementById('s').onclick = function () { var n = 0, t = setInterval(function () { hit(); if (++n === 100) { clearInterval(t); S.log('100 calls in 2 s'); } }, 20); };
+document.getElementById('h').onclick = function () { S.log('scroll away now'); setTimeout(function () { for (var i = 0; i < 10; i++) hit(); S.log('10 calls while ' + (document.hidden ? 'hidden' : 'still visible')); }, 1500); };
+if (!H) S.log('HapticFeedback is missing (SDK v1)', false);
+S.start();
+</script>
+</body>
+</html>

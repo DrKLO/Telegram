@@ -3,7 +3,7 @@ package org.telegram.messenger.utils;
 import android.text.Spanned;
 import android.text.TextUtils;
 
-import org.telegram.messenger.CodeHighlighting;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.QuoteSpan;
 import org.telegram.ui.Components.TextStyleSpan;
@@ -32,7 +32,7 @@ public class CustomHtml {
 
             if (spans != null) {
                 for (int j = 0; j < spans.length; ++j) {
-                    out.append(spans[j].isCollapsing ? "<details>" : "<blockquote>");
+                    out.append(spans[j].isCollapsing ? "<blockquote collapsed>" : "<blockquote>");
                 }
             }
 
@@ -40,7 +40,7 @@ public class CustomHtml {
 
             if (spans != null) {
                 for (int j = spans.length - 1; j >= 0; --j) {
-                    out.append(spans[j].isCollapsing ? "</details>" : "</blockquote>");
+                    out.append("</blockquote>");
                 }
             }
         }
@@ -63,6 +63,9 @@ public class CustomHtml {
         if ((run.flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
             out.append("<s>");
         }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_MONO) > 0) {
+            out.append("<code>");
+        }
         if ((run.flags & TextStyleSpan.FLAG_STYLE_URL) > 0) {
             if (run.urlEntity != null) {
                 out.append("<a href=\"").append(run.urlEntity.url).append("\">");
@@ -74,6 +77,9 @@ public class CustomHtml {
         if (run == null) return;
         if ((run.flags & TextStyleSpan.FLAG_STYLE_URL) > 0 && run != null && run.urlEntity != null) {
             out.append("</a>");
+        }
+        if ((run.flags & TextStyleSpan.FLAG_STYLE_MONO) > 0) {
+            out.append("</code>");
         }
         if ((run.flags & TextStyleSpan.FLAG_STYLE_STRIKE) > 0) {
             out.append("</s>");

@@ -36,6 +36,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BlobDrawable;
@@ -717,7 +718,7 @@ public class CaptionStory extends CaptionContainerView {
                 .show();
         TextView button = (TextView) d.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ThemeBind.textColor(button, Theme.key_text_RedBold, resourcesProvider);
         }
     }
 
@@ -768,7 +769,7 @@ public class CaptionStory extends CaptionContainerView {
         public RecordDot(View parent) {
             this.parent = parent;
             int resId = R.raw.chat_audio_record_delete_3;
-            drawable = new RLottieDrawable(resId, "" + resId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), false, null);
+            drawable = new RLottieDrawable(resId, AndroidUtilities.dp(28), AndroidUtilities.dp(28), false, null);
             drawable.setInvalidateOnProgressSet(true);
             updateColors();
         }
@@ -777,8 +778,8 @@ public class CaptionStory extends CaptionContainerView {
             int dotColor = 0xffDB4646;
             redDotPaint.setColor(dotColor);
             drawable.beginApplyLayerColors();
-            drawable.setLayerColor("Cup Red.**", dotColor);
-            drawable.setLayerColor("Box.**", dotColor);
+            drawable.setLayerColor("Cup Red", dotColor);
+            drawable.setLayerColor("Box", dotColor);
             drawable.commitApplyLayerColors();
         }
 

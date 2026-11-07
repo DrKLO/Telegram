@@ -1,0 +1,260 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 07-shop.chat, message 6
+  author: shop 14:07 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; padding: 1px 4px; border-radius: 4px; background-color: rgba(127,127,127,0.15); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .center { text-align: center; } .right { text-align: right; }
+  .t-green { color: var(--green); } .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  [data-action] { cursor: pointer; }
+  svg { vertical-align: middle; }
+
+  .rc { width: 420px; max-width: 100%; font-size: 13px; box-sizing: border-box; }
+  .rc .logo { text-align: center; padding: 16px 0 6px 0; }
+  .rc .dash { border-top: 1px dashed rgba(127,127,127,0.45); margin: 8px 0; }
+  .rc .li { overflow: hidden; }
+  .rc .lr { position: relative; display: flex; align-items: flex-start; padding: 5px 6px; border-radius: 8px; }
+  .rc .lr.in { animation: slidein 330ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes slidein { from { transform: translateX(440px); } to { transform: translateX(0); } }
+  .rc .lr:hover { background-color: rgba(127,127,127,0.10); }
+  .rc .lr.open { background-color: rgba(0,122,255,0.10); }
+  .rc .q { width: 26px; flex-shrink: 0; }
+  .rc .p, .rc .mono { font-family: ui-monospace, monospace; font-size: 12px; white-space: nowrap; }
+  .rc .p { text-align: right; }
+  .rc .chev { width: 16px; flex-shrink: 0; text-align: right; color: #8e8e93; font-size: 12px; }
+  .rc .gone { text-decoration: line-through; color: #8e8e93; }
+  .rc .det { margin: 2px 6px 6px 32px; padding: 9px 10px; border-radius: 9px; background-color: rgba(127,127,127,0.10); font-size: 12px; }
+  .rc .det svg { margin-right: 10px; flex-shrink: 0; }
+  .rc .kv { display: flex; justify-content: space-between; padding: 2px 0; }
+  .rc .det button { padding: 3px 10px; font-size: 12px; }
+  .rc .m { display: flex; justify-content: space-between; color: #8e8e93; font-size: 12px; padding: 2px 6px; }
+  .rc .tot { display: flex; justify-content: space-between; align-items: center; height: 26px; padding: 6px 6px 0 6px; font-size: 16px; font-weight: 800; }
+  .rc .tot .p { font-size: 16px; display: inline-block; transform-origin: right center; }
+  /* pop.total 1.14 → 1, 450 ms outBack */
+  @keyframes poptot { 0% { transform: scale(1.14); } 60% { transform: scale(0.97); } 100% { transform: scale(1); } }
+  .rc .tot .p.pop { animation: poptot 450ms cubic-bezier(.33,1,.68,1) both; }
+  .rc .opt { display: flex; align-items: center; padding: 5px 6px; border-radius: 8px; }
+  .rc .opt.tap:hover { background-color: rgba(127,127,127,0.08); }
+  .rc .tip { display: inline-block; padding: 3px 10px; margin-left: 4px; border-radius: 12px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.14); }
+  .rc .tip:hover { background-color: rgba(127,127,127,0.26); }
+  .rc .tip.on { background-color: #34c759; color: #ffffff; }
+  /* knob.x 0 → 1, 340 ms outBack; background mix(grey, green, x) */
+  .rc .tg { display: inline-block; position: relative; width: 40px; height: 24px; border-radius: 12px; background-color: rgba(120,120,128,0.32); transition: background-color 340ms cubic-bezier(.34,1.56,.64,1); }
+  .rc .tg.on { background-color: #34c759; }
+  .rc .kn { display: block; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 10px; background-color: #ffffff; transition: left 340ms cubic-bezier(.34,1.56,.64,1); }
+  .rc .tg.on .kn { left: 18px; }
+  .rc .splitp { margin: 4px 6px 0 6px; padding: 10px; border-radius: 10px; background-color: rgba(127,127,127,0.10); }
+  .rc .splitp button { padding: 2px 10px; }
+  .rc .avs { display: flex; margin: 8px 0; }
+  .rc .pp { width: 58px; text-align: center; }
+  .rc .pp .av { width: 30px; height: 30px; line-height: 30px; border-radius: 15px; font-size: 11px; }
+  /* pop.req 1.4 → 1, 450 ms outBack */
+  @keyframes popreq { 0% { transform: scale(1.4); } 60% { transform: scale(0.95); } 100% { transform: scale(1); } }
+  .rc .sent { display: inline-block; animation: popreq 450ms cubic-bezier(.33,1,.68,1) both; }
+  .rc .bc { display: inline-block; width: 220px; height: 34px; --ink: light-dark(#1c1c1e, #e5e5ea); background: repeating-linear-gradient(90deg, var(--ink) 0px, var(--ink) 1px, transparent 1px, transparent 3px, var(--ink) 3px, var(--ink) 6px, transparent 6px, transparent 7px, var(--ink) 7px, var(--ink) 8px, transparent 8px, transparent 11px); }
+  .rc .zig { height: 10px; background-image: linear-gradient(135deg, transparent 50%, rgba(127,127,127,0.18) 50%), linear-gradient(225deg, transparent 50%, rgba(127,127,127,0.18) 50%); background-size: 10px 10px; }
+  [hidden] { display: none !important; }
+  @keyframes fade { from { opacity: 0.25; } to { opacity: 1; } }
+  .rc.fx-fade, .rc.fx-fade2 { animation: fade 220ms ease-out; }
+</style>
+<div class="card rc" id="root">
+  <div class="logo"><span id="logo"></span><div style="font-weight: 800; font-size: 16px; margin-top: 2px">NORTHWIND OUTFITTERS</div><div class="tiny muted">Order #NW-58214 · 7 Oct 2026, 14:07</div></div>
+  <div class="pad" style="padding-top: 4px">
+    <div class="dash"></div>
+    <div class="tiny muted" style="padding: 0 6px 3px 6px">Tap an item for details or to start a return</div>
+    <div id="items"></div>
+    <div class="dash"></div>
+    <div class="m"><span id="subl">Subtotal (10 items)</span><span class="p" id="v-sub">0.00</span></div>
+    <div class="m"><span>Member discount (10%)</span><span class="p t-green" id="v-disc">−0.00</span></div>
+    <div class="m"><span>Coupon <code>TRAIL15</code></span><span class="p t-green" id="v-coupon">−0.00</span></div>
+    <div class="m"><span>Shipping · Express (1–2 days)</span><span class="p">0.00</span></div>
+    <div class="m" id="tiprow" hidden><span>Courier tip</span><span class="p" id="v-tip">0.00</span></div>
+    <div class="m"><span>VAT 19% (included)</span><span class="p" id="v-vat">0.00</span></div>
+    <div class="tot"><span>Total</span><span class="p" id="v-total">€0.00</span></div>
+    <div class="m" id="refrow" hidden><span>Refund to Visa ···· 4242</span><span class="p t-green" id="v-refund">+0.00</span></div>
+    <div class="dash"></div>
+    <div class="opt"><span class="grow">Tip your courier</span><span id="tips"></span></div>
+    <div class="opt tap" data-action="split"><span class="grow">Split the bill</span><span class="tg" id="tg"><span class="kn"></span></span></div>
+    <div class="splitp" id="splitp" hidden>
+      <div class="row"><span class="grow small">Split between <b id="ppl">2</b> people</span><button data-action="ppl" data-value="-1">−</button><button data-action="ppl" data-value="1" style="margin-left: 4px">+</button></div>
+      <div class="avs" id="avs"></div>
+      <div class="row small"><span class="grow muted">Each pays <b class="fg mono" id="v-per">€0.00</b></span><span id="req"></span></div>
+    </div>
+    <div class="dash"></div>
+    <div class="m"><span>Paid with</span><span class="p"><span id="cardicon"></span> Visa ···· 4242</span></div>
+    <div class="m"><span>Ship to</span><span class="p">Alex Morgan, Torstraße 12, Berlin</span></div>
+    <div class="m"><span>Points earned</span><span class="p t-orange" id="v-pts">+0 ✦</span></div>
+    <div class="center" style="margin-top: 12px"><div class="bc"></div><div class="tiny muted" style="font-family: ui-monospace, monospace">NW58214 2026 1007 1407</div></div>
+    <div class="center small" style="margin-top: 8px">Thank you for shopping sustainably 🌱</div>
+  </div>
+  <div class="zig"></div>
+</div>
+<script>
+const ITEMS = [
+  { q: 1, name: 'Trailhead Rain Jacket', sub: 'Forest · M', sku: 'TRJ-FOR-M', unit: 129, icon: 'cloud.rain.fill', tint: '2d6a4f', note: '20,000 mm waterproof 3-layer shell' },
+  { q: 1, name: 'Dune Daypack 22L', sub: 'Sand · one size · −30%', sku: 'DDP-SND-22', unit: 62.3, icon: 'bag.fill', tint: 'e07b39', note: 'Was €89.00 · recycled nylon' },
+  { q: 2, name: 'Tide Water Bottle', sub: 'Ocean · 750 ml', sku: 'TWB-OCN-750', unit: 34, icon: 'drop.fill', tint: '2a5298', note: 'Insulated · cold 24 h, hot 12 h' },
+  { q: 3, name: 'Merino Hiking Socks', sub: 'Charcoal · 39–42', sku: 'MHS-CHR-3942', unit: 15, icon: 'figure.walk', tint: '636366', note: '70% merino wool · cushioned heel' },
+  { q: 1, name: 'Packable Sun Hat', sub: 'Natural · L', sku: 'PSH-NAT-L', unit: 29, icon: 'sun.max.fill', tint: 'ff9500', note: 'UPF 50+ · folds flat into a pocket' },
+  { q: 1, name: 'Trail First-Aid Kit', sub: '42 pieces', sku: 'TFA-42', unit: 24.9, icon: 'cross.case.fill', tint: 'ff3b30', note: 'Waterproof roll-top pouch' },
+  { q: 1, name: 'Gift wrap', sub: 'Recycled kraft paper', sku: 'GFT-KRF', unit: 3.5, icon: 'gift.fill', tint: 'af52de', note: 'A service, so it can’t be returned', final: true },
+];
+const TIPS = [['No tip', 0], ['€2', 2], ['€5', 5], ['€10', 10]];
+const PEOPLE = [['AM', '#007aff'], ['JK', '#af52de'], ['MR', '#30b0c7'], ['SL', '#ff9500'], ['TB', '#34c759'], ['NP', '#ff2d55']];
+let open = -1, tip = 0, split = false, people = 2, requested = false;
+const returned = new Set();
+const shown = { sub: 0, disc: 0, coupon: 0, vat: 0, tip: 0, total: 0, per: 0, owed: 0, refund: 0, pts: 0 };
+
+const r2 = x => Math.round(x * 100) / 100;
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const $ = id => document.getElementById(id);
+const root = $('root');
+
+// sf: symbols → inline SVG (COLOR is the tint)
+const ICONS = {
+  'mountain.2.fill': '<path d="M2 20 8 9l4 6 2.5-3.5L22 20Z"/>',
+  'cloud.rain.fill': '<path d="M7 15a4 4 0 0 1-.5-8A5.5 5.5 0 0 1 17 8.3 3.5 3.5 0 0 1 17 15Z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3" fill="none" stroke="COLOR" stroke-width="1.6" stroke-linecap="round"/>',
+  'bag.fill': '<path d="M6 8h12l1.2 12.5a1 1 0 0 1-1 1.5H5.8a1 1 0 0 1-1-1.5Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="COLOR" stroke-width="1.8"/>',
+  'drop.fill': '<path d="M12 2.5C12 2.5 5.5 10 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10 12 2.5 12 2.5Z"/>',
+  'figure.walk': '<circle cx="13.5" cy="3.5" r="2"/><path d="M12 7 9 9.5 7.5 14M12 7l2.5 1 1.5 4M12 7l-1 6 2 3-1.5 6M11 13l-3 7M13 16l3.5 1.5" fill="none" stroke="COLOR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  'sun.max.fill': '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" fill="none" stroke="COLOR" stroke-width="2" stroke-linecap="round"/>',
+  'cross.case.fill': '<path d="M9 5V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M12 9v7M8.5 12.5h7" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>',
+  'gift.fill': '<path d="M3 7h18v4H3zM4 12h7v9H4zM13 12h7v9h-7z"/><path d="M12 7c-1.5-3-5.5-4-5.5-1.5S10 8 12 7Zm0 0c1.5-3 5.5-4 5.5-1.5S14 8 12 7Z"/>',
+  'creditcard.fill': '<rect x="2" y="5" width="20" height="14" rx="2.5"/><rect x="2" y="8" width="20" height="3" fill="#ffffff" fill-opacity="0.5"/>',
+};
+const ico = (name, size, color) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#${color}">${ICONS[name].replace(/COLOR/g, '#' + color)}</svg>`;
+
+function fade() { const a = root.classList.contains('fx-fade'); root.classList.remove('fx-fade', 'fx-fade2'); root.classList.add(a ? 'fx-fade2' : 'fx-fade'); }
+root.addEventListener('animationend', e => { if (e.target === root) root.classList.remove('fx-fade', 'fx-fade2'); });
+function pop(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+// --- money ---
+function goods(skip) {
+  const sub = r2(ITEMS.reduce((s, it, i) => s + (skip.has(i) ? 0 : it.q * it.unit), 0));
+  const disc = r2(sub * 0.1), coupon = sub - disc >= 15 ? 15 : 0;
+  return { sub, disc, coupon, net: r2(sub - disc - coupon) };
+}
+const FULL = goods(new Set()).net;
+function totals() {
+  const g = goods(returned);
+  const t = TIPS[tip][1];
+  const total = r2(g.net + t);
+  return { sub: g.sub, disc: g.disc, coupon: g.coupon, vat: r2(g.net * 19 / 119), tip: t, total,
+           per: r2(total / people), owed: r2(total - total / people), refund: r2(FULL - g.net), pts: Math.floor(g.net) };
+}
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const owners = new Map();
+function tween(target, props, duration, easing, onFrame) {
+  const token = {}, from = {}, to = {};
+  for (const key of Object.keys(props)) { from[key] = Number(target[key]) || 0; to[key] = Number(props[key]); owners.set(key, token); }
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / duration), p = easing(t);
+    for (const key in to) if (owners.get(key) === token) target[key] = t >= 1 ? to[key] : from[key] + (to[key] - from[key]) * p;
+    onFrame();
+    if (t < 1) requestAnimationFrame(step); else for (const key in to) if (owners.get(key) === token) owners.delete(key);
+  };
+  step();
+}
+function paintMoney() {
+  $('v-sub').textContent = shown.sub.toFixed(2);
+  $('v-disc').textContent = '−' + shown.disc.toFixed(2);
+  $('v-coupon').textContent = '−' + shown.coupon.toFixed(2);
+  $('v-tip').textContent = shown.tip.toFixed(2);
+  $('v-vat').textContent = shown.vat.toFixed(2);
+  $('v-total').textContent = '€' + shown.total.toFixed(2);
+  $('v-refund').textContent = '+' + shown.refund.toFixed(2);
+  $('v-pts').textContent = `+${Math.round(shown.pts)} ✦`;
+  $('v-per').textContent = '€' + shown.per.toFixed(2);
+  for (const el of document.querySelectorAll('#avs .mono')) el.textContent = '€' + shown.per.toFixed(2);
+  const owed = $('v-owed');
+  if (owed) owed.textContent = shown.owed.toFixed(2);
+}
+function retarget(ms) {
+  tween(shown, totals(), ms || 650, ease.outCubic, paintMoney);
+  pop($('v-total'), 'pop');
+}
+
+// --- items ---
+const rowHTML = (it, i, anim) => {
+  const ret = returned.has(i);
+  return `<div class="li"><div class="lr${open === i ? ' open' : ''}${anim ? ' in' : ''}" data-action="item" data-value="${i}"${anim ? ` style="animation-delay: ${i * 75}ms"` : ''}>
+      <span class="q muted">${it.q}×</span>
+      <div class="grow"><b class="${ret ? 'gone' : ''}">${esc(it.name)}</b>${ret ? ' <span class="badge orange">RETURN</span>' : ''}<div class="tiny muted">${esc(it.sub)}</div></div>
+      <span class="p${ret ? ' gone' : ''}">${(it.q * it.unit).toFixed(2)}</span><span class="chev">${open === i ? '▾' : '›'}</span></div></div>`;
+};
+function detailHTML(it, i) {
+  const ret = returned.has(i);
+  return `<div class="det">
+    <div class="row" style="margin-bottom: 4px">${ico(it.icon, 22, it.tint)}<div class="grow"><b>${esc(it.name)}</b><div class="tiny muted">${esc(it.note)}</div></div></div>
+    <div class="kv"><span class="muted">SKU</span><span class="mono">${it.sku}</span></div>
+    <div class="kv"><span class="muted">Unit price</span><span class="mono">${it.q} × ${it.unit.toFixed(2)}</span></div>
+    <div class="kv"><span class="muted">Returns</span><span>${it.final ? 'Not returnable' : ret ? '<b class="t-orange">Return label emailed</b>' : 'Free until 6 Nov 2026'}</span></div>
+    ${it.final ? '' : `<div class="right" style="margin-top: 6px"><button data-action="ret" data-value="${i}">${ret ? 'Cancel return' : '↩ Start a return'}</button></div>`}
+  </div>`;
+}
+$('items').innerHTML = ITEMS.map((it, i) => `<div class="it" id="it-${i}">${rowHTML(it, i, true)}</div>`).join('');
+function refreshItem(i) {
+  const wrap = $('it-' + i);
+  wrap.innerHTML = rowHTML(ITEMS[i], i, false) + (open === i ? detailHTML(ITEMS[i], i) : '');
+}
+function refreshCounts() {
+  const items = ITEMS.reduce((s, it, i) => s + (returned.has(i) ? 0 : it.q), 0);
+  $('subl').textContent = `Subtotal (${items} item${items === 1 ? '' : 's'})`;
+  $('refrow').hidden = !returned.size;
+}
+
+// --- tips / split ---
+$('tips').innerHTML = TIPS.map(([l], i) => `<span class="tip${tip === i ? ' on' : ''}" data-action="tip" data-value="${i}">${l}</span>`).join('');
+function refreshSplit() {
+  $('splitp').hidden = !split;
+  $('tg').classList.toggle('on', split);
+  if (!split) return;
+  $('ppl').textContent = people;
+  $('avs').innerHTML = PEOPLE.slice(0, people).map(([ini, c], i) => `<div class="pp"><span class="av" style="background-color: ${c}">${ini}</span><div class="tiny ${i ? 'mono' : 'muted'}" style="margin-top: 3px">${i ? '€' + shown.per.toFixed(2) : 'You paid'}</div></div>`).join('');
+  $('req').innerHTML = requested
+    ? `<b class="t-green sent">✓ ${people - 1} request${people > 2 ? 's' : ''} sent</b>`
+    : `<button class="primary" data-action="request">Request €<span id="v-owed">${shown.owed.toFixed(2)}</span></button>`;
+}
+
+$('logo').innerHTML = ico('mountain.2.fill', 26, '34c759');
+$('cardicon').innerHTML = ico('creditcard.fill', 12, '8e8e93');
+setTimeout(() => tween(shown, totals(), 900, ease.outCubic, paintMoney), 250);
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || !root.contains(el)) return;
+  const name = el.dataset.action, i = Number(el.dataset.value);
+  if (name === 'item') { fade(); const was = open; open = open === i ? -1 : i; if (was >= 0) refreshItem(was); if (open >= 0) refreshItem(open); }
+  else if (name === 'ret') { fade(); returned.has(i) ? returned.delete(i) : returned.add(i); refreshItem(i); refreshCounts(); retarget(); }
+  else if (name === 'tip') {
+    if (i === tip) return;
+    if ((tip === 0) !== (i === 0)) fade();
+    tip = i;
+    for (const t of $('tips').children) t.classList.toggle('on', Number(t.dataset.value) === tip);
+    $('tiprow').hidden = !tip;
+    retarget();
+  }
+  else if (name === 'split') { fade(); split = !split; requested = false; refreshSplit(); retarget(400); }
+  else if (name === 'ppl') { const n = clamp(people + i, 2, PEOPLE.length); if (n === people) return; fade(); people = n; requested = false; refreshSplit(); retarget(450); }
+  else if (name === 'request') { fade(); requested = true; refreshSplit(); }
+});
+</script>

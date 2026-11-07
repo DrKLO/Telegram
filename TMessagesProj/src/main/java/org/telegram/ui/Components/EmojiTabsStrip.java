@@ -38,6 +38,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
@@ -775,7 +776,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
         }
     }
 
-    public class EmojiTabButton extends ViewGroup {
+    public class EmojiTabButton extends ViewGroup implements Theme.Colorable {
         public boolean shown = true;
 
         public Long id;
@@ -850,7 +851,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                lottieDrawable = new RLottieDrawable(lottieId, "" + lottieId, AndroidUtilities.dp(24), AndroidUtilities.dp(24), false, null);
+                lottieDrawable = new RLottieDrawable(lottieId, AndroidUtilities.dp(24), AndroidUtilities.dp(24), false, null);
                 lottieDrawable.setBounds(AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(27), AndroidUtilities.dp(27));
                 lottieDrawable.setMasterParent(this);
                 lottieDrawable.setAllowDecodeSingleFrame(true);
@@ -1371,6 +1372,36 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             }
         }
 
+        private int lastThemeIconColor, lastThemeIconSelectedColor, lastThemeSelectorColor;
+        private float lastThemeSelectT = -1;
+
+        @Override
+        public void updateColors() {
+            try {
+                // updateColor() creates a color filter: only when a theme color it reads actually changed
+                final int iconColor = Theme.getColor(Theme.key_chat_emojiPanelIcon, resourcesProvider);
+                final int iconSelectedColor = Theme.getColor(Theme.key_chat_emojiPanelIconSelected, resourcesProvider);
+                final int selector = selectorColor();
+                if (iconColor == lastThemeIconColor && iconSelectedColor == lastThemeIconSelectedColor && selector == lastThemeSelectorColor && lastThemeSelectT == selectT) {
+                    return;
+                }
+                lastThemeIconColor = iconColor;
+                lastThemeIconSelectedColor = iconSelectedColor;
+                lastThemeSelectorColor = selector;
+                lastThemeSelectT = selectT;
+                updateColor();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_chat_emojiPanelIcon);
+            colors.add(Theme.key_chat_emojiPanelIconSelected);
+            colors.add(Theme.key_glass_defaultIcon);
+        }
+
         public void updateColor() {
             Theme.setSelectorDrawableColor(getBackground(), selectorColor(), false);
             if (isGlassDesign) {
@@ -1388,7 +1419,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             if (currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON || currentType == SelectAnimatedEmojiDialog.TYPE_SET_REPLY_ICON_BOTTOM) {
                 color = accentColor;
             }
-            PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
+            PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
             if (imageView != null && !isAnimatedEmoji) {
                 imageView.setColorFilter(colorFilter);
                 imageView.invalidate();

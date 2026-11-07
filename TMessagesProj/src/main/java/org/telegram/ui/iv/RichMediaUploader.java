@@ -2,11 +2,15 @@ package org.telegram.ui.iv;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.provider.MediaStore;
+import android.text.TextUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLoader;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -22,6 +26,7 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         default void onPhotoUploaded(TLRPC.Photo photo) {}
         default void onVideoUploaded(TLRPC.Document document) {}
         default void onAudioUploaded(TLRPC.Document document) {}
+        default void onDocumentUploaded(TLRPC.Document document) {}
         default void onError() {}
     }
 
@@ -29,6 +34,7 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
     private final String path;
     private final boolean isVideo;
     private final boolean isAudio;
+    private final boolean isDocument;
     private final int videoWidth;
     private final int videoHeight;
     private final int videoDurationSec;
@@ -40,6 +46,9 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
     private boolean finished;
     private int requestToken;
     private volatile String uploadPath;
+    private String documentThumbPath;
+    private TLRPC.InputFile documentInputFile;
+    private boolean uploadingDocumentThumb;
 
     public RichMediaUploader(int currentAccount, String path, Listener listener) {
         this(currentAccount, path, false, 0, 0, 0, listener);
@@ -50,6 +59,7 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         this.path = path;
         this.isVideo = isVideo;
         this.isAudio = false;
+        this.isDocument = false;
         this.videoWidth = width;
         this.videoHeight = height;
         this.videoDurationSec = durationSec;
@@ -62,6 +72,7 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         this.path = path;
         this.isVideo = false;
         this.isAudio = true;
+        this.isDocument = false;
         this.videoWidth = 0;
         this.videoHeight = 0;
         this.videoDurationSec = 0;
@@ -71,6 +82,23 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
 
     public static RichMediaUploader forAudio(int currentAccount, String path, TLRPC.Document audioDocument, Listener listener) {
         return new RichMediaUploader(currentAccount, path, audioDocument, listener);
+    }
+
+    private RichMediaUploader(int currentAccount, String path, TLRPC.Document document, boolean isDocument, Listener listener) {
+        this.currentAccount = currentAccount;
+        this.path = path;
+        this.isVideo = false;
+        this.isAudio = false;
+        this.isDocument = isDocument;
+        this.videoWidth = 0;
+        this.videoHeight = 0;
+        this.videoDurationSec = 0;
+        this.audioDocument = document;
+        this.listener = listener;
+    }
+
+    public static RichMediaUploader forDocument(int currentAccount, String path, TLRPC.Document document, Listener listener) {
+        return new RichMediaUploader(currentAccount, path, document, true, listener);
     }
 
     public String getPath() {
@@ -89,6 +117,15 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
                 listener.onWidthHeightResolved(videoWidth, videoHeight);
             }
             beginUpload(path);
+            return;
+        }
+        if (isDocument) {
+            Utilities.globalQueue.postRunnable(() -> {
+                documentThumbPath = generateDocumentThumb();
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!cancelled && !finished) beginUpload(path);
+                });
+            });
             return;
         }
         if (isAudio) {
@@ -117,10 +154,12 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
             fileType = ConnectionsManager.FileTypeVideo;
         } else if (isAudio) {
             fileType = ConnectionsManager.FileTypeAudio;
+        } else if (isDocument) {
+            fileType = ConnectionsManager.FileTypeFile;
         } else {
             fileType = ConnectionsManager.FileTypePhoto;
         }
-        FileLoader.getInstance(currentAccount).uploadFile(uploadPath, false, !isVideo && !isAudio, fileType);
+        FileLoader.getInstance(currentAccount).uploadFile(uploadPath, false, !isVideo && !isAudio && !isDocument, fileType);
     }
 
     private String ensureJpegPath(String src) {
@@ -208,19 +247,32 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         if (uploadPath == null || !uploadPath.equals(p)) return;
         if (id == NotificationCenter.fileUploaded) {
             TLRPC.InputFile inputFile = (TLRPC.InputFile) args[1];
-            sendUploadMediaRequest(inputFile);
+            if (isDocument && !uploadingDocumentThumb && !TextUtils.isEmpty(documentThumbPath)) {
+                documentInputFile = inputFile;
+                uploadingDocumentThumb = true;
+                uploadPath = documentThumbPath;
+                FileLoader.getInstance(currentAccount).uploadFile(uploadPath, false, true, ConnectionsManager.FileTypePhoto);
+            } else if (isDocument && uploadingDocumentThumb) {
+                sendUploadMediaRequest(documentInputFile, inputFile);
+            } else {
+                sendUploadMediaRequest(inputFile, null);
+            }
         } else if (id == NotificationCenter.fileUploadFailed) {
-            finishWithError();
+            if (isDocument && uploadingDocumentThumb && documentInputFile != null) {
+                sendUploadMediaRequest(documentInputFile, null);
+            } else {
+                finishWithError();
+            }
         } else if (id == NotificationCenter.fileUploadProgressChanged) {
             long uploaded = (Long) args[1];
             long total = (Long) args[2];
-            if (listener != null) {
+            if (listener != null && !uploadingDocumentThumb) {
                 listener.onProgress(total > 0 ? (float) uploaded / total : 0f);
             }
         }
     }
 
-    private void sendUploadMediaRequest(TLRPC.InputFile inputFile) {
+    private void sendUploadMediaRequest(TLRPC.InputFile inputFile, TLRPC.InputFile thumbFile) {
         TLRPC.TL_messages_uploadMedia req = new TLRPC.TL_messages_uploadMedia();
         req.peer = new TLRPC.TL_inputPeerSelf();
         if (isVideo) {
@@ -234,12 +286,33 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
             attr.h = videoHeight;
             media.attributes.add(attr);
             req.media = media;
-        } else if (isAudio) {
+        } else if (isAudio || isDocument) {
             TLRPC.TL_inputMediaUploadedDocument media = new TLRPC.TL_inputMediaUploadedDocument();
             media.file = inputFile;
-            media.mime_type = audioDocument != null && audioDocument.mime_type != null ? audioDocument.mime_type : "audio/mpeg";
+            // A pageBlockDocument must resolve to a generic file. In particular, sending a
+            // forced WebP document with image/webp + documentAttributeImageSize makes the
+            // rich-message validator classify it as image media and reject the block with
+            // RICH_MESSAGE_DOCUMENT_INVALID. The filename still preserves the real extension,
+            // and the separately uploaded thumb remains available for the document preview.
+            media.mime_type = isDocument ? "application/octet-stream" :
+                    (audioDocument != null && audioDocument.mime_type != null ? audioDocument.mime_type : "audio/mpeg");
             if (audioDocument != null) {
-                media.attributes.addAll(audioDocument.attributes);
+                if (isDocument) {
+                    for (TLRPC.DocumentAttribute attribute : audioDocument.attributes) {
+                        if (attribute instanceof TLRPC.TL_documentAttributeFilename) {
+                            media.attributes.add(attribute);
+                        }
+                    }
+                } else {
+                    media.attributes.addAll(audioDocument.attributes);
+                }
+            }
+            if (isDocument) {
+                media.force_file = true;
+                if (thumbFile != null) {
+                    media.thumb = thumbFile;
+                    media.flags |= 4;
+                }
             }
             req.media = media;
         } else {
@@ -250,11 +323,13 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         requestToken = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (cancelled) return;
             requestToken = 0;
-            if (isVideo || isAudio) {
+            if (isVideo || isAudio || isDocument) {
                 if (response instanceof TLRPC.TL_messageMediaDocument) {
                     TLRPC.Document doc = ((TLRPC.TL_messageMediaDocument) response).document;
                     if (doc != null) {
-                        if (isAudio) {
+                        if (isDocument) {
+                            finishWithDocument(doc);
+                        } else if (isAudio) {
                             finishWithAudio(doc);
                         } else {
                             finishWithVideo(doc);
@@ -293,9 +368,64 @@ public class RichMediaUploader implements NotificationCenter.NotificationCenterD
         if (listener != null) listener.onAudioUploaded(doc);
     }
 
+    private void finishWithDocument(TLRPC.Document doc) {
+        if (doc == null || doc.id == 0 || doc.access_hash == 0) {
+            finishWithError();
+            return;
+        }
+        finished = true;
+        teardown();
+        if (!TextUtils.isEmpty(documentThumbPath) && MessageObject.isDocumentHasThumb(doc)) {
+            final TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(doc.thumbs, 320);
+            if (thumb != null) {
+                FileLoader.getInstance(currentAccount).setLocalPathTo(thumb, documentThumbPath);
+                AndroidUtilities.copyFileSafe(new File(documentThumbPath), FileLoader.getInstance(currentAccount).getPathToAttach(thumb, true));
+            }
+        }
+        if (listener != null) listener.onDocumentUploaded(doc);
+    }
+
     private void finishWithError() {
         finished = true;
         teardown();
         if (listener != null) listener.onError();
+    }
+
+    private String generateDocumentThumb() {
+        if (audioDocument == null || TextUtils.isEmpty(path)) return null;
+        Bitmap bitmap = null;
+        try {
+            final String mime = audioDocument.mime_type == null ? "" : audioDocument.mime_type.toLowerCase();
+            if (mime.startsWith("image/")) {
+                bitmap = ImageLoader.loadBitmap(path, null, 320, 320, true);
+            } else if (mime.equals("video/mp4")) {
+                bitmap = SendMessagesHelper.createVideoThumbnail(path, MediaStore.Video.Thumbnails.MINI_KIND);
+            }
+            if (bitmap == null) return null;
+            boolean hasSize = false;
+            for (TLRPC.DocumentAttribute attribute : audioDocument.attributes) {
+                if (attribute instanceof TLRPC.TL_documentAttributeImageSize) {
+                    hasSize = true;
+                    break;
+                }
+            }
+            if (!hasSize) {
+                final TLRPC.TL_documentAttributeImageSize size = new TLRPC.TL_documentAttributeImageSize();
+                size.w = bitmap.getWidth();
+                size.h = bitmap.getHeight();
+                audioDocument.attributes.add(size);
+            }
+            final TLRPC.PhotoSize thumb = ImageLoader.scaleAndSaveImage(bitmap, 320, 320, 80, false);
+            if (thumb == null) return null;
+            audioDocument.thumbs.clear();
+            audioDocument.thumbs.add(thumb);
+            audioDocument.flags |= 1;
+            final File file = FileLoader.getInstance(currentAccount).getPathToAttach(thumb, true);
+            return file != null && file.exists() ? file.getAbsolutePath() : null;
+        } catch (Throwable e) {
+            return null;
+        } finally {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+        }
     }
 }

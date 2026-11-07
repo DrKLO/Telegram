@@ -130,6 +130,16 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    /**
+     * Adds a custom item whose wrapper always has the full measured height of its RecyclerView.
+     * Unlike asFullscreenCustom(), this method never subtracts ActionBar, inset or padding values.
+     */
+    public static UItem asViewportCustom(View view) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_VIEWPORT_CUSTOM, false);
+        i.view = view;
+        return i;
+    }
+
     public static UItem asFullscreenCustom(View view, int minusHeight) {
         return asFullscreenCustom(view, minusHeight, false);
     }
@@ -228,6 +238,14 @@ public class UItem extends AdapterWithDiffUtils.Item {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
         i.id = id;
         i.text = text;
+        return i;
+    }
+
+    public static UItem asButtonLoadingValue(int id, CharSequence text) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_TEXT, false);
+        i.id = id;
+        i.text = text;
+        i.locked = true;
         return i;
     }
 

@@ -1,0 +1,85 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a weekly habit grid — tapping a cell pops a check mark in, the streak flame and the completion ring update, a finished day celebrates with a confetti burst on a canvas; the ticks are kept locally
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --green: #34c759; --orange: #ff9500; --blue: #007aff; --purple: #af52de; --pink: #ff2d55; --teal: #30b0c7;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; padding: 16px 16px 14px; position: relative; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .hd { display: flex; align-items: center; gap: 12px; } h3 { margin: 0; font-size: 18px; } .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .ring { margin-left: auto; width: 54px; height: 54px; position: relative; flex-shrink: 0; } .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); } .ring circle { fill: none; stroke-width: 6; } .ring .t { stroke: var(--card2); } .ring .p { stroke: var(--green); stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.22,1,.36,1); }
+  .ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; table-layout: fixed; }
+  th { font-size: 10px; color: var(--muted); font-weight: 700; padding-bottom: 6px; text-transform: uppercase; letter-spacing: .06em; } th.today { color: var(--fg); }
+  th:first-child, td:first-child { width: 34%; text-align: left; }
+  td { padding: 4px 2px; text-align: center; }
+  .hab { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; } .hab i { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 14px; font-style: normal; flex-shrink: 0; }
+  .hab small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+  .cell { width: 30px; height: 30px; margin: 0 auto; border-radius: 9px; background: var(--card2); border: 0; cursor: pointer; display: grid; place-items: center; transition: background .25s, transform .15s; position: relative; }
+  .cell:active { transform: scale(.9); } .cell.future { opacity: .35; cursor: default; }
+  .cell svg { width: 16px; height: 16px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 24; stroke-dashoffset: 24; }
+  .cell.on { background: var(--c); } .cell.on svg { animation: draw .3s .05s forwards; } .cell.on.pop { animation: pop .35s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes draw { to { stroke-dashoffset: 0; } } @keyframes pop { 50% { transform: scale(1.25); } }
+  td.today .cell { box-shadow: 0 0 0 2px var(--border); }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+  .streak { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--fg); } .streak i { font-style: normal; font-size: 18px; display: inline-block; transition: transform .3s; } .streak.bump i { animation: flame .5s; } @keyframes flame { 40% { transform: scale(1.4) rotate(-8deg); } }
+  .msg { transition: opacity .3s; }
+</style>
+<div class="card" id="card">
+  <canvas id="fx"></canvas>
+  <div class="hd"><div><h3>This week</h3><div class="sub" id="sub">12 – 18 May · 5 habits</div></div><div class="ring"><svg viewBox="0 0 54 54"><circle class="t" cx="27" cy="27" r="22"/><circle class="p" id="rp" cx="27" cy="27" r="22"/></svg><b id="pct">0%</b></div></div>
+  <table><thead><tr><th></th><th>M</th><th>T</th><th>W</th><th>T</th><th class="today">F</th><th>S</th><th>S</th></tr></thead><tbody id="rows"></tbody></table>
+  <div class="foot"><span class="streak" id="streak"><i>🔥</i><span id="streakN">0</span> day streak</span><span class="msg" id="msg">Tap today's cells as you go</span></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. The week's ticks are local state in localStorage (kept by the client per message, they
+  // survive the widget being re-created).
+  const KEY = 'habits-week-20';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const TODAY = 4;
+  const HABITS = [
+    { n: 'Morning run', s: '5 km', ic: '🏃', c: '#ff2d55', d: [1, 1, 0, 1, 0, 0, 0] }, { n: 'Read 20 pages', s: 'before bed', ic: '📖', c: '#007aff', d: [1, 1, 1, 1, 0, 0, 0] },
+    { n: 'No sugar', s: 'all day', ic: '🍬', c: '#af52de', d: [1, 0, 1, 1, 1, 0, 0] }, { n: 'Meditate', s: '10 min', ic: '🧘', c: '#30b0c7', d: [1, 1, 1, 0, 0, 0, 0] }, { n: 'Water 2 L', s: 'tracked', ic: '💧', c: '#34c759', d: [1, 1, 1, 1, 0, 0, 0] },
+  ];
+  const saved = store.get(KEY, null);
+  if (Array.isArray(saved)) HABITS.forEach((h, i) => { if (Array.isArray(saved[i]) && saved[i].length === 7) h.d = saved[i].map(v => (v ? 1 : 0)); });
+  const rows = document.getElementById('rows');
+  rows.innerHTML = HABITS.map((h, i) => '<tr><td><div class="hab"><i style="background:' + h.c + '22;color:' + h.c + '">' + h.ic + '</i><span>' + h.n + '<small>' + h.s + '</small></span></div></td>' + h.d.map((v, j) => '<td' + (j === TODAY ? ' class="today"' : '') + '><button class="cell' + (v ? ' on' : '') + (j > TODAY ? ' future' : '') + '" data-h="' + i + '" data-d="' + j + '" style="--c:' + h.c + '"' + (j === TODAY ? ' role="button"' : '') + '><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></td>').join('') + '</tr>').join('');
+  const C = 2 * Math.PI * 22, rp = document.getElementById('rp'); rp.style.strokeDasharray = C + ' ' + C;
+  function streakOf() { let n = 0; for (let j = TODAY; j >= 0; j--) { if (HABITS.every(h => h.d[j])) n++; else if (j !== TODAY) break; } return n + 9; /* 9 full days before this week */ }
+  function stats(celebrate) {
+    const done = HABITS.reduce((a, h) => a + h.d.slice(0, TODAY + 1).reduce((x, y) => x + y, 0), 0), total = HABITS.length * (TODAY + 1), p = done / total;
+    rp.style.strokeDashoffset = String(C * (1 - p)); document.getElementById('pct').textContent = Math.round(p * 100) + '%';
+    const today = HABITS.filter(h => h.d[TODAY]).length;
+    const streakEl = document.getElementById('streak'); document.getElementById('streakN').textContent = streakOf();
+    document.getElementById('msg').textContent = today === HABITS.length ? 'Perfect day — all 5 done!' : today === 0 ? "Tap today's cells as you go" : today + ' of 5 today · ' + (HABITS.length - today) + ' to go';
+    if (celebrate && today === HABITS.length) { streakEl.classList.remove('bump'); setTimeout(() => streakEl.classList.add('bump'), 10); confetti(); }
+  }
+  rows.addEventListener('click', e => {
+    const b = e.target.closest('.cell'); if (!b || b.classList.contains('future')) return;
+    const h = HABITS[Number(b.dataset.h)], j = Number(b.dataset.d);
+    h.d[j] = h.d[j] ? 0 : 1; b.classList.toggle('on', !!h.d[j]); b.classList.remove('pop'); if (h.d[j]) b.classList.add('pop');
+    stats(true);
+    store.set(KEY, HABITS.map(x => x.d));
+  });
+  // Confetti on a canvas over the card
+  const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
+  function confetti() {
+    if (!ctx) return;
+    const W = cv.width = 392, H = cv.height = 300; let s = 7;
+    const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+    const cols = ['#ff2d55', '#ff9500', '#ffcc00', '#34c759', '#007aff', '#af52de'];
+    const ps = Array.from({ length: 90 }, () => ({ x: W / 2, y: H * 0.35, vx: (rnd() - .5) * 14, vy: -rnd() * 12 - 4, r: 3 + rnd() * 4, c: cols[Math.floor(rnd() * cols.length)], a: rnd() * 6, va: (rnd() - .5) * .4 }));
+    const t0 = performance.now();
+    (function step() {
+      const t = (performance.now() - t0) / 1000; ctx.clearRect(0, 0, W, H);
+      for (const p of ps) { p.vy += .35; p.x += p.vx; p.y += p.vy; p.vx *= .98; p.a += p.va; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = Math.max(0, 1 - t / 1.8); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); }
+      if (t < 1.8) requestAnimationFrame(step); else ctx.clearRect(0, 0, W, H);
+    })();
+  }
+  stats(false);
+</script>

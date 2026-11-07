@@ -57,9 +57,11 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.WebFile;
+import org.telegram.messenger.utils.tlutils.TLKeyboardHelper;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.messenger.MessageObject;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -75,6 +77,7 @@ import org.telegram.ui.Components.RoundStatusDrawable;
 import org.telegram.ui.Components.SendingFileDrawable;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.StatusDrawable;
 import org.telegram.ui.Components.TypingDotsDrawable;
 
@@ -164,14 +167,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         AndroidUtilities.fillStatusBarHeight(this, false);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.appDidLogout);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.updateInterfaces);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidReset);
-            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.contactsDidLoad);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.appDidLogout);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.updateInterfaces);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.messagePlayingDidReset);
+            NotificationCenter.getInstance(a).addWeakObserver(this, NotificationCenter.contactsDidLoad);
         }
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pushMessagesUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.pushMessagesUpdated);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         classGuid = ConnectionsManager.generateClassGuid();
 
         statusDrawables[0] = new TypingDotsDrawable(false);
@@ -304,7 +307,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 }
             }
         };
-        popupContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(popupContainer, Theme.key_windowBackgroundWhite);
         relativeLayout.addView(popupContainer, LayoutHelper.createRelative(LayoutHelper.MATCH_PARENT, 240, 12, 0, 12, 0, RelativeLayout.CENTER_IN_PARENT));
 
         if (chatActivityEnterView != null) {
@@ -446,8 +449,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         actionBar = new ActionBar(this);
         actionBar.setOccupyStatusBar(false);
         actionBar.setBackButtonImage(R.drawable.ic_close_white);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
+        ThemeBind.backgroundColor(actionBar, Theme.key_actionBarDefault);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarDefaultSelector, false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarDefaultIcon, false);
         popupContainer.addView(actionBar);
         ViewGroup.LayoutParams layoutParams = actionBar.getLayoutParams();
         layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
@@ -456,7 +460,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem view = menu.addItemWithWidth(2, 0, AndroidUtilities.dp(56));
         countText = new TextView(this);
-        countText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+        ThemeBind.textColor(countText, Theme.key_actionBarDefaultSubtitle);
         countText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         countText.setGravity(Gravity.CENTER);
         view.addView(countText, LayoutHelper.createFrame(56, LayoutHelper.MATCH_PARENT));
@@ -482,7 +486,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         avatarImageView.setLayoutParams(layoutParams2);
 
         nameTextView = new TextView(this);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle));
+        ThemeBind.textColor(nameTextView, Theme.key_actionBarDefaultTitle);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         nameTextView.setLines(1);
         nameTextView.setMaxLines(1);
@@ -500,7 +504,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         nameTextView.setLayoutParams(layoutParams2);
 
         onlineTextView = new TextView(this);
-        onlineTextView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
+        ThemeBind.textColor(onlineTextView, Theme.key_actionBarDefaultSubtitle);
         onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         onlineTextView.setLines(1);
         onlineTextView.setMaxLines(1);
@@ -787,13 +791,14 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
         TLRPC.ReplyMarkup markup = messageObject.messageOwner.reply_markup;
 
-        if (messageObject.getDialogId() == 777000 && markup != null) {
-            ArrayList<TLRPC.TL_keyboardButtonRow> rows = markup.rows;
+        if (messageObject.getDialogId() == 777000 && markup instanceof TLRPC.TL_replyInlineMarkup) {
+            final TLRPC.TL_replyInlineMarkup replyInlineMarkup = (TLRPC.TL_replyInlineMarkup) markup;
+            ArrayList<TL_keyboard.KeyboardInlineButtonRow> rows = replyInlineMarkup.rows;
             for (int a = 0, size = rows.size(); a < size; a++) {
-                TLRPC.TL_keyboardButtonRow row = rows.get(a);
+                TL_keyboard.KeyboardInlineButtonRow row = rows.get(a);
                 for (int b = 0, size2 = row.buttons.size(); b < size2; b++) {
-                    TLRPC.KeyboardButton button = row.buttons.get(b);
-                    if (button instanceof TLRPC.TL_keyboardButtonCallback) {
+                    TL_keyboard.KeyboardInlineButton button = row.buttons.get(b);
+                    if (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeCallback.class)) {
                         buttonsCount++;
                     }
                 }
@@ -801,17 +806,18 @@ public class PopupNotificationActivity extends Activity implements NotificationC
         }
 
         final int account = messageObject.currentAccount;
-        if (buttonsCount > 0) {
-            ArrayList<TLRPC.TL_keyboardButtonRow> rows = markup.rows;
+        if (buttonsCount > 0 && markup instanceof TLRPC.TL_replyInlineMarkup) {
+            final TLRPC.TL_replyInlineMarkup replyInlineMarkup = (TLRPC.TL_replyInlineMarkup) markup;
+            ArrayList<TL_keyboard.KeyboardInlineButtonRow> rows = replyInlineMarkup.rows;
             for (int a = 0, size = rows.size(); a < size; a++) {
-                TLRPC.TL_keyboardButtonRow row = rows.get(a);
+                TL_keyboard.KeyboardInlineButtonRow row = rows.get(a);
                 for (int b = 0, size2 = row.buttons.size(); b < size2; b++) {
-                    TLRPC.KeyboardButton button = row.buttons.get(b);
-                    if (button instanceof TLRPC.TL_keyboardButtonCallback) {
+                    TL_keyboard.KeyboardInlineButton button = row.buttons.get(b);
+                    if (TLKeyboardHelper.isType(button, TL_keyboard.TL_inlineButtonTypeCallback.class)) {
                         if (view == null) {
                             view = new LinearLayout(this);
                             view.setOrientation(LinearLayout.HORIZONTAL);
-                            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                            ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                             view.setWeightSum(100);
                             view.setTag("b");
                             view.setOnTouchListener((v, event) -> true);
@@ -819,7 +825,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
                         TextView textView = new TextView(this);
                         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+                        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlueText);
                         textView.setTypeface(AndroidUtilities.bold());
                         textView.setText(button.text.toUpperCase());
                         textView.setTag(button);
@@ -827,9 +833,9 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                         textView.setBackgroundDrawable(Theme.getSelectorDrawable(true));
                         view.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 100.0f / buttonsCount));
                         textView.setOnClickListener(v -> {
-                            TLRPC.KeyboardButton button1 = (TLRPC.KeyboardButton) v.getTag();
+                            TL_keyboard.KeyboardButtonProto button1 = (TL_keyboard.KeyboardButtonProto) v.getTag();
                             if (button1 != null) {
-                                SendMessagesHelper.getInstance(account).sendNotificationCallback(messageObject.getDialogId(), messageObject.getId(), button1.data);
+                                SendMessagesHelper.getInstance(account).sendNotificationCallback(messageObject.getDialogId(), messageObject.getId(), button1.getData());
                             }
                         });
                     }
@@ -885,7 +891,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 frameLayout.addView(backupImageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
                 TextView textView = new TextView(this);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 textView.setGravity(Gravity.CENTER);
                 textView.setTag(312);
@@ -998,8 +1004,8 @@ public class PopupNotificationActivity extends Activity implements NotificationC
                 TextView textView = new TextView(this);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 textView.setTag(301);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
+                ThemeBind.linkTextColor(textView, Theme.key_windowBackgroundWhiteBlackText);
                 textView.setGravity(Gravity.CENTER);
                 linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 

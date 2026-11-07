@@ -46,10 +46,11 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
@@ -68,6 +69,7 @@ import org.telegram.ui.Components.URLSpanNoUnderline;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -121,9 +123,9 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
         MediaDataController.getInstance(currentAccount).checkStickers(getStickerSetType());
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.groupStickersDidLoad);
         updateRows();
         return true;
     }
@@ -141,11 +143,16 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString(isEmoji ? R.string.GroupEmojiPack : R.string.GroupStickers));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(LocaleController.getString(isEmoji ? R.string.GroupEmojiPack : R.string.GroupStickers));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -154,7 +161,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         searchItem = menu.addItem(0, R.drawable.outline_header_search);
         searchItem.setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
@@ -191,9 +198,10 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
+        listView.setSections();
+        listView.setSectionsDrawBackground(true);
         DefaultItemAnimator defaultItemAnimator = new DefaultItemAnimator();
         defaultItemAnimator.setDurations(200);
         defaultItemAnimator.setSupportsChangeAnimations(true);
@@ -203,7 +211,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         listView.setLayoutManager(layoutManager);
 
         emptyFrameView = new FrameLayout(context);
-        emptyFrameView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(emptyFrameView, Theme.key_windowBackgroundWhite);
 
         loadingView = new FlickerLoadingView(context, getResourceProvider());
         loadingView.setViewType(FlickerLoadingView.STICKERS_TYPE);
@@ -215,11 +223,11 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         VerticalPositionAutoAnimator.attach(emptyView);
 
         emptyFrameView.addView(emptyView);
-        frameLayout.addView(emptyFrameView);
         emptyFrameView.setVisibility(View.GONE);
         listView.setEmptyView(emptyFrameView);
 
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        frameLayout.addView(emptyFrameView);
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (getParentActivity() == null) {
@@ -347,7 +355,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 }
                 if (searching) {
                     searchItem.setSearchFieldText("", false);
-                    actionBar.closeSearchField(true);
+                    simpleActionBar.closeSearchField(true);
                 }
                 return true;
             }
@@ -573,7 +581,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         private void changeBackgroundColor(String query) {
             if (isEmoji) {
                 if (!TextUtils.isEmpty(query)) {
-                    listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(listView, Theme.key_windowBackgroundWhite, GroupStickersActivity.this.getResourceProvider());
                 } else {
                     listView.setBackground(null);
                 }
@@ -672,15 +680,11 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             switch (viewType) {
                 case TYPE_STICKER_SET:
                     view = new StickerSetCell(mContext, 3);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 default:
                 case TYPE_MY_STICKERS_HEADER:
                     view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteGrayText4, 21, 0, 0, false, getResourceProvider());
-                    Drawable drawable = Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
-                    CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(getThemedColor(Theme.key_windowBackgroundGray)), drawable);
-                    combinedDrawable.setFullsize(true);
-                    view.setBackground(combinedDrawable);
                     ((HeaderCell) view).setText(LocaleController.getString(isEmoji ? R.string.ChooseStickerMyEmojiPacks : R.string.ChooseStickerMyStickerSets));
                     break;
             }
@@ -835,16 +839,15 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                     break;
                 case TYPE_STICKER_SET:
                     view = new StickerSetCell(mContext, 3);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case TYPE_INFO:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackground(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     break;
                 case TYPE_CHOOSE_HEADER:
                 default:
                     view = new HeaderCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
             }
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
@@ -947,7 +950,7 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
         }
     }
 
-    private class AddEmojiCell extends LinearLayout {
+    private class AddEmojiCell extends LinearLayout implements Theme.Colorable {
 
         private final EditTextCaption editText;
         private boolean needDivider;
@@ -1008,25 +1011,25 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
             super(context);
             TextView textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
             textView.setText("t.me/addemoji/");
             editText = new EditTextCaption(context, null);
             editText.setLines(1);
             editText.setSingleLine(true);
             editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            editText.setTextColor(Theme.getColor(Theme.key_chat_messagePanelText));
-            editText.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkOut));
-            editText.setHighlightColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight));
-            editText.setHintColor(Theme.getColor(Theme.key_chat_messagePanelHint));
-            editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
-            editText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor));
-            editText.setHandlesColor(Theme.getColor(Theme.key_chat_TextSelectionCursor));
+            ThemeBind.textColor(editText, Theme.key_chat_messagePanelText);
+            ThemeBind.linkTextColor(editText, Theme.key_chat_messageLinkOut);
+            ThemeBind.highlightColor(editText, Theme.key_chat_inTextSelectionHighlight);
+            ThemeBind.editHintColor(editText, Theme.key_chat_messagePanelHint);
+            ThemeBind.hintTextColor(editText, Theme.key_chat_messagePanelHint);
+            ThemeBind.cursorColor(editText, Theme.key_chat_messagePanelCursor);
+            ThemeBind.editHandlesColor(editText, Theme.key_chat_TextSelectionCursor);
             editText.setBackground(null);
             editText.setHint(LocaleController.getString(R.string.AddEmojiPackLinkHint));
             addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
             addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, -4, 0, 0, 0));
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(this, Theme.key_windowBackgroundWhite);
             setPadding(0, AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5));
             setWillNotDraw(false);
         }
@@ -1055,39 +1058,65 @@ public class GroupStickersActivity extends BaseFragment implements NotificationC
                 canvas.drawLine(AndroidUtilities.dp(20), getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
             }
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                editText.setHintColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+                editText.setCursorColor(Theme.getColor(Theme.key_chat_messagePanelCursor));
+                editText.setHandlesColor(Theme.getColor(Theme.key_chat_TextSelectionCursor));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{StickerSetCell.class, TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LINKCOLOR, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_USEBACKGROUNDDRAWABLE | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menuSelector));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{StickerSetCell.class}, new String[]{"optionsButton"}, null, null, null, Theme.key_stickers_menu));
 
         return themeDescriptions;
+    }
+
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_stickers_menu);
+        keys.add(Theme.key_stickers_menuSelector);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText2);
+        keys.add(Theme.key_windowBackgroundWhiteBlackText);
+        keys.add(Theme.key_windowBackgroundGrayShadow);
+        keys.add(Theme.key_windowBackgroundWhiteValueText);
+        keys.add(Theme.key_windowBackgroundWhiteLinkText);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
     }
 }

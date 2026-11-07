@@ -1,0 +1,303 @@
+{
+  "_": "Shared fixture for src/shared/paint-policy.ts (the heavy-box paint limit, docs/decisions.md \"Heavy boxes\"), for every renderer that counts heavy boxes: the framework's renderer core and a client's own renderer, which reports past a limit through the seam's limitExceeded(code, count). constants: the two limits. shadows: a computed box-shadow -> blurred (a layer with a blur radius, its third length, above 0; offsets, spread and inset do not matter; a math function of unknown size counts as blurred) and withoutBlur (the layers a stopped widget keeps). boxes: computed values of an element (pseudo false) or of its ::before / ::after (pseudo true) -> the box it builds and what it adds: null for no box (display none or contents, the latter out of profile 1 and removed by the validator, here for a renderer that meets it anyway; a pseudo-element whose content is none, normal or empty, or whose display is none), else {heavy, backdrop}; a missing value is the initial one, visibility is never looked at; button is 'disabled' for a <button> with the disabled attribute and 'pressed' for one held down (:active), absent for anything else: such a button's opacity is its own static dimming (the client-styled button of the UA layer dims a disabled one to 0.5 and a pressed one to 0.7) and does not make it heavy, while a blurred shadow, a filter, a backdrop-filter or an animation of its opacity still do, and its ::before / ::after are boxes of their own. hidesSubtree: an element's display -> whether nothing under it builds a box either (only none; contents does not hide its children). animations: a running animation's keyframes as getKeyframes() gives them (offset or computedOffset, CSS or camelCase property names, vendor prefixes dropped; a transition's are its two ends) -> what it adds to its box while it runs, or null: it changes none of filter, backdrop-filter, opacity, and box-shadow only between layers without blur (every keyframe from offset 0 to offset 1 sets it, none blurred; a value that is not a string is unknown, so blurred). messages: code and count -> the reason the host stops the widget with. reports: a renderer's limit message as the host checks it -> {code, count} (count rounded down) or null (ignored). cases: steps on one PaintCounter, in order: set keys with style (and pseudo) -> setBox(key, boxPaint(style, pseudo)) for each key, what a renderer does for every box an applied batch, a theme change, a width change or a :hover / :active change touches; remove keys -> removeBox (display none on the box or an ancestor, or its node removed: its CSS animations are cancelled with it); start keys with animation (an id) and keyframes -> startAnimation(key, id, animationPaint(keyframes)) when that is not null (animationstart, transitionstart, a Web Animation that runs); end keys with animation -> endAnimation (animationend / animationcancel, transitionend / transitioncancel, a Web Animation that finished, paused or was cancelled); check -> the counts and the verdict a renderer acts on before it draws (stop null, or {code, count}; the first verdict sticks). Keys are any strings; a renderer gives an element and each of its pseudo-elements a key of its own.",
+  "constants": {
+    "PAINT_HEAVY_BOXES": 16,
+    "PAINT_BACKDROP_BOXES": 2
+  },
+  "shadows": [
+    { "value": "none", "blurred": false, "withoutBlur": "none" },
+    { "value": "", "blurred": false, "withoutBlur": "none" },
+    { "value": "rgba(0, 0, 0, 0.2) 0px 2px 4px 0px", "blurred": true, "withoutBlur": "none" },
+    { "value": "rgba(0, 0, 0, 0.12) 0px 1px 0px 0px", "blurred": false, "withoutBlur": "rgba(0, 0, 0, 0.12) 0px 1px 0px 0px" },
+    { "value": "rgb(0, 0, 0) 0px 0px 0px 1px inset", "blurred": false, "withoutBlur": "rgb(0, 0, 0) 0px 0px 0px 1px inset" },
+    { "value": "rgba(0, 0, 0, 0.5) 0px 0px 6px 0px inset", "blurred": true, "withoutBlur": "none" },
+    { "value": "rgb(255, 0, 0) 0px 0px 0px 2px, rgba(0, 0, 0, 0.3) 0px 4px 12px 0px", "blurred": true, "withoutBlur": "rgb(255, 0, 0) 0px 0px 0px 2px" },
+    { "value": "rgb(0, 0, 0) -3px -3px 0px 0px, rgb(255, 255, 255) 3px 3px 0px 0px", "blurred": false, "withoutBlur": "rgb(0, 0, 0) -3px -3px 0px 0px, rgb(255, 255, 255) 3px 3px 0px 0px" },
+    { "value": "color(srgb 0 0 0 / 0.5) 0px 1px 0.5px 0px", "blurred": true, "withoutBlur": "none" },
+    { "value": "0 2px 4px red", "blurred": true, "withoutBlur": "none" },
+    { "value": "inset 0 0 0 1px #000", "blurred": false, "withoutBlur": "inset 0 0 0 1px #000" },
+    { "value": "0px 0px", "blurred": false, "withoutBlur": "0px 0px" },
+    { "value": "rgb(0, 0, 0) 0px 0px calc(2px + 1em) 0px", "blurred": true, "withoutBlur": "none" }
+  ],
+  "boxes": [
+    { "name": "a plain block", "pseudo": false, "style": { "display": "block", "boxShadow": "none", "filter": "none", "backdropFilter": "none", "opacity": "1" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "no values at all: a box with the initial values", "pseudo": false, "style": {}, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "a blurred shadow", "pseudo": false, "style": { "display": "block", "boxShadow": "rgba(0, 0, 0, 0.2) 0px 2px 4px 0px" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a shadow with blur 0", "pseudo": false, "style": { "display": "block", "boxShadow": "rgba(0, 0, 0, 0.2) 0px 2px 0px 0px" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "an inset ring without blur", "pseudo": false, "style": { "display": "block", "boxShadow": "rgb(0, 0, 0) 0px 0px 0px 1px inset" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "an inset shadow with blur", "pseudo": false, "style": { "display": "block", "boxShadow": "rgba(0, 0, 0, 0.5) 0px 0px 6px 0px inset" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "filter: brightness(1) is heavy: the value counts, not the picture", "pseudo": false, "style": { "display": "block", "filter": "brightness(1)" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "filter: none", "pseudo": false, "style": { "display": "block", "filter": "none" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "a backdrop-filter is heavy and counts towards both limits", "pseudo": false, "style": { "display": "block", "backdropFilter": "blur(8px)" }, "expect": { "heavy": true, "backdrop": true } },
+    { "name": "opacity 0.999", "pseudo": false, "style": { "display": "block", "opacity": "0.999" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "opacity 1", "pseudo": false, "style": { "display": "block", "opacity": "1" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "opacity 0", "pseudo": false, "style": { "display": "block", "opacity": "0" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "opacity as a number", "pseudo": false, "style": { "display": "block", "opacity": 0.5 }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "visibility: hidden does not matter", "pseudo": false, "style": { "display": "block", "visibility": "hidden", "opacity": "0.5" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "visibility: hidden alone is not heavy", "pseudo": false, "style": { "display": "block", "visibility": "hidden" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "display: contents builds no box", "pseudo": false, "style": { "display": "contents", "opacity": "0.5" }, "expect": null },
+    { "name": "display: none builds no box", "pseudo": false, "style": { "display": "none", "filter": "blur(2px)" }, "expect": null },
+    { "name": "an SVG element counts like an HTML one", "pseudo": false, "style": { "display": "inline", "opacity": "0.5" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a disabled <button> dimmed to 0.5 (the UA layer's client-styled button) is not heavy", "pseudo": false, "style": { "display": "inline-block", "opacity": "0.5", "button": "disabled" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "a pressed <button> dimmed to 0.7 is not heavy", "pseudo": false, "style": { "display": "inline-block", "opacity": "0.7", "button": "pressed" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "an author's own opacity on a disabled <button> is the same static dimming", "pseudo": false, "style": { "display": "block", "opacity": "0.2", "button": "disabled" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "an enabled <button> with opacity is heavy", "pseudo": false, "style": { "display": "inline-block", "opacity": "0.5" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a disabled <button> with a blurred shadow is heavy", "pseudo": false, "style": { "display": "inline-block", "opacity": "0.5", "boxShadow": "rgba(0, 0, 0, 0.3) 0px 2px 6px 0px", "button": "disabled" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a disabled <button> with a filter is heavy", "pseudo": false, "style": { "display": "inline-block", "filter": "blur(1px)", "button": "disabled" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a disabled <button>'s ::before with opacity is a heavy box of its own", "pseudo": true, "style": { "display": "inline", "content": "\"\"", "opacity": "0.5", "button": "disabled" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "::before with content none builds no box", "pseudo": true, "style": { "display": "block", "content": "none", "boxShadow": "rgba(0, 0, 0, 0.2) 0px 2px 4px 0px" }, "expect": null },
+    { "name": "::after with content normal builds no box", "pseudo": true, "style": { "display": "inline", "content": "normal", "opacity": "0.5" }, "expect": null },
+    { "name": "::before with an empty string builds a box", "pseudo": true, "style": { "display": "block", "content": "\"\"", "opacity": "0.5" }, "expect": { "heavy": true, "backdrop": false } },
+    { "name": "::after with content but display none builds no box", "pseudo": true, "style": { "display": "none", "content": "\"x\"", "filter": "blur(1px)" }, "expect": null },
+    { "name": "a plain ::before", "pseudo": true, "style": { "display": "inline", "content": "\"•\"" }, "expect": { "heavy": false, "backdrop": false } },
+    { "name": "a pseudo-element on display: contents still builds a box", "pseudo": true, "style": { "display": "contents", "content": "\"\"", "opacity": "0.5" }, "expect": { "heavy": true, "backdrop": false } }
+  ],
+  "hidesSubtree": [
+    { "display": "none", "expect": true },
+    { "display": "contents", "expect": false },
+    { "display": "block", "expect": false },
+    { "display": "", "expect": false }
+  ],
+  "animations": [
+    { "name": "opacity", "keyframes": [{ "offset": 0, "opacity": "1" }, { "offset": 1, "opacity": "0.4" }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "opacity that stays 1 is still an animation of opacity", "keyframes": [{ "offset": 0, "opacity": "1" }, { "offset": 1, "opacity": "1" }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "transform alone", "keyframes": [{ "offset": 0, "transform": "none" }, { "offset": 1, "transform": "rotate(360deg)" }], "expect": null },
+    { "name": "filter next to transform", "keyframes": [{ "offset": 0, "transform": "none", "filter": "none" }, { "offset": 1, "transform": "scale(1.1)", "filter": "brightness(1.2)" }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "backdropFilter (camelCase, as getKeyframes names it)", "keyframes": [{ "offset": 0, "backdropFilter": "blur(0px)" }, { "offset": 1, "backdropFilter": "blur(8px)" }], "expect": { "heavy": true, "backdrop": true } },
+    { "name": "-webkit-backdrop-filter", "keyframes": [{ "offset": 0, "-webkit-backdrop-filter": "none" }, { "offset": 1, "-webkit-backdrop-filter": "blur(4px)" }], "expect": { "heavy": true, "backdrop": true } },
+    { "name": "a shadow that blurs half way", "keyframes": [{ "offset": 0, "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px" }, { "offset": 0.5, "boxShadow": "rgba(0, 0, 0, 0.4) 0px 4px 12px 0px" }, { "offset": 1, "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px" }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "an inset fill that pulses: no keyframe has a blur", "keyframes": [{ "offset": 0, "box-shadow": "inset 0 0 0 9px rgba(255,255,255,0)" }, { "offset": 0.5, "box-shadow": "inset 0 0 0 9px rgba(255,255,255,0.5)" }, { "offset": 1, "box-shadow": "inset 0 0 0 9px rgba(255,255,255,0)" }], "expect": null },
+    { "name": "a shadow without blur but no last keyframe: the end is the box's own value, unknown here", "keyframes": [{ "offset": 0, "boxShadow": "rgb(0, 0, 0) 0px 0px 0px 2px" }, { "offset": 0.5, "boxShadow": "rgb(0, 0, 0) 0px 0px 0px 4px" }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "a transition between two rings (its two ends)", "keyframes": [{ "offset": 0, "box-shadow": "rgb(255, 0, 0) 0px 0px 0px 1px" }, { "offset": 1, "box-shadow": "rgb(255, 0, 0) 0px 0px 0px 3px" }], "expect": null },
+    { "name": "a transition of box-shadow whose ends are unknown", "keyframes": [{ "offset": 0, "box-shadow": null }, { "offset": 1, "box-shadow": null }], "expect": { "heavy": true, "backdrop": false } },
+    { "name": "implicit offsets: computedOffset counts", "keyframes": [{ "offset": null, "computedOffset": 0, "boxShadow": "rgb(0, 0, 0) 0px 1px 0px 0px" }, { "offset": null, "computedOffset": 1, "boxShadow": "rgb(0, 0, 0) 0px 3px 0px 0px" }], "expect": null },
+    { "name": "colours and sizes, with easing and composite (no properties)", "keyframes": [{ "offset": 0, "easing": "linear", "composite": "replace", "background-color": "red", "width": "1px" }, { "offset": 1, "backgroundColor": "blue", "width": "9px" }], "expect": null },
+    { "name": "no keyframes", "keyframes": [], "expect": null }
+  ],
+  "messages": [
+    { "code": "paint-limit", "count": 17, "expect": "Paint limit exceeded: 17 boxes with shadows, filters or transparency (max 16)" },
+    { "code": "backdrop-limit", "count": 3, "expect": "Paint limit exceeded: 3 boxes with backdrop-filter (max 2)" }
+  ],
+  "reports": [
+    { "code": "paint-limit", "count": 17, "expect": { "code": "paint-limit", "count": 17 } },
+    { "code": "backdrop-limit", "count": 3.7, "expect": { "code": "backdrop-limit", "count": 3 } },
+    { "code": "render-budget", "count": 1, "expect": null },
+    { "code": "paint-limit", "count": "17", "expect": null },
+    { "code": "paint-limit", "count": -1, "expect": null },
+    { "code": "paint-limit", "expect": null }
+  ],
+  "cases": [
+    {
+      "name": "16 heavy boxes run; a 17th stops the widget (at load)",
+      "steps": [
+        { "set": ["html", "body"], "style": { "display": "block" } },
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16"], "style": { "display": "block", "boxShadow": "rgba(0, 0, 0, 0.2) 0px 2px 8px 0px" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "set": "c17", "style": { "display": "block", "opacity": "0.6" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "the count is taken after the whole batch: a batch that removes two heavy boxes and adds two never holds 18",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16"], "style": { "display": "block", "filter": "blur(2px)" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "remove": ["c1", "c2"] },
+        { "set": ["n1", "n2"], "style": { "display": "block", "filter": "blur(2px)" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } }
+      ]
+    },
+    {
+      "name": "a class change that makes a 17th box heavy stops the widget",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16"], "style": { "display": "block", "opacity": "0.5" } },
+        { "set": "c17", "style": { "display": "block", "opacity": "1" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "set": "c17", "style": { "display": "block", "opacity": "0.5" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "shadows without blur do not count: 20 of them next to 16 heavy boxes run",
+      "steps": [
+        { "set": ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "r16", "r17", "r18", "r19", "r20"], "style": { "display": "block", "boxShadow": "rgb(0, 0, 0) 0px 0px 0px 1px inset, rgba(0, 0, 0, 0.1) 0px 2px 0px 0px" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15", "h16"], "style": { "display": "block", "filter": "blur(2px)" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } }
+      ]
+    },
+    {
+      "name": "the same boxes hidden by display: none on their parent and a display: contents wrapper with opacity: nothing counts",
+      "steps": [
+        { "set": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15", "h16", "h17"], "style": { "display": "block", "filter": "blur(2px)" } },
+        { "remove": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15", "h16", "h17"] },
+        { "set": "wrapper", "style": { "display": "contents", "opacity": "0.5" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } }
+      ]
+    },
+    {
+      "name": "a CSS animation of opacity makes its box heavy from animationstart to animationend, whatever the value",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "style": { "display": "block", "opacity": "1" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "start": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16"], "animation": "a:pulse", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "start": "c17", "animation": "a:spin", "keyframes": [{ "offset": 0, "transform": "none" }, { "offset": 1, "transform": "rotate(1turn)" }] },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "start": "c17", "animation": "a:pulse", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "30 disabled buttons (a poll after the vote, a calendar's past days) do not count: next to them 16 heavy boxes run",
+      "steps": [
+        { "set": ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13", "b14", "b15", "b16", "b17", "b18", "b19", "b20", "b21", "b22", "b23", "b24", "b25", "b26", "b27", "b28", "b29", "b30"], "style": { "display": "inline-block", "opacity": "0.5", "button": "disabled" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": ["h1", "h2", "h3", "h4", "h5", "h6", "h7", "h8", "h9", "h10", "h11", "h12", "h13", "h14", "h15", "h16"], "style": { "display": "block", "boxShadow": "rgba(0, 0, 0, 0.2) 0px 2px 8px 0px" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "set": "b1", "style": { "display": "inline-block", "opacity": "0.7", "button": "pressed" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "set": "b2", "style": { "display": "inline-block", "opacity": "0.5", "boxShadow": "rgba(0, 0, 0, 0.3) 0px 2px 6px 0px", "button": "disabled" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "a button enabled again with the opacity left on it counts; a transition of a disabled button's opacity counts while it runs",
+      "steps": [
+        { "set": ["b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13", "b14", "b15", "b16", "b17"], "style": { "display": "inline-block", "opacity": "0.5", "button": "disabled" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": "b1", "style": { "display": "inline-block", "opacity": "0.5" } },
+        { "check": { "heavy": 1, "backdrop": 0, "stop": null } },
+        { "start": ["b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13", "b14", "b15", "b16", "b17"], "animation": "t:opacity", "keyframes": [{ "offset": 0, "opacity": "1" }, { "offset": 1, "opacity": "0.5" }] },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "an inset fill that pulses on 20 boxes (no blur at any keyframe) adds nothing; a blurred glow on 17 stops the widget",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20"], "style": { "display": "block" } },
+        { "start": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17", "c18", "c19", "c20"], "animation": "a:sparkle", "keyframes": [{ "offset": 0, "boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 9px inset" }, { "offset": 0.5, "boxShadow": "rgba(255, 255, 255, 0.5) 0px 0px 0px 9px inset" }, { "offset": 1, "boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 9px inset" }] },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "start": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "animation": "a:glow", "keyframes": [{ "offset": 0, "boxShadow": "rgba(255, 255, 255, 0) 0px 0px 0px 0px" }, { "offset": 1, "boxShadow": "rgba(255, 255, 255, 0.8) 0px 0px 10px 0px" }] },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "an animation that ends gives its box back; static and animated boxes add up",
+      "steps": [
+        { "set": ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10"], "style": { "display": "block", "opacity": "0.7" } },
+        { "set": ["m1", "m2", "m3", "m4", "m5", "m6", "m7"], "style": { "display": "block" } },
+        { "start": ["m1", "m2", "m3", "m4", "m5", "m6"], "animation": "t:box-shadow", "keyframes": [{ "offset": 0, "box-shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px" }, { "offset": 1, "box-shadow": "rgba(0, 0, 0, 0.4) 0px 4px 12px 0px" }] },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "end": ["m1", "m2", "m3", "m4", "m5", "m6"], "animation": "t:box-shadow" },
+        { "check": { "heavy": 10, "backdrop": 0, "stop": null } },
+        { "start": "s1", "animation": "t:opacity", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "check": { "heavy": 10, "backdrop": 0, "stop": null } },
+        { "start": ["m1", "m2", "m3", "m4", "m5", "m6", "m7"], "animation": "w:1", "keyframes": [{ "offset": 0, "filter": "blur(0px)" }, { "offset": 1, "filter": "blur(2px)" }] },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "a Web Animation counts while it runs: a paused one gives its box back",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "style": { "display": "block" } },
+        { "start": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "animation": "w:7", "keyframes": [{ "offset": 0, "opacity": "0.2", "transform": "none" }, { "offset": 1, "opacity": "1", "transform": "rotate(1turn)" }] },
+        { "end": "c17", "animation": "w:7" },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "start": "c17", "animation": "w:7", "keyframes": [{ "offset": 0, "opacity": "0.2", "transform": "none" }, { "offset": 1, "opacity": "1", "transform": "rotate(1turn)" }] },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "a ::before is a box of its own: 16 heavy elements and one heavy ::before stop the widget; a ::before without content does not count",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16"], "style": { "display": "block", "opacity": "0.8" } },
+        { "set": ["c1::before", "c2::before", "c3::before"], "pseudo": true, "style": { "display": "block", "content": "none", "opacity": "0.5" } },
+        { "check": { "heavy": 16, "backdrop": 0, "stop": null } },
+        { "set": "c1::before", "pseudo": true, "style": { "display": "block", "content": "\"\"", "opacity": "0.5" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "two boxes with backdrop-filter run; a third stops the widget with backdrop-limit",
+      "steps": [
+        { "set": ["p1", "p2"], "style": { "display": "block", "backdropFilter": "blur(10px)" } },
+        { "check": { "heavy": 2, "backdrop": 2, "stop": null } },
+        { "set": "p3", "style": { "display": "block", "backdropFilter": "blur(10px) saturate(1.5)" } },
+        { "check": { "heavy": 3, "backdrop": 3, "stop": { "code": "backdrop-limit", "count": 3 } } }
+      ]
+    },
+    {
+      "name": "an animation of backdrop-filter counts towards the backdrop limit while it runs",
+      "steps": [
+        { "set": ["p1", "p2"], "style": { "display": "block", "backdropFilter": "blur(10px)" } },
+        { "set": "p3", "style": { "display": "block", "backdropFilter": "none" } },
+        { "check": { "heavy": 2, "backdrop": 2, "stop": null } },
+        { "start": "p3", "animation": "t:backdrop-filter", "keyframes": [{ "offset": 0, "backdrop-filter": "blur(0px)" }, { "offset": 1, "backdrop-filter": "blur(8px)" }] },
+        { "check": { "heavy": 3, "backdrop": 3, "stop": { "code": "backdrop-limit", "count": 3 } } }
+      ]
+    },
+    {
+      "name": "past both limits at once: paint-limit, with the heavy count",
+      "steps": [
+        { "set": ["p1", "p2", "p3"], "style": { "display": "block", "backdropFilter": "blur(4px)" } },
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14"], "style": { "display": "block", "opacity": "0.9" } },
+        { "check": { "heavy": 17, "backdrop": 3, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "the first verdict sticks: boxes that go away after it do not undo the stop",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "style": { "display": "block", "opacity": "0.5" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } },
+        { "remove": ["c1", "c2", "c3"] },
+        { "check": { "heavy": 14, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "a theme change recomputes every box: opacity from a theme variable can make the 17th heavy",
+      "steps": [
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "style": { "display": "block", "opacity": "1" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": ["c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15", "c16", "c17"], "style": { "display": "block", "opacity": "0.85" } },
+        { "check": { "heavy": 17, "backdrop": 0, "stop": { "code": "paint-limit", "count": 17 } } }
+      ]
+    },
+    {
+      "name": "animation events: an end without a start changes nothing, two animations under one id need two ends",
+      "steps": [
+        { "set": "c1", "style": { "display": "block" } },
+        { "end": "c1", "animation": "a:fade" },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "start": "c1", "animation": "a:fade", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "start": "c1", "animation": "a:fade", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "end": "c1", "animation": "a:fade" },
+        { "check": { "heavy": 1, "backdrop": 0, "stop": null } },
+        { "end": "c1", "animation": "a:fade" },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } }
+      ]
+    },
+    {
+      "name": "a box hidden by display: none loses its CSS animations (they are cancelled); shown again it is plain until one starts",
+      "steps": [
+        { "set": "c1", "style": { "display": "block" } },
+        { "start": "c1", "animation": "a:glow", "keyframes": [{ "offset": 0, "filter": "blur(0px)" }, { "offset": 1, "filter": "blur(2px)" }] },
+        { "check": { "heavy": 1, "backdrop": 0, "stop": null } },
+        { "remove": "c1" },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": "c1", "style": { "display": "block" } },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } }
+      ]
+    },
+    {
+      "name": "an animation on display: contents runs but adds nothing until the element builds a box",
+      "steps": [
+        { "set": "c1", "style": { "display": "contents" } },
+        { "start": "c1", "animation": "a:fade", "keyframes": [{ "offset": 0, "opacity": "0.2" }, { "offset": 1, "opacity": "1" }] },
+        { "check": { "heavy": 0, "backdrop": 0, "stop": null } },
+        { "set": "c1", "style": { "display": "block" } },
+        { "check": { "heavy": 1, "backdrop": 0, "stop": null } }
+      ]
+    }
+  ]
+}

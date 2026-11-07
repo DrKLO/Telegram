@@ -427,12 +427,6 @@ public class UniversalRecyclerView extends RecyclerListView {
         }
     }
 
-    public void setSections() {
-        setSections(dp(12), dp(16), false);
-    }
-    public void setSections(boolean topPadding) {
-        setSections(dp(12), dp(16), topPadding);
-    }
     public void setSections(int padding, float roundRadius, boolean topPadding) {
         super.setSections(
             view -> {
@@ -442,7 +436,6 @@ public class UniversalRecyclerView extends RecyclerListView {
             },
             UniversalAdapter::isShadow,
             padding, roundRadius,
-            super::drawBackgroundRect,
             topPadding
         );
     }

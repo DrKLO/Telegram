@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
@@ -29,6 +30,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
@@ -91,7 +93,7 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setGravity(Gravity.CENTER);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setText(UserObject.getUserName(user));
@@ -100,7 +102,7 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
 
         subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         subtitleView.setGravity(Gravity.CENTER);
         subtitleView.setText(getString(R.string.SessionBot));
         topView.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 3.66f));
@@ -109,7 +111,7 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
         if (!TextUtils.isEmpty(username)) {
             linkView = new TextView(context);
             linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            linkView.setTextColor(getThemedColor(Theme.key_chat_messageLinkIn));
+            ThemeBind.textColor(linkView, Theme.key_chat_messageLinkIn, resourcesProvider);
             linkView.setText("@" + username);
             linkView.setGravity(Gravity.CENTER);
             topView.addView(linkView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 18));
@@ -118,7 +120,8 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
         }
 
         setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
-        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundGray));
+        fixNavigationBarKey(Theme.key_windowBackgroundGray);
+        fixedNavBarColor = navBarColor;
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(48 + 12 + 12));
         recyclerListView.setSections();
         recyclerListView.setOnItemClickListener((view, position) -> {
@@ -136,7 +139,7 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
         }));
 
         terminateButton = new ButtonWithCounterView(context, resourcesProvider).setRound();
-        terminateButton.setColor(getThemedColor(Theme.key_color_red));
+        terminateButton.setColor(themedTerminateColor = getThemedColor(Theme.key_color_red));
         terminateButton.setText(getString(R.string.TerminateSession));
         terminateButton.setOnClickListener(v -> {
             if (terminateButton.isLoading()) return;
@@ -326,6 +329,37 @@ public class ChatbotSheet extends BottomSheetWithRecyclerListView {
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                 .withEndAction(() -> { if (hasChanges) terminateButton.setVisibility(View.GONE); })
                 .start();
+        }
+    }
+
+    private int fixedNavBarColor;
+    private int themedGrayColor;
+    private int themedTerminateColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int themedGray = getThemedColor(Theme.key_windowBackgroundGray);
+            if (themedGray != themedGrayColor) {
+                themedGrayColor = themedGray;
+                setBackgroundColor(themedGray);
+                if (buttonContainer != null) {
+                    buttonContainer.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(themedGray, 0.0f), themedGray, themedGray }));
+                }
+            }
+            final int red = getThemedColor(Theme.key_color_red);
+            if (terminateButton != null && red != themedTerminateColor) {
+                themedTerminateColor = red;
+                terminateButton.setColor(red);
+            }
+            final int navColor = getThemedColor(Theme.key_windowBackgroundGray);
+            if (navBarColorKey < 0 && navBarColor == fixedNavBarColor && navColor != navBarColor) {
+                fixedNavBarColor = navBarColor = navColor;
+                setOverlayNavBarColor(navColor);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

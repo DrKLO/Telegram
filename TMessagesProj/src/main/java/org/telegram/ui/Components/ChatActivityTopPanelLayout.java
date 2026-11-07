@@ -7,7 +7,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
@@ -88,6 +90,18 @@ public class ChatActivityTopPanelLayout extends AnimatedLinearLayout {
         invalidate();
     }
 
+    private FragmentContextView callFragmentContextView;
+
+    public void setCallFragmentContextView(FragmentContextView fragmentContextView) {
+        callFragmentContextView = fragmentContextView;
+        callFragmentContextView.getCapsuleBlobDrawable().setCallback(this);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return super.verifyDrawable(who) || callFragmentContextView != null && callFragmentContextView.getCapsuleBlobDrawable() == who;
+    }
+
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         if (getMetadata().getTotalVisibility() == 0) return;
@@ -96,16 +110,52 @@ public class ChatActivityTopPanelLayout extends AnimatedLinearLayout {
             backgroundDrawable.draw(canvas);
         }
 
+        boolean callDrawn = false;
+        if (callFragmentContextView != null) {
+            final int style = callFragmentContextView.getCurrentStyle();
+            if (style == FragmentContextView.STYLE_ACTIVE_GROUP_CALL || style == FragmentContextView.STYLE_CONNECTING_GROUP_CALL) {
+                for (int a = 0, N = getEntriesCount(); a < N; a++) {
+                    final ListAnimator.Entry<AnimatedLinearLayout.Holder> entry = getEntry(a);
+                    final float top = getPaddingTop() + entry.getRectF().top;
+                    final View view = entry.item.view;
+                    final float alpha = entry.getVisibility();
+                    if (alpha <= 0) {
+                        continue;
+                    }
+
+                    if (callFragmentContextView == view || callFragmentContextView.getParent() == view) {
+                        final CapsuleBlobDrawable capsuleBlobDrawable = callFragmentContextView.getCapsuleBlobDrawable();
+
+                        final int p = capsuleBlobDrawable.getRequiredInset();
+                        final int h = dp(36) + p * 2;
+                        capsuleBlobDrawable.setBounds(getPaddingLeft() - p, -p, getMeasuredWidth() - getPaddingRight() + p, -p + h);
+                        capsuleBlobDrawable.setAlpha((int) (255 * alpha));
+                        canvas.save();
+                        canvas.translate(0, top);
+                        capsuleBlobDrawable.draw(canvas);
+                        canvas.restore();
+
+                        callDrawn = true;
+                    }
+                }
+            }
+        }
+
         canvas.save();
         canvas.clipPath(clipPath);
         for (int a = 0, N = getEntriesCount(); a < N; a++) {
-            final ListAnimator.Entry<?> entry = getEntry(a);
+            final ListAnimator.Entry<AnimatedLinearLayout.Holder> entry = getEntry(a);
             final float top = getPaddingTop() + entry.getRectF().top;
+            final View view = entry.item.view;
 
             final float position = entry.getPosition();
             final float alpha = entry.getVisibility() * Math.min(1, position);
 
             if (alpha <= 0) {
+                continue;
+            }
+
+            if (callDrawn && callFragmentContextView != null && (callFragmentContextView == view || callFragmentContextView.getParent() == view)) {
                 continue;
             }
 

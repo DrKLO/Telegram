@@ -1,6 +1,7 @@
 package org.telegram.messenger.pip.activity;
 
 import android.app.PictureInPictureParams;
+import android.app.PictureInPictureUiState;
 import android.content.res.Configuration;
 
 import androidx.annotation.NonNull;
@@ -16,4 +17,5 @@ public interface IPipActivityHandler {
     void onDestroy();
     void onConfigurationChanged(Configuration ignoredNewConfig);
     void setPictureInPictureParams(PictureInPictureParams params);
+    void onPictureInPictureUiStateChanged(@NonNull PictureInPictureUiState pipState);
 }

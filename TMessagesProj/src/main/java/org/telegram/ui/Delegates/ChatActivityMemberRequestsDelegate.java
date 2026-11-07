@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -21,6 +22,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AvatarsImageView;
@@ -88,13 +90,19 @@ public class ChatActivityMemberRequestsDelegate {
             requestsCountTextView.setGravity(Gravity.CENTER_VERTICAL);
             requestsCountTextView.setSingleLine();
             requestsCountTextView.setText(null);
-            requestsCountTextView.setTextColor(fragment.getThemedColor(Theme.key_chat_topPanelTitle));
+            ThemeBind.textColor(requestsCountTextView, Theme.key_chat_topPanelTitle, fragment.getResourceProvider());
             requestsCountTextView.setTypeface(AndroidUtilities.bold());
             requestsDataLayout.addView(requestsCountTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 0));
 
             closeView = new ImageView(fragment.getParentActivity());
-            closeView.setBackground(Theme.createSelectorDrawable(fragment.getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, AndroidUtilities.dp(14)));
-            closeView.setColorFilter(new PorterDuffColorFilter(fragment.getThemedColor(Theme.key_chat_topPanelClose), PorterDuff.Mode.MULTIPLY));
+            final int closeColor = fragment.getThemedColor(Theme.key_inappPlayerClose);
+            final Drawable closeSelector = Theme.createSelectorDrawable(closeColor & 0x19ffffff, 1, AndroidUtilities.dp(14));
+            if ((closeColor >>> 24) == 0xFF) {
+                ThemeBind.selectorBackground(closeView, closeSelector, null, ThemeBind.alpha(Theme.key_inappPlayerClose, 0x19), fragment.getResourceProvider());
+            } else {
+                closeView.setBackground(closeSelector);
+            }
+            ThemeBind.colorFilter(closeView, Theme.key_chat_topPanelClose, fragment.getResourceProvider(), PorterDuff.Mode.MULTIPLY);
             closeView.setContentDescription(LocaleController.getString(R.string.Close));
             closeView.setImageResource(R.drawable.miniplayer_close);
             closeView.setScaleType(ImageView.ScaleType.CENTER);

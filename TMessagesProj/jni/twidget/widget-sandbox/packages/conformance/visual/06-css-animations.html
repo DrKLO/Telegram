@@ -1,0 +1,40 @@
+<!doctype html>
+<html data-test="visual/06-css-animations">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: CSS animations</title>
+<!-- conformance {"title":"CSS animations and transitions, live: slide, spin, pulse, steps, a frozen frame, a transition on tap","hint":"Moving rows: the box should move as the caption says (the picture shows the frames it moves between). Frozen row: must match exactly. Tap the last box once.","covers":["anim.keyframes","anim.easing","anim.play-state","anim.transition"],"actions":[{"tap":"tr"}]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}body{line-height:18px}.v-head{margin:6px 10px 2px;font-weight:600;font-size:15px;line-height:20px}.v-hint{margin:0 10px 4px;font-size:12px;line-height:16px}.v-row{display:flex;align-items:flex-start;margin:4px 10px 6px}.v-cap{margin-left:10px;font-size:12px;line-height:16px}[data-stage]{flex:none;width:150px;height:90px}</style><script>var T=function(){var b=document,M=b.documentElement,T=typeof TelegramWidget!="undefined",O=window.__conformanceMode||(T?"sandbox":"native"),a=[],k={},f=[],c={},d,l,p,u,q,g,x,h,y=e=>typeof e=="string"?b.querySelector(e):e;var S=()=>{h=h||setTimeout(w,0)};function m(e,t,n,s,r){r=r||{};let o=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),i=k[e+"|"+t]||(k[e+"|"+t]=a[a.length]=[e,t]);return i[2]=o,i[3]=(s?(""+s).slice(0,160):"")+(r.xfail&&o[0]=="x"?" (expected to fail: "+r.xfail+")":""),S(),o}function R(e,t,n){x=()=>{for(let o of a)o[2]=="pending"&&(o[2]="fail",o[3]+=" (timed out)");u=1,w()};let s=(o,i)=>{r.done||(r.done=m(e,t,o,i,n))},r={done:n&&n.sandboxOnly&&!T,pass:o=>s(!0,o),fail:o=>s(!1,o),skip:o=>s(null,o),result:(o,i)=>s(!!o,i)};return m(e,t,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}function B(e){let t=y(e).getBoundingClientRect();return{x:t.left,y:t.top,w:t.width,h:t.height,r:t.right,b:t.bottom}}var E=(e,t)=>{c[e]=t,j=()=>{d={};for(let n in c)y(c[n])&&(d[n]=C(y(c[n])))}},j=()=>{},C=e=>{let t=e.getBoundingClientRect();return[t.left,t.top,t.width,t.height].map(n=>Math.round(n*10)/10)};function w(){h=0,p&&!u&&j();let e={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let s of a)e[s[2]]++;let t=p&&!f.length,n=u||t&&!e.pending?"done":t&&q?"awaiting":"running";u=n=="done",M.setAttribute("data-conformance",JSON.stringify({v:1,id:M.getAttribute("data-test"),mode:O,status:n,n:e,checks:a,targets:d,stages:l})),A&&A(n,e)}var A;function D(){if(l||(l={},[].forEach.call(b.querySelectorAll("[data-stage]"),t=>{l[t.getAttribute("data-stage")]=C(t)})),!f.length)return p=1,g&&x&&setTimeout(x,g),S();let e;try{e=f.shift()()}catch(t){m("harness","step",!1,t)}setTimeout(D,e||0)}function I(e){e=e||{},q=e.awaitInput,g=e.awaitInput||e.deadline,w();let t=()=>{t=()=>{},setTimeout(D,e.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>t()))}catch(n){}setTimeout(()=>t(),400)}return{rect:B,run:I,target:E,wait:R}}();</script><!-- /conformance:harness -->
+<style>
+@keyframes vslide{from{transform:translateX(0)}to{transform:translateX(90px)}}
+@keyframes vspin{to{transform:rotate(360deg)}}
+@keyframes vpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.4}}
+@keyframes vfill{from{width:0}to{width:120px}}
+.a{position:absolute}
+.ghost{position:absolute;border:2px dashed #999;box-sizing:border-box}
+.box{position:absolute;width:40px;height:40px;background:#c33;border-radius:6px}
+#v-tr{left:10px;top:25px;background:#e83;transition:transform .6s ease-in-out,background-color .6s;cursor:pointer}
+#v-tr.go{transform:translateX(90px);background:#36c}
+</style>
+</head>
+<body>
+<div class="v-head">06 · CSS animations</div>
+<div class="v-hint">Moving rows: compare the motion with the caption. Frozen row: must match the picture exactly.</div>
+<div class="v-row"><div data-stage="slide" data-illustration><div class="ghost" style="left:10px;top:25px;width:40px;height:40px"></div><div class="ghost" style="left:100px;top:25px;width:40px;height:40px"></div><div class="box" style="left:10px;top:25px;animation:vslide 1.6s ease-in-out infinite alternate"></div></div><div class="v-cap">The red box glides between the two dashed frames, easing at both ends</div></div>
+<div class="v-row"><div data-stage="spin-pulse" data-illustration><div class="a" style="left:22px;top:22px;width:46px;height:46px;border-radius:50%;border:6px solid #ddd;border-top-color:#36c;box-sizing:border-box;animation:vspin 1s linear infinite"></div><div class="box" style="left:92px;top:25px;background:#3a3;animation:vpulse 1.2s ease-in-out infinite"></div></div><div class="v-cap">A spinner turns once a second; the green box grows and fades, then returns</div></div>
+<div class="v-row"><div data-stage="steps" data-illustration><div class="a" style="left:15px;top:35px;width:120px;height:20px;background:#eee"></div><div class="a" style="left:15px;top:35px;height:20px;background:#a3a;animation:vfill 2s steps(4,end) infinite"></div></div><div class="v-cap">The bar fills in four jumps (steps), not smoothly, then starts over</div></div>
+<div class="v-row"><div data-stage="frozen"><div class="ghost" style="left:10px;top:25px;width:40px;height:40px"></div><div class="ghost" style="left:100px;top:25px;width:40px;height:40px"></div><div class="box" style="left:10px;top:25px;background:#36c;animation:vslide 10s linear -5s paused"></div></div><div class="v-cap">Paused half-way: the blue box sits exactly between the frames</div></div>
+<div class="v-row"><div data-stage="transition" data-illustration><div class="ghost" style="left:100px;top:25px;width:40px;height:40px"></div><div class="box" id="v-tr"></div></div><div class="v-cap">Tap the orange box once: it glides into the frame and turns blue (the picture shows the end)</div></div>
+<script>
+T.target('tr', '#v-tr');
+var tr = T.wait('anim.transition', 'the box glides on tap');
+document.getElementById('v-tr').addEventListener('click', function () { this.classList.add('go'); setTimeout(function () { var r = T.rect('#v-tr'); tr.result(r.x > 90, 'x ' + Math.round(r.x)); }, 900); });
+T.run({ awaitInput: 15000 });
+</script>
+<template data-ref="slide"><div style="position:absolute;left:10px;top:25px;width:40px;height:40px;border:2px dashed #999;box-sizing:border-box"></div><div style="position:absolute;left:100px;top:25px;width:40px;height:40px;border:2px dashed #999;box-sizing:border-box"></div><div style="position:absolute;left:10px;top:25px;width:40px;height:40px;background:#c33;border-radius:6px;opacity:.85"></div><div style="position:absolute;left:100px;top:25px;width:40px;height:40px;background:#c33;border-radius:6px;opacity:.35"></div><div style="position:absolute;left:54px;top:43px;width:42px;height:3px;background:#c33;opacity:.5"></div></template>
+<template data-ref="spin-pulse"><div style="position:absolute;left:22px;top:22px;width:46px;height:46px;border-radius:50%;border:6px solid #ddd;border-top-color:#36c;box-sizing:border-box"></div><div style="position:absolute;left:92px;top:25px;width:40px;height:40px;background:#3a3;border-radius:6px"></div><div style="position:absolute;left:82px;top:15px;width:60px;height:60px;border:2px dashed #3a3;border-radius:9px;box-sizing:border-box;opacity:.5"></div></template>
+<template data-ref="steps"><div style="position:absolute;left:15px;top:35px;width:120px;height:20px;background:#eee"></div><div style="position:absolute;left:15px;top:35px;width:60px;height:20px;background:#a3a"></div><div style="position:absolute;left:45px;top:58px;width:1px;height:6px;background:#999"></div><div style="position:absolute;left:75px;top:58px;width:1px;height:6px;background:#999"></div><div style="position:absolute;left:105px;top:58px;width:1px;height:6px;background:#999"></div></template>
+<template data-ref="transition"><div style="position:absolute;left:100px;top:25px;width:40px;height:40px;background:#36c;border-radius:6px"></div></template>
+</body>
+</html>

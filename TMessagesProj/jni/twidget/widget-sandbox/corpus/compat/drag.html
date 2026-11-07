@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #fff; }
+  #area { position: relative; height: 180px; border: 2px dashed #cbd5e1; border-radius: 10px; touch-action: none; }
+  .box { position: absolute; width: 60px; height: 60px; border-radius: 10px; background: #2481cc; color: #fff; display: flex; align-items: center; justify-content: center; cursor: grab; font-size: 12px; }
+  .box.dragging { cursor: grabbing; box-shadow: 0 6px 16px rgba(0,0,0,.3); background: #1d4ed8; }
+  #pos { font-size: 12px; color: #666; margin-top: 6px; font-variant-numeric: tabular-nums; }
+</style></head><body>
+<div id="area"><div class="box" id="box" style="left:20px;top:20px">drag me</div></div>
+<div id="pos">x: 20, y: 20</div>
+<script>
+  var box = document.getElementById('box'), area = document.getElementById('area');
+  var start = null;
+  box.addEventListener('pointerdown', function (e) {
+    start = { px: e.clientX, py: e.clientY, x: box.offsetLeft, y: box.offsetTop };
+    box.setPointerCapture(e.pointerId); box.classList.add('dragging'); e.preventDefault();
+  });
+  box.addEventListener('pointermove', function (e) {
+    if (!start) return;
+    var r = area.getBoundingClientRect();
+    var x = Math.max(0, Math.min(r.width - 64, start.x + e.clientX - start.px));
+    var y = Math.max(0, Math.min(r.height - 64, start.y + e.clientY - start.py));
+    box.style.left = x + 'px'; box.style.top = y + 'px';
+    document.getElementById('pos').textContent = 'x: ' + Math.round(x) + ', y: ' + Math.round(y);
+  });
+  function up(e) { if (!start) return; start = null; box.classList.remove('dragging'); try { box.releasePointerCapture(e.pointerId); } catch (err) {} }
+  box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+</script>
+</body></html>

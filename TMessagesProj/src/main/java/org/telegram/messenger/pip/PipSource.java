@@ -9,7 +9,7 @@ import android.view.View;
 
 import androidx.annotation.RequiresApi;
 
-import com.google.android.exoplayer2.Player;
+import androidx.media3.common.Player;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.pip.activity.IPipActivity;
@@ -83,6 +83,10 @@ public class PipSource {
         if (this.contentView != null) {
             updateContentPosition(this.contentView);
         }
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 
     public void setPlaceholderView(View placeholderView) {

@@ -172,7 +172,7 @@ public class AnimatedEmojiEffect {
                 }
                 effectImageReceiver.setAutoRepeat(0);
             } else {
-                RLottieDrawable rLottieDrawable = new RLottieDrawable(R.raw.custom_emoji_reaction, "" + R.raw.custom_emoji_reaction, AndroidUtilities.dp(60), AndroidUtilities.dp(60), false, null);
+                RLottieDrawable rLottieDrawable = new RLottieDrawable(R.raw.custom_emoji_reaction, AndroidUtilities.dp(60), AndroidUtilities.dp(60), false, null);
                 effectImageReceiver.setImageBitmap(rLottieDrawable);
             }
         }

@@ -28,11 +28,10 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.utils.CountdownTimer;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.AnimatedTextView;
-import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Gifts.ActiveAuctionsSheet;
 import org.telegram.ui.Gifts.AuctionBidSheet;
 
@@ -40,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @SuppressLint("ViewConstructor")
-public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners {
+public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAuctionController.OnActiveAuctionsUpdateListeners, Theme.Colorable {
     private final int currentAccount;
 
     private final AnimatedTextView titleTextView;
@@ -71,6 +70,7 @@ public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAucti
         addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 14, 0, 90, 0));
         addView(timerView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 11, 0));
 
+        ThemeBind.selectorBackground(this, Theme.getSelectorDrawable(false), null, ThemeBind.of(Theme.key_listSelector));
         updateColors();
 
 
@@ -82,8 +82,8 @@ public class ActiveGiftAuctionsHintCell extends FrameLayout implements GiftAucti
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY));
     }
 
+    @Override
     public void updateColors() {
-        setBackground(Theme.getSelectorDrawable(false));
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         messageTextView.setTextColor(Theme.getColor(isOutbid ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteGrayText));
         invalidate();

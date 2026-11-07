@@ -92,12 +92,6 @@ public class RecordedAudioPlayerView extends View {
                 public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {}
                 @Override
                 public void onRenderedFirstFrame() {}
-                @Override
-                public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {}
-                @Override
-                public boolean onSurfaceDestroyed(SurfaceTexture surfaceTexture) {
-                    return false;
-                }
             });
         }
         player.preparePlayer(Uri.fromFile(new File(audioPath)), "other");

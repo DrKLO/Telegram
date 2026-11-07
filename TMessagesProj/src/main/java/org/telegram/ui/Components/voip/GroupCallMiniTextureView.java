@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -39,7 +40,6 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
@@ -59,6 +59,7 @@ import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BlobDrawable;
 import org.telegram.ui.Components.CrossOutDrawable;
@@ -564,7 +565,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         noRtmpStreamTextView = new TextView(parentContainer.getContext());
         noRtmpStreamTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         noRtmpStreamTextView.setPadding(dp(21), 0, dp(21), 0);
-        noRtmpStreamTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
+        ThemeBind.textColor(noRtmpStreamTextView, Theme.key_voipgroup_lastSeenText);
         noRtmpStreamTextView.setBackground(rippleDrawable);
         noRtmpStreamTextView.setGravity(Gravity.CENTER);
         noRtmpStreamTextView.setAlpha(0f);
@@ -1617,7 +1618,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         }
     }
 
-    private class NoVideoStubLayout extends View {
+    private class NoVideoStubLayout extends View implements Theme.Colorable {
 
         public ImageReceiver avatarImageReceiver = new ImageReceiver();
         public ImageReceiver backgroundImageReceiver = new ImageReceiver();
@@ -1808,7 +1809,18 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
             avatarImageReceiver.onDetachedFromWindow();
             backgroundImageReceiver.onDetachedFromWindow();
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                paint.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_voipgroup_listeningText), Theme.getColor(Theme.key_voipgroup_speakingText), speakingProgress));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     public String getName() {
         long peerId = MessageObject.getPeerId(participant.participant.peer);
@@ -1851,7 +1863,7 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
         if (textureView.renderer.isFirstFrameRendered()) {
             Bitmap bitmap = textureView.blurRenderer.getBitmap(100, 100);
             if (bitmap != null) {
-                Utilities.blurBitmap(bitmap, 3, 1, bitmap.getWidth(), bitmap.getHeight(), bitmap.getRowBytes());
+                Utilities.blurBitmap(bitmap, 3);
                 Drawable drawable = new BitmapDrawable(bitmap);
                 blurredFlippingStub.setBackground(drawable);
             }

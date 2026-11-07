@@ -21,6 +21,7 @@ import org.telegram.ui.Components.LayoutHelper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashSet;
 
 public class RichCommand {
 
@@ -44,6 +45,7 @@ public class RichCommand {
         cmds.add(new RichCommand(R.drawable.iv_ordered_list, getString(R.string.ArticleCommandOrderedList), "1."));
         cmds.add(new RichCommand(R.drawable.iv_todo, getString(R.string.ArticleListChecklist), "[]", "/todo", "/checklist"));
         cmds.add(new RichCommand(R.drawable.iv_details, getString(R.string.ArticleCommandToggle), ">", "/toggle", "/details"));
+        cmds.add(new RichCommand(R.drawable.iv_button, getString(R.string.RichEditorButton), "/button"));
         cmds.add(new RichCommand(R.drawable.iv_table, getString(R.string.ArticleCommandTable), "/table"));
         cmds.add(new RichCommand(R.drawable.iv_math, getString(R.string.ArticleCommandMath), "/math", "/latex", "/expression"));
         cmds.add(new RichCommand(R.drawable.iv_divider, getString(R.string.ArticleCommandDivider), "---"));
@@ -129,6 +131,10 @@ public class RichCommand {
             iconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             textView2.setTextColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .75f));
+        }
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
         }
 
         @Override

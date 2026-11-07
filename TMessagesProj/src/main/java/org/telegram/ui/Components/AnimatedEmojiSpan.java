@@ -39,6 +39,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +58,8 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     public boolean invert = false;
 
     private Paint.FontMetricsInt fontMetrics;
+    private boolean preserveFontMetrics;
+    private int minimumLineHeight;
     public float size = AndroidUtilities.dp(20);
     public int cacheType = -1;
     public String documentAbsolutePath;
@@ -178,6 +181,16 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         return this;
     }
 
+    public AnimatedEmojiSpan setPreserveFontMetrics(boolean preserveFontMetrics) {
+        this.preserveFontMetrics = preserveFontMetrics;
+        return this;
+    }
+
+    public AnimatedEmojiSpan setMinimumLineHeight(int minimumLineHeight) {
+        this.minimumLineHeight = minimumLineHeight;
+        return this;
+    }
+
 
     public static void applyFontMetricsForString(CharSequence text, Paint textPaint) {
         if (text instanceof Spannable) {
@@ -222,6 +235,12 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
 
     @Override
     public int getSize(Paint paint, CharSequence text, int start, int end, Paint.FontMetricsInt fm) {
+        final boolean preserveMetrics = preserveFontMetrics && fm != null;
+        final int originalTop = preserveMetrics ? fm.top : 0;
+        final int originalAscent = preserveMetrics ? fm.ascent : 0;
+        final int originalDescent = preserveMetrics ? fm.descent : 0;
+        final int originalBottom = preserveMetrics ? fm.bottom : 0;
+        final int originalLeading = preserveMetrics ? fm.leading : 0;
         if (fm == null && top) {
             fm = paint.getFontMetricsInt();
         }
@@ -267,7 +286,29 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
             fm.ascent += diff;
             fm.descent -= diff;
         }
+        if (preserveMetrics) {
+            fm.top = originalTop;
+            fm.ascent = originalAscent;
+            fm.descent = originalDescent;
+            fm.bottom = originalBottom;
+            fm.leading = originalLeading;
+            expandFontMetrics(fm, minimumLineHeight);
+        }
         return Math.max(0, measuredSize - 1);
+    }
+
+    private static void expandFontMetrics(Paint.FontMetricsInt fm, int minimumHeight) {
+        final int currentHeight = fm.descent - fm.ascent;
+        if (minimumHeight <= currentHeight) {
+            return;
+        }
+        final int extra = minimumHeight - currentHeight;
+        final int above = (extra + 1) / 2;
+        final int below = extra - above;
+        fm.ascent -= above;
+        fm.descent += below;
+        fm.top = Math.min(fm.top, fm.ascent);
+        fm.bottom = Math.max(fm.bottom, fm.descent);
     }
 
     private boolean isAnimating() {
@@ -374,7 +415,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     // ===
 
     public static class AnimatedEmojiHolder implements InvalidateHolder {
-        private final View view;
+        private final WeakReference<View> view;
         private final boolean invalidateInParent;
         public Layout layout;
         public AnimatedEmojiSpan span;
@@ -392,7 +433,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         private ImageReceiver.BackgroundThreadDrawHolder[] backgroundDrawHolder = new ImageReceiver.BackgroundThreadDrawHolder[DrawingInBackgroundThreadDrawable.THREAD_COUNT];
 
         public AnimatedEmojiHolder(View view, boolean invalidateInParent) {
-            this.view = view;
+            this.view = new WeakReference<>(view);
             this.invalidateInParent = invalidateInParent;
         }
 
@@ -469,12 +510,15 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
         }
 
         public void invalidate() {
-            if (view != null) {
-                if (invalidateInParent && view.getParent() != null) {
-                    ((View) view.getParent()).invalidate();
-                } else {
-                    view.invalidate();
-                }
+            final View view = this.view.get();
+            if (view == null) {
+                return;
+            }
+
+            if (invalidateInParent && view.getParent() != null) {
+                ((View) view.getParent()).invalidate();
+            } else {
+                view.invalidate();
             }
         }
     }
@@ -843,12 +887,12 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
     private static class SpansChunk {
 
         Layout layout;
-        final View view;
+        final WeakReference<View> view;
         ArrayList<AnimatedEmojiHolder> holders = new ArrayList<>();
         DrawingInBackgroundThreadDrawable backgroundThreadDrawable;
         private final boolean allowBackgroundRendering;
 
-        public SpansChunk(View view, Layout layout, boolean allowBackgroundRendering) {
+        public SpansChunk(WeakReference<View> view, Layout layout, boolean allowBackgroundRendering) {
             this.layout = layout;
             this.view = view;
             this.allowBackgroundRendering = allowBackgroundRendering;
@@ -916,9 +960,7 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
                             }
                         }
                         backgroundHolders.clear();
-                        if (view != null && view.getParent() != null) {
-                            ((View) view.getParent()).invalidate();
-                        }
+                        invalidate();
                     }
 
                     @Override
@@ -928,6 +970,11 @@ public class AnimatedEmojiSpan extends ReplacementSpan {
 
                     @Override
                     public void onResume() {
+                        invalidate();
+                    }
+
+                    private void invalidate() {
+                        final View view = SpansChunk.this.view.get();
                         if (view != null && view.getParent() != null) {
                             ((View) view.getParent()).invalidate();
                         }

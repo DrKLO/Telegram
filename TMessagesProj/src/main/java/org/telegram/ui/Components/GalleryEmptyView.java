@@ -19,6 +19,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 @SuppressLint("ViewConstructor")
@@ -40,7 +41,7 @@ public class GalleryEmptyView extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
 
         stickerView = new BackupImageView(context);
-        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_gallery, "utyan_gallery", dp(110), dp(110)));
+        stickerView.setImageDrawable(new RLottieDrawable(R.raw.utyan_gallery, dp(110), dp(110)));
 
         if (!AndroidUtilities.isTablet()) {
             addView(stickerView, LayoutHelper.createLinear(110, 110, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
@@ -48,7 +49,7 @@ public class GalleryEmptyView extends LinearLayout {
 
         titleTextView = new TextView(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setText(LocaleController.getString(R.string.GalleryAccessAllowAccess));
         titleTextView.setTypeface(AndroidUtilities.bold());
@@ -56,7 +57,7 @@ public class GalleryEmptyView extends LinearLayout {
 
         subtitleTextView = new TextView(context);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+        ThemeBind.textColor(subtitleTextView, Theme.key_emptyListPlaceholder);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         subtitleTextView.setText(LocaleController.getString(UserConfig.getInstance(currentAccount).isPremium() ? R.string.GalleryAccessAllowAccessTextPremium : R.string.GalleryAccessAllowAccessTextNonPremium));
         subtitleTextView.setMaxWidth(dp(260));
@@ -134,8 +135,8 @@ public class GalleryEmptyView extends LinearLayout {
     }
 
     public void setColors() {
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.textColor(subtitleTextView, Theme.key_emptyListPlaceholder);
         galleryAccessButton.updateColors();
     }
 }

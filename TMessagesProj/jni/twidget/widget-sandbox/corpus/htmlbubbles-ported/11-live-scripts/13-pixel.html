@@ -1,0 +1,12 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 13
+  author: pixel 10:17
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#000, #fff); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+</style>
+Every call into a script is capped at <b>50 ms</b>, and a message gets at most <b>200 ms of JS per second</b>. Break either rule and the script is stopped for good. The card keeps its last HTML, or the static HTML around the <code>&lt;script&gt;</code>. Here are some badly behaved messages:

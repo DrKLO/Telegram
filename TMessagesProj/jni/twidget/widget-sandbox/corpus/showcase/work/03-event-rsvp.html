@@ -1,0 +1,100 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: an event invite — gradient cover with a date badge, an avatar stack that grows as people accept, Going / Maybe / Can't segmented buttons, confetti on "Going", a live "starts in" counter, Add to calendar (an .ics link); your reply is kept locally
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff; --green: #34c759; --orange: #ff9500; --red: #ff3b30;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; position: relative; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+  .cover { height: 150px; position: relative; background: linear-gradient(135deg, #0f0c29, #302b63 50%, #24243e); overflow: hidden; }
+  .cover .orb { position: absolute; border-radius: 50%; filter: blur(18px); opacity: .8; animation: orb 9s ease-in-out infinite alternate; }
+  .cover .o1 { width: 180px; height: 180px; left: -40px; top: -60px; background: #ff2d55; } .cover .o2 { width: 160px; height: 160px; right: -30px; top: 10px; background: #007aff; animation-delay: -4s; } .cover .o3 { width: 120px; height: 120px; left: 140px; bottom: -70px; background: #ffcc00; animation-delay: -7s; }
+  @keyframes orb { to { transform: translate(30px, 20px) scale(1.15); } }
+  .cover h3 { position: absolute; left: 18px; bottom: 16px; margin: 0; color: #fff; font-size: 22px; letter-spacing: -.01em; filter: drop-shadow(0 2px 6px rgba(0,0,0,.4)); } .cover h3 small { display: block; font-size: 12px; font-weight: 600; opacity: .9; margin-bottom: 4px; letter-spacing: .1em; }
+  .date { position: absolute; right: 16px; top: 16px; background: var(--card); border-radius: 12px; text-align: center; padding: 6px 12px 7px; box-shadow: var(--shadow); } .date b { display: block; font-size: 22px; line-height: 1; } .date span { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--red); }
+  .body { padding: 14px 18px 16px; }
+  .meta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; } .meta div { display: flex; align-items: center; gap: 10px; } .meta i { width: 28px; height: 28px; border-radius: 8px; background: var(--card2); display: grid; place-items: center; font-style: normal; font-size: 14px; flex-shrink: 0; } .meta span { color: var(--muted); } .meta b { font-weight: 600; }
+  .cd { font-variant-numeric: tabular-nums; }
+  .who { display: flex; align-items: center; margin-top: 14px; }
+  .stack { display: flex; } .stack i { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--card); margin-left: -8px; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; font-style: normal; animation: pop .4s cubic-bezier(.34,1.56,.64,1); } .stack i:first-child { margin-left: 0; }
+  .stack i.more { background: var(--card2); color: var(--muted); font-size: 10px; }
+  @keyframes pop { from { transform: scale(0); } }
+  .who span { margin-left: 10px; font-size: 12px; color: var(--muted); } .who span b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  .seg { display: flex; gap: 8px; margin-top: 14px; }
+  .seg button { flex: 1; padding: 11px 0; border-radius: 12px; border: 1.5px solid var(--border); background: transparent; color: var(--fg); font: inherit; font-weight: 700; cursor: pointer; transition: all .25s; }
+  .seg button:active { transform: scale(.97); }
+  .seg button.on.go { background: var(--green); border-color: var(--green); color: #fff; } .seg button.on.mb { background: var(--orange); border-color: var(--orange); color: #fff; } .seg button.on.no { background: var(--muted); border-color: var(--muted); color: #fff; }
+  .after { margin-top: 12px; display: flex; gap: 8px; align-items: center; max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1), margin .4s; } .after.show { max-height: 50px; } .after:not(.show) { margin-top: 0; }
+  .after button { padding: 9px 12px; border-radius: 10px; border: 0; background: var(--card2); color: var(--fg); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; } .after .ok { color: var(--green); font-size: 13px; font-weight: 600; margin-left: auto; }
+</style>
+<div class="card" id="card">
+  <canvas id="fx"></canvas>
+  <div class="cover"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><h3><small>TEAM OFFSITE · DAY 2</small>Rooftop dinner &amp; DJ set</h3><div class="date"><span>MAY</span><b>23</b></div></div>
+  <div class="body">
+    <div class="meta">
+      <div><i>🕗</i><div><b>Saturday, 20:00 – late</b><br><span class="cd" id="cd">starts in —</span></div></div>
+      <div><i>📍</i><div><b>Park Hotel rooftop</b><br><span>Rose Revolution Sq 1 · 12 min walk from the venue</span></div></div>
+      <div><i>👗</i><div><b>Dress code: a notch up</b><br><span>Dinner from 20:30, DJ from 22:00</span></div></div>
+    </div>
+    <div class="who"><div class="stack" id="stack"></div><span><b id="goingN">0</b> going · <b id="maybeN">0</b> maybe · <span id="hint">you haven't replied</span></span></div>
+    <div class="seg" id="seg"><button class="go" data-r="go" role="button">Going</button><button class="mb" data-r="mb" role="button">Maybe</button><button class="no" data-r="no" role="button">Can't</button></div>
+    <div class="after" id="after"><button id="cal" role="button">Add to calendar</button><button id="plus">+1 guest</button><span class="ok" id="okT"></span></div>
+  </div>
+</div>
+<script>
+  // SDK v1: no sendMessage. Your reply (and the +1, the calendar) is local state in localStorage, kept by the client
+  // per message and restored on load; Add to calendar opens the event's .ics. window.TelegramWidget is absent in
+  // reference mode.
+  const tw = window.TelegramWidget, KEY = 'offsite-dinner';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const saved = store.get(KEY, {});
+  const keep = patch => store.set(KEY, Object.assign(saved, patch));
+  const PEOPLE = [['NM', '#af52de'], ['DG', '#34c759'], ['MR', '#007aff'], ['LK', '#ff9500'], ['SB', '#30b0c7'], ['TJ', '#ff2d55'], ['AO', '#5856d6'], ['PV', '#ffcc00']];
+  let going = 14, maybe = 3, me = null, shown = 5;
+  const stack = document.getElementById('stack');
+  function paintStack() {
+    stack.innerHTML = PEOPLE.slice(0, shown).map(p => '<i style="background:' + p[1] + '">' + p[0][0] + '</i>').join('') + (me === 'go' ? '<i style="background:#0a0a0a;color:#fff;outline:2px solid var(--green)">You</i>' : '') + '<i class="more">+' + Math.max(0, going - shown - (me === 'go' ? 1 : 0)) + '</i>';
+    document.getElementById('goingN').textContent = going; document.getElementById('maybeN').textContent = maybe;
+    document.getElementById('hint').textContent = me === 'go' ? "you're going" : me === 'mb' ? 'you might come' : me === 'no' ? "you can't make it" : "you haven't replied";
+  }
+  const seg = document.getElementById('seg'), after = document.getElementById('after'), plus = document.getElementById('plus');
+  function reply(r) {
+    if (me === 'go') going--; if (me === 'mb') maybe--;
+    me = r; if (r === 'go') going++; if (r === 'mb') maybe++;
+    [...seg.children].forEach(x => x.classList.toggle('on', x.dataset.r === r));
+    after.classList.toggle('show', r !== 'no'); paintStack();
+  }
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    reply(b.dataset.r); keep({ me });
+    if (me === 'go') confetti();
+  });
+  const calAdded = () => { document.getElementById('okT').textContent = 'Added ✓'; };
+  const plusOne = () => { going++; plus.textContent = '+1 added'; plus.disabled = true; paintStack(); };
+  document.getElementById('cal').addEventListener('click', () => { tw?.openLink('https://events.example.com/offsite-2026/rooftop-dinner.ics'); calAdded(); keep({ cal: true }); });
+  plus.addEventListener('click', () => { if (plus.disabled) return; plusOne(); keep({ plus: true }); });
+  if (['go', 'mb', 'no'].includes(saved.me)) reply(saved.me);
+  if (saved.plus === true) plusOne();
+  if (saved.cal === true) calAdded();
+  // Other people reply while you look
+  const later = [[2500, 'go'], [6000, 'mb'], [9500, 'go'], [15000, 'go']];
+  later.forEach(([t, r]) => setTimeout(() => { if (r === 'go') { going++; if (shown < PEOPLE.length) shown++; } else maybe++; paintStack(); }, t));
+  // Countdown to Saturday 20:00 — 1d 05:24:09 at load
+  let left = 1 * 86400 + 5 * 3600 + 24 * 60 + 9;
+  const cd = document.getElementById('cd');
+  const tick = () => { const d = Math.floor(left / 86400), h = Math.floor(left % 86400 / 3600), m = Math.floor(left % 3600 / 60), s = left % 60; cd.textContent = 'starts in ' + (d ? d + 'd ' : '') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); left--; };
+  tick(); setInterval(tick, 1000);
+  const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
+  function confetti() {
+    if (!ctx) return; const W = cv.width = 392, H = cv.height = 420; let s = 23; const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+    const cols = ['#ff2d55', '#ff9500', '#ffcc00', '#34c759', '#007aff', '#af52de'];
+    const ps = Array.from({ length: 110 }, () => ({ x: W * (0.2 + rnd() * 0.6), y: H * 0.78, vx: (rnd() - .5) * 16, vy: -rnd() * 14 - 6, r: 3 + rnd() * 4, c: cols[Math.floor(rnd() * 6)], a: rnd() * 6, va: (rnd() - .5) * .4 }));
+    const t0 = performance.now();
+    (function step() { const t = (performance.now() - t0) / 1000; ctx.clearRect(0, 0, W, H); for (const p of ps) { p.vy += .4; p.x += p.vx; p.y += p.vy; p.vx *= .985; p.a += p.va; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.globalAlpha = Math.max(0, 1 - t / 2); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); } if (t < 2) requestAnimationFrame(step); else ctx.clearRect(0, 0, W, H); })();
+  }
+  paintStack();
+</script>

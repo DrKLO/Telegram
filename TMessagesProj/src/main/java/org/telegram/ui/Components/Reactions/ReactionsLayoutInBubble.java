@@ -24,11 +24,10 @@ import android.view.ViewConfiguration;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
-import androidx.recyclerview.widget.ChatListItemAnimator;
+import org.telegram.ui.recyclerview.ChatListItemAnimator;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
-import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
@@ -46,6 +45,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -59,7 +59,6 @@ import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.RLottieDrawable;
-import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Stars.StarsReactionsSheet;
 
 import java.util.ArrayList;
@@ -915,7 +914,7 @@ public class ReactionsLayoutInBubble {
                         if (reuseFrom != null && reuseFrom.starDrawable != null) {
                             starDrawable = reuseFrom.starDrawable;
                         } else {
-                            starDrawable = new RLottieDrawable(R.raw.star_reaction_click, "star_reaction_click", dp(40), dp(40));
+                            starDrawable = new RLottieDrawable(R.raw.star_reaction_click, dp(40), dp(40));
                         }
                         imageReceiver.setImageBitmap(starDrawable);
                     } else {
@@ -1061,6 +1060,19 @@ public class ReactionsLayoutInBubble {
                 }
             }
 
+            if (!paid && parentView instanceof ChatMessageCell && ((ChatMessageCell) parentView).isCompactMode()) {
+                // compact mode: neutral chips, solid over the plain background or the compact outgoing bubble
+                if (choosen) {
+                    backgroundColor = Theme.getColor(Theme.key_chat_compact_reactionBackgroundSelected, resourcesProvider);
+                    textColor = Theme.getColor(Theme.key_chat_compact_reactionTextSelected, resourcesProvider);
+                } else {
+                    final int under = isOutOwner() ? Theme.getCompactOutBubbleColor(resourcesProvider) : Theme.getColor(Theme.key_chat_compact_background, resourcesProvider);
+                    backgroundColor = ColorUtils.compositeColors(Theme.getColor(Theme.key_chat_compact_reactionBackground, resourcesProvider), under);
+                    textColor = Theme.getColor(Theme.key_chat_compact_reactionText, resourcesProvider);
+                }
+                serviceTextColor = textColor;
+                serviceBackgroundColor = backgroundColor;
+            }
             if (drawBgOnlyIfChosen) {
                 backgroundColor = 0;
                 serviceBackgroundColor = 0;
@@ -1125,7 +1137,7 @@ public class ReactionsLayoutInBubble {
                 paint2.setAlpha(oldAlpha2);
             }
             if (drawOverlayScrim && getDrawServiceShaderBackground() < 1 && parentView instanceof ChatMessageCell) {
-                Theme.MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
+                MessageDrawable messageBackground = ((ChatMessageCell) parentView).getCurrentBackgroundDrawable(false);
                 if (messageBackground != null && !isTag) {
                     canvas.drawRoundRect(AndroidUtilities.rectTmp, rad, rad, messageBackground.getPaint());
                 }
@@ -1278,8 +1290,16 @@ public class ReactionsLayoutInBubble {
                             parentView.invalidate();
                         }
                     }
-                    imageReceiver2.setImageCoords(imageReceiver.getImageX() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageY() - imageReceiver.getImageWidth() / 2, imageReceiver.getImageWidth() * 2, imageReceiver.getImageHeight() * 2);
+                    // lottie bounds are truncated to int, so keep the fractional offset in canvas translation
+                    // to match the static last frame exactly and avoid a jump when the animation ends
+                    final float x2 = imageReceiver.getImageX() - imageReceiver.getImageWidth() / 2;
+                    final float y2 = imageReceiver.getImageY() - imageReceiver.getImageHeight() / 2;
+                    final int ix2 = (int) Math.floor(x2), iy2 = (int) Math.floor(y2);
+                    imageReceiver2.setImageCoords(ix2, iy2, imageReceiver.getImageWidth() * 2, imageReceiver.getImageHeight() * 2);
+                    canvas.save();
+                    canvas.translate(x2 - ix2, y2 - iy2);
                     imageReceiver2.draw(canvas);
+                    canvas.restore();
                 }
                 if (drawStaticImage) {
                     imageReceiver.draw(canvas);
