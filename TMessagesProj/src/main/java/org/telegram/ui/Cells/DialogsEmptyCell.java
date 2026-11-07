@@ -34,6 +34,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.TextViewSwitcher;
 
@@ -95,7 +96,7 @@ public class DialogsEmptyCell extends LinearLayout {
             }
         });
 
-        titleView = new TextView(context);
+        titleView = new PersianTextView(context);
         titleView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
@@ -104,7 +105,7 @@ public class DialogsEmptyCell extends LinearLayout {
 
         subtitleView = new TextViewSwitcher(context);
         subtitleView.setFactory(() -> {
-            TextView tv = new TextView(context);
+            TextView tv = new PersianTextView(context);
             tv.setTextColor(Theme.getColor(Theme.key_chats_message));
             tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             tv.setGravity(Gravity.CENTER);

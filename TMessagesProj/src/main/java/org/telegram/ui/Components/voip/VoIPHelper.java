@@ -57,6 +57,7 @@ import org.telegram.ui.Components.JoinCallByUrlAlert;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.GroupCallActivity;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -506,7 +507,7 @@ public class VoIPHelper {
 		int pad = AndroidUtilities.dp(16);
 		alertView.setPadding(pad, pad, pad, 0);
 
-		TextView text = new TextView(context);
+		TextView text = new PersianTextView(context);
 		text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
 		text.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
 		text.setGravity(Gravity.CENTER);
@@ -716,7 +717,7 @@ public class VoIPHelper {
 		LinearLayout ll = new LinearLayout(context);
 		ll.setOrientation(LinearLayout.VERTICAL);
 
-		TextView warning = new TextView(context);
+		TextView warning = new PersianTextView(context);
 		warning.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
 		warning.setText("Please only change these settings if you know exactly what they do.");
 		warning.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));

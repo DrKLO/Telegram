@@ -74,7 +74,7 @@ public class EmptyTextProgressView extends FrameLayout {
 //        });
         textViewLayout.addView(lottieImageView, LayoutHelper.createLinear(150, 150, Gravity.CENTER, 0, 0, 0, 20));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setTextColor(getThemedColor(Theme.key_emptyListPlaceholder));
         textView.setGravity(Gravity.CENTER_HORIZONTAL);

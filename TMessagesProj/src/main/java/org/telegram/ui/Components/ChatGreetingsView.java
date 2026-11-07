@@ -72,13 +72,13 @@ public class ChatGreetingsView extends LinearLayout {
 
         setPadding(0, dp(8), 0, 0);
 
-        titleView = new TextView(context);
+        titleView = new PersianTextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         titleView.setGravity(Gravity.CENTER);
 
-        descriptionView = new TextView(context);
+        descriptionView = new PersianTextView(context);
         descriptionView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         descriptionView.setGravity(Gravity.CENTER);
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -153,7 +153,7 @@ public class ChatGreetingsView extends LinearLayout {
             }
             premiumIconView.playAnimation();
             if (premiumTextView == null) {
-                premiumTextView = new TextView(getContext());
+                premiumTextView = new PersianTextView(getContext());
                 premiumTextView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
                 premiumTextView.setGravity(Gravity.CENTER);
                 premiumTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -163,7 +163,7 @@ public class ChatGreetingsView extends LinearLayout {
             premiumTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
             premiumTextView.setLineSpacing(dp(2f), 1f);
             if (premiumButtonView == null) {
-                premiumButtonView = new TextView(getContext()) {
+                premiumButtonView = new PersianTextView(getContext()) {
                     StarParticlesView.Drawable starParticlesDrawable;
 
                     @Override
@@ -540,7 +540,7 @@ public class ChatGreetingsView extends LinearLayout {
 
         final boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
 
-        TextView headerView = new TextView(context);
+        TextView headerView = new PersianTextView(context);
         headerView.setTypeface(AndroidUtilities.bold());
         headerView.setGravity(Gravity.CENTER);
         headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
@@ -548,7 +548,7 @@ public class ChatGreetingsView extends LinearLayout {
         headerView.setText(LocaleController.getString(premiumLocked ? R.string.PremiumMessageHeaderLocked : R.string.PremiumMessageHeader));
         layout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 0, 12, 0));
 
-        TextView descriptionView = new TextView(context);
+        TextView descriptionView = new PersianTextView(context);
         descriptionView.setGravity(Gravity.CENTER);
         descriptionView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

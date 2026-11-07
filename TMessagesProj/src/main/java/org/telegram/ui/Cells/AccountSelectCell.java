@@ -33,6 +33,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class AccountSelectCell extends FrameLayout {
 
@@ -67,7 +68,7 @@ public class AccountSelectCell extends FrameLayout {
             textView.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
             textView.setText(LocaleController.getString(R.string.VoipGroupDisplayAs));
 
-            infoTextView = new TextView(context);
+            infoTextView = new PersianTextView(context);
             infoTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
             infoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             infoTextView.setLines(1);

@@ -93,6 +93,7 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.OutlineEditText;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.PermissionRequest;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.TextHelper;
@@ -588,7 +589,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         checkBox.setChecked(false, false);
         checkBox.setDrawBackgroundAsArc(10);
 
-        checkTextView = new TextView(context);
+        checkTextView = new PersianTextView(context);
         checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkTextView.setText(getString(R.string.AddContactSync));
@@ -787,7 +788,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
 
 
         doneButtonContainer = new FrameLayout(getContext());
-        doneButton = new TextView(context);
+        doneButton = new PersianTextView(context);
         doneButton.setEllipsize(TextUtils.TruncateAt.END);
         doneButton.setGravity(Gravity.CENTER);
         doneButton.setLines(1);

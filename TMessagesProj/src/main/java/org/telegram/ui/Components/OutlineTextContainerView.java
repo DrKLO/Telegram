@@ -20,6 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
 public class OutlineTextContainerView extends FrameLayout {
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private final static int PADDING_LEFT = 14, PADDING_TEXT = 4;
 
     private final static float SPRING_MULTIPLIER = 100;
@@ -202,7 +203,7 @@ public class OutlineTextContainerView extends FrameLayout {
         float stroke = outlinePaint.getStrokeWidth();
 
         float scaleX = useCenter ? 0.75f + 0.25f * (1f - titleProgress) : 0.75f;
-        float textWidth = textPaint.measureText(mText) * scaleX;
+        float textWidth = fontText.measure(mText, textPaint) * scaleX;
 
         canvas.save();
         rect.set(getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT - PADDING_TEXT), getPaddingTop(), getWidth() - AndroidUtilities.dp(PADDING_LEFT + PADDING_TEXT) - getPaddingRight(), getPaddingTop() + stroke * 2);
@@ -223,7 +224,7 @@ public class OutlineTextContainerView extends FrameLayout {
 
         canvas.save();
         canvas.scale(scaleX, scaleX, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT + PADDING_TEXT), textY);
-        canvas.drawText(mText, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT) + textX, textY, textPaint);
+        fontText.draw(canvas, mText, getPaddingLeft() + AndroidUtilities.dp(PADDING_LEFT) + textX, textY, textPaint);
         canvas.restore();
     }
 }

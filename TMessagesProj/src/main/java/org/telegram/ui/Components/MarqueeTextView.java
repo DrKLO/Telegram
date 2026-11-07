@@ -9,7 +9,6 @@ import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Shader;
 import android.os.SystemClock;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.math.MathUtils;
@@ -17,7 +16,7 @@ import androidx.core.math.MathUtils;
 import org.telegram.messenger.AndroidUtilities;
 
 @SuppressLint("AppCompatCustomView")
-public class MarqueeTextView extends TextView {
+public class MarqueeTextView extends PersianTextView {
     private static final int BORDER_DP = 10;
     private static final int MARGIN_DP = 40;
     private static final int SPEED_DP = 60;

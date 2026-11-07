@@ -13,7 +13,7 @@ public class TextHelper {
         return makeTextView(context, textSizeDp, colorKey, bold, null);
     }
     public static TextView makeTextView(Context context, float textSizeDp, int colorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
-        final TextView textView = new TextView(context);
+        final TextView textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
         textView.setTextColor(Theme.getColor(colorKey, resourcesProvider));
         if (bold) {

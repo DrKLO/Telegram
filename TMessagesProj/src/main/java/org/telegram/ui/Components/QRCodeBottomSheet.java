@@ -97,13 +97,13 @@ public class QRCodeBottomSheet extends BottomSheet {
         frameLayout.addView(iconImage, LayoutHelper.createFrame(60, 60, Gravity.CENTER));
         linearLayout.addView(frameLayout, LayoutHelper.createLinear(220, 220, Gravity.CENTER_HORIZONTAL, 30, 0,30 ,0));
 
-        help = new TextView(context);
+        help = new PersianTextView(context);
         help.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         help.setText(helpMessage);
         help.setGravity(Gravity.CENTER_HORIZONTAL);
         linearLayout.addView(help, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 40, 8, 40, 8));
 
-        buttonTextView = new TextView(context);
+        buttonTextView = new PersianTextView(context);
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -126,7 +126,7 @@ public class QRCodeBottomSheet extends BottomSheet {
         linearLayout.addView(buttonTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 15, 16, 3));
 
         if (includeShareLink) {
-            button2TextView = new TextView(context);
+            button2TextView = new PersianTextView(context);
             button2TextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
             button2TextView.setGravity(Gravity.CENTER);
             button2TextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

@@ -128,7 +128,7 @@ public class JoinCallAlert extends BottomSheet {
             addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, withoutBackground ? 0 : 16, 16, 16));
 
             for (int a = 0; a < 2; a++) {
-                textView[a] = new TextView(context);
+                textView[a] = new PersianTextView(context);
                 textView[a].setFocusable(false);
                 textView[a].setLines(1);
                 textView[a].setSingleLine(true);
@@ -508,7 +508,7 @@ public class JoinCallAlert extends BottomSheet {
             internalLayout.addView(imageView, LayoutHelper.createLinear(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 17, 8, 17, 0));
         }
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         if (type == TYPE_DISPLAY) {
@@ -538,7 +538,7 @@ public class JoinCallAlert extends BottomSheet {
             internalLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 23, 8, 23, 0));
         }
 
-        messageTextView = new TextView(getContext());
+        messageTextView = new PersianTextView(getContext());
         if (type == TYPE_DISPLAY) {
             messageTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
         } else {

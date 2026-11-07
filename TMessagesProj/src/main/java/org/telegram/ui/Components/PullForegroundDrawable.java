@@ -26,6 +26,7 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.TopicsFragment;
@@ -135,13 +136,18 @@ public class PullForegroundDrawable {
     }
 
     private int lastWidth;
+    private boolean lastFontEnabled;
     private void checkTextLayouts(int width) {
-        if (width != lastWidth) {
+        if (width != lastWidth || pullTooltipLayout == null || releaseTooltipLayout == null
+                || lastFontEnabled != SharedConfig.useVazirmatnFont) {
+
+            CharSequence pullText = PersianFontApplier.applyForPaint(pullTooltipText, tooltipTextPaint);
+            CharSequence releaseText = PersianFontApplier.applyForPaint(releaseTooltipText, tooltipTextPaint);
 
             float textWidth;
             int layoutWidth;
 
-            pullTooltipLayout = new StaticLayout(pullTooltipText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            pullTooltipLayout = new StaticLayout(pullText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
             textWidth = 0;
             for (int i = 0; i < pullTooltipLayout.getLineCount(); ++i) {
                 textWidth = Math.max(textWidth, pullTooltipLayout.getLineWidth(i));
@@ -150,9 +156,9 @@ public class PullForegroundDrawable {
             layoutWidth = (int) Math.ceil(textWidth);
             if (pullTooltipLayoutScale < .8f) {
                 pullTooltipLayoutScale = .8f;
-                layoutWidth = HintView2.cutInFancyHalf(pullTooltipText, tooltipTextPaint);
+                layoutWidth = HintView2.cutInFancyHalf(pullText, tooltipTextPaint);
             }
-            pullTooltipLayout = new StaticLayout(pullTooltipText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            pullTooltipLayout = new StaticLayout(pullText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
             pullTooltipLayoutLeft = layoutWidth;
             pullTooltipLayoutWidth = 0;
             for (int i = 0; i < pullTooltipLayout.getLineCount(); ++i) {
@@ -160,7 +166,7 @@ public class PullForegroundDrawable {
                 pullTooltipLayoutWidth = Math.max(pullTooltipLayoutWidth, pullTooltipLayout.getLineWidth(i));
             }
 
-            releaseTooltipLayout = new StaticLayout(releaseTooltipText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            releaseTooltipLayout = new StaticLayout(releaseText, tooltipTextPaint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
             textWidth = 0;
             for (int i = 0; i < releaseTooltipLayout.getLineCount(); ++i) {
                 textWidth = Math.max(textWidth, releaseTooltipLayout.getLineWidth(i));
@@ -169,9 +175,9 @@ public class PullForegroundDrawable {
             layoutWidth = (int) Math.ceil(textWidth);
             if (releaseTooltipLayoutScale < .8f) {
                 releaseTooltipLayoutScale = .8f;
-                layoutWidth = HintView2.cutInFancyHalf(releaseTooltipText, tooltipTextPaint);
+                layoutWidth = HintView2.cutInFancyHalf(releaseText, tooltipTextPaint);
             }
-            releaseTooltipLayout = new StaticLayout(releaseTooltipText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
+            releaseTooltipLayout = new StaticLayout(releaseText, tooltipTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1, 0, false);
             releaseTooltipLayoutLeft = layoutWidth;
             releaseTooltipLayoutWidth = 0;
             for (int i = 0; i < releaseTooltipLayout.getLineCount(); ++i) {
@@ -180,6 +186,7 @@ public class PullForegroundDrawable {
             }
 
             lastWidth = width;
+            lastFontEnabled = SharedConfig.useVazirmatnFont;
         }
     }
 

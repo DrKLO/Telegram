@@ -74,7 +74,7 @@ public class QrColorsPanel extends FrameLayout {
         setWillNotDraw(false);
         setClipChildren(false);
 
-        headerView = new TextView(context);
+        headerView = new PersianTextView(context);
         headerView.setText(getString(R.string.QrProfileColors).toUpperCase());
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         headerView.setTypeface(AndroidUtilities.bold());

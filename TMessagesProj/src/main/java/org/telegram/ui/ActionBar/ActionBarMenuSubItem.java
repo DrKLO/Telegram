@@ -27,6 +27,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 
 public class ActionBarMenuSubItem extends FrameLayout {
@@ -355,7 +356,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
 
     public void setSubtext(CharSequence text) {
         if (subtextView == null) {
-            subtextView = new TextView(getContext());
+            subtextView = new PersianTextView(getContext());
             subtextView.setLines(1);
             subtextView.setSingleLine(true);
             subtextView.setGravity(Gravity.LEFT);

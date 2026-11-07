@@ -74,6 +74,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
@@ -305,10 +306,12 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         floatingButton.addView(floatingButtonIcon, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
         floatingButton.addAdditionalView(floatingButtonIcon);
 
-        bottomSkipButton = new TextView(context);
+        bottomSkipButton = new PersianTextView(context);
         bottomSkipButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText2));
         bottomSkipButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        bottomSkipButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        bottomSkipButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        bottomSkipButton.setSingleLine(true);
+        bottomSkipButton.setEllipsize(TextUtils.TruncateAt.END);
         bottomSkipButton.setVisibility(View.GONE);
         VerticalPositionAutoAnimator.attach(bottomSkipButton);
         bottomSkipButton.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
@@ -382,7 +385,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             imageView.setVisibility(isLandscape() ? View.GONE : View.VISIBLE);
         }
 
-        titleTextView = new TextView(context);
+        titleTextView = new PersianTextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
@@ -396,7 +399,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         descriptionText.setVisibility(View.GONE);
         descriptionText.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
 
-        descriptionText2 = new TextView(context);
+        descriptionText2 = new PersianTextView(context);
         descriptionText2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         descriptionText2.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -418,7 +421,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
             }
         });
 
-        buttonTextView = new TextView(context);
+        buttonTextView = new PersianTextView(context);
         buttonTextView.setMinWidth(AndroidUtilities.dp(220));
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
@@ -684,7 +687,8 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 };
                 scrollView.setVerticalScrollBarEnabled(false);
                 frameLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-                frameLayout.addView(bottomSkipButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+                // Keep the secondary action and its touch area outside the floating button.
+                frameLayout.addView(bottomSkipButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
                 frameLayout.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
                 container.addView(keyboardFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -889,7 +893,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 frameLayout2.addView(descriptionText2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
                 if (currentType == TYPE_EMAIL_RECOVERY) {
-                    descriptionText3 = new TextView(context);
+                    descriptionText3 = new PersianTextView(context);
                     descriptionText3.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
                     descriptionText3.setGravity(Gravity.CENTER_HORIZONTAL);
                     descriptionText3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1090,7 +1094,10 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
 
                 bottomSkipButton.setVisibility(View.VISIBLE);
                 bottomSkipButton.setGravity(Gravity.CENTER);
-                ((ViewGroup.MarginLayoutParams) bottomSkipButton.getLayoutParams()).bottomMargin = 0;
+                ViewGroup.MarginLayoutParams resendLayoutParams = (ViewGroup.MarginLayoutParams) bottomSkipButton.getLayoutParams();
+                resendLayoutParams.leftMargin = 0;
+                resendLayoutParams.rightMargin = 0;
+                resendLayoutParams.bottomMargin = 0;
                 bottomSkipButton.setText(LocaleController.getString(R.string.ResendCode));
                 bottomSkipButton.setOnClickListener(v -> {
                     TL_account.resendPasswordEmail req = new TL_account.resendPasswordEmail();

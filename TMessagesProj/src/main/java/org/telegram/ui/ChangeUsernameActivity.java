@@ -88,6 +88,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
@@ -847,7 +848,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             if (botId != 0) {
                 field.setEnabled(false);
             }
-            tme = new TextView(getContext());
+            tme = new PersianTextView(getContext());
             tme.setMaxLines(1);
             tme.setLines(1);
             tme.setPadding(0, 0, 0, 0);

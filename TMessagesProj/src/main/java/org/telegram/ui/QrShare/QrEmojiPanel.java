@@ -10,6 +10,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.text.Layout;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -37,6 +38,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -632,7 +634,7 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
 
         Header(Context context) {
             super(context);
-            title = new TextView(context);
+            title = new PersianTextView(context);
             title.setTextColor(headerColor);
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             title.setTypeface(AndroidUtilities.bold());
@@ -640,7 +642,7 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
             title.setEllipsize(TextUtils.TruncateAt.END);
             title.setGravity(Gravity.CENTER_VERTICAL);
             addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 15, 8, 15, 0));
-            unlock = new TextView(context);
+            unlock = new PersianTextView(context);
             unlock.setTextColor(0xFFFFFFFF);
             unlock.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             unlock.setTypeface(AndroidUtilities.bold());
@@ -661,7 +663,7 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
             unlock.setVisibility(locked ? VISIBLE : GONE);
             // one line, cut before the pill
             final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) title.getLayoutParams();
-            final int right = dp(15) + (locked ? dp(12) + (int) Math.ceil(unlock.getPaint().measureText(unlock.getText().toString())) + dp(20) + dp(6) : 0);
+            final int right = dp(15) + (locked ? dp(12) + (int) Math.ceil(Layout.getDesiredWidth(unlock.getText(), unlock.getPaint())) + dp(20) + dp(6) : 0);
             if (lp.rightMargin != right) {
                 lp.rightMargin = right;
                 title.setLayoutParams(lp);

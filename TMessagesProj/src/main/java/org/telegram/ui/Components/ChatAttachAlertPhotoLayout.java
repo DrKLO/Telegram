@@ -752,7 +752,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         parentAlert.actionBar.addView(dropDownContainer, 0, flp);
         dropDownContainer.setOnClickListener(view -> dropDownContainer.toggleSubMenu());
 
-        dropDown = new TextView(context);
+        dropDown = new PersianTextView(context);
         dropDown.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         dropDown.setGravity(Gravity.LEFT);
         dropDown.setSingleLine(true);
@@ -1135,7 +1135,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         Paint recordPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         recordPaint.setColor(0xffda564d);
-        recordTime = new TextView(context) {
+        recordTime = new PersianTextView(context) {
 
             float alpha = 0f;
             boolean isIncr;
@@ -1214,7 +1214,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         cameraPanel.setAlpha(0.0f);
         container.addView(cameraPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 126, Gravity.LEFT | Gravity.BOTTOM));
 
-        counterTextView = new TextView(context);
+        counterTextView = new PersianTextView(context);
         counterTextView.setBackgroundResource(R.drawable.photos_rounded);
         counterTextView.setVisibility(View.GONE);
         counterTextView.setTextColor(0xffffffff);
@@ -1464,7 +1464,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             flashModeButton[a].setContentDescription("flash mode " + a);
         }
 
-        tooltipTextView = new TextView(context);
+        tooltipTextView = new PersianTextView(context);
         tooltipTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         tooltipTextView.setTextColor(0xffffffff);
         tooltipTextView.setText(LocaleController.getString(R.string.TapForVideo));

@@ -146,6 +146,8 @@ import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.WallpaperCheckBoxView;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.WallpaperParallaxEffect;
 import org.telegram.ui.Stories.recorder.PreviewView;
 import org.telegram.ui.Stories.recorder.SliderView;
@@ -1116,7 +1118,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 actionBar2.addView(dropDownContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, AndroidUtilities.isTablet() ? 64 : 56, 0, 40, 0));
                 dropDownContainer.setOnClickListener(view -> dropDownContainer.toggleSubMenu());
 
-                dropDown = new TextView(context);
+                dropDown = new PersianTextView(context);
                 dropDown.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 dropDown.setGravity(Gravity.LEFT);
                 dropDown.setSingleLine(true);
@@ -1583,7 +1585,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         texts[1] = LocaleController.getString(R.string.BackgroundMotion);
                     }
                     for (int a = 0; a < texts.length; a++) {
-                        textSizes[a] = (int) Math.ceil(textPaint.measureText(texts[a]));
+                        textSizes[a] = (int) Math.ceil(android.text.Layout.getDesiredWidth(PersianFontApplier.applyForPaint(texts[a], textPaint), textPaint));
                         maxTextSize = Math.max(maxTextSize, textSizes[a]);
                     }
 
@@ -1747,7 +1749,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                 texts[1] = LocaleController.getString(R.string.BackgroundColors);
 
                 for (int a = 0; a < texts.length; a++) {
-                    textSizes[a] = (int) Math.ceil(textPaint.measureText(texts[a]));
+                    textSizes[a] = (int) Math.ceil(android.text.Layout.getDesiredWidth(PersianFontApplier.applyForPaint(texts[a], textPaint), textPaint));
                     maxTextSize = Math.max(maxTextSize, textSizes[a]);
                 }
 
@@ -1909,7 +1911,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                         patternsButtonsContainer[a].setClickable(true);
                         patternLayout[a].addView(patternsButtonsContainer[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 51, Gravity.BOTTOM));
 
-                        patternsCancelButton[a] = new TextView(context);
+                        patternsCancelButton[a] = new PersianTextView(context);
                         patternsCancelButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                         patternsCancelButton[a].setTypeface(AndroidUtilities.bold());
                         patternsCancelButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
@@ -1958,7 +1960,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                             }
                         });
 
-                        patternsSaveButton[a] = new TextView(context);
+                        patternsSaveButton[a] = new PersianTextView(context);
                         patternsSaveButton[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                         patternsSaveButton[a].setTypeface(AndroidUtilities.bold());
                         patternsSaveButton[a].setTextColor(getThemedColor(Theme.key_chat_fieldOverlayText));
@@ -1980,7 +1982,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
                     }
 
                     if (a == 1) {
-                        patternTitleView = new TextView(context);
+                        patternTitleView = new PersianTextView(context);
                         patternTitleView.setLines(1);
                         patternTitleView.setSingleLine(true);
                         patternTitleView.setText(LocaleController.getString(R.string.BackgroundChoosePattern));
@@ -2292,7 +2294,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             };
             saveButtonsContainer.addView(dotsContainer, LayoutHelper.createFrame(22, 8, Gravity.CENTER));
 
-            cancelButton = new TextView(context);
+            cancelButton = new PersianTextView(context);
             cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             cancelButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
             cancelButton.setGravity(Gravity.CENTER);
@@ -2303,7 +2305,7 @@ public class ThemePreviewActivity extends BaseFragment implements DownloadContro
             saveButtonsContainer.addView(cancelButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
             cancelButton.setOnClickListener(v -> cancelThemeApply(false));
 
-            doneButton = new TextView(context);
+            doneButton = new PersianTextView(context);
             doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             doneButton.setTextColor(getButtonsColor(Theme.key_chat_fieldOverlayText));
             doneButton.setGravity(Gravity.CENTER);

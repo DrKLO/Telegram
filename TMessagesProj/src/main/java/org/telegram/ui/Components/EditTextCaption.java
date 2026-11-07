@@ -136,6 +136,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
     }
 
     protected void notifySpansChanged() {
+        PersianFontApplier.applyToEditable(getText(), getPaint());
         if (delegate != null) {
             delegate.onSpansChanged();
         }
@@ -279,9 +280,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
             } catch (Exception ignore) {
 
             }
-            if (delegate != null) {
-                delegate.onSpansChanged();
-            }
+            notifySpansChanged();
         }, () -> {}, resourcesProvider);
     }
 
@@ -352,9 +351,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
                 try {
                     editable.setSpan(createUrlSpan(url), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 } catch (Exception ignore) {}
-                if (delegate != null) {
-                    delegate.onSpansChanged();
-                }
+                notifySpansChanged();
                 if (onApplied != null) {
                     onApplied.run();
                 }
@@ -604,9 +601,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         if ((flag & TextStyleSpan.FLAG_STYLE_SPOILER) != 0) {
             invalidateSpoilers();
         }
-        if (delegate != null) {
-            delegate.onSpansChanged();
-        }
+        notifySpansChanged();
     }
 
     @Override
@@ -650,9 +645,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
         if ((flag & TextStyleSpan.FLAG_STYLE_SPOILER) != 0) {
             invalidateSpoilers();
         }
-        if (delegate != null) {
-            delegate.onSpansChanged();
-        }
+        notifySpansChanged();
     }
 
     private void applyTextStyleToSelection(TextStyleSpan span) {
@@ -686,9 +679,7 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
             }
         }
 
-        if (delegate != null) {
-            delegate.onSpansChanged();
-        }
+        notifySpansChanged();
     }
 
     @Override

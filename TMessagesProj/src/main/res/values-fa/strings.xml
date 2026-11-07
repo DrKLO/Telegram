@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="UseVazirmatnFont">استفاده از فونت وزیرمتن</string>
+    <string name="UseVazirmatnFontInfo">نمایش متن‌های فارسی و عربی با فونت وزیرمتن.</string>
+</resources>

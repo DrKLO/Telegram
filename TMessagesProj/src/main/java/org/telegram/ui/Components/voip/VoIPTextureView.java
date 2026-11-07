@@ -33,6 +33,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.GroupCallActivity;
+import org.telegram.ui.Components.PersianTextView;
 import org.webrtc.RendererCommon;
 import org.webrtc.TextureViewRenderer;
 
@@ -167,7 +168,7 @@ public class VoIPTextureView extends FrameLayout {
         screencastImage.setImageResource(R.drawable.screencast_big);
         screencastView.addView(screencastImage, LayoutHelper.createFrame(82, 82, Gravity.CENTER, 0, 0, 0, 60));
 
-        screencastText = new TextView(getContext());
+        screencastText = new PersianTextView(getContext());
         screencastText.setText(LocaleController.getString(R.string.VoipVideoScreenSharing));
         screencastText.setGravity(Gravity.CENTER);
         screencastText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);

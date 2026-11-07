@@ -53,6 +53,8 @@ import org.telegram.ui.ActionBar.EmojiThemes;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontCanvasText;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RadioButton;
 import org.telegram.ui.Components.RecyclerListView;
@@ -127,6 +129,7 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
         private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Drawable optionsDrawable;
 
+        private final PersianFontCanvasText fontText = new PersianFontCanvasText();
         private TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         private Drawable inDrawable;
         private Drawable outDrawable;
@@ -533,10 +536,10 @@ public class ThemesHorizontalListCell extends RecyclerListView implements Notifi
 
             String name = getThemeName();
             int maxWidth = getMeasuredWidth() - AndroidUtilities.dp(isFirst ? 10 : 15) - (isLast ? AndroidUtilities.dp(7) : 0);
-            String text = TextUtils.ellipsize(name, textPaint, maxWidth, TextUtils.TruncateAt.END).toString();
-            int width = (int) Math.ceil(textPaint.measureText(text));
+            String text = TextUtils.ellipsize(PersianFontApplier.applyForPaint(name, textPaint), textPaint, maxWidth, TextUtils.TruncateAt.END).toString();
+            int width = (int) Math.ceil(fontText.measure(text, textPaint));
             textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            canvas.drawText(text, x + (AndroidUtilities.dp(76) - width) / 2, AndroidUtilities.dp(131), textPaint);
+            fontText.draw(canvas, text, x + (AndroidUtilities.dp(76) - width) / 2, AndroidUtilities.dp(131), textPaint);
 
             boolean drawContent = themeInfo.info == null || themeInfo.info.document != null && themeInfo.themeLoaded;
 

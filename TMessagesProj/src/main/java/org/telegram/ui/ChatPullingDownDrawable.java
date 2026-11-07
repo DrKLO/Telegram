@@ -30,6 +30,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -40,6 +41,7 @@ import org.telegram.ui.Components.CounterView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.LetterDrawable;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.StaticLayoutEx;
 
 import java.util.ArrayList;
@@ -49,6 +51,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     public int dialogFolderId;
     public int dialogFilterId;
     int lastWidth;
+    private boolean lastFontEnabled;
     float circleRadius;
 
     Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -233,9 +236,11 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
     }
 
     public void setWidth(int width) {
-        if (width != lastWidth || (isTopic && nextTopic != null && lastWidthTopicId != nextTopic.id)) {
+        if (width != lastWidth || chatNameLayout == null || lastFontEnabled != SharedConfig.useVazirmatnFont
+                || (isTopic && nextTopic != null && lastWidthTopicId != nextTopic.id)) {
             circleRadius = AndroidUtilities.dp(56) / 2f;
             lastWidth = width;
+            lastFontEnabled = SharedConfig.useVazirmatnFont;
 
             CharSequence nameStr;
             if (nextChat != null) {
@@ -248,12 +253,13 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             } else {
                 nameStr = LocaleController.getString(R.string.SwipeToGoNextChannelEnd);
             }
-            chatNameWidth = (int) textPaint.measureText(nameStr, 0, nameStr.length());
-            chatNameWidth = Math.min(chatNameWidth, lastWidth - AndroidUtilities.dp(60));
+            nameStr = PersianFontApplier.applyForPaint(nameStr, textPaint);
+            chatNameWidth = (int) Math.ceil(Layout.getDesiredWidth(nameStr, textPaint));
+            chatNameWidth = Math.max(1, Math.min(chatNameWidth, lastWidth - AndroidUtilities.dp(60)));
             chatNameLayout = StaticLayoutEx.createStaticLayout(nameStr, textPaint, chatNameWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false, TextUtils.TruncateAt.END, chatNameWidth, 1);
 
-            String str1 = null;
-            String str2 = null;
+            CharSequence str1;
+            CharSequence str2;
 
             if (recommendedChannel) {
                 str1 = LocaleController.getString(R.string.SwipeToGoNextRecommendedChannel);
@@ -271,13 +277,15 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 str1 = LocaleController.getString(R.string.SwipeToGoNextChannel);
                 str2 = LocaleController.getString(R.string.ReleaseToGoNextChannel);
             }
-            layout1Width = (int) textPaint2.measureText(str1);
-            layout1Width = Math.min(layout1Width, lastWidth - AndroidUtilities.dp(60));
+            str1 = PersianFontApplier.applyForPaint(str1, textPaint2);
+            str2 = PersianFontApplier.applyForPaint(str2, textPaint2);
+            layout1Width = (int) Math.ceil(Layout.getDesiredWidth(str1, textPaint2));
+            layout1Width = Math.max(1, Math.min(layout1Width, lastWidth - AndroidUtilities.dp(60)));
             layout1 = new StaticLayout(str1, textPaint2, layout1Width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
 
-            layout2Width = (int) textPaint2.measureText(str2);
-            layout2Width = Math.min(layout2Width, lastWidth - AndroidUtilities.dp(60));
+            layout2Width = (int) Math.ceil(Layout.getDesiredWidth(str2, textPaint2));
+            layout2Width = Math.max(1, Math.min(layout2Width, lastWidth - AndroidUtilities.dp(60)));
             layout2 = new StaticLayout(str2, textPaint2, layout2Width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
 
 

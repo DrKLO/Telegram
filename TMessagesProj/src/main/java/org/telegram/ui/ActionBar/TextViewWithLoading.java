@@ -4,13 +4,13 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.widget.TextView;
 
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.PersianTextView;
 
-public class TextViewWithLoading extends TextView {
+public class TextViewWithLoading extends PersianTextView {
 
     private boolean loading = false;
     private final AnimatedFloat animatedLoading = new AnimatedFloat(this, 320, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -63,8 +63,8 @@ public class TextViewWithLoading extends TextView {
             cx -= (int) (dp(6) * (1.0f - loading));
             spinner.setAlpha((int) (0xFF * loading));
             spinner.setBounds(
-                cx - spinner.getIntrinsicWidth() / 2, cy - spinner.getIntrinsicWidth() / 2,
-                cx + spinner.getIntrinsicWidth() / 2, cy + spinner.getIntrinsicHeight() / 2
+                    cx - spinner.getIntrinsicWidth() / 2, cy - spinner.getIntrinsicWidth() / 2,
+                    cx + spinner.getIntrinsicWidth() / 2, cy + spinner.getIntrinsicHeight() / 2
             );
             spinner.draw(canvas);
             invalidate();

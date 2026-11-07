@@ -1424,7 +1424,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 updateLinkTextView();
                 linkContainer.addView(linkTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 20, 1, Gravity.FILL_HORIZONTAL | Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
 
-                linkCopyButton = new TextView(context);
+                linkCopyButton = new PersianTextView(context);
                 linkCopyButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 linkCopyButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                 linkCopyButton.setText(LocaleController.getString(R.string.Copy).toUpperCase());
@@ -1493,7 +1493,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                 pickerBottomLayout = new FrameLayout(context);
                 pickerBottom.addView(pickerBottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, -2, 0, -2, 0));
 
-                TextView pickerTextView = new TextView(context);
+                TextView pickerTextView = new PersianTextView(context);
                 // ripple within the rounded glass pill of pickerBottomLayout (40dp high inside its 9dp padding)
                 pickerTextView.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 20, 20));
                 pickerTextView.setTextColor(getThemedColor(darkTheme ? Theme.key_voipgroup_listeningText : Theme.key_dialogTextBlue2));

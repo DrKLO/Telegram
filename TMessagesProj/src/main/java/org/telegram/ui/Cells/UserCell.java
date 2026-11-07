@@ -53,6 +53,7 @@ import org.telegram.ui.Components.ChatSearchTabs;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
@@ -139,7 +140,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
         int additionalPadding;
         if (needAddButton) {
-            addButton = new TextView(context);
+            addButton = new PersianTextView(context);
             addButton.setGravity(Gravity.CENTER);
             addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -223,7 +224,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
 
         if (admin) {
-            adminTextView = new TextView(context);
+            adminTextView = new PersianTextView(context);
             ScaleStateListAnimator.apply(adminTextView, .05f, 1.2f);
             adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon, resourcesProvider));

@@ -20,6 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class SharedMediaSectionCell extends FrameLayout {
 
@@ -28,7 +29,7 @@ public class SharedMediaSectionCell extends FrameLayout {
     public SharedMediaSectionCell(Context context) {
         super(context);
 
-        textView = new TextView(getContext());
+        textView = new PersianTextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

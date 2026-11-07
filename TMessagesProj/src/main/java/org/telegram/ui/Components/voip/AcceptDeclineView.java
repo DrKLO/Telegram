@@ -37,6 +37,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ButtonBounce;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.RLottieDrawable;
 
 public class AcceptDeclineView extends View {
@@ -117,14 +118,14 @@ public class AcceptDeclineView extends View {
         textPaint.setTextSize(dp(11));
         textPaint.setColor(Color.WHITE);
 
-        String acceptStr = LocaleController.getString(R.string.AcceptCall);
-        String declineStr = LocaleController.getString(R.string.DeclineCall);
-        String retryStr = LocaleController.getString(R.string.RetryCall);
+        CharSequence acceptStr = PersianFontApplier.applyForPaint(LocaleController.getString(R.string.AcceptCall), textPaint);
+        CharSequence declineStr = PersianFontApplier.applyForPaint(LocaleController.getString(R.string.DeclineCall), textPaint);
+        CharSequence retryStr = PersianFontApplier.applyForPaint(LocaleController.getString(R.string.RetryCall), textPaint);
 
-        acceptLayout = new StaticLayout(acceptStr, textPaint, (int) textPaint.measureText(acceptStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
-        declineLayout = new StaticLayout(declineStr, textPaint, (int) textPaint.measureText(declineStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        acceptLayout = new StaticLayout(acceptStr, textPaint, Math.max(1, (int) Math.ceil(Layout.getDesiredWidth(acceptStr, textPaint))), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        declineLayout = new StaticLayout(declineStr, textPaint, Math.max(1, (int) Math.ceil(Layout.getDesiredWidth(declineStr, textPaint))), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
-        retryLayout = new StaticLayout(retryStr, textPaint, (int) textPaint.measureText(retryStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        retryLayout = new StaticLayout(retryStr, textPaint, Math.max(1, (int) Math.ceil(Layout.getDesiredWidth(retryStr, textPaint))), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
         callDrawable = ContextCompat.getDrawable(context, R.drawable.calls_decline).mutate();
         cancelDrawable = ContextCompat.getDrawable(context, R.drawable.ic_close_white).mutate();

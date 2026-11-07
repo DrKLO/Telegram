@@ -79,6 +79,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
@@ -1399,7 +1400,7 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
         int topOffset = 0;
         if (title != null) {
-            titleView = new TextView(getContext()) {
+            titleView = new PersianTextView(getContext()) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);

@@ -97,6 +97,8 @@ public class Text {
     }
 
     public void setText(CharSequence text) {
+        text = PersianFontApplier.applyForPaint(text, paint);
+
         if (maxLines > 1 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             layout = StaticLayout.Builder.obtain(text, 0, text.length(), paint, (int) Math.max(maxWidth, 1)).setAlignment(align).setMaxLines(maxLines).setLineSpacing(lineSpacingAdd, 1.0f).build();
         } else {

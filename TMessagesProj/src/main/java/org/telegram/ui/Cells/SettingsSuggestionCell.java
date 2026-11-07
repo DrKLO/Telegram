@@ -21,6 +21,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.URLSpanNoUnderline;
 
@@ -45,7 +46,7 @@ public class SettingsSuggestionCell extends LinearLayout {
         this.resourcesProvider = resourcesProvider;
         setOrientation(VERTICAL);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -67,7 +68,7 @@ public class SettingsSuggestionCell extends LinearLayout {
         addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 21, 16, 21, 15));
 
         for (int a = 0; a < 2; a++) {
-            TextView textView = new TextView(context);
+            TextView textView = new PersianTextView(context);
             textView.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 8));
             ScaleStateListAnimator.apply(textView, 0.02f, 1.5f);
             textView.setLines(1);

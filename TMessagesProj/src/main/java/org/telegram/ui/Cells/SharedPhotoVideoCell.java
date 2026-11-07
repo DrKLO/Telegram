@@ -42,6 +42,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.PhotoViewer;
 
 public class SharedPhotoVideoCell extends FrameLayout {
@@ -115,7 +116,7 @@ public class SharedPhotoVideoCell extends FrameLayout {
             imageView1.setImageResource(R.drawable.play_mini_video);
             videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-            videoTextView = new TextView(context);
+            videoTextView = new PersianTextView(context);
             videoTextView.setTextColor(0xffffffff);
             videoTextView.setTypeface(AndroidUtilities.bold());
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);

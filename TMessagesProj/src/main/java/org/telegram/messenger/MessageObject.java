@@ -66,6 +66,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.MultiLayoutTypingAnimator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -354,6 +355,7 @@ public class MessageObject {
     private int generatedWithMinSize;
     private float generatedWithDensity;
     private float generatedWithFontSize;
+    private boolean generatedWithVazirmatnFont;
     public boolean wasJustSent;
     public boolean isBotPendingDraft;
 
@@ -6843,7 +6845,12 @@ public class MessageObject {
         if (layoutCreated) {
             int newMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
             float newFontSize = Theme.chat_msgTextPaint != null ? Theme.chat_msgTextPaint.getTextSize() : 0;
-            if (Math.abs(generatedWithMinSize - newMinSize) > dp(52) || generatedWithDensity != AndroidUtilities.density || generatedWithFontSize != newFontSize) {
+
+            boolean persianFontChanged = type != TYPE_ARTICLE && generatedWithVazirmatnFont != SharedConfig.useVazirmatnFont;
+            if (Math.abs(generatedWithMinSize - newMinSize) > dp(52)
+                    || generatedWithDensity != AndroidUtilities.density
+                    || generatedWithFontSize != newFontSize
+                    || persianFontChanged) {
                 layoutCreated = false;
             }
         }
@@ -8763,6 +8770,8 @@ public class MessageObject {
             paint = Theme.chat_msgTextPaint;
         }
 
+        generatedWithVazirmatnFont = SharedConfig.useVazirmatnFont;
+        messageText = PersianFontApplier.applyRegular(messageText);
         CharSequence text = messageText;
         try {
             textLayoutOriginalWidth = maxWidth;
@@ -9208,6 +9217,7 @@ public class MessageObject {
         }
 
         public TextLayoutBlocks(MessageObject messageObject, @NonNull CharSequence text, TextPaint textPaint, int width) {
+            text = PersianFontApplier.applyForPaint(text, textPaint);
             this.text = text;
             textWidth = 0;
             boolean noforwards = messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.noforwards;

@@ -26,6 +26,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
+import org.telegram.ui.Components.PersianTextView;
 
 @SuppressLint("ViewConstructor")
 public class VoIpSwitchLayout extends FrameLayout {
@@ -56,14 +57,14 @@ public class VoIpSwitchLayout extends FrameLayout {
         voIpButtonView = new VoIpButtonView(context, backgroundProvider);
         addView(voIpButtonView, LayoutHelper.createFrame(VoIpButtonView.ITEM_SIZE + 1.5f, VoIpButtonView.ITEM_SIZE + 1.5f, Gravity.CENTER_HORIZONTAL));
 
-        currentTextView = new TextView(context);
+        currentTextView = new PersianTextView(context);
         currentTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         currentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         currentTextView.setTextColor(Color.WHITE);
         currentTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(currentTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, VoIpButtonView.ITEM_SIZE + 6, 0, 2));
 
-        newTextView = new TextView(context);
+        newTextView = new PersianTextView(context);
         newTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         newTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         newTextView.setTextColor(Color.WHITE);

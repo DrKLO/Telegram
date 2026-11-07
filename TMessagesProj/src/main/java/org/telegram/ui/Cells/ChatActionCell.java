@@ -124,6 +124,7 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.MediaActionDrawable;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgress2;
@@ -1846,6 +1847,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 DynamicDrawableSpan.ALIGN_BOTTOM, 0.85f, 0);
         }
 
+        text = PersianFontApplier.applyForPaint(text, paint);
         textLayout = new StaticLayout(text, paint, maxWidth,
             isMessageActionSuggestedPostApproval() ? Layout.Alignment.ALIGN_NORMAL : Layout.Alignment.ALIGN_CENTER,
         1.0f, 0.0f, false);
@@ -1862,7 +1864,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
                 AndroidUtilities.replaceTags(LocaleController.getString(R.string.SuggestionAgreementReached)),
                 paint.getFontMetricsInt(), false, null, DynamicDrawableSpan.ALIGN_BOTTOM, 1, 0);
 
-            titleLayout = new StaticLayout(title, paint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
+            titleLayout = new StaticLayout(PersianFontApplier.applyForPaint(title, paint), paint, maxWidth, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
         }
 
         animatedEmojiStack = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, canDrawInParent && (delegate != null && !delegate.canDrawOutboundsContent()), animatedEmojiStack, textLayout);

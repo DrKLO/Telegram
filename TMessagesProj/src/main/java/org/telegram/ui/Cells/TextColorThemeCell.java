@@ -19,6 +19,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class TextColorThemeCell extends FrameLayout {
 
@@ -36,7 +37,7 @@ public class TextColorThemeCell extends FrameLayout {
             colorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         }
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(0xff212121);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);

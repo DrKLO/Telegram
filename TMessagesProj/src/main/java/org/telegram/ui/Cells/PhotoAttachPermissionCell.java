@@ -23,6 +23,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ChatAttachAlertPhotoLayout;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class PhotoAttachPermissionCell extends FrameLayout {
 
@@ -46,7 +47,7 @@ public class PhotoAttachPermissionCell extends FrameLayout {
         imageView2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_attachPermissionMark), PorterDuff.Mode.MULTIPLY));
         addView(imageView2, LayoutHelper.createFrame(44, 44, Gravity.CENTER, 5, 0, 0, 27));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(getThemedColor(Theme.key_chat_attachPermissionText));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         textView.setGravity(Gravity.CENTER);

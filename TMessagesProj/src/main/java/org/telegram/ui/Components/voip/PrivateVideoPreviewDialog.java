@@ -42,6 +42,7 @@ import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.Components.PersianTextView;
 import org.webrtc.RendererCommon;
 
 import java.io.File;
@@ -150,7 +151,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         });
         addView(actionBar);
 
-        positiveButton = new TextView(getContext()) {
+        positiveButton = new PersianTextView(getContext()) {
 
             private Paint[] gradientPaint = new Paint[titles.length];
             {
@@ -231,7 +232,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
         addView(titlesLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 64, Gravity.BOTTOM));
 
         for (int a = 0; a < titles.length; a++) {
-            titles[a] = new TextView(context);
+            titles[a] = new PersianTextView(context);
             titles[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             titles[a].setTextColor(0xffffffff);
             titles[a].setTypeface(AndroidUtilities.bold());
@@ -521,7 +522,7 @@ public abstract class PrivateVideoPreviewDialog extends FrameLayout implements V
                 imageView.setImageResource(R.drawable.screencast_big);
                 frameLayout.addView(imageView, LayoutHelper.createFrame(82, 82, Gravity.CENTER, 0, 0, 0, 60));
 
-                TextView textView = new TextView(getContext());
+                TextView textView = new PersianTextView(getContext());
                 textView.setText(LocaleController.getString(R.string.VoipVideoPrivateScreenSharing));
                 textView.setGravity(Gravity.CENTER);
                 textView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);

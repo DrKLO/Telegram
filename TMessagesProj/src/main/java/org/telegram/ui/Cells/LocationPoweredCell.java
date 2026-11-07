@@ -23,6 +23,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class LocationPoweredCell extends FrameLayout {
 
@@ -38,7 +39,7 @@ public class LocationPoweredCell extends FrameLayout {
         LinearLayout linearLayout = new LinearLayout(context);
         addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         textView.setText(LocaleController.getString(R.string.LocationPoweredBy));
@@ -50,7 +51,7 @@ public class LocationPoweredCell extends FrameLayout {
         imageView.setPadding(0, AndroidUtilities.dp(2), 0, 0);
         linearLayout.addView(imageView, LayoutHelper.createLinear(35, LayoutHelper.WRAP_CONTENT));
 
-        textView2 = new TextView(context);
+        textView2 = new PersianTextView(context);
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView2.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
         textView2.setText("Foursquare");

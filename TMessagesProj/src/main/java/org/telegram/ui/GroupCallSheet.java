@@ -49,6 +49,7 @@ import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -217,7 +218,7 @@ public class GroupCallSheet {
         checkbox.setChecked(MessagesController.getGlobalMainSettings().getBoolean("callmiconstart", true), false);
         checkbox.setDrawBackgroundAsArc(10);
         checkboxLayout.addView(checkbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
-        final TextView checkboxTextView = new TextView(context);
+        final TextView checkboxTextView = new PersianTextView(context);
         checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkboxTextView.setText(getString(R.string.GroupCallLinkMicrophone));

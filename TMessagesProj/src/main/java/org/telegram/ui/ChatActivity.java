@@ -265,6 +265,7 @@ import org.telegram.ui.Components.*;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
 import org.telegram.ui.Components.Forum.ForumUtilities;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.GiftPremiumBottomSheet;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
@@ -29484,7 +29485,7 @@ public class ChatActivity extends BaseFragment implements
                             ArrayList<View> sections = new ArrayList<>();
 
                             if (botSponsoredMessage.sponsoredUrl != null && !TextUtils.equals(AndroidUtilities.getHostAuthority(botSponsoredMessage.sponsoredUrl), MessagesController.getInstance(currentAccount).linkPrefix)) {
-                                TextView textView = new TextView(getContext());
+                                TextView textView = new PersianTextView(getContext());
                                 textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourceProvider));
                                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
@@ -29509,7 +29510,7 @@ public class ChatActivity extends BaseFragment implements
                             }
 
                             if (botSponsoredMessage.sponsoredInfo != null) {
-                                TextView textView = new TextView(getContext());
+                                TextView textView = new PersianTextView(getContext());
                                 textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourceProvider));
                                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
@@ -29525,7 +29526,7 @@ public class ChatActivity extends BaseFragment implements
                             }
 
                             if (botSponsoredMessage.sponsoredAdditionalInfo != null) {
-                                TextView textView = new TextView(getContext());
+                                TextView textView = new PersianTextView(getContext());
                                 textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourceProvider));
                                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
@@ -32829,7 +32830,7 @@ public class ChatActivity extends BaseFragment implements
         emptyViewContainer.setTranslationX(getSideMenuWidth() / 2f);
 
         if (chatAdapter.isFiltered) {
-            emptyView = new TextView(getContext());
+            emptyView = new PersianTextView(getContext());
             emptyView.setText(LocaleController.getString(R.string.NoFilteredMessages));
             emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             emptyView.setGravity(Gravity.CENTER);
@@ -32921,7 +32922,7 @@ public class ChatActivity extends BaseFragment implements
                     emptyViewContainer.addView(emptyViewContent, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
                     updateGreetInfo();
                 } else {
-                    emptyView = new TextView(getContext());
+                    emptyView = new PersianTextView(getContext());
                     emptyView.setText(emptyMessage);
                     emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     emptyView.setGravity(Gravity.CENTER);

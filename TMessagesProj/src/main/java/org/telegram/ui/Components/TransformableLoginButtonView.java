@@ -20,6 +20,7 @@ import java.lang.annotation.RetentionPolicy;
 
 public class TransformableLoginButtonView extends View {
     public final static int TRANSFORM_OPEN_ARROW = 0, TRANSFORM_ARROW_CHECK = 1;
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private final static float BUTTON_RADIUS_DP = 6, CIRCLE_RADIUS_DP = 32, ARROW_PADDING = 21,
             ARROW_BACK_SIZE = 9, LEFT_CHECK_LINE = 8, RIGHT_CHECK_LINE = 16;
     private final static float BUTTON_TEXT_IN = 0.6f, ARROW_IN = 0.4f;
@@ -85,7 +86,7 @@ public class TransformableLoginButtonView extends View {
         this.textPaint = textPaint;
         this.buttonText = buttonText;
         outlinePaint.setColor(textPaint.getColor());
-        buttonWidth = textPaint.measureText(buttonText);
+        buttonWidth = fontText.measure(buttonText, textPaint);
     }
 
     public void setProgress(float p) {
@@ -107,7 +108,8 @@ public class TransformableLoginButtonView extends View {
                 if (textPaint != null && buttonText != null) {
                     int alpha = textPaint.getAlpha();
                     textPaint.setAlpha((int) (alpha * (1f - Math.min(BUTTON_TEXT_IN, progress) / BUTTON_TEXT_IN)));
-                    canvas.drawText(buttonText, (getWidth() - buttonWidth) / 2f, getHeight() / 2f + textPaint.getTextSize() / 2f - AndroidUtilities.dp(1.75f), textPaint);
+                    buttonWidth = fontText.measure(buttonText, textPaint);
+                    fontText.draw(canvas, buttonText, (getWidth() - buttonWidth) / 2f, getHeight() / 2f + textPaint.getTextSize() / 2f - AndroidUtilities.dp(1.75f), textPaint);
                     textPaint.setAlpha(alpha);
                 }
 

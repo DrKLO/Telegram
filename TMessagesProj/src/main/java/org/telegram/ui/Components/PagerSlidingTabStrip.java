@@ -23,7 +23,6 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -436,7 +435,7 @@ public class PagerSlidingTabStrip extends HorizontalScrollView {
         return tabPadding;
     }
 
-    private class TextTab extends TextView {
+    private class TextTab extends PersianTextView {
 
         final int position;
         public TextTab(Context context, int position) {

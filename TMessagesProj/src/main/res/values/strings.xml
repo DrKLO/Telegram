@@ -11584,6 +11584,9 @@
     <string name="CreateManagedBotUsernameBotLimit">This bot already has a Premium username. Remove it before adding another.</string>
     <string name="CreateManagedBotUsernameSuffixMissing">The username must end in %1$s.</string>
     <string name="CreateManagedBotUsernameCheckFailed">Couldn\'t check this username. Please try again.</string>
+
+    <string name="UseVazirmatnFont">Use Vazirmatn font</string>
+    <string name="UseVazirmatnFontInfo">Use Vazirmatn for Persian and Arabic text.</string>
     <string name="WalletSearchGifts">Search gifts</string>
     <string name="WalletGiftOnCard">On Card</string>
     <string name="WalletGiftAddToCard">Add to Card</string>

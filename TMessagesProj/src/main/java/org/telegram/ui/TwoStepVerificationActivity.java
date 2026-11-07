@@ -55,7 +55,6 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextSettingsCell;
@@ -68,6 +67,7 @@ import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.RecyclerListView;
@@ -85,7 +85,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     private TextView titleTextView, subtitleTextView;
     private TextView bottomTextView;
     private TextView resetWaitView;
-    private SimpleTextView bottomButton;
+    private TextView bottomButton;
     private TextView cancelResetButton;
     private EditTextBoldCursor passwordEditText;
     private OutlineTextContainerView passwordOutlineView;
@@ -246,14 +246,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         lockImageView.setVisibility(AndroidUtilities.isSmallScreen() || (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y && !AndroidUtilities.isTablet()) ? View.GONE : View.VISIBLE);
         linearLayout.addView(lockImageView, LayoutHelper.createLinear(100, 100, Gravity.CENTER_HORIZONTAL));
 
-        titleTextView = new TextView(context);
+        titleTextView = new PersianTextView(context);
         titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 8, 24, 0));
 
-        subtitleTextView = new TextView(context);
+        subtitleTextView = new PersianTextView(context);
         subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -305,14 +305,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             }
         });
 
-        bottomTextView = new TextView(context);
+        bottomTextView = new PersianTextView(context);
         bottomTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         bottomTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         bottomTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         bottomTextView.setText(getString(R.string.YourEmailInfo));
         linearLayout.addView(bottomTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 40, 30, 40, 0));
 
-        resetWaitView = new TextView(context);
+        resetWaitView = new PersianTextView(context);
         resetWaitView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
         resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         resetWaitView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -324,22 +324,27 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         linearLayout2.setClipChildren(false);
         linearLayout.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
-        bottomButton = new SimpleTextView(context);
-        bottomButton.setTextSize(15);
-        bottomButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        bottomButton = new PersianTextView(context);
+        bottomButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        bottomButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        bottomButton.setSingleLine(true);
+        bottomButton.setEllipsize(TextUtils.TruncateAt.END);
         bottomButton.setPadding(dp(32), 0, dp(32), 0);
-        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+        // Reserve the floating button's 48 dp width, 20 dp inset and a 12 dp gap.
+        frameLayout.addView(bottomButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
         bottomButton.setOnClickListener(v -> onPasswordForgot());
         VerticalPositionAutoAnimator.attach(bottomButton);
 
-        cancelResetButton = new TextView(context);
+        cancelResetButton = new PersianTextView(context);
         cancelResetButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        cancelResetButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        cancelResetButton.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
+        cancelResetButton.setSingleLine(true);
+        cancelResetButton.setEllipsize(TextUtils.TruncateAt.END);
         cancelResetButton.setPadding(dp(32), 0, dp(32), 0);
         cancelResetButton.setText(getString(R.string.CancelReset));
         cancelResetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
         cancelResetButton.setVisibility(View.GONE);
-        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
+        frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, LocaleController.isRTL ? 80 : 0, 0, LocaleController.isRTL ? 0 : 80, 16));
         cancelResetButton.setOnClickListener(v -> cancelPasswordReset());
         VerticalPositionAutoAnimator.attach(cancelResetButton);
 

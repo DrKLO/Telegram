@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.R;
@@ -46,6 +47,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.Components.StaticLayoutEx;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianFontCanvasText;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.Cells.SettingsSearchCell;
@@ -414,6 +417,18 @@ public class QrShareView extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint cardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    // Each stable paint owns a bounded label cache; animated colours do not rebuild layouts.
+    private final java.util.IdentityHashMap<Paint, PersianFontCanvasText> fontTextCaches = new java.util.IdentityHashMap<>();
+
+    private PersianFontCanvasText fontText(Paint paint) {
+        PersianFontCanvasText cache = fontTextCaches.get(paint);
+        if (cache == null) {
+            cache = new PersianFontCanvasText();
+            fontTextCaches.put(paint, cache);
+        }
+        return cache;
+    }
+
     private final TextPaint text = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final TextPaint bold = new TextPaint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
@@ -1802,30 +1817,30 @@ public class QrShareView extends View {
 
     private float toastTextWidth(String t) {
         final int nl = t.indexOf('\n');
-        if (nl >= 0) return Math.max(text.measureText(t, 0, nl), text.measureText(t, nl + 1, t.length()));
-        if (!isExpiry(t)) return text.measureText(t);
+        if (nl >= 0) return Math.max(fontText(text).measure(t.substring(0, nl), text), fontText(text).measure(t.substring(nl + 1), text));
+        if (!isExpiry(t)) return fontText(text).measure(t, text);
         toastMedium.setTextSize(text.getTextSize());
-        return text.measureText(expA) + toastMedium.measureText(expB) + text.measureText(expC);
+        return fontText(text).measure(expA, text) + fontText(toastMedium).measure(expB, toastMedium) + fontText(text).measure(expC, text);
     }
 
     private void drawToastText(Canvas c, String t, float x, float y) {
         final int nl = t.indexOf('\n');
         if (nl >= 0) { // two lines, 18dp apart, centred on the single-line baseline
-            c.drawText(t, 0, nl, x, y - dp(9), text);
-            c.drawText(t, nl + 1, t.length(), x, y + dp(9), text);
+            fontText(text).draw(c, t.substring(0, nl), x, y - dp(9), text);
+            fontText(text).draw(c, t.substring(nl + 1), x, y + dp(9), text);
             return;
         }
         if (!isExpiry(t)) {
-            c.drawText(t, x, y, text);
+            fontText(text).draw(c, t, x, y, text);
             return;
         }
         toastMedium.setTextSize(text.getTextSize());
         toastMedium.setColor(text.getColor());
-        c.drawText(expA, x, y, text);
-        x += text.measureText(expA);
-        c.drawText(expB, x, y, toastMedium);
-        x += toastMedium.measureText(expB);
-        c.drawText(expC, x, y, text);
+        fontText(text).draw(c, expA, x, y, text);
+        x += fontText(text).measure(expA, text);
+        fontText(toastMedium).draw(c, expB, x, y, toastMedium);
+        x += fontText(toastMedium).measure(expB, toastMedium);
+        fontText(text).draw(c, expC, x, y, text);
     }
 
     private void showToast(int icon, String message) {
@@ -1991,7 +2006,7 @@ public class QrShareView extends View {
         }
         final String s = tempChipText;
         chipPaint.setTextSize(dp(11));
-        final float cw = dp(FEE_PAD) + chipPaint.measureText(s) + dp(FEE_PAD), ch = dp(22), cy = chipCY();
+        final float cw = dp(FEE_PAD) + fontText(chipPaint).measure(s, chipPaint) + dp(FEE_PAD), ch = dp(22), cy = chipCY();
         rect.set((w - cw) / 2f, cy - ch / 2f, (w + cw) / 2f, cy + ch / 2f);
         final boolean light = scene != null && scene.light;
         glassButton = true;
@@ -2001,7 +2016,7 @@ public class QrShareView extends View {
         glassSmall = false;
         final int onGlass = light ? 0xE6000000 : 0xF2FFFFFF;
         chipPaint.setColor(Theme_multAlpha(onGlass, a));
-        c.drawText(s, rect.left + dp(FEE_PAD), cy + dp(4), chipPaint);
+        fontText(chipPaint).draw(c, s, rect.left + dp(FEE_PAD), cy + dp(4), chipPaint);
         if (linkExpires > 0) postInvalidateDelayed(1000 - nowMs % 1000 + 5); // the next second
     }
 
@@ -4055,10 +4070,13 @@ public class QrShareView extends View {
     private Drawable nameAt;
     private StaticLayout nameLayout;
     private int nameLayoutWidth;
+    private boolean nameLayoutFontEnabled;
 
-    /** Same as QrActivity.QrView#prepareContent: the largest of three sizes that fits on one line, else wraps. */
+    /** Use the largest of three caption sizes that fits on one line, otherwise wrap. */
     private StaticLayout nameLayout(int cardWidth) {
-        if (nameLayout != null && nameLayoutWidth == cardWidth) return nameLayout;
+        if (nameLayout != null && nameLayoutWidth == cardWidth
+                && nameLayoutFontEnabled == SharedConfig.useVazirmatnFont) return nameLayout;
+        nameLayoutFontEnabled = SharedConfig.useVazirmatnFont;
         nameLayoutWidth = cardWidth;
         final String userText = (caption != null ? caption : "").toUpperCase();
         nameTextPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rcondensedbold.ttf"));
@@ -4081,7 +4099,8 @@ public class QrShareView extends View {
             if (captionIsUsername)
                 string.setSpan(new SettingsSearchCell.VerticalImageSpan(nameAt), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             final int glyphW = captionIsUsername ? nameAt.getBounds().width() : 0;
-            final float textWidth = nameTextPaint.measureText(string, captionIsUsername ? 1 : 0, string.length()) + glyphW;
+            final CharSequence styledName = PersianFontApplier.applyForPaint(string, nameTextPaint);
+            final float textWidth = Layout.getDesiredWidth(styledName, captionIsUsername ? 1 : 0, styledName.length(), nameTextPaint) + glyphW;
             if (i <= 1 && textWidth > textMaxWidth) {
                 continue;
             }
@@ -4094,7 +4113,7 @@ public class QrShareView extends View {
                 linesCount = 3;
                 layoutWidth = (int) (textWidth + glyphW) / 3 + dp(4);
             }
-            nameLayout = StaticLayoutEx.createStaticLayout(string, nameTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false, null, Math.min(layoutWidth + dp(10), cardWidth), linesCount);
+            nameLayout = StaticLayoutEx.createStaticLayout(styledName, nameTextPaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false, null, Math.min(layoutWidth + dp(10), cardWidth), linesCount);
             break;
         }
         return nameLayout;
@@ -4125,7 +4144,7 @@ public class QrShareView extends View {
     private void drawFeeChip(Canvas c, int w, long now) {
         final float cy = chipCY();
         chipPaint.setTextSize(dp(11));
-        final float feeW = dp(FEE_PAD) + chipPaint.measureText(feeA) + dp(STAR_DP) + dp(STAR_GAP - 1) + chipPaint.measureText(feeB) + dp(FEE_PAD); // the price 1dp closer to the star
+        final float feeW = dp(FEE_PAD) + fontText(chipPaint).measure(feeA, chipPaint) + dp(STAR_DP) + dp(STAR_GAP - 1) + fontText(chipPaint).measure(feeB, chipPaint) + dp(FEE_PAD); // the price 1dp closer to the star
         final float freeW = !free && restoreFreeW > 0f && chipSweep > 0.001f ? restoreFreeW : dp(CHIP_PAD_L) + dp(STAR_DP) + dp(STAR_GAP) + chipText.getCurrentWidth() + dp(11);
         if (!free && chipSweep <= 0.001f) restoreFreeW = 0f;
         final float sweepE = chipSweep;
@@ -4350,11 +4369,11 @@ public class QrShareView extends View {
         final float cy = r.centerY(), is = dp(STAR_DP);
         final float x = r.left + dp(FEE_PAD); // left-anchored like the free label (the chip width animates around it)
         chipPaint.setColor(color);
-        c.drawText(feeA, x, cy + dp(4), chipPaint);
-        final float sx = x + chipPaint.measureText(feeA);
+        fontText(chipPaint).draw(c, feeA, x, cy + dp(4), chipPaint);
+        final float sx = x + fontText(chipPaint).measure(feeA, chipPaint);
         drawStar(c, sx, cy, is, color, false);
         chipPaint.setColor(color);
-        c.drawText(feeB, sx + is + dp(STAR_GAP - 1), cy + dp(4), chipPaint); // the price 1dp closer to the star
+        fontText(chipPaint).draw(c, feeB, sx + is + dp(STAR_GAP - 1), cy + dp(4), chipPaint); // the price 1dp closer to the star
     }
 
     private void drawFreeContent(Canvas c, RectF r, int color) {
@@ -5188,7 +5207,7 @@ public class QrShareView extends View {
         if (!scanHidden) {
             final boolean light = scene != null && scene.light;
             scanText.setTextSize(dp(14)); // Roboto Medium 14
-            final float pw = dp(12) + dp(20) + dp(6) + scanText.measureText(scanLabel) + dp(14);
+            final float pw = dp(12) + dp(20) + dp(6) + fontText(scanText).measure(scanLabel, scanText) + dp(14);
             scanRect.set(getWidth() - dp(9) - pw, cy - dp(20), getWidth() - dp(9), cy + dp(20));
             c.save();
             c.scale(es, es, scanRect.centerX(), scanRect.centerY());
@@ -5199,7 +5218,7 @@ public class QrShareView extends View {
             icon(c, icScan, scanRect.left + dp(12) + dp(10), cy, dp(20), glassIconColor(), 1f);
             scanText.setColor(glassIconColor());
             final Paint.FontMetrics fm = scanText.getFontMetrics();
-            c.drawText(scanLabel, scanRect.left + dp(12) + dp(20) + dp(6), cy - (fm.ascent + fm.descent) / 2f, scanText);
+            fontText(scanText).draw(c, scanLabel, scanRect.left + dp(12) + dp(20) + dp(6), cy - (fm.ascent + fm.descent) / 2f, scanText);
             c.restore();
         }
     }
@@ -5484,7 +5503,7 @@ public class QrShareView extends View {
                 text.setColor(0xB3FFFFFF);
                 text.setTextSize(dp(14));
                 final String s = org.telegram.messenger.LocaleController.getString(!giftsEndReached ? R.string.QrLoadingGifts : giftsOwner < 0 ? R.string.QrChatNoCollectibles : R.string.QrNoCollectibles);
-                c.drawText(s, (w - text.measureText(s)) / 2f, gridTop + dp(40), text);
+                fontText(text).draw(c, s, (w - fontText(text).measure(s, text)) / 2f, gridTop + dp(40), text);
             }
             final int cols = giftCols(), count = giftCount();
             final float cell = (sheetRect.width() - dp(8)) / 3f, cellW = (sheetRect.width() - dp(8)) / cols;
@@ -5724,6 +5743,7 @@ public class QrShareView extends View {
     {buyKnock.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));}
 
     private StaticLayout emptySubLayout;
+    private boolean emptySubFontEnabled;
     private int emptySubW;
     private boolean emptySubChat;
     private final String emptyTitleText = org.telegram.messenger.LocaleController.getString(R.string.QrNoGiftsTitle);
@@ -5826,7 +5846,7 @@ public class QrShareView extends View {
         emptyTitle.setAlpha((int) (255 * a));
         final Paint.FontMetrics tfm = emptyTitle.getFontMetrics();
         final float ty = py + ps + dp(18) - tfm.ascent; // dog 2dp up, text block 4dp up → dog → title 20dp
-        c.drawText(emptyTitleText, cx - emptyTitle.measureText(emptyTitleText) / 2f, ty, emptyTitle);
+        fontText(emptyTitle).draw(c, emptyTitleText, cx - fontText(emptyTitle).measure(emptyTitleText, emptyTitle) / 2f, ty, emptyTitle);
         emptySub.setColor(Color.WHITE);
         emptySub.setAlpha((int) (0xBF * a)); // white 75%
         final float sy = ty + tfm.descent + dp(7); // title → line 7dp
@@ -5843,7 +5863,9 @@ public class QrShareView extends View {
 
     private void ensureEmptySub(int maxW) {
         final boolean chat = !canBuyGifts();
-        if (emptySubLayout == null || emptySubW != maxW || emptySubChat != chat) {
+        if (emptySubLayout == null || emptySubW != maxW || emptySubChat != chat
+                || emptySubFontEnabled != SharedConfig.useVazirmatnFont) {
+            emptySubFontEnabled = SharedConfig.useVazirmatnFont;
             emptySubW = maxW;
             emptySubChat = chat;
             // always two evenly split lines at 14sp, 18.5dp line height
@@ -5851,7 +5873,7 @@ public class QrShareView extends View {
             final Paint.FontMetrics fm = emptySub.getFontMetrics();
             final float add = dp(18.5f) - (fm.descent - fm.ascent);
             final String sub = org.telegram.messenger.LocaleController.getString(chat ? R.string.QrChatNoCollectibles : R.string.QrNoGiftsInfo);
-            emptySubLayout = new StaticLayout(sub, emptySub, maxW, android.text.Layout.Alignment.ALIGN_CENTER, 1f, add, false);
+            emptySubLayout = new StaticLayout(PersianFontApplier.applyForPaint(sub, emptySub), emptySub, maxW, android.text.Layout.Alignment.ALIGN_CENTER, 1f, add, false);
         }
     }
 
@@ -5860,7 +5882,7 @@ public class QrShareView extends View {
         // the glass pill (our QR glass buttons), white label
         buyText.setTypeface(AndroidUtilities.bold());
         buyText.setTextSize(dp(14));
-        final float bw = buyText.measureText(buyLabel) + dp(19) * 2, bh = dp(36); // a neat pill: 36 high, 19 side padding
+        final float bw = fontText(buyText).measure(buyLabel, buyText) + dp(19) * 2, bh = dp(36); // a neat pill: 36 high, 19 side padding
         buyRect.set(cx - bw / 2f, by, cx + bw / 2f, by + bh);
         // a solid white pill, no rim; the label is cut out of it (the backdrop shows through the letters)
         final int sl = c.saveLayer(buyRect.left - 1, buyRect.top - 1, buyRect.right + 1, buyRect.bottom + 1, null);
@@ -5871,7 +5893,7 @@ public class QrShareView extends View {
         buyKnock.setTypeface(AndroidUtilities.bold());
         buyKnock.setTextSize(dp(14));
         final Paint.FontMetrics fm = buyKnock.getFontMetrics();
-        c.drawText(buyLabel, cx - buyKnock.measureText(buyLabel) / 2f, buyRect.centerY() - (fm.ascent + fm.descent) / 2f, buyKnock);
+        fontText(buyKnock).draw(c, buyLabel, cx - fontText(buyKnock).measure(buyLabel, buyKnock) / 2f, buyRect.centerY() - (fm.ascent + fm.descent) / 2f, buyKnock);
         c.restoreToCount(sl);
         // the cut-out letters a touch darker, hue kept: multiplied by a light, chroma-boosted tint of the backdrop
         // (the pattern still shows through; ≈12% darker, slightly richer)
@@ -5884,7 +5906,7 @@ public class QrShareView extends View {
         final int base = scene != null ? ColorUtils.blendARGB(scene.center, scene.edge, 0.5f) : 0xFF808080;
         buyDarken.setColor(oklchRelight(base, 0.90f, 1.4f, 0.10f));
         buyDarken.setAlpha((int) (255 * a));
-        c.drawText(buyLabel, cx - buyDarken.measureText(buyLabel) / 2f, buyRect.centerY() - (fm.ascent + fm.descent) / 2f, buyDarken);
+        fontText(buyDarken).draw(c, buyLabel, cx - fontText(buyDarken).measure(buyLabel, buyDarken) / 2f, buyRect.centerY() - (fm.ascent + fm.descent) / 2f, buyDarken);
     }
 
     private void drawGiftCell(Canvas c, int index, TL_stars.TL_starGiftUnique g, float x, float y, float tw, float s, boolean selected) {
@@ -6171,12 +6193,12 @@ public class QrShareView extends View {
             text.setTextSize(dp(15));
             text.setColor(tc);
             text.setAlpha((int) (255 * ra));
-            c.drawText(titles[i], menuBounds.left + dp(52), subs[i] != null ? cy - dp(2) : cy + dp(5), text);
+            fontText(text).draw(c, titles[i], menuBounds.left + dp(52), subs[i] != null ? cy - dp(2) : cy + dp(5), text);
             if (subs[i] != null) {
                 text.setTextSize(dp(12));
                 text.setColor(sc2);
                 text.setAlpha((int) (Color.alpha(sc2) * ra));
-                c.drawText(subs[i], menuBounds.left + dp(52), cy + dp(14), text);
+                fontText(text).draw(c, subs[i], menuBounds.left + dp(52), cy + dp(14), text);
             }
             c.restore();
             y += rh;
@@ -6587,14 +6609,14 @@ public class QrShareView extends View {
         toastMedium.setTextSize(dp(15));
         toastMedium.setColor(Color.WHITE); // white: reads on every backdrop
         toastMedium.setAlpha((int) (255 * alpha));
-        final float aw = toastMedium.measureText(shownToastAction);
-        c.drawText(shownToastAction, left + W - dp(16) - aw, cy + dp(5), toastMedium);
+        final float aw = fontText(toastMedium).measure(shownToastAction, toastMedium);
+        fontText(toastMedium).draw(c, shownToastAction, left + W - dp(16) - aw, cy + dp(5), toastMedium);
         toastMedium.setAlpha(255);
     }
 
     private float toastActionWidth() {
         toastMedium.setTextSize(dp(15));
-        return toastMedium.measureText(shownToastAction);
+        return fontText(toastMedium).measure(shownToastAction, toastMedium);
     }
 
     /** The toast's action hit area (the right part of the shown toast, full height). */

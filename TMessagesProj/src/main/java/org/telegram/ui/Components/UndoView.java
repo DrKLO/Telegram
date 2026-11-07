@@ -260,7 +260,7 @@ public class UndoView extends FrameLayout {
         infoTextView.setMovementMethod(new LinkMovementMethodMy());
         addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 45, 13, 0, 0));
 
-        subinfoTextView = new TextView(context);
+        subinfoTextView = new PersianTextView(context);
         subinfoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subinfoTextView.setTextColor(getThemedColor(Theme.key_undo_infoColor));
         subinfoTextView.setLinkTextColor(getThemedColor(Theme.key_undo_cancelColor));
@@ -309,7 +309,7 @@ public class UndoView extends FrameLayout {
         undoImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_undo_cancelColor), PorterDuff.Mode.MULTIPLY));
         undoButton.addView(undoImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 4, 4, 0, 4));
 
-        undoTextView = new TextView(context);
+        undoTextView = new PersianTextView(context);
         undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         undoTextView.setTypeface(AndroidUtilities.bold());
         undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
@@ -1225,7 +1225,7 @@ public class UndoView extends FrameLayout {
             undoTextView.setText(LocaleController.getString(R.string.Open));
             infoTextView.setText(LocaleController.getString(R.string.FilterAvailableTitle));
             leftImageView.setAnimation(R.raw.filter_new, 36, 36);
-            int margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+            int margin = (int) Math.ceil(android.text.Layout.getDesiredWidth(undoTextView.getText(), undoTextView.getPaint())) + AndroidUtilities.dp(26);
 
             layoutParams.leftMargin = AndroidUtilities.dp(58);
             layoutParams.rightMargin = margin;
@@ -1285,7 +1285,7 @@ public class UndoView extends FrameLayout {
 
             int margin;
             if (currentAction == ACTION_DICE_INFO) {
-                margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+                margin = (int) Math.ceil(android.text.Layout.getDesiredWidth(undoTextView.getText(), undoTextView.getPaint())) + AndroidUtilities.dp(26);
                 undoTextView.setVisibility(VISIBLE);
                 undoTextView.setTextColor(getThemedColor(Theme.key_undo_cancelColor));
                 undoImageView.setVisibility(GONE);
@@ -1367,7 +1367,7 @@ public class UndoView extends FrameLayout {
 
             undoTextView.setText(LocaleController.getString(R.string.PremiumMore));
             layoutParams.leftMargin = AndroidUtilities.dp(58);
-            layoutParams.rightMargin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+            layoutParams.rightMargin = (int) Math.ceil(android.text.Layout.getDesiredWidth(undoTextView.getText(), undoTextView.getPaint())) + AndroidUtilities.dp(26);
             layoutParams.topMargin = layoutParams.bottomMargin = AndroidUtilities.dp(6);
             layoutParams.height = TableLayout.LayoutParams.WRAP_CONTENT;
 
@@ -1390,7 +1390,7 @@ public class UndoView extends FrameLayout {
             subinfoTextView.setText(LocaleController.getString(R.string.SwipeToReplyHintMessage));
 
             layoutParams.leftMargin = AndroidUtilities.dp(58);
-            layoutParams.rightMargin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+            layoutParams.rightMargin = (int) Math.ceil(android.text.Layout.getDesiredWidth(undoTextView.getText(), undoTextView.getPaint())) + AndroidUtilities.dp(26);
             layoutParams.topMargin = AndroidUtilities.dp(6);
             layoutParams.height = TableLayout.LayoutParams.WRAP_CONTENT;
 
@@ -1489,7 +1489,7 @@ public class UndoView extends FrameLayout {
                 String folderName = (String) infoObject;
                 int chatsCount = (Integer) infoObject2;
                 if (chatsCount > 0) {
-                    int margin = (int) Math.ceil(undoTextView.getPaint().measureText(undoTextView.getText().toString())) + AndroidUtilities.dp(26);
+                    int margin = (int) Math.ceil(android.text.Layout.getDesiredWidth(undoTextView.getText(), undoTextView.getPaint())) + AndroidUtilities.dp(26);
 
                     layoutParams.leftMargin = AndroidUtilities.dp(48);
                     layoutParams.rightMargin = margin;

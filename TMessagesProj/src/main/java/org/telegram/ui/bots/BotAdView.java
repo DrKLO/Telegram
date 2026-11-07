@@ -37,6 +37,8 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
+import org.telegram.ui.Components.PersianFontApplier;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Stories.recorder.HintView2;
@@ -72,14 +74,14 @@ public class BotAdView extends FrameLayout {
         titleLayout.setOrientation(LinearLayout.HORIZONTAL);
         textLayout.addView(titleLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
-        titleView = new TextView(context);
+        titleView = new PersianTextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         titleView.setTypeface(AndroidUtilities.bold());
         titleLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL));
         NotificationCenter.listenEmojiLoading(titleView);
 
-        removeView = new TextView(context);
+        removeView = new PersianTextView(context);
         removeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         removeView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         ScaleStateListAnimator.apply(removeView, .1f, 1.5f);
@@ -88,7 +90,7 @@ public class BotAdView extends FrameLayout {
         removeView.setText(LocaleController.getString(R.string.BotAdWhat));
         titleLayout.addView(removeView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 17, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 5, 1, 0, 0));
 
-        channelTitleView = new TextView(context);
+        channelTitleView = new PersianTextView(context);
         channelTitleView.setVisibility(View.GONE);
         channelTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         channelTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -172,7 +174,7 @@ public class BotAdView extends FrameLayout {
         title.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), 0, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         title.append("  ");
         title.append(channel);
-        if (titleView.getPaint().measureText(title.toString()) > AndroidUtilities.displaySize.x - dp(16 + 16 + 6.33f + 6.33f) - removeView.getPaint().measureText(removeView.getText().toString()) - dp(32) - dp(hasMedia ? 10 + 48 : 0)) {
+        if (Layout.getDesiredWidth(PersianFontApplier.applyForPaint(title, titleView.getPaint()), titleView.getPaint()) > AndroidUtilities.displaySize.x - dp(16 + 16 + 6.33f + 6.33f) - Layout.getDesiredWidth(removeView.getText(), removeView.getPaint()) - dp(32) - dp(hasMedia ? 10 + 48 : 0)) {
             title = new SpannableStringBuilder(LocaleController.getString(R.string.SponsoredMessageAd));
             title.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), 0, title.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             channelTitleView.setVisibility(View.VISIBLE);

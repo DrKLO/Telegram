@@ -569,7 +569,7 @@ public class EditTextBoldCursor extends EditTextEffects {
         if (TextUtils.isEmpty(errorText)) {
             return null;
         } else {
-            return new StaticLayout(errorText, errorPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            return new StaticLayout(PersianFontApplier.applyForPaint(errorText, errorPaint), errorPaint, width, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
         }
     }
 
@@ -630,6 +630,7 @@ public class EditTextBoldCursor extends EditTextEffects {
     }
 
     public void setHintText(CharSequence text, boolean animated, TextPaint paint) {
+        text = PersianFontApplier.applyForPaint(text, paint);
         if (hintAnimatedDrawable != null) {
             hintAnimatedDrawable.setText(text, !LocaleController.isRTL);
         } else {
@@ -652,7 +653,7 @@ public class EditTextBoldCursor extends EditTextEffects {
             hint = text;
             if (getMeasuredWidth() != 0) {
                 text = TextUtils.ellipsize(text, paint, getMeasuredWidth(), TextUtils.TruncateAt.END);
-                if (hintLayout != null && TextUtils.equals(hintLayout.getText(), text)) {
+                if (hintLayout != null && hintLayout.getText() == text) {
                     return;
                 }
             }

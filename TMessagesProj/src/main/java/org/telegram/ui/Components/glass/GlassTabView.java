@@ -12,6 +12,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -42,6 +43,8 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
@@ -84,7 +87,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
         imageView.setColorFilter(new PorterDuffColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
         textView.setSingleLine();
         textView.setLines(1);
@@ -514,7 +517,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth() {
-        return defaultTextPaint.measureText(textView.getText().toString());
+        return Layout.getDesiredWidth(PersianFontApplier.applyForPaint(textView.getText(), textView.getPaint()), defaultTextPaint);
     }
 
     private TextPaint scaledTextPaint;
@@ -525,7 +528,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             scaledTextPaint = new TextPaint(defaultTextPaint);
         }
         scaledTextPaint.setTextSize(dp(textSizeDp));
-        return scaledTextPaint.measureText(textView.getText().toString());
+        return Layout.getDesiredWidth(PersianFontApplier.applyForPaint(textView.getText(), textView.getPaint()), scaledTextPaint);
     }
 
     @Override

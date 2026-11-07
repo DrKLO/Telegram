@@ -33,6 +33,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 public class PhotoPickerPhotoCell extends FrameLayout {
 
@@ -83,7 +84,7 @@ public class PhotoPickerPhotoCell extends FrameLayout {
         imageView1.setImageResource(R.drawable.ic_video);
         videoInfoContainer.addView(imageView1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-        videoTextView = new TextView(context);
+        videoTextView = new PersianTextView(context);
         videoTextView.setTextColor(0xffffffff);
         videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         videoTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);

@@ -66,7 +66,7 @@ public class BottomPagerTabs extends View {
             paint.setTypeface(AndroidUtilities.bold());
             paint.setTextSize(dp(12));
             paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            layout = new StaticLayout(text, paint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
+            layout = new StaticLayout(PersianFontApplier.applyForPaint(text, paint), paint, AndroidUtilities.displaySize.x, Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
             layoutWidth = layout.getLineCount() > 0 ? layout.getLineWidth(0) : 0;
             layoutLeft = layout.getLineCount() > 0 ? layout.getLineLeft(0) : 0;
 

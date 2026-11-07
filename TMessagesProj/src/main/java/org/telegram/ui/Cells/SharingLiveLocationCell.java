@@ -52,7 +52,9 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontCanvasText;
 import org.telegram.ui.Components.LoadingSpan;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.LocationActivity;
 
 import java.util.HashSet;
@@ -60,6 +62,7 @@ import java.util.List;
 
 public class SharingLiveLocationCell extends FrameLayout {
 
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
     private int distanceTextViewHeight;
@@ -107,7 +110,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             addView(avatarImageView, LayoutHelper.createFrame(42, 42, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 0 : 15, 12, LocaleController.isRTL ? 15 : 0, 0));
             addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 12, LocaleController.isRTL ? 73 : 16, 0));
 
-            distanceTextView = new TextView(context);
+            distanceTextView = new PersianTextView(context);
             distanceTextView.setSingleLine();
             distanceTextViewSingle = true;
             distanceTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -446,8 +449,8 @@ public class SharingLiveLocationCell extends FrameLayout {
             foreverDrawable.draw(canvas);
         } else {
             String text = LocaleController.formatLocationLeftTime(stopTime - currentTime);
-            float size = Theme.chat_livePaint.measureText(text);
-            canvas.drawText(text, rect.centerX() - size / 2, dp(distanceTextView != null ? 37 : 31), Theme.chat_livePaint);
+            float size = fontText.measure(text, Theme.chat_livePaint);
+            fontText.draw(canvas, text, rect.centerX() - size / 2, dp(distanceTextView != null ? 37 : 31), Theme.chat_livePaint);
         }
     }
 

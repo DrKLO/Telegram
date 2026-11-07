@@ -14,6 +14,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -62,6 +63,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.IntSeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
@@ -456,7 +458,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             imageView.setVisibility(View.GONE);
             addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 20, 0, 20, 0));
 
-            textView = new TextView(context) {
+            textView = new PersianTextView(context) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
@@ -702,7 +704,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             headerLayout.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             headerLayout.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
-            headerTextView = new TextView(context);
+            headerTextView = new PersianTextView(context);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             headerTextView.setTypeface(AndroidUtilities.bold());
             headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
@@ -761,7 +763,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             valuesView = new FrameLayout(context);
             valuesView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
-            leftTextView = new TextView(context);
+            leftTextView = new PersianTextView(context);
             leftTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             leftTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             leftTextView.setGravity(Gravity.LEFT);
@@ -775,9 +777,10 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     if (fullWidth <= 0) {
                         fullWidth = AndroidUtilities.displaySize.x - dp(20);
                     }
-                    float leftTextViewWidth = leftTextView.getPaint().measureText(leftTextView.getText().toString());
-                    float rightTextViewWidth = rightTextView.getPaint().measureText(rightTextView.getText().toString());
-                    super.onMeasure(MeasureSpec.makeMeasureSpec((int) (fullWidth - leftTextViewWidth - rightTextViewWidth), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY));
+                    float leftTextViewWidth = Layout.getDesiredWidth(leftTextView.getText(), leftTextView.getPaint());
+                    float rightTextViewWidth = Layout.getDesiredWidth(rightTextView.getText(), rightTextView.getPaint());
+                    int availableWidth = Math.max(0, fullWidth - (int) Math.ceil(leftTextViewWidth + rightTextViewWidth));
+                    super.onMeasure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(24), MeasureSpec.EXACTLY));
                 }
             };
             middleTextView.setAnimationProperties(.45f, 0, 240, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -793,7 +796,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             batteryIcon.setBounds(dp(3), dp(-20), dp(20 + 3), 0);
             batteryText.setSpan(new ImageSpan(batteryIcon, DynamicDrawableSpan.ALIGN_BOTTOM), 0, batteryText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-            rightTextView = new TextView(context);
+            rightTextView = new PersianTextView(context);
             rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             rightTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             rightTextView.setGravity(Gravity.RIGHT);

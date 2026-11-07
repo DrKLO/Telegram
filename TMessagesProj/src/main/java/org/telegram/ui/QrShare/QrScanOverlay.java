@@ -53,6 +53,9 @@ import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.Components.PersianFontApplier;
+import org.telegram.ui.Components.PersianFontCanvasText;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -304,6 +307,18 @@ public final class QrScanOverlay extends FrameLayout {
     }
 
     private @Nullable StaticLayout titleLayout;
+    private boolean titleFontEnabled;
+    private final PersianFontCanvasText buttonLabelFont = new PersianFontCanvasText();
+
+    private void updateTitleLayout(int width) {
+        int layoutWidth = Math.max(1, width - dp(72));
+        if (titleLayout == null || titleLayout.getWidth() != layoutWidth
+                || titleFontEnabled != SharedConfig.useVazirmatnFont) {
+            titleFontEnabled = SharedConfig.useVazirmatnFont;
+            CharSequence title = PersianFontApplier.applyForPaint(LocaleController.getString(R.string.ScanQrCode), titlePaint);
+            titleLayout = new StaticLayout(title, titlePaint, layoutWidth, Layout.Alignment.ALIGN_CENTER, 1f, 0f, false);
+        }
+    }
     private final float cornerRadius;
 
     /** 0 = the scan button, 1 = the scanner on the whole screen. */
@@ -586,7 +601,7 @@ public final class QrScanOverlay extends FrameLayout {
         flashRect.set(fx - fs / 2f, fy, fx + fs / 2f, fy + fs);
         final float gx = w / 2f - dp(35) - fs / 2f;
         galleryRect.set(gx - fs / 2f, fy, gx + fs / 2f, fy + fs);
-        titleLayout = new StaticLayout(LocaleController.getString(R.string.ScanQrCode), titlePaint, Math.max(1, w - dp(72)), Layout.Alignment.ALIGN_CENTER, 1f, 0f, false);
+        updateTitleLayout(w);
         if (closeRect.isEmpty()) {
             final float ccy = QrShareView.insetTop(this) + ActionBar.getCurrentActionBarHeight() / 2f;
             closeRect.set(dp(9), ccy - dp(20), dp(49), ccy + dp(20));
@@ -645,7 +660,7 @@ public final class QrScanOverlay extends FrameLayout {
                 buttonLabelPaint.setTextSize(dp(14) * gs);
                 buttonLabelPaint.setAlpha((int) (255 * buttonGlass));
                 final Paint.FontMetrics fm = buttonLabelPaint.getFontMetrics();
-                canvas.drawText(buttonLabel, shape.left + (dp(12) + dp(20) + dp(6)) * gs, shape.centerY() - (fm.ascent + fm.descent) / 2f, buttonLabelPaint);
+                buttonLabelFont.draw(canvas, buttonLabel, shape.left + (dp(12) + dp(20) + dp(6)) * gs, shape.centerY() - (fm.ascent + fm.descent) / 2f, buttonLabelPaint);
             } else {
                 final int size = (int) (dp(22) * gs);
                 scanIcon.setBounds((int) (shape.centerX() - size / 2f), (int) (shape.centerY() - size / 2f), (int) (shape.centerX() + size / 2f), (int) (shape.centerY() + size / 2f));
@@ -677,6 +692,7 @@ public final class QrScanOverlay extends FrameLayout {
         // the frame: four rounded corners, fading out when a code is outlined
         drawCorners(canvas, r, alpha * (1f - foundK));
 
+        updateTitleLayout(getWidth());
         if (titleLayout != null) {
             canvas.save();
             canvas.translate(getWidth() / 2f - titleLayout.getWidth() / 2f, frameRect.top - dp(36) - titleLayout.getHeight());

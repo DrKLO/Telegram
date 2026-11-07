@@ -140,7 +140,7 @@ public class AvatarConstructorPreviewCell extends FrameLayout {
         currentBackgroundDrawable = new GradientTools();
         currentBackgroundDrawable.setColors(color1, color2, color3, color4);
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         textView.setTextColor(Theme.getColor(Theme.key_avatar_text));
         textView.setTypeface(AndroidUtilities.bold());

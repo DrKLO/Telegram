@@ -16,7 +16,9 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.voip.VoIPService;
+import org.telegram.ui.Components.PersianFontApplier;
 
 public class VoIPTimerView extends View {
 
@@ -29,6 +31,7 @@ public class VoIPTimerView extends View {
     private int signalBarCount = 4;
     private boolean isDrawCallIcon = false;
     private final Drawable callsDeclineDrawable;
+    private boolean lastFontEnabled;
 
     Runnable updater = () -> {
         if (getVisibility() == View.VISIBLE) {
@@ -63,16 +66,22 @@ public class VoIPTimerView extends View {
             return;
         }
         String str = AndroidUtilities.formatLongDuration((int) (service.getCallDuration() / 1000));
-        if (currentTimeStr == null || !currentTimeStr.equals(str)) {
+        if (currentTimeStr == null || !currentTimeStr.equals(str) || lastFontEnabled != SharedConfig.useVazirmatnFont) {
             currentTimeStr = str;
             if (timerLayout == null) {
                 requestLayout();
             }
-            timerLayout = new StaticLayout(currentTimeStr, textPaint, (int) textPaint.measureText(currentTimeStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            createTimerLayout();
         }
         postDelayed(updater, 300);
 
         invalidate();
+    }
+
+    private void createTimerLayout() {
+        CharSequence text = PersianFontApplier.applyForPaint(currentTimeStr, textPaint);
+        timerLayout = new StaticLayout(text, textPaint, Math.max(1, (int) Math.ceil(Layout.getDesiredWidth(text, textPaint))), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        lastFontEnabled = SharedConfig.useVazirmatnFont;
     }
 
     @Override
@@ -80,7 +89,7 @@ public class VoIPTimerView extends View {
         if (getVisibility() != visibility) {
             if (visibility == VISIBLE) {
                 currentTimeStr = "00:00";
-                timerLayout = new StaticLayout(currentTimeStr, textPaint, (int) textPaint.measureText(currentTimeStr), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+                createTimerLayout();
                 updateTimer();
             } else {
                 currentTimeStr = null;

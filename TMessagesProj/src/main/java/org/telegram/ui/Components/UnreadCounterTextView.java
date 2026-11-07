@@ -19,6 +19,7 @@ import org.telegram.ui.ActionBar.Theme;
 
 public class UnreadCounterTextView extends View {
 
+    private final PersianFontCanvasText counterFontText = new PersianFontCanvasText();
     private int currentCounter;
     private String currentCounterString;
     private int textWidth;
@@ -65,7 +66,8 @@ public class UnreadCounterTextView extends View {
         textLayoutOut = textLayout;
         iconOut = icon;
         layoutPaint.setTypeface(AndroidUtilities.bold());
-        layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
+        text = PersianFontApplier.applyForPaint(text, layoutPaint);
+        layoutTextWidth = (int) Math.ceil(Layout.getDesiredWidth(text, layoutPaint));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
         setContentDescription(text);
@@ -88,7 +90,8 @@ public class UnreadCounterTextView extends View {
 
     public void setText(CharSequence text) {
         layoutPaint.setTypeface(AndroidUtilities.bold());
-        layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
+        text = PersianFontApplier.applyForPaint(text, layoutPaint);
+        layoutTextWidth = (int) Math.ceil(Layout.getDesiredWidth(text, layoutPaint));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
         setContentDescription(text);
@@ -97,7 +100,8 @@ public class UnreadCounterTextView extends View {
 
     public void setTextInfo(CharSequence text) {
         layoutPaint.setTypeface(null);
-        layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
+        text = PersianFontApplier.applyForPaint(text, layoutPaint);
+        layoutTextWidth = (int) Math.ceil(Layout.getDesiredWidth(text, layoutPaint));
         icon = null;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth + 1, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
         setContentDescription(text);
@@ -106,7 +110,8 @@ public class UnreadCounterTextView extends View {
 
     public void setTextInfo(Drawable icon, CharSequence text) {
         layoutPaint.setTypeface(null);
-        layoutTextWidth = (int) Math.ceil(layoutPaint.measureText(text, 0, text.length()));
+        text = PersianFontApplier.applyForPaint(text, layoutPaint);
+        layoutTextWidth = (int) Math.ceil(Layout.getDesiredWidth(text, layoutPaint));
         this.icon = icon;
         textLayout = new StaticLayout(text, layoutPaint, layoutTextWidth + 1, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
         setContentDescription(text);
@@ -156,7 +161,7 @@ public class UnreadCounterTextView extends View {
                 circleWidth = 0;
             } else {
                 currentCounterString = AndroidUtilities.formatWholeNumber(currentCounter, 0);
-                textWidth = (int) Math.ceil(textPaint.measureText(currentCounterString));
+                textWidth = (int) Math.ceil(counterFontText.measure(currentCounterString, textPaint));
                 int newWidth = Math.max(AndroidUtilities.dp(20), AndroidUtilities.dp(12) + textWidth);
                 if (circleWidth != newWidth) {
                     circleWidth = newWidth;
@@ -261,7 +266,7 @@ public class UnreadCounterTextView extends View {
                 int x = (getMeasuredWidth() - lineWidth) / 2 + lineWidth - circleWidth / 2 + AndroidUtilities.dp(6);
                 rect.set(x, getMeasuredHeight() / 2 - AndroidUtilities.dp(10), x + circleWidth, getMeasuredHeight() / 2 + AndroidUtilities.dp(10));
                 canvas.drawRoundRect(rect, AndroidUtilities.dp(10), AndroidUtilities.dp(10), paint);
-                canvas.drawText(currentCounterString, rect.centerX() - textWidth / 2.0f, rect.top + AndroidUtilities.dp(14.5f), textPaint);
+                counterFontText.draw(canvas, currentCounterString, rect.centerX() - textWidth / 2.0f, rect.top + AndroidUtilities.dp(14.5f), textPaint);
             }
         }
     }

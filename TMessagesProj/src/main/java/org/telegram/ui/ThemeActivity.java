@@ -73,6 +73,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.EmojiThemes;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeColors;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -150,6 +151,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     private int textSizeHeaderRow;
     @Keep
     private int textSizeRow;
+    private int vazirmatnFontRow;
     private int settingsRow;
     private int directShareRow;
     @Keep
@@ -579,6 +581,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         liteModeInfoRow = -1;
 
         textSizeRow = -1;
+        vazirmatnFontRow = -1;
         backgroundRow = -1;
         changeUserColor = -1;
         settingsRow = -1;
@@ -655,6 +658,7 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         } else if (currentType == THEME_TYPE_BASIC) {
             textSizeHeaderRow = rowCount++;
             textSizeRow = rowCount++;
+            vazirmatnFontRow = rowCount++;
             backgroundRow = rowCount++;
             changeUserColor = rowCount++;
             newThemeInfoRow = rowCount++;
@@ -1103,6 +1107,26 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         actionBar.setAdaptiveBackground(listView);
         listView.setOnItemClickListener((view, position, x, y) -> {
+
+            if (position == vazirmatnFontRow) {
+                boolean enabled = !SharedConfig.useVazirmatnFont;
+                SharedConfig.setUseVazirmatnFont(enabled);
+
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(enabled);
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (parentLayout != null) {
+                        parentLayout.rebuildFragments(
+                                INavigationLayout.REBUILD_FLAG_REBUILD_LAST
+                        );
+                    }
+                });
+
+                return;
+            }
+
             if (position == enableAnimationsRow) {
                 SharedPreferences preferences = MessagesController.getGlobalMainSettings();
                 boolean animations = preferences.getBoolean("view_animations", true);
@@ -2596,7 +2620,15 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 }
                 case TYPE_TEXT_CHECK: {
                     TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                    if (position == scheduleLocationRow) {
+                    if (position == vazirmatnFontRow) {
+                        textCheckCell.setTextAndValueAndCheck(
+                                getString(R.string.UseVazirmatnFont),
+                                getString(R.string.UseVazirmatnFontInfo),
+                                SharedConfig.useVazirmatnFont,
+                                true,
+                                true
+                        );
+                    } else if (position == scheduleLocationRow) {
                         textCheckCell.setTextAndCheck(getString("AutoNightLocation", R.string.AutoNightLocation), Theme.autoNightScheduleByLocation, true);
                     } else if (position == enableAnimationsRow) {
                         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
@@ -2729,6 +2761,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public int getItemViewType(int position) {
+            if (position == vazirmatnFontRow) {
+                return TYPE_TEXT_CHECK;
+            }
             if (position == scheduleFromRow || position == distanceRow ||
                     position == scheduleToRow || position == scheduleUpdateLocationRow ||
                     position == contactsReimportRow || position == contactsSortRow ||

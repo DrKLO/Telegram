@@ -45,6 +45,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -886,6 +887,9 @@ public class EmojiView extends FrameLayout implements
             searchEditText.setTextColor(glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
             searchEditText.setBackgroundDrawable(null);
             searchEditText.setPadding(0, 0, 0, 0);
+            // Keep the hint beside the search icon, outside the category strip.
+            searchEditText.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            searchEditText.setTextAlignment(View.TEXT_ALIGNMENT_GRAVITY);
             searchEditText.setMaxLines(1);
             searchEditText.setLines(1);
             searchEditText.setSingleLine(true);
@@ -979,7 +983,6 @@ public class EmojiView extends FrameLayout implements
                     }
                 };
                 categoriesListView.isGlassDesign = glassDesign;
-                categoriesListView.setDontOccupyWidth((int) (searchEditText.getPaint().measureText(searchEditText.getHint() + "")) + dp(16));
                 if (shouldDrawBackground) {
                     categoriesListView.setBackgroundColor(Theme.blendOver(getThemedColor(Theme.key_chat_emojiPanelBackground), getThemedColor(Theme.key_chat_emojiSearchBackground)));
                 }
@@ -1027,6 +1030,16 @@ public class EmojiView extends FrameLayout implements
                 });
                 box.addView(categoriesListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 36, 0, 0, 0));
             }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            if (categoriesListView != null) {
+                CharSequence hint = PersianFontApplier.applyForPaint(searchEditText.getHint(), searchEditText.getPaint());
+                int hintWidth = (int) Math.ceil(Layout.getDesiredWidth(hint, searchEditText.getPaint()));
+                categoriesListView.setDontOccupyWidth(hintWidth + dp(16));
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
 
         public boolean isCategorySelected() {

@@ -81,6 +81,7 @@ import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.ProgressButton;
@@ -227,7 +228,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				}
 			});
 
-			emptyTextView1 = new TextView(context);
+			emptyTextView1 = new PersianTextView(context);
 			emptyTextView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
 			emptyTextView1.setText(getString(R.string.MakeYourFirstCall));
 			emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -235,7 +236,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			emptyTextView1.setGravity(Gravity.CENTER);
 			addView(emptyTextView1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 17, 40, 17, 0));
 
-			emptyTextView2 = new TextView(context);
+			emptyTextView2 = new PersianTextView(context);
 			String help = formatString(R.string.MakeYourFirstCallHint, getMessagesController().conferenceCallSizeLimit);
 			if (AndroidUtilities.isTablet() && !AndroidUtilities.isSmallTablet()) {
 				help = help.replace('\n', ' ');
@@ -1724,7 +1725,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 		final BottomSheet[] _sheet = new BottomSheet[1];
 		if (withJoinButton) {
-			TextView or = new TextView(context) {
+			TextView or = new PersianTextView(context) {
 				private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 				@Override
 				protected void dispatchDraw(@NonNull Canvas canvas) {

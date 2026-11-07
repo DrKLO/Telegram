@@ -33,6 +33,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianFontCanvasText;
 
 public class EndCloseLayout extends FrameLayout {
     private final EndCloseView endCloseView;
@@ -166,6 +167,7 @@ public class EndCloseLayout extends FrameLayout {
         private final RectF backgroundRect = new RectF();
         private final Drawable callDeclineDrawable;
         private final String closeText;
+        private final PersianFontCanvasText closeCanvasText = new PersianFontCanvasText();
         public int backColor = 0xFFf4606c;
         public int round = AndroidUtilities.dp(26);
         public int callDeclineAlpha = 255;
@@ -236,8 +238,8 @@ public class EndCloseLayout extends FrameLayout {
             textPaintMask.setAlpha(closeTextAlpha);
             int maxDarkAlpha = (int) (255 * 0.15f);
             textPaint.setAlpha(maxDarkAlpha * (closeTextAlpha / 255));
-            canvas.drawText(closeText, cx, cy + AndroidUtilities.dp(6), textPaintMask);
-            canvas.drawText(closeText, cx, cy + AndroidUtilities.dp(6), textPaint);
+            closeCanvasText.draw(canvas, closeText, cx, cy + AndroidUtilities.dp(6), textPaintMask);
+            closeCanvasText.draw(canvas, closeText, cx, cy + AndroidUtilities.dp(6), textPaint);
 
             if (rippleDrawable == null) {
                 rippleDrawable = Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector), 8, 8);

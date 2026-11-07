@@ -43,6 +43,7 @@ import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -70,14 +71,14 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-        titleTextView = new TextView(context);
+        titleTextView = new PersianTextView(context);
         titleTextView.setGravity(Gravity.CENTER);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setText(LocaleController.getString(R.string.UnconfirmedAuthTitle));
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.TOP | Gravity.FILL_HORIZONTAL, 28,  8, 28, 0));
 
-        messageTextView = new TextView(context);
+        messageTextView = new PersianTextView(context);
         messageTextView.setGravity(Gravity.CENTER);
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         messageTextView.setLineSpacing(dpf2(2), 1);
@@ -304,7 +305,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         imageView.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_windowBackgroundWhiteValueText)));
         linearLayout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER, 0, 14, 0, 0));
 
-        TextView headerTextView = new TextView(getContext());
+        TextView headerTextView = new PersianTextView(getContext());
         headerTextView.setTypeface(AndroidUtilities.bold());
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         headerTextView.setGravity(Gravity.CENTER);
@@ -312,7 +313,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         headerTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         linearLayout.addView(headerTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 28, 14, 28, 0));
 
-        TextView messageTextView = new TextView(getContext());
+        TextView messageTextView = new PersianTextView(getContext());
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         messageTextView.setGravity(Gravity.CENTER);
         if (auths.size() == 1) {
@@ -331,7 +332,7 @@ public class UnconfirmedAuthHintCell extends FrameLayout {
         warningLayout.setPadding(dp(24), dp(10), dp(24), dp(10));
         warningLayout.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold), Theme.isCurrentThemeDark() ? .2f : .15f)));
 
-        TextView warningTextView = new TextView(getContext());
+        TextView warningTextView = new PersianTextView(getContext());
         warningTextView.setTypeface(AndroidUtilities.bold());
         warningTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         warningTextView.setGravity(Gravity.CENTER);

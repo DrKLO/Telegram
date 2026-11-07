@@ -20,6 +20,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 
 import java.util.ArrayList;
 
@@ -268,7 +269,7 @@ public class RequestPeerRequirementsCell extends LinearLayout {
             imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader), PorterDuff.Mode.MULTIPLY));
             addView(imageView, LayoutHelper.createLinear(20, 20, 0, Gravity.TOP | Gravity.LEFT, 17 + requirement.padding * 16, -1, 0, 0));
 
-            textView = new TextView(context);
+            textView = new PersianTextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
             textView.setSingleLine(false);

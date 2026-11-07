@@ -17,6 +17,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 
 public class SlideChooseView extends View {
@@ -44,6 +45,8 @@ public class SlideChooseView extends View {
 
     private String[] optionsStr;
     private int[] optionsSizes;
+    private final PersianFontCanvasText fontText = new PersianFontCanvasText();
+    private boolean lastFontEnabled;
     private Drawable[] leftDrawables;
 
     private int selectedIndex;
@@ -107,16 +110,21 @@ public class SlideChooseView extends View {
         this.optionsStr = options;
         this.leftDrawables = leftDrawables;
         selectedIndex = selected;
-        optionsSizes = new int[optionsStr.length];
-        for (int i = 0; i < optionsStr.length; i++) {
-            optionsSizes[i] = (int) Math.ceil(textPaint.measureText(optionsStr[i]));
-        }
+        updateOptionLayouts();
         if (this.leftDrawables != null) {
             for (Drawable drawable : this.leftDrawables) {
                 drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
             }
         }
         requestLayout();
+    }
+
+    private void updateOptionLayouts() {
+        optionsSizes = new int[optionsStr.length];
+        for (int i = 0; i < optionsStr.length; i++) {
+            optionsSizes[i] = (int) Math.ceil(fontText.measure(optionsStr[i], textPaint));
+        }
+        lastFontEnabled = SharedConfig.useVazirmatnFont;
     }
 
     public void setMinAllowedIndex(int index) {
@@ -210,6 +218,9 @@ public class SlideChooseView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (optionsStr != null && lastFontEnabled != SharedConfig.useVazirmatnFont) {
+            updateOptionLayouts();
+        }
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(74), MeasureSpec.EXACTLY));
         circleSize = AndroidUtilities.dp(6);
         gapSize = AndroidUtilities.dp(2);
@@ -272,13 +283,15 @@ public class SlideChooseView extends View {
                 canvas.translate((leftDrawables[a].getIntrinsicWidth() / 2f) - AndroidUtilities.dp(a == 0 ? 3 : 2), 0);
             }
 
+            float textX;
             if (a == 0) {
-                canvas.drawText(text, AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
+                textX = AndroidUtilities.dp(22);
             } else if (a == optionsStr.length - 1) {
-                canvas.drawText(text, getMeasuredWidth() - size - AndroidUtilities.dp(22), AndroidUtilities.dp(28), textPaint);
+                textX = getMeasuredWidth() - size - AndroidUtilities.dp(22);
             } else {
-                canvas.drawText(text, cx - size / 2, AndroidUtilities.dp(28), textPaint);
+                textX = cx - size / 2;
             }
+            fontText.draw(canvas, text, textX, AndroidUtilities.dp(28), textPaint);
 
             if (leftDrawables != null) {
                 canvas.restore();

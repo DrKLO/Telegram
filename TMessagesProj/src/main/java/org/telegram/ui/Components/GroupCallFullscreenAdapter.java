@@ -9,6 +9,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.text.Layout;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -163,7 +165,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
 
         GroupCallMiniTextureView renderer;
 
-        String drawingName;
+        StaticLayout nameLayout;
         String name;
         int nameWidth;
 
@@ -210,9 +212,11 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
             textPaint.setTextSize(AndroidUtilities.dp(12));
             if (name != null) {
                 float maxWidth = AndroidUtilities.dp(46);
-                float textWidth = textPaint.measureText(name);
-                nameWidth = (int) Math.min(maxWidth, textWidth);
-                drawingName = TextUtils.ellipsize(name, textPaint, nameWidth, TextUtils.TruncateAt.END).toString();
+                CharSequence styledName = PersianFontApplier.applyForPaint(name, textPaint);
+                float textWidth = Layout.getDesiredWidth(styledName, textPaint);
+                nameWidth = (int) Math.ceil(Math.min(maxWidth, textWidth));
+                CharSequence drawingName = TextUtils.ellipsize(styledName, textPaint, nameWidth, TextUtils.TruncateAt.END);
+                nameLayout = new StaticLayout(drawingName, textPaint, Math.max(1, nameWidth), Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false);
             }
 
             super.onMeasure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
@@ -437,11 +441,13 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
         }
 
         public void drawOverlays(Canvas canvas) {
-            if (drawingName != null) {
+            if (nameLayout != null) {
                 canvas.save();
                 int paddingStart = (getMeasuredWidth() - nameWidth - AndroidUtilities.dp(24)) / 2;
                 textPaint.setAlpha((int) (255 * progress * getAlpha()));
-                canvas.drawText(drawingName, paddingStart + AndroidUtilities.dp(22), AndroidUtilities.dp(58 + 11), textPaint);
+                canvas.translate(paddingStart + AndroidUtilities.dp(22) - nameLayout.getLineLeft(0),
+                        AndroidUtilities.dp(58 + 11) - nameLayout.getLineBaseline(0));
+                nameLayout.draw(canvas);
                 canvas.restore();
                 canvas.save();
                 canvas.translate(paddingStart, AndroidUtilities.dp(53));

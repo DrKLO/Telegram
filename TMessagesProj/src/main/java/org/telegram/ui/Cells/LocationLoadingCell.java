@@ -22,6 +22,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.PersianTextView;
 import org.telegram.ui.Components.RadialProgressView;
 
 public class LocationLoadingCell extends FrameLayout {
@@ -43,7 +44,7 @@ public class LocationLoadingCell extends FrameLayout {
         imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogEmptyImage), PorterDuff.Mode.MULTIPLY));
         addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 24));
 
-        textView = new TextView(context);
+        textView = new PersianTextView(context);
         textView.setTextColor(getThemedColor(Theme.key_dialogEmptyText));
         textView.setGravity(Gravity.CENTER);
         textView.setTypeface(AndroidUtilities.bold());
