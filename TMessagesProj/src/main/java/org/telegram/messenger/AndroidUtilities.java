@@ -5642,16 +5642,6 @@ public class AndroidUtilities {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static boolean checkPipPermissions(Context context) {
-        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
-            return false;
-        }
-        AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_PICTURE_IN_PICTURE, android.os.Process.myUid(), context.getPackageName());
-
-        return mode == AppOpsManager.MODE_ALLOWED;
-    }
-
     public static boolean isInPictureInPictureMode(Activity activity) {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity.isInPictureInPictureMode();
     }

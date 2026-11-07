@@ -708,6 +708,7 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         // the arrow at the centre of the proximity button, the hint under its glass
         hintView.setJoint(1, -(MAP_BUTTON_PADDING_DP + MAP_BUTTON_DP / 2 - 8));
         hintView.setPadding(0, dp(4), 0, 0);
+        hintView.setGlass(getBaseSimpleGlass().factory);
         mapTopButtons.addView(hintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 8, MAP_BUTTON_DP + MAP_BUTTON_PADDING_DP + 4, 8, 0));
 
         emptyView = new LinearLayout(context);

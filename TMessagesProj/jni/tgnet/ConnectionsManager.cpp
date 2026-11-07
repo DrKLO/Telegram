@@ -44,6 +44,7 @@ jmethodID jclass_ByteBuffer_allocateDirect = nullptr;
 #endif
 
 static bool done = false;
+static constexpr int32_t MAX_CAPTCHA_CHECKS = 5;
 
 ConnectionsManager::ConnectionsManager(int32_t instance) {
     instanceNum = instance;
@@ -1047,6 +1048,17 @@ TLObject *ConnectionsManager::getRequestWithMessageId(int64_t messageId) {
 }
 
 TLObject *ConnectionsManager::TLdeserialize(TLObject *request, uint32_t bytes, NativeByteBuffer *data) {
+    if (deserializeDepth >= MAX_DESERIALIZE_DEPTH) {
+        if (LOGS_ENABLED) DEBUG_E("too deep nesting in deserialize");
+        return nullptr;
+    }
+    deserializeDepth++;
+    TLObject *object = TLdeserializeInternal(request, bytes, data);
+    deserializeDepth--;
+    return object;
+}
+
+TLObject *ConnectionsManager::TLdeserializeInternal(TLObject *request, uint32_t bytes, NativeByteBuffer *data) {
     bool error = false;
     uint32_t position = data->position();
     uint32_t constructor = data->readUint32(&error);
@@ -1068,6 +1080,10 @@ TLObject *ConnectionsManager::TLdeserialize(TLObject *request, uint32_t bytes, N
             auto apiRequest = dynamic_cast<TL_api_request *>(request);
             if (apiRequest != nullptr) {
                 object = apiRequest->deserializeResponse(data, bytes, instanceNum, error);
+                if (object != nullptr && error) {
+                    delete object;
+                    object = nullptr;
+                }
                 if (LOGS_ENABLED) DEBUG_D("api request constructor 0x%x, don't parse", constructor);
             } else {
                 object = request->deserializeResponse(data, constructor, instanceNum, error);
@@ -1338,7 +1354,7 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             if (delegate != nullptr) {
                                 delegate->onIntegrityCheckClassic(instanceNum, request->requestToken, project, nonce);
                             }
-                        } else if (error->error_code == 403 && error->error_message.find(captchaCheck) != std::string::npos) {
+                        } else if (error->error_code == 403 && error->error_message.find(captchaCheck) != std::string::npos && request->captchaCheckGeneration < MAX_CAPTCHA_CHECKS && delegate != nullptr) {
                             discardResponse = true;
                             std::string err = error->error_message;
                             int index = err.find('_', captchaCheck.size());
@@ -1346,10 +1362,11 @@ void ConnectionsManager::processServerResponse(TLObject *message, int64_t messag
                             std::string key_id = err.substr(captchaCheck.size() + action.size() + 2, err.size() - (captchaCheck.size() + action.size() + 1));
                             request->awaitingIntegrityCheck = false;
                             request->awaitingCaptchaCheck = true;
+                            request->captchaCheckGeneration++;
                             request->startTime = 0;
                             request->startTimeMillis = 0;
                             if (delegate != nullptr) {
-                                delegate->onCaptchaCheck(instanceNum, request->requestToken, action, key_id);
+                                delegate->onCaptchaCheck(instanceNum, request->requestToken, request->captchaCheckGeneration, action, key_id);
                             }
                         } else {
                             bool failServerErrors = (request->requestFlags & RequestFlagFailOnServerErrors) == 0 || processEvenFailed;
@@ -2238,34 +2255,57 @@ void ConnectionsManager::receivedIntegrityCheckClassic(int32_t requestToken, std
     });
 }
 
-void ConnectionsManager::receivedCaptchaResult(int32_t requestTokensCount, int32_t* requestTokens, std::string token) {
-    scheduleTask([&, requestTokensCount, requestTokens, token] {
-        for (int i = 0; i < requestTokensCount; ++i) {
-            auto requestToken = requestTokens[i];
-            for (auto iter = runningRequests.begin(); iter != runningRequests.end(); iter++) {
-                Request *request = iter->get();
-                if (requestToken != 0 && request->requestToken == requestToken) {
-                    auto invoke = new invokeWithReCaptcha();
-                    invoke->token = token;
-                    invoke->query = std::move(request->rpcRequest);
-                    request->rpcRequest = std::unique_ptr<invokeWithReCaptcha>(invoke);
-                    request->serializedLength = request->rpcRequest->getObjectSize();
+// Remove previous captcha tokens, including those inside other owned RPC wrappers.
+// Drop cached compression when inspecting its original request: its bytes contain old tokens.
+static void removeCaptchaWrappers(std::unique_ptr<TLObject> &rpcRequest) {
+    auto *query = &rpcRequest;
+    while (*query != nullptr) {
+        if (auto captcha = dynamic_cast<invokeWithReCaptcha *>(query->get())) {
+            auto inner = std::move(captcha->query);
+            *query = std::move(inner);
+        } else if (auto packed = dynamic_cast<TL_gzip_packed *>(query->get())) {
+            if (packed->originalRequest == nullptr) {
+                break;
+            }
+            auto inner = std::move(packed->originalRequest);
+            *query = std::move(inner);
+        } else if (auto integrity = dynamic_cast<invokeWithGooglePlayIntegrity *>(query->get())) {
+            query = &integrity->query;
+        } else if (auto layer = dynamic_cast<invokeWithLayer *>(query->get())) {
+            query = &layer->query;
+        } else if (auto init = dynamic_cast<initConnection *>(query->get())) {
+            query = &init->query;
+        } else {
+            break;
+        }
+    }
+}
 
-                    request->awaitingCaptchaCheck = false;
-                    request->requestFlags &=~ RequestFlagFailOnServerErrors;
-
-                    if (LOGS_ENABLED) DEBUG_D("account%d: received captcha result token, wrapping %s", instanceNum, token.c_str());
-
-                    processRequestQueue(request->connectionType, request->datacenterId);
-
-                    return;
-                }
+void ConnectionsManager::receivedCaptchaResult(int32_t requestToken, int32_t generation, std::string token) {
+    scheduleTask([this, requestToken, generation, token] {
+        for (auto &runningRequest : runningRequests) {
+            Request *request = runningRequest.get();
+            if (requestToken == 0 || request->requestToken != requestToken) {
+                continue;
+            }
+            if (request->cancelled || request->completed || !request->awaitingCaptchaCheck ||
+                    request->captchaCheckGeneration != generation) {
+                return;
             }
 
-            if (LOGS_ENABLED) DEBUG_E("account%d: received captcha result token but no request %d found", instanceNum, requestToken);
-        }
+            removeCaptchaWrappers(request->rpcRequest);
+            auto invoke = new invokeWithReCaptcha();
+            invoke->token = token;
+            invoke->query = std::move(request->rpcRequest);
+            request->rpcRequest = std::unique_ptr<invokeWithReCaptcha>(invoke);
+            request->serializedLength = request->rpcRequest->getObjectSize();
+            request->awaitingCaptchaCheck = false;
+            request->requestFlags &= ~RequestFlagFailOnServerErrors;
 
-        delete[] requestTokens;
+            if (LOGS_ENABLED) DEBUG_D("account%d: received captcha result for request %d, generation %d", instanceNum, requestToken, generation);
+            processRequestQueue(request->connectionType, request->datacenterId);
+            return;
+        }
     });
 }
 

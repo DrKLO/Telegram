@@ -87,6 +87,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Components.conference.message.GroupCallMessageCell;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import org.telegram.ui.Components.voip.VoIPHelper;
@@ -933,7 +934,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         updatePlaybackButton(false);
     }
 
-    private HintView speedHintView;
+    private HintView2 speedHintView;
     private ViewGroup speedHintViewParent;
     private long lastPlaybackClick;
 
@@ -954,29 +955,28 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
     private void showSpeedHint() {
         if (fragment != null && speedHintViewParent != null) {
-            speedHintView = new HintView(getContext(), 6, true) {
-                @Override
-                public void setVisibility(int visibility) {
-                    super.setVisibility(visibility);
-                    if (visibility != View.VISIBLE) {
-                        try {
-                            speedHintViewParent.removeView(this);
-                        } catch (Exception e) {}
-                    }
-                }
-            };
-            speedHintView.setExtraTranslationY(dp(-12));
-            speedHintView.setText(getString(R.string.SpeedHint));
-            MarginLayoutParams params = new MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.rightMargin = dp(3);
-            speedHintViewParent.addView(speedHintView, params);
-            speedHintView.showForView(playbackSpeedButton, true);
+            final HintView2 hint = speedHintView = new HintView2(getContext(), HintView2.DIRECTION_TOP)
+                .setMultilineText(true)
+                .setDuration(2300)
+                .setHideByTouch(true)
+                .useScale(true)
+                .setInnerPadding(11, 6, 11, 7)
+                // the arrow on the speed button, as the old hint was
+                .setAnchorGap(-dp(6));
+            hint.setPadding(dp(8), 0, dp(8), 0);
+            if (fragment instanceof ChatActivity) {
+                hint.setGlass(((ChatActivity) fragment).getGlassHintFactory());
+            }
+            hint.setText(getString(R.string.SpeedHint));
+            hint.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(hint));
+            speedHintViewParent.addView(hint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            hint.showForView(playbackSpeedButton, true);
         }
     }
 
     public void onPanTranslationUpdate(float y) {
         if (speedHintView != null) {
-            speedHintView.setExtraTranslationY(dp(64 + 8) + y);
+            speedHintView.updatePosition();
         }
     }
 

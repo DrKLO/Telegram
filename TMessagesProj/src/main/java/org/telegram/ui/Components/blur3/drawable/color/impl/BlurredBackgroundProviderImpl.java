@@ -113,7 +113,7 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider scrimMenuBackground(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) ->
-                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.825f))
+                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, r), isDark ? 0.85f : 0.825f))
             .setStrokeColorTop(0x44FFFFFF, 0)
             .setStrokeColorBottom(0x22FFFFFF, 0)
             .setShadowColor(0x26000000, 0)
@@ -308,6 +308,23 @@ public class BlurredBackgroundProviderImpl {
             //.setShadowColor(0x20000000, 0)
             //.setShadowLayer(dpf2(10 / 3f), 0, dpf2(2 / 3f))
             .setStrokeWidth(dpf2(0.5f), dpf2(0.5f))
+            .build();
+    }
+
+    /** A hint (HintView2): dark in both themes for its white text, an even 1px stroke along the edge and the arrow. */
+    public static BlurredBackgroundProvider hint(Theme.ResourcesProvider resourcesProvider) {
+        return new BlurredBackgroundProviderBuilder(resourcesProvider)
+            .setBackgroundColor((r, isDark) -> {
+                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.82f : 0.76f;
+                final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
+                final int colorTarget = 0xFF282828;
+                return isDark ? Theme.multAlpha(0xFF111111, 0.9f) : solveSrcColor(colorBg, colorTarget, alpha);
+            })
+            .setStrokeColorTop(0x33FFFFFF, 0x33FFFFFF)
+            .setStrokeColorBottom(0x1AFFFFFF, 0x1AFFFFFF)
+            .setShadowColor(0x30333333, 0x30000000)
+            .setShadowLayer(dpf2(6f), 0, 0)
+            .setStrokeWidth(1, 1)
             .build();
     }
 

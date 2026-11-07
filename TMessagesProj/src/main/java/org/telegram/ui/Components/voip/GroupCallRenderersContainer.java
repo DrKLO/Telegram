@@ -39,7 +39,6 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
@@ -288,20 +287,12 @@ public class GroupCallRenderersContainer extends FrameLayout {
         pipView.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, 55)));
         pipView.setOnClickListener(v -> {
             if (isRtmpStream()) {
-                if (PipUtils.checkAnyPipPermissions(groupCallActivity.getParentActivity())) {
-                    RTMPStreamPipOverlay.show(groupCallActivity.getParentActivity());
-                    groupCallActivity.dismiss();
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    AlertsCreator.createDrawOverlayPermissionDialog(groupCallActivity.getParentActivity(), null, true).show();
-                }
+                RtmpStreamPipContent.openFloating(groupCallActivity.getParentActivity());
                 return;
             }
-            if (AndroidUtilities.checkInlinePermissions(groupCallActivity.getParentActivity())) {
-                GroupCallPip.clearForce();
-                groupCallActivity.dismiss();
-            } else {
-                AlertsCreator.createDrawOverlayGroupCallPermissionDialog(getContext()).show();
-            }
+            // our own bubble: an overlay window with the permission, an in-app one without it
+            GroupCallPip.clearForce();
+            groupCallActivity.dismiss();
         });
         addView(pipView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 12, 12, 12, 12));
 

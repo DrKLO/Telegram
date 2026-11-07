@@ -1044,6 +1044,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			hideCallTabsHintView.setDuration(3000);
 			hideCallTabsHintView.setJoint(1, -(12 + 13));
 			hideCallTabsHintView.setPadding(0, dp(4), 0, 0);
+			hideCallTabsHintView.setGlass(getBaseSimpleGlass().factory);
 			hideCallTabsHintView.setText(AndroidUtilities.replaceTags(getString(R.string.TapToHideCallsTab)));
 			// hideCallTabsHintView.setRounding(dp(12));
 			contentView.addView(hideCallTabsHintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80, Gravity.TOP));

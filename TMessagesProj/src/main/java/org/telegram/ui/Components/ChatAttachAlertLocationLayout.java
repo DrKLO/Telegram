@@ -34,13 +34,14 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
@@ -149,8 +150,22 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
     private int locationType;
 
+    // the row of the map in the list as the sheet opens; the map itself goes from the top of the sheet down to the
+    // bottom of the screen, under the cards and the tabs, and up to the top of the screen as the sheet gets there
+    // (see positionMap)
     private int overScrollHeight = AndroidUtilities.displaySize.x - ActionBar.getCurrentActionBarHeight() - AndroidUtilities.dp(66);
     private int mapHeight = overScrollHeight;
+    // the cards under the map as laid out, the rows after the map's but the scroll room
+    private int cardsHeight = -1;
+    // where the cards are in the list now, the map gets the touches above them
+    private int cardsTop = Integer.MAX_VALUE;
+    // the sheet's background under the layout, see onSheetBackground
+    private float sheetTop = Float.NaN, sheetRound = 1f;
+    // the strip at the top of the map that pulls the sheet, not the map
+    private static final int MAP_GRAB_HEIGHT = 32;
+    private final int[] windowLocation = new int[2];
+    // the map's part between the top of the sheet's content and the cards, in its coordinates
+    private int mapFreeTop, mapFreeBottom = Integer.MAX_VALUE;
     private int clipSize;
     private int nonClipSize;
 
@@ -292,7 +307,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
             @Override
             public boolean onInterceptTouchEvent(MotionEvent ev) {
-                if (ev.getY() > getMeasuredHeight() - clipSize) {
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && (ev.getY() < mapFreeTop || ev.getY() > mapFreeBottom)) {
                     return false;
                 }
                 return super.onInterceptTouchEvent(ev);
@@ -300,7 +315,8 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
 
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {
-                if (ev.getY() > getMeasuredHeight() - clipSize) {
+                // the map under the header, the sheet's edge and the cards is to be seen, not touched
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && (ev.getY() < mapFreeTop || ev.getY() > mapFreeBottom)) {
                     return false;
                 }
                 return super.dispatchTouchEvent(ev);
@@ -405,7 +421,21 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             @Override
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 super.onLayout(changed, l, t, r, b);
+                updateMapSpace();
                 updateClipView();
+            }
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                // the map is under the list: above the cards the touches are its own, but for a strip along the top of
+                // the sheet that pulls it, see MAP_GRAB_HEIGHT
+                if (ev.getActionMasked() == MotionEvent.ACTION_DOWN && ev.getY() < cardsTop && mapViewClip != null && mapViewClip.getVisibility() == VISIBLE) {
+                    final RecyclerView.ViewHolder first = findViewHolderForAdapterPosition(0);
+                    if (first != null && ev.getY() >= Math.max(0, first.itemView.getTop()) + AndroidUtilities.dp(MAP_GRAB_HEIGHT)) {
+                        return false;
+                    }
+                }
+                return super.dispatchTouchEvent(ev);
             }
         };
         setBlur3Capture(listView);
@@ -414,17 +444,20 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         listView.setClipToPadding(false);
         listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, true, resourcesProvider, parentAlert.isStoryLocationPicker, false, parentAlert.isBizLocationPicker));
         adapter.isPollAttach = parentAlert != null && (parentAlert.isPollAttach || parentAlert.isLocationPicker);
-        DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
-        itemAnimator.setDurations(350);
-        itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-        itemAnimator.setDelayAnimations(false);
-        itemAnimator.setSupportsChangeAnimations(false);
-        listView.setItemAnimator(itemAnimator);
+        // the cards are placed by translation at the bottom of the sheet (updateClipView), the animator would move them too
+        listView.setItemAnimator(null);
         adapter.setUpdateRunnable(this::updateClipView);
         adapter.setMyLocationDenied(locationDenied, askedForLocation);
         listView.setVerticalScrollBarEnabled(false);
         listView.setSections();
         listView.setLayoutManager(layoutManager = new FillLastLinearLayoutManager(context, LinearLayoutManager.VERTICAL, false, 0, listView) {
+            @Override
+            protected void calculateExtraLayoutSpace(@NonNull RecyclerView.State state, @NonNull int[] extraLayoutSpace) {
+                super.calculateExtraLayoutSpace(state, extraLayoutSpace);
+                // the cards are moved up to the bottom of the sheet from where the list lays them, maybe below it
+                extraLayoutSpace[1] = Math.max(extraLayoutSpace[1], listView.getHeight());
+            }
+
             @Override
             public void smoothScrollToPosition(RecyclerView recyclerView, RecyclerView.State state, int position) {
                 LinearSmoothScroller linearSmoothScroller = new LinearSmoothScroller(recyclerView.getContext()) {
@@ -458,9 +491,10 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                     int backgroundPaddingTop = parentAlert.getBackgroundPaddingTop();
                     int top = parentAlert.scrollOffsetY[0] - backgroundPaddingTop - offset;
                     if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight()) {
+                        // close to the top: pulled up all the way
                         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(0);
-                        if (holder != null && holder.itemView.getTop() > (mapHeight - overScrollHeight)) {
-                            listView.smoothScrollBy(0, holder.itemView.getTop() - (mapHeight - overScrollHeight));
+                        if (holder != null && holder.itemView.getTop() > 0) {
+                            listView.smoothScrollBy(0, holder.itemView.getTop());
                         }
                     }
                 }
@@ -539,9 +573,10 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
                 map.animateCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLngZoom(new IMapsProvider.LatLng(liveLocation.marker.getPosition().latitude, liveLocation.marker.getPosition().longitude), map.getMaxZoomLevel() - 4));
             }
         });
-        adapter.setOverScrollHeight(overScrollHeight + dp(16));
+        adapter.setOverScrollHeight(overScrollHeight);
 
-        addView(mapViewClip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
+        // under the list: the cards are over it
+        addView(mapViewClip, indexOfChild(listView), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP));
 
         mapView = ApplicationLoader.getMapsProvider().onCreateMapView(context);
         mapView.setOnDispatchTouchEventInterceptor((ev, origMethod) -> {
@@ -687,9 +722,22 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         updateEmptyView();
     }
 
+    /** The map goes up under the header and the status bar. */
+    @Override
+    public boolean disableTopFade() {
+        return true;
+    }
+
+    /** The cards are at the bottom of the sheet, over the map: the fade is only for the tabs, when there are tabs. */
+    @Override
+    public boolean disableBottomFade() {
+        return !hasTabs();
+    }
+
+    /** The tabs stay with the map pulled up: the cards are over them. */
     @Override
     public boolean shouldHideBottomButtons() {
-        return !locationDenied;
+        return false;
     }
 
     @Override
@@ -799,7 +847,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
     public void onPreMeasure(int availableWidth, int availableHeight) {
         int padding;
         if (parentAlert.actionBar.isSearchFieldVisible() || parentAlert.sizeNotifierFrameLayout.measureKeyboardHeight() > AndroidUtilities.dp(20)) {
-            padding = mapHeight - overScrollHeight;
+            padding = 0;
             parentAlert.setAllowNestedScroll(false);
         } else {
             if (!AndroidUtilities.isTablet() && AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
@@ -813,7 +861,9 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
             parentAlert.setAllowNestedScroll(true);
         }
-        listView.setPaddingWithoutRequestLayout(0, padding, 0, listPaddingBottom);
+        // the list ends over the navigation bar, the cards keep over the tabs themselves (getBottomInset); the room to
+        // pull the sheet up is as high as its top padding (the last row fills the rest, FillLastLinearLayoutManager)
+        listView.setPaddingWithoutRequestLayout(0, padding, 0, getMinBottomInset());
         searchListView.setPaddingWithoutRequestLayout(0, 0, 0, listPaddingBottom);
     }
 
@@ -1037,82 +1087,257 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         }
     }
 
+    /**
+     * The map takes the room the cards leave. As the sheet opens, the cards are at its bottom under the map's row; as
+     * it is pulled up (the list scrolls by up to its top padding into the room below the cards), the cards stay at the
+     * bottom and the map grows to the top of the sheet.
+     */
+    private void updateMapSpace() {
+        if (mapView == null || mapViewClip == null || getMeasuredHeight() == 0) {
+            return;
+        }
+        final RecyclerView.ViewHolder first = listView.findViewHolderForAdapterPosition(0);
+        if (first != null) {
+            int bottom = first.itemView.getBottom();
+            boolean all = true;
+            for (int i = 1, count = adapter.getItemCount(); i < count; i++) {
+                if (adapter.getItemViewType(i) == LocationActivityAdapter.VIEW_TYPE_EMPTY) {
+                    continue;
+                }
+                final RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(i);
+                if (holder == null) {
+                    all = false;
+                    break;
+                }
+                bottom = Math.max(bottom, holder.itemView.getBottom());
+            }
+            if (all) {
+                cardsHeight = bottom - first.itemView.getBottom();
+            }
+        }
+        final int cards = cardsHeight >= 0 ? cardsHeight : buttonsHeight();
+        // as it opens the cards are over the tabs, the map's row above them; pulled up, the map gets the whole sheet
+        final int room = listView.getMeasuredHeight() - getDefaultBottomInset() - cards;
+        final int newMapHeight = getMeasuredHeight() + getMapExtraTop();
+        final int newOverScrollHeight = Math.max(AndroidUtilities.dp(120), room - listView.getPaddingTop());
+        if (newMapHeight != mapHeight || newOverScrollHeight != overScrollHeight) {
+            mapHeight = newMapHeight;
+            overScrollHeight = newOverScrollHeight;
+            AndroidUtilities.runOnUIThread(this::applyMapSpace);
+        }
+    }
+
+    /** Under the cards: the tabs with a gap over them, as long as they are shown (see shouldHideBottomButtons). */
+    private int getBottomInset() {
+        final float hidden = hasTabs() && shouldHideBottomButtons() && parentAlert.actionBar != null ? parentAlert.actionBar.getAlpha() : 0;
+        return (int) AndroidUtilities.lerp(getDefaultBottomInset(), getMinBottomInset(), hidden);
+    }
+
+    /** The picker of a story's or a business' location has no tabs. */
+    private boolean hasTabs() {
+        return parentAlert.buttonsRecyclerViewWrapper != null && parentAlert.buttonsRecyclerViewWrapper.getVisibility() != GONE;
+    }
+
+    private int getDefaultBottomInset() {
+        return hasTabs() ? listPaddingBottom + AndroidUtilities.dp(8) : getMinBottomInset();
+    }
+
+    private int getMinBottomInset() {
+        return hasTabs() && !shouldHideBottomButtons() ? getDefaultBottomInset() : Math.min(listPaddingBottom, AndroidUtilities.navigationBarHeight);
+    }
+
+    private float headerAlpha = -1;
+    private final ViewTreeObserver.OnPreDrawListener headerAlphaListener = () -> {
+        final float alpha = parentAlert.actionBar != null ? parentAlert.actionBar.getAlpha() : 0;
+        if (alpha != headerAlpha) {
+            headerAlpha = alpha;
+            updateClipView();
+        }
+        return true;
+    };
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        getViewTreeObserver().addOnPreDrawListener(headerAlphaListener);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        getViewTreeObserver().removeOnPreDrawListener(headerAlphaListener);
+    }
+
+    private void applyMapSpace() {
+        if (mapView == null || mapViewClip == null) {
+            return;
+        }
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) mapViewClip.getLayoutParams();
+        if (layoutParams != null && layoutParams.height != mapHeight) {
+            layoutParams.height = mapHeight;
+            mapViewClip.setLayoutParams(layoutParams);
+        }
+        layoutParams = (FrameLayout.LayoutParams) mapView.getView().getLayoutParams();
+        if (layoutParams != null && layoutParams.height != getMapContentHeight()) {
+            layoutParams.height = getMapContentHeight();
+            mapView.getView().setLayoutParams(layoutParams);
+        }
+        adapter.setOverScrollHeight(overScrollHeight);
+        // the row bound now, the adapter keeps only the last one it made
+        final RecyclerView.ViewHolder first = listView.findViewHolderForAdapterPosition(0);
+        if (first != null && first.itemView.getLayoutParams() != null && first.itemView.getLayoutParams().height != overScrollHeight) {
+            first.itemView.getLayoutParams().height = overScrollHeight;
+            first.itemView.requestLayout();
+        }
+        // and the last row, it fills the list after the others: the room to pull the sheet up stays as high as before
+        layoutManager.setAdditionalHeight(0);
+        listView.requestLayout();
+        updateClipView();
+    }
+
     private void updateClipView() {
         if (mapView == null || mapViewClip == null) {
             return;
         }
-        int height;
-        int top;
         RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(0);
+        final int top = holder != null ? holder.itemView.getTop() : -mapViewClip.getMeasuredHeight();
+        // the cards stay at the bottom of the sheet, over the tabs while they are there
+        final int cards = cardsHeight >= 0 ? cardsHeight : buttonsHeight();
+        cardsTop = listView.getMeasuredHeight() - getBottomInset() - cards;
         if (holder != null) {
-            top = (int) (holder.itemView.getY());
-            height = overScrollHeight + Math.min(top, 0);
-        } else {
-            top = -mapViewClip.getMeasuredHeight();
-            height = 0;
-        }
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) mapViewClip.getLayoutParams();
-        if (layoutParams != null) {
-            if (height <= 0) {
-                if (mapView.getView().getVisibility() == View.VISIBLE) {
-                    mapView.getView().setVisibility(INVISIBLE);
-                    mapViewClip.setVisibility(INVISIBLE);
-                }
-                mapView.getView().setTranslationY(top);
-                return;
-            }
-            if (mapView.getView().getVisibility() == View.INVISIBLE) {
-                mapView.getView().setVisibility(VISIBLE);
-                mapViewClip.setVisibility(VISIBLE);
-            }
-            int trY = Math.max(0, -(top - mapHeight + overScrollHeight) / 2);
-            int maxClipSize = mapHeight - overScrollHeight;
-            int totalToMove = listView.getPaddingTop() - maxClipSize;
-            float moveProgress = 1.0f - (Math.max(0.0f, Math.min(1.0f, (listView.getPaddingTop() - top) / (float) totalToMove)));
-            int prevClipSize = clipSize;
-            if (locationDenied && isTypeSend()) {
-                maxClipSize += Math.min(top, listView.getPaddingTop());
-            }
-            clipSize = (int) (maxClipSize * moveProgress);
-
-            mapView.getView().setTranslationY(trY);
-            nonClipSize = maxClipSize - clipSize;
-            mapViewClip.invalidate();
-
-            mapViewClip.setTranslationY(top - nonClipSize);
-            if (map != null) {
-                map.setPadding(0, AndroidUtilities.dp(6), 0, clipSize + AndroidUtilities.dp(6));
-            }
-            float translationY = Math.min(Math.max(nonClipSize - top, 0), mapHeight - mapTypeButton.getMeasuredHeight() - AndroidUtilities.dp(64 + 16));
-            mapTypeButton.setTranslationY(translationY);
-            locationButton.setTranslationY(-clipSize);
-            markerImageView.setTranslationY(markerTop = (mapHeight - clipSize) / 2 - AndroidUtilities.dp(48) + trY);
-            if (prevClipSize != clipSize) {
-                IMapsProvider.LatLng location;
-                if (userLocationMoved && userLocation != null) {
-                    location = new IMapsProvider.LatLng(userLocation.getLatitude(), userLocation.getLongitude());
-                } else if (myLocation != null) {
-                    location = new IMapsProvider.LatLng(myLocation.getLatitude(), myLocation.getLongitude());
-                } else {
-                    location = null;
-                }
-                if (location != null && map != null) {
-                    map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(location));
-                }
-            }
-
-            if (locationDenied && isTypeSend()) {
-//                adapter.setOverScrollHeight(overScrollHeight + top);
-//                // TODO: fix ripple effect on buttons
-                final int count = adapter.getItemCount();
-                for (int i = 1; i < count; ++i) {
-                    holder = listView.findViewHolderForAdapterPosition(i);
-                    if (holder != null) {
-                        holder.itemView.setTranslationY(listView.getPaddingTop() - top);
-                    }
+            final int shift = cardsTop - holder.itemView.getBottom();
+            for (int i = 0, count = listView.getChildCount(); i < count; i++) {
+                final View child = listView.getChildAt(i);
+                if (listView.getChildAdapterPosition(child) > 0) {
+                    child.setTranslationY(shift);
                 }
             }
         }
+        positionMap();
+    }
+
+    /** How far above the layout the map may go: up to the top of the screen, under the status bar. */
+    private int getMapExtraTop() {
+        return AndroidUtilities.statusBarHeight + AndroidUtilities.dp(8);
+    }
+
+    @Override
+    public void onSheetBackground(float top, float round) {
+        if (sheetTop != top || sheetRound != round) {
+            sheetTop = top;
+            sheetRound = round;
+            positionMap();
+        }
+    }
+
+    /**
+     * The map from the top of the sheet (to the top of the screen as it is pulled up there) down to the bottom of the
+     * screen, under the cards and the tabs; its camera centered between the top of the sheet's content and the cards.
+     */
+    private void positionMap() {
+        if (mapView == null || mapViewClip == null || listView == null) {
+            return;
+        }
+        final RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(0);
+        final int rowTop = holder != null ? listView.getTop() + holder.itemView.getTop() : Integer.MAX_VALUE;
+        if (holder == null || rowTop >= getMeasuredHeight()) {
+            if (mapView.getView().getVisibility() == View.VISIBLE) {
+                mapView.getView().setVisibility(INVISIBLE);
+                mapViewClip.setVisibility(INVISIBLE);
+            }
+            return;
+        }
+        if (mapView.getView().getVisibility() == View.INVISIBLE) {
+            mapView.getView().setVisibility(VISIBLE);
+            mapViewClip.setVisibility(VISIBLE);
+        }
+        // as the sheet is round, the map starts under its edge; as the sheet squares at the top of the screen, the map
+        // goes up to it, under the status bar
+        float top = rowTop;
+        if (sheetRound < 1f) {
+            getLocationInWindow(windowLocation);
+            top = Math.min(rowTop, AndroidUtilities.lerp(-windowLocation[1], rowTop, sheetRound));
+        }
+        top = Math.max(top, -getMapExtraTop());
+        final int mapTop = (int) top;
+
+        final int freeTop = listView.getTop() + Math.max(0, holder.itemView.getTop()) - mapTop;
+        final int freeBottom = listView.getTop() + Math.min(cardsTop, listView.getMeasuredHeight()) - mapTop;
+        mapFreeTop = freeTop + AndroidUtilities.dp(MAP_GRAB_HEIGHT);
+        mapFreeBottom = freeBottom;
+
+        clipSize = Math.max(0, mapHeight - (getMeasuredHeight() - mapTop));
+        nonClipSize = 0;
+        mapViewClip.setTranslationY(mapTop);
+        mapViewClip.invalidate();
+
+        mapTypeButton.setTranslationY(freeTop);
+        locationButton.setTranslationY(-Math.max(0, mapHeight - freeBottom));
+
+        // the marker is in the middle of the free part, from the top of the sheet's content to the cards; the map is
+        // moved with it as a view, the camera is never moved for the sheet: it would lag behind the view
+        final int listTop = listView.getTop();
+        final int bottom = mapTop + freeBottom;
+        final float centerMin = (listTop + bottom) / 2f;
+        final float centerMax = Math.max(centerMin, (listTop + listView.getPaddingTop() + bottom) / 2f);
+        final int travel = (int) Math.ceil(centerMax - centerMin);
+        if (travel != mapTravel) {
+            mapTravel = travel;
+            AndroidUtilities.runOnUIThread(this::applyMapSpace);
+        }
+        final float center = Math.max(centerMin, Math.min(centerMax, (mapTop + freeTop + bottom) / 2f));
+        // the camera's center in the map view, the map view up to the top of the screen at any center
+        final int mapCenter = (int) Math.ceil(centerMax) + getMapExtraTop();
+        final float mapViewTop = center - mapCenter;
+        mapView.getView().setTranslationY(mapViewTop - mapTop);
+
+        final int newMarkerTop = (int) (center - mapTop) - AndroidUtilities.dp(48);
+        if (newMarkerTop != markerTop) {
+            markerImageView.setTranslationY(markerTop = newMarkerTop);
+        }
+
+        // the padding keeps the camera at mapCenter, its bottom at the cards for the logo: the map doesn't move with it
+        final int viewHeight = mapView.getView().getMeasuredHeight() > 0 ? mapView.getView().getMeasuredHeight() : getMapContentHeight();
+        final int padBottom = Math.max(0, (int) (viewHeight - (bottom - mapViewTop)));
+        final int padTop = 2 * mapCenter - viewHeight + padBottom;
+        if (map != null && (padTop != mapPaddingTop || padBottom != mapPaddingBottom)) {
+            final boolean first = mapPaddingTop < 0;
+            // the center moved in the map view (the cards measured, the list's padding changed), and the view the other
+            // way: the point at the center of the screen stays there, the camera is kept on it
+            IMapsProvider.LatLng target = null;
+            if (first) {
+                target = getMapTarget();
+            } else if (mapCenter != appliedMapCenter && map.getCameraPosition() != null) {
+                target = map.getCameraPosition().target;
+            }
+            appliedMapCenter = mapCenter;
+            mapPaddingTop = padTop;
+            mapPaddingBottom = padBottom;
+            map.setPadding(0, padTop + AndroidUtilities.dp(6), 0, padBottom + AndroidUtilities.dp(6));
+            if (target != null) {
+                map.moveCamera(ApplicationLoader.getMapsProvider().newCameraUpdateLatLng(target));
+            }
+        }
+    }
+
+    private int appliedMapCenter;
+
+    /** The map view: over the whole layout, and as much more as the marker travels with the sheet. */
+    private int getMapContentHeight() {
+        return mapHeight + mapTravel + AndroidUtilities.dp(10);
+    }
+
+    private int mapTravel;
+    private int mapPaddingTop = -1, mapPaddingBottom = -1;
+
+    /** The marker's location: picked by the user, or the user's own. */
+    private IMapsProvider.LatLng getMapTarget() {
+        if (userLocationMoved && userLocation != null) {
+            return new IMapsProvider.LatLng(userLocation.getLatitude(), userLocation.getLongitude());
+        } else if (myLocation != null) {
+            return new IMapsProvider.LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+        }
+        return null;
     }
 
     private boolean isTypeSend() {
@@ -1132,19 +1357,13 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             return;
         }
         int height = ActionBar.getCurrentActionBarHeight();
-        int maxMapHeight = AndroidUtilities.displaySize.y - height - buttonsHeight() - AndroidUtilities.dp(90);
-        overScrollHeight = AndroidUtilities.dp(189);
-        mapHeight = Math.max(overScrollHeight, locationDenied && isTypeSend() ? maxMapHeight : Math.min(AndroidUtilities.dp(310), maxMapHeight));
-        if (locationDenied && isTypeSend()) {
-            overScrollHeight = mapHeight;
-        }
 
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) listView.getLayoutParams();
         layoutParams.topMargin = height;
         listView.setLayoutParams(layoutParams);
 
         layoutParams = (FrameLayout.LayoutParams) mapViewClip.getLayoutParams();
-        layoutParams.topMargin = height;
+        layoutParams.topMargin = 0;
         layoutParams.height = mapHeight;
         mapViewClip.setLayoutParams(layoutParams);
 
@@ -1152,7 +1371,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         layoutParams.topMargin = height;
         searchListView.setLayoutParams(layoutParams);
 
-        adapter.setOverScrollHeight((locationDenied && isTypeSend() ? overScrollHeight - listView.getPaddingTop() : overScrollHeight) + dp(16));
+        adapter.setOverScrollHeight(overScrollHeight);
         layoutParams = (FrameLayout.LayoutParams) mapView.getView().getLayoutParams();
         if (layoutParams != null) {
             layoutParams.height = mapHeight + AndroidUtilities.dp(10);

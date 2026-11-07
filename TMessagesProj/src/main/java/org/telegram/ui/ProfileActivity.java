@@ -247,7 +247,6 @@ import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.Forum.ForumUtilities;
-import org.telegram.ui.Components.HintView;
 import org.telegram.ui.Components.HintsController;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.ImageUpdater;
@@ -396,7 +395,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private RLottieDrawable cameraDrawable;
     private RLottieDrawable cellCameraDrawable;
 
-    private HintView fwdRestrictedHint;
+    private HintView2 fwdRestrictedHint;
 //    private ProfileMetaballView metaball;
     private FrameLayout avatarContainer;
     private FrameLayout avatarContainer2;
@@ -2836,7 +2835,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new PeerColorActivity(0).startOnProfile().setOnApplied(ProfileActivity.this));
                 } else if (id == copy_link_profile) {
                     TLRPC.User user = getMessagesController().getUser(userId);
-                    AndroidUtilities.addToClipboard(getMessagesController().linkPrefix + "/" + UserObject.getPublicUsername(user));
+                    if (AndroidUtilities.addToClipboard(getMessagesController().linkPrefix + "/" + UserObject.getPublicUsername(user))) {
+                        BulletinFactory.of(ProfileActivity.this).createCopyLinkBulletin().show();
+                    }
                 } else if (id == set_username) {
                     presentFragment(new ChangeUsernameActivity());
                 } else if (id == logout) {
@@ -5739,9 +5740,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         updateSelectedMediaTabText();
 
-        fwdRestrictedHint = new HintView(getParentActivity(), 9);
-        fwdRestrictedHint.setAlpha(0);
-        frameLayout.addView(fwdRestrictedHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 12, 0, 12, 0));
+        fwdRestrictedHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM)
+            .setMultilineText(true)
+            .setMaxWidth(310)
+            .setDuration(2300)
+            .setHideByTouch(true)
+            .useScale(true)
+            .setInnerPadding(11, 6, 11, 7)
+            .setAnchorGap(dp(4));
+        fwdRestrictedHint.setPadding(dp(8), 0, dp(8), 0);
+        fwdRestrictedHint.setGlass(getBaseSimpleGlass().factory);
+        frameLayout.addView(fwdRestrictedHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
         sharedMediaLayout.setForwardRestrictedHint(fwdRestrictedHint);
 
         ViewGroup decorView;
@@ -11374,6 +11383,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 emojiStatusDrawable.attach();
             }
         }
+        // the first status is not a change: popping it in from zero blinks over the chat title at the start of the open transition
+        if (emojiStatusDrawable.isEmpty()) {
+            animated = false;
+        }
         emojiStatusGiftId = null;
         if (emojiStatus instanceof TLRPC.TL_emojiStatus) {
             final TLRPC.TL_emojiStatus status = (TLRPC.TL_emojiStatus) emojiStatus;
@@ -14716,7 +14729,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     new SearchResult(604, getString(R.string.ArchivedStickers), null, getString(R.string.StickersName), R.drawable.msg2_sticker, () -> f.presentFragment(new ArchivedStickersActivity(MediaDataController.TYPE_IMAGE))).withLink("tg://settings/appearance/stickers-and-emoji/archived"),
                     new SearchResult(605, getString(R.string.ArchivedMasks), null, getString(R.string.StickersName), R.drawable.msg2_sticker, () -> f.presentFragment(new ArchivedStickersActivity(MediaDataController.TYPE_MASK))),
                     new SearchResult(606, getString(R.string.LargeEmoji), "largeEmojiRow", getString(R.string.StickersName), R.drawable.msg2_sticker, () -> f.presentFragment(new StickersActivity(MediaDataController.TYPE_IMAGE, null))).withLink("tg://settings/appearance/stickers-and-emoji/emoji/large"),
-                    new SearchResult(607, getString(R.string.LoopAnimatedStickers), "loopRow", getString(R.string.StickersName), R.drawable.msg2_sticker, () -> f.presentFragment(new StickersActivity(MediaDataController.TYPE_IMAGE, null))),
+                    new SearchResult(607, getString(R.string.LoopAnimatedStickers), null, getString(R.string.PowerUsage), getString(R.string.LiteOptionsStickers), R.drawable.msg2_battery, () -> {
+                        LiteModeSettingsActivity set = new LiteModeSettingsActivity();
+                        f.presentFragment(set);
+                        set.setExpanded(LiteMode.FLAGS_ANIMATED_STICKERS, true);
+                        set.scrollToFlags(LiteMode.FLAG_ANIMATED_STICKERS_CHAT);
+                    }),
                     new SearchResult(608, getString(R.string.Emoji), null, getString(R.string.StickersName), R.drawable.input_smile, () -> f.presentFragment(new StickersActivity(MediaDataController.TYPE_EMOJIPACKS, null))).withLink("tg://settings/appearance/stickers-and-emoji/emoji"),
                     new SearchResult(609, getString(R.string.SuggestAnimatedEmoji), "suggestAnimatedEmojiRow", getString(R.string.StickersName), getString(R.string.Emoji), R.drawable.input_smile, () -> f.presentFragment(new StickersActivity(MediaDataController.TYPE_EMOJIPACKS, null))).withLink("tg://settings/appearance/stickers-and-emoji/emoji/suggest"),
                     new SearchResult(610, getString(R.string.FeaturedEmojiPacks), "featuredStickersHeaderRow", getString(R.string.StickersName), getString(R.string.Emoji), R.drawable.input_smile, () -> f.presentFragment(new StickersActivity(MediaDataController.TYPE_EMOJIPACKS, null))),
@@ -16257,22 +16275,29 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         String copyButton = getString(R.string.Copy);
         String textToCopy = null;
+        String copiedText = getString(R.string.TextCopied);
         if (position == channelInfoRow || position == userInfoRow || position == bioRow) {
             textToCopy = userFull.about;
+            if (position == bioRow) copiedText = getString(R.string.BioCopied);
         } else if (position == bizHoursRow) {
             textToCopy = OpeningHoursActivity.toString(currentAccount, user, userFull.business_work_hours);
             copyButton = getString(R.string.ProfileHoursCopy);
+            copiedText = getString(R.string.BusinessHoursCopied);
         } else if (position == bizLocationRow) {
             textToCopy = userFull.business_location.address;
             copyButton = getString(R.string.ProfileLocationCopy);
+            copiedText = getString(R.string.BusinessLocationCopied);
         } else if (position == usernameRow) {
             textToCopy = UserObject.getPublicUsername(user);
             if (textToCopy != null) textToCopy = "@" + textToCopy;
             copyButton = getString(R.string.ProfileCopyUsername);
+            copiedText = getString(R.string.UsernameCopied);
         } else if (position == phoneRow) {
             textToCopy = user.phone;
+            copiedText = getString(R.string.PhoneCopied);
         } else if (position == birthdayRow) {
             textToCopy = UserInfoActivity.birthdayString(userInfo.birthday);
+            copiedText = getString(R.string.BirthdayCopied);
         }
 
         final ItemOptions itemOptions = ItemOptions.makeOptions(this, cell);
@@ -16293,8 +16318,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (textToCopy != null) {
             final String text = textToCopy;
+            final String copied = copiedText;
             itemOptions.add(R.drawable.msg_copy, copyButton, () -> {
-                AndroidUtilities.addToClipboard(text);
+                if (AndroidUtilities.addToClipboard(text)) {
+                    BulletinFactory.of(ProfileActivity.this).createCopyBulletin(copied).show();
+                }
             });
         }
 

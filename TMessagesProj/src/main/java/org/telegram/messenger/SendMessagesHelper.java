@@ -1489,12 +1489,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
         } else if (id == NotificationCenter.fileLoaded) {
             String path = (String) args[0];
-            ArrayList<DelayedMessage> arr = delayedMessages.get(path);
+            ArrayList<DelayedMessage> arr = delayedMessages.remove(path);
             if (arr != null) {
                 for (int a = 0; a < arr.size(); a++) {
                     performSendDelayedMessage(arr.get(a));
                 }
-                delayedMessages.remove(path);
             }
         } else if (id == NotificationCenter.httpFileDidFailedLoad || id == NotificationCenter.fileLoadFailed) {
             String path = (String) args[0];
@@ -2190,7 +2189,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     if (bitmapFinal[0] != null && keyFinal[0] != null) {
                         ImageLoader.getInstance().putImageToCache(new BitmapDrawable(bitmapFinal[0]), keyFinal[0], false);
                     }
-                    SendMessageParams sendMessageParams = SendMessageParams.of((TLRPC.TL_document) finalDocument, videoEditedInfo, null, peer, replyToMsg, replyToTopMsg, null, null, null, null, notify, scheduleDate, scheduleRepeatPeriod, 0, parentObject, sendAnimationData, false);
+                    // secret chats re-upload the gif as a document; videoEditedInfo would turn it into a video that is converted from a missing local file
+                    SendMessageParams sendMessageParams = SendMessageParams.of((TLRPC.TL_document) finalDocument, DialogObject.isEncryptedDialog(peer) ? null : videoEditedInfo, null, peer, replyToMsg, replyToTopMsg, null, null, null, null, notify, scheduleDate, scheduleRepeatPeriod, 0, parentObject, sendAnimationData, false);
                     sendMessageParams.replyToStoryItem = storyItem;
                     sendMessageParams.replyQuote = quote;
                     sendMessageParams.sendMessageChatArguments = sendMessageChatArguments;
@@ -6764,6 +6764,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         media.flags &=~ 64;
                         media.video_cover = null;
                         req.media = media;
+                        final boolean spoiler = media.spoiler;
+                        final int ttlSeconds = media.ttl_seconds;
                         getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
                             if (res instanceof TLRPC.TL_messageMediaDocument) {
                                 final TLRPC.TL_messageMediaDocument mediaDocument = (TLRPC.TL_messageMediaDocument) res;
@@ -6771,6 +6773,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 final TLRPC.TL_inputMediaUploadedPhoto newMedia = new TLRPC.TL_inputMediaUploadedPhoto();
                                 newMedia.live_photo = true;
                                 newMedia.file = message.coverFile;
+                                newMedia.spoiler = spoiler;
+                                if (ttlSeconds != 0) {
+                                    newMedia.ttl_seconds = ttlSeconds;
+                                    newMedia.flags |= 2;
+                                }
                                 newMedia.video = new TLRPC.TL_inputDocument();
                                 newMedia.video.id = mediaDocument.document.id;
                                 newMedia.video.access_hash = mediaDocument.document.access_hash;
@@ -6861,6 +6868,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                                 message.obj.attachPathExists = true;
                             }
                         }
+                        if (file == null || !file.exists() && message.obj.getDocument() != null) {
+                            file = getFileLoader().getPathToAttach(message.obj.getDocument(), true);
+                            if (file != null && file.exists()) {
+                                message.obj.messageOwner.attachPath = location = file.getAbsolutePath();
+                                message.obj.attachPathExists = true;
+                            }
+                        }
                         if (file == null || !file.exists()) {
                             putToDelayedMessages(FileLoader.getAttachFileName(document), message);
                             getFileLoader().loadFile(document, message.parentObject, FileLoader.PRIORITY_HIGH, 0);
@@ -6920,6 +6934,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                         if (file == null || !file.exists() && message.obj.getDocument() != null) {
                             file = getFileLoader().getPathToAttach(message.obj.getDocument(), false);
+                            if (file != null && file.exists()) {
+                                message.obj.messageOwner.attachPath = location = file.getAbsolutePath();
+                                message.obj.attachPathExists = true;
+                            }
+                        }
+                        if (file == null || !file.exists() && message.obj.getDocument() != null) {
+                            file = getFileLoader().getPathToAttach(message.obj.getDocument(), true);
                             if (file != null && file.exists()) {
                                 message.obj.messageOwner.attachPath = location = file.getAbsolutePath();
                                 message.obj.attachPathExists = true;
@@ -11892,9 +11913,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             String rotation = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
             if (rotation != null) {
                 int val = Utilities.parseInt(rotation);
-                if (videoEditedInfo != null) {
-                    videoEditedInfo.rotationValue = val;
-                } else if (val == 90 || val == 270) {
+                if (videoEditedInfo == null && (val == 90 || val == 270)) {
                     int temp = attributeVideo.w;
                     attributeVideo.w = attributeVideo.h;
                     attributeVideo.h = temp;
@@ -12205,7 +12224,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         if (videoEditedInfo.cropState != null) {
                             w = videoEditedInfo.cropState.transformWidth;
                             h = videoEditedInfo.cropState.transformHeight;
-                            rotation += videoEditedInfo.cropState.transformRotation;
                         } else {
                             w = videoEditedInfo.resultWidth;
                             h = videoEditedInfo.resultHeight;

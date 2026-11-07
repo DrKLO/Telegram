@@ -921,7 +921,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
                 ArrayList<TLObject> chats = BotStarsController.getInstance(currentAccount).getAdmined();
                 chats.add(0, UserConfig.getInstance(currentAccount).getCurrentUser());
 
-                ItemOptions i = ItemOptions.makeOptions(sheet.getContainerView(), resourcesProvider, chip);
+                ItemOptions i = ItemOptions.makeOptions(sheet.getContainerView(), resourcesProvider, chip, false, false, true);
                 for (TLObject obj : chats) {
                     long did;
                     if (obj instanceof TLRPC.User) {
@@ -1172,7 +1172,7 @@ public class ChannelAffiliateProgramsFragment extends GradientHeaderActivity imp
                 ArrayList<TLObject> chats = BotStarsController.getInstance(currentAccount).getAdmined();
                 chats.add(0, UserConfig.getInstance(currentAccount).getCurrentUser());
 
-                ItemOptions i = ItemOptions.makeOptions(sheet.getContainerView(), resourcesProvider, chip);
+                ItemOptions i = ItemOptions.makeOptions(sheet.getContainerView(), resourcesProvider, chip, false, false, true);
                 for (TLObject obj : chats) {
                     long did;
                     if (obj instanceof TLRPC.User) {

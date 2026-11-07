@@ -509,6 +509,10 @@
     <string name="MegaPublicInfo">Public groups can be found in search, chat history is available to everyone and anyone can join.</string>
     <string name="ChannelPrivate">Private Channel</string>
     <string name="MegaPrivate">Private Group</string>
+    <string name="MakeChannelPrivateTitle">Make Channel Private?</string>
+    <string name="MakeChannelPrivateText">Your channel’s public link **%1$s** will be removed, and this username will become available to anyone. Continue?</string>
+    <string name="MakeGroupPrivateTitle">Make Group Private?</string>
+    <string name="MakeGroupPrivateText">Your group’s public link **%1$s** will be removed, and this username will become available to anyone. Continue?</string>
     <string name="MonoforumMessages">direct messages</string>
     <string name="ChannelPrivateInfo">Private channels can only be joined via an invite link.</string>
     <string name="MegaPrivateInfo">Private groups can only be joined if you were invited or have an invite link.</string>
@@ -11665,4 +11669,13 @@
     <string name="UnsupportedContent">Unsupported content</string>
     <string name="LocationPoweredBy">Powered by</string>
     <string name="SettingsExperimental">Experimental</string>
+    <string name="FpnvConsentTitle">Log In with SIM Card</string>
+    <string name="FpnvConsentText">Telegram can confirm the phone number of this SIM card with your carrier and log you in without a code.</string>
+    <string name="FpnvConsentContinue">Continue</string>
+    <string name="FpnvConsentCarrier">Carrier</string>
+    <string name="FpnvConsentSimSlot">SIM Slot</string>
+    <string name="FpnvConsentSimSlotValue">SIM %1$d</string>
+    <string name="FpnvConsentCountry">Country</string>
+    <string name="FpnvConsentMccMnc">MCC / MNC</string>
+    <string name="FpnvConsentPhoneNumber">Phone Number</string>
 </resources>

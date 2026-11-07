@@ -570,6 +570,15 @@ public class ProxySettingsActivity extends BaseFragment {
             String secret = inputFields[FIELD_SECRET].getText().toString();
             String url;
             try {
+                if (currentType == ProxySettings.Type.WEB) {
+                    showShareQrCode(context, ProxySettings.builder()
+                        .setType(currentType)
+                        .setAddress(address)
+                        .setSecret(secret)
+                        .build()
+                        .getLink());
+                    return;
+                }
                 if (!TextUtils.isEmpty(address)) {
                     params.append("server=").append(URLEncoder.encode(address, "UTF-8"));
                 }
@@ -606,11 +615,7 @@ public class ProxySettingsActivity extends BaseFragment {
             if (params.length() == 0) {
                 return;
             }
-            String link = url + params.toString();
-            QRCodeBottomSheet alert = new QRCodeBottomSheet(context, LocaleController.getString(R.string.ShareQrCode), link, LocaleController.getString(R.string.QRCodeLinkHelpProxy), true);
-            Bitmap icon = SvgHelper.getBitmap(AndroidUtilities.readRes(R.raw.qr_dog), AndroidUtilities.dp(60), AndroidUtilities.dp(60), false);
-            alert.setCenterImage(icon);
-            showDialog(alert);
+            showShareQrCode(context, url + params.toString());
         });
 
         sectionCell[1] = new ShadowSectionCell(context);
@@ -630,6 +635,13 @@ public class ProxySettingsActivity extends BaseFragment {
         updatePasteCell();
 
         return fragmentView;
+    }
+
+    private void showShareQrCode(Context context, String link) {
+        QRCodeBottomSheet alert = new QRCodeBottomSheet(context, LocaleController.getString(R.string.ShareQrCode), link, LocaleController.getString(R.string.QRCodeLinkHelpProxy), true);
+        Bitmap icon = SvgHelper.getBitmap(AndroidUtilities.readRes(R.raw.qr_dog), AndroidUtilities.dp(60), AndroidUtilities.dp(60), false);
+        alert.setCenterImage(icon);
+        showDialog(alert);
     }
 
     private void updatePasteCell() {
@@ -786,7 +798,6 @@ public class ProxySettingsActivity extends BaseFragment {
                 ((View) inputFields[FIELD_PORT].getParent()).setVisibility(View.GONE);
                 inputFields[FIELD_PORT].setText("443");
             }
-            shareCell.setVisibility(currentType == ProxySettings.Type.WEB ? View.GONE : View.VISIBLE);
             typeCell[0].setChecked(currentType == ProxySettings.Type.SOCKS5, animated);
             typeCell[1].setChecked(currentType == ProxySettings.Type.MTPROTO, animated);
             typeCell[2].setChecked(currentType == ProxySettings.Type.WEB, animated);

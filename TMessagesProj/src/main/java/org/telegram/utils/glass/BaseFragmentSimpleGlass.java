@@ -117,10 +117,20 @@ public class BaseFragmentSimpleGlass {
     }
 
 
-    /** The capture under the glass of this screen; null without one (before Android 12). Records nothing with the blur off. */
+    /** The capture under the glass of this screen; null without one (before Android 12). Records nothing with the blur off, unless {@link #setCaptureIgnoresBlurSetting}. */
     @Nullable
     public GlassCaptureSourceCanvas getCaptureSourceCanvas() {
         return glassCaptureSourceCanvas;
+    }
+
+    private boolean captureIgnoresBlurSetting;
+
+    /**
+     * The capture is recorded with the blur off too (power saving), for a glass that has no other look over what is under
+     * it (the profile's buttons over the photo). The glass of the settings still goes static: only that glass is captured.
+     */
+    public void setCaptureIgnoresBlurSetting(boolean ignores) {
+        captureIgnoresBlurSetting = ignores;
     }
 
     @Nullable
@@ -273,7 +283,7 @@ public class BaseFragmentSimpleGlass {
     }
 
     private void invalidate(int flags) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || glassCaptureSourceCanvas == null || !GlassEngine.getCurrentGlassSettings().isBlurEnabled) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || glassCaptureSourceCanvas == null || !captureIgnoresBlurSetting && !GlassEngine.getCurrentGlassSettings().isBlurEnabled) {
             return;
         }
 

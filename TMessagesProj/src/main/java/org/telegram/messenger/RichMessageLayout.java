@@ -3144,7 +3144,7 @@ public class RichMessageLayout {
 
         private void dispatchLinkClick(CharacterStyle span, boolean longPress) {
             if (span == null) return;
-            if (!longPress && span instanceof URLSpan) {
+            if (!longPress && span instanceof URLSpan && !(span instanceof URLSpanNoUnderline)) {
                 final String url = ((URLSpan) span).getURL();
                 if (url != null && url.startsWith("#") && root.handleAnchorClick(url)) {
                     if (view != null) {
@@ -4280,6 +4280,7 @@ public class RichMessageLayout {
             tableLayout.setStriped(block.striped);
             tableLayout.setRtl(root.isRtl());
             tableLayout.setFillWidth(false);
+            tableLayout.setBalancedColumns(true);
             if (block.compact) {
                 tableLayout.setCellPadding(dp(5), dp(5), dp(5));
             }
@@ -4323,7 +4324,7 @@ public class RichMessageLayout {
                 && !TextUtils.isEmpty(getString(block.title));
             if (hasTitle) {
                 final int titleFlags = setBlockFlags(0, TEXT_FLAG_BLOCK_TABLE_TITLE);
-                title = new Text(root, root.formatText(block.title, titleFlags), viewportWidth);
+                title = new Text(root, root.formatText(block.title, titleFlags), viewportWidth, Layout.Alignment.ALIGN_CENTER);
                 title.setDrawAtOrigin(true);
                 titleHeight = title.getHeight() + dp(9);
             } else {
@@ -4332,7 +4333,10 @@ public class RichMessageLayout {
             }
 
             final int titleWidth = title != null ? title.getMinWidth() : 0;
-            intrinsicTableWidth = Math.max(0, Math.min(viewportWidth, Math.max(intrinsicContentWidth, titleWidth)));
+            // In compact (bubble-less) mode tables always span the full available width; the columns stretch to fill it.
+            intrinsicTableWidth = root.isCompactIn()
+                ? Math.max(0, viewportWidth)
+                : Math.max(0, Math.min(viewportWidth, Math.max(intrinsicContentWidth, titleWidth)));
             resolvedTableWidth = intrinsicTableWidth;
 
             for (int i = 0; i < tableLayout.getChildCount(); ++i) {
@@ -7607,9 +7611,12 @@ public class RichMessageLayout {
         private int seekBarY;
         private int seekBarWidth;
         private int layoutWidth = -1;
+        private boolean layoutHasOptions;
+        private final RectF optionsHit = new RectF();
 
         private int buttonState;
         private boolean buttonPressed;
+        private boolean optionsPressed;
         private final int observerTag;
 
         public RichAudioBlock(RichMessageLayout root, Rect padding, int maxWidth, TL_iv.pageBlockAudio block) {
@@ -7636,8 +7643,9 @@ public class RichMessageLayout {
 
         private void layoutInner() {
             layoutWidth = this.maxWidth + root.padLeft + root.padRight;
+            layoutHasOptions = canShowOptions();
             seekBarX = buttonX + dp(50) + size;
-            seekBarWidth = Math.max(0, layoutWidth - seekBarX - dp(18));
+            seekBarWidth = Math.max(0, layoutWidth - seekBarX - dp(layoutHasOptions ? 42 : 18));
 
             String author = currentMessageObject != null ? currentMessageObject.getMusicAuthor(false) : null;
             String title = currentMessageObject != null ? currentMessageObject.getMusicTitle(false) : null;
@@ -7793,7 +7801,7 @@ public class RichMessageLayout {
         @Override
         protected void onDraw(Canvas canvas) {
             if (currentMessageObject == null || currentDocument == null) return;
-            if (layoutWidth != this.maxWidth + root.padLeft + root.padRight) {
+            if (layoutWidth != this.maxWidth + root.padLeft + root.padRight || layoutHasOptions != canShowOptions()) {
                 layoutInner();
             }
 
@@ -7835,7 +7843,28 @@ public class RichMessageLayout {
                 canvas.restore();
             }
 
+            if (layoutHasOptions) {
+                final Drawable menuDrawable = root.isOut()
+                    ? root.getThemedDrawable(Theme.key_drawable_msgOutMenu)
+                    : Theme.chat_msgInMenuDrawable;
+                final int menuX = getMenuX();
+                final int menuY = dp(7);
+                menuDrawable.setBounds(menuX, menuY, menuX + menuDrawable.getIntrinsicWidth(), menuY + menuDrawable.getIntrinsicHeight());
+                menuDrawable.draw(canvas);
+                optionsHit.set(menuX - dp(8), 0, menuX + menuDrawable.getIntrinsicWidth() + dp(8), dp(54));
+            } else {
+                optionsHit.setEmpty();
+            }
+
             canvas.restore();
+        }
+
+        private boolean canShowOptions() {
+            return currentDocument != null && root.cell != null && root.delegate != null && root.delegate.canSaveRichDocument(root.cell);
+        }
+
+        private int getMenuX() {
+            return layoutWidth + padding.right - dp(32);
         }
 
         @Override
@@ -7843,6 +7872,27 @@ public class RichMessageLayout {
             final int act = event.getActionMasked();
             final float x = event.getX() + root.padLeft;
             final float y = event.getY();
+
+            final boolean insideOptions = optionsHit.contains(x, y);
+            if (act == MotionEvent.ACTION_DOWN && insideOptions) {
+                optionsPressed = true;
+                return true;
+            }
+            if (optionsPressed) {
+                if (act == MotionEvent.ACTION_MOVE && !insideOptions) {
+                    optionsPressed = false;
+                    return true;
+                }
+                if (act == MotionEvent.ACTION_UP || act == MotionEvent.ACTION_CANCEL) {
+                    final boolean openOptions = act == MotionEvent.ACTION_UP && insideOptions;
+                    optionsPressed = false;
+                    if (openOptions && canShowOptions()) {
+                        if (view != null) view.playSoundEffect(SoundEffectConstants.CLICK);
+                        root.delegate.didPressRichDocumentOptions(root.cell, currentDocument, getCellBounds());
+                    }
+                    return true;
+                }
+            }
 
             final boolean seekHandled = seekBar.onTouch(act, x - seekBarX, y - seekBarY);
             if (seekHandled) {
@@ -8141,9 +8191,7 @@ public class RichMessageLayout {
                     optionsPressed = false;
                     if (openOptions && document != null && canShowOptions()) {
                         if (view != null) view.playSoundEffect(SoundEffectConstants.CLICK);
-                        final float anchorX = root.cell.getTextX() + padding.left - root.padLeft + getMenuX();
-                        final float anchorY = root.cell.getTextY() + currY + padding.top + dp(7);
-                        root.delegate.didPressRichDocumentOptions(root.cell, document, anchorX, anchorY);
+                        root.delegate.didPressRichDocumentOptions(root.cell, document, getCellBounds());
                     }
                     return true;
                 }
@@ -9570,6 +9618,14 @@ public class RichMessageLayout {
 
         protected void getBlockAccessibilityElementBounds(int element, Rect out) {
             out.set(padding.left, (int) currY, padding.left + maxWidth, (int) (currY + getHeight()));
+        }
+
+        protected RectF getCellBounds() {
+            final float top = root.cell.getTextY() + currY + padding.top;
+            return new RectF(
+                root.cell.getTextX() - root.padLeft + dp(4), top,
+                root.cell.getTextX() + root.getMinWidth() + root.padRight - dp(4), top + getHeight() - padding.top - padding.bottom
+            );
         }
 
         public final boolean onAccessibilityElementClick(int element, View host) {

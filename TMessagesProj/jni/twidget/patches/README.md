@@ -7,8 +7,8 @@ update can start from the repository's state and re-apply only these.
 
 | Copy (`jni/twidget/…`) | Repository | Version |
 |---|---|---|
-| `widget-sandbox/` | github.com/TelegramMessenger/widget-sandbox | `v0.6.0` at `d6f39f3` (2026-11-02: the limits for the launch, the heavy-box limit, the validator's time, stamped bundles), unchanged |
-| `widget-sandbox/packages/ios/Sources/CQuickJS/quickjs/` | its submodule, github.com/TelegramMessenger/quickjs | `c24d6b0`: top-level `.c`/`.h`, `LICENSE`, `README.md` only (no tests, docs, examples) |
+| `widget-sandbox/` | github.com/TelegramMessenger/widget-sandbox | `bf4b6bd` (2026-11-06: `v0.6.0` + the QuickJS fixes backport, a submodule bump only), unchanged |
+| `widget-sandbox/packages/ios/Sources/CQuickJS/quickjs/` | its submodule, github.com/TelegramMessenger/quickjs | `f4dd164` (branch `fixes-backport`, 2026-11-06: memory-safety fixes from quickjs-ng after 0.17.0 on `c24d6b0`, among them the RegExp bytecode use-after-free of the widget RCE report): top-level `.c`/`.h`, `LICENSE`, `README.md` only (no tests, docs, examples) |
 | `twidget/` | github.com/TelegramMessenger/twidget | `main` at `a22eff2` (2026-11-02: the Telegram layout fixes below, on `42baa3f`'s widget-sandbox v0.6.0 and heavy-box count), unchanged |
 
 What the Android build compiles (`jni/twidget/twidget.cmake`): widget-sandbox's C++ core

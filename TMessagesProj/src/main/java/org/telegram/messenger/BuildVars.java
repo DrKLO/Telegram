@@ -42,6 +42,9 @@ public class BuildVars {
 
     // works only on official app ids, disable on your forks
     public static boolean SUPPORTS_PASSKEYS = true;
+    // the second main tab: News, or Contacts as before them
+
+    public static boolean SUPPORTS_FPNV = true;
 
     static {
         if (ApplicationLoader.applicationContext != null) {

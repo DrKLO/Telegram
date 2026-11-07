@@ -1514,7 +1514,7 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
                 if (f.exists()) {
                     preparePlayer(f);
                 } else {
-                    File file = FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
+                    File file = messageObject.isLivePhoto() ? FileLoader.getInstance(currentAccount).getPathToAttach(document, null, true) : FileLoader.getInstance(currentAccount).getPathToMessage(messageObject.messageOwner);
                     File encryptedFile = new File(file.getAbsolutePath() + ".enc");
                     if (encryptedFile.exists()) {
                         file = encryptedFile;

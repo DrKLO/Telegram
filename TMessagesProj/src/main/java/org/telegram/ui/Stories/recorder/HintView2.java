@@ -63,6 +63,10 @@ import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.TypefaceSpan;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
 public class HintView2 extends View {
 
@@ -175,8 +179,59 @@ public class HintView2 extends View {
         return this;
     }
 
+    /* Glass */
+
+    private BlurredBackgroundDrawable glass;
+    private final float glassTipRadius = dpf2(4);
+    private final float glassFilletRadius = dpf2(4);
+    // the lens a bit thicker than the tip is round: its break at the tip's axis is too small to see
+    private final float glassThickness = dpf2(5);
+    // the glass is rounder than the plain hint
+    private final float glassExtraRounding = dpf2(2);
+
+    /**
+     * The hint on the glass of the screen, its arrow out of the glass. The lens is thin, about as thick as the arrow's
+     * tip is round. The text stays white: {@link BlurredBackgroundProviderImpl#hint}, unless another style is given.
+     */
+    public HintView2 setGlass(BlurredBackgroundDrawableViewFactory factory) {
+        return setGlass(factory, null);
+    }
+
+    public HintView2 setGlass(BlurredBackgroundDrawableViewFactory factory, @Nullable BlurredBackgroundProvider style) {
+        glass = factory.create(this, style != null ? style : BlurredBackgroundProviderImpl.hint(null));
+        glass.setCallback(this);
+        glass.setRadius(rounding + glassExtraRounding);
+        glass.setThickness((int) glassThickness);
+        glass.setIntensity(1f);
+        glass.setEvenRim(true);
+        glass.setAlpha(0);
+        pathSet = false;
+        invalidate();
+        return this;
+    }
+
+    private void updateGlassShape() {
+        if (glass == null) {
+            return;
+        }
+        final int arrow = Math.round(arrowHeight);
+        int l = Math.round(bounds.left), t = Math.round(bounds.top), r = Math.round(bounds.right), b = Math.round(bounds.bottom);
+        switch (direction) {
+            case DIRECTION_LEFT: l -= arrow; break;
+            case DIRECTION_TOP: t -= arrow; break;
+            case DIRECTION_RIGHT: r += arrow; break;
+            default: b += arrow; break;
+        }
+        final boolean vertical = direction == DIRECTION_LEFT || direction == DIRECTION_RIGHT;
+        glass.setArrow(direction, vertical ? arrowY : arrowX, arrow, glassTipRadius, glassFilletRadius);
+        glass.setBounds(l, t, r, b);
+    }
+
     public HintView2 setRounding(float roundingDp) {
         this.rounding = dp(roundingDp);
+        if (glass != null) {
+            glass.setRadius(rounding + glassExtraRounding);
+        }
         backgroundPaint.setPathEffect(roundWithCornerEffect ? new CornerPathEffect(rounding) : null);
         if (cutSelectorPaint != null) {
             cutSelectorPaint.setPathEffect(roundWithCornerEffect ? new CornerPathEffect(rounding) : null);
@@ -619,6 +674,121 @@ public class HintView2 extends View {
         return this;
     }
 
+    /* Anchored, as the old HintView: the hint (as wide or as high as its parent along its arrow) moves to point at a view */
+
+    private View anchorView;
+    private float anchorX = Float.NaN, anchorY;
+    private float anchorGap, anchorOffsetX;
+    private final int[] anchorLocation = new int[2];
+
+    /** The space between the arrow's tip and the view it points at. */
+    public HintView2 setAnchorGap(float gapPx) {
+        anchorGap = gapPx;
+        return this;
+    }
+
+    /** Moves the point on the view the arrow points at along x. */
+    public HintView2 setAnchorOffsetX(float offsetPx) {
+        anchorOffsetX = offsetPx;
+        return this;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        if (changed && shown) {
+            updatePosition();
+        }
+    }
+
+    /** Points at the middle of the view's side; false when already shown for it (then the position is updated). */
+    public boolean showForView(View view, boolean animated) {
+        final boolean same = shown && anchorView == view;
+        anchorView = view;
+        anchorX = Float.NaN;
+        updatePosition();
+        if (same) {
+            return false;
+        }
+        show();
+        if (!animated) {
+            show.force(true);
+        }
+        return true;
+    }
+
+    /** Points at x, y in the coordinates of the parent. */
+    public void showAt(float x, float y, boolean animated) {
+        anchorView = null;
+        anchorX = x;
+        anchorY = y;
+        updatePosition();
+        if (shown) {
+            return;
+        }
+        show();
+        if (!animated) {
+            show.force(true);
+        }
+    }
+
+    public boolean isShowing() {
+        return shown;
+    }
+
+    @Nullable
+    public View getAnchorView() {
+        return anchorView;
+    }
+
+    /** Follows the view it points at, e.g. after a scroll. */
+    public void updatePosition() {
+        if (!(getParent() instanceof View) || anchorView == null && Float.isNaN(anchorX)) {
+            return;
+        }
+        if (!isLaidOut()) {
+            post(this::updatePosition);
+            return;
+        }
+        float x, y;
+        if (anchorView != null) {
+            anchorView.getLocationInWindow(anchorLocation);
+            final float left = anchorLocation[0], top = anchorLocation[1];
+            ((View) getParent()).getLocationInWindow(anchorLocation);
+            float l = left - anchorLocation[0];
+            final float t = top - anchorLocation[1];
+            final int w = anchorView.getWidth(), h = anchorView.getHeight();
+            l += anchorOffsetX;
+            switch (direction) {
+                case DIRECTION_LEFT: x = l + w + anchorGap; y = t + h / 2f; break;
+                case DIRECTION_TOP: x = l + w / 2f; y = t + h + anchorGap; break;
+                case DIRECTION_RIGHT: x = l - anchorGap; y = t + h / 2f; break;
+                default: x = l + w / 2f; y = t - anchorGap; break;
+            }
+        } else {
+            x = anchorX;
+            y = anchorY;
+        }
+        switch (direction) {
+            case DIRECTION_LEFT:
+                setTranslationX(x - (getLeft() + getPaddingLeft()));
+                setJointPx(0, y - getTop() - getPaddingTop());
+                break;
+            case DIRECTION_TOP:
+                setTranslationY(y - (getTop() + getPaddingTop()));
+                setJointPx(0, x - getLeft() - getPaddingLeft());
+                break;
+            case DIRECTION_RIGHT:
+                setTranslationX(x - (getLeft() + getWidth() - getPaddingRight()));
+                setJointPx(0, y - getTop() - getPaddingTop());
+                break;
+            default:
+                setTranslationY(y - (getTop() + getHeight() - getPaddingBottom()));
+                setJointPx(0, x - getLeft() - getPaddingLeft());
+                break;
+        }
+    }
+
     public TextPaint getTextPaint() {
         if (multiline) {
             return textPaint;
@@ -635,7 +805,9 @@ public class HintView2 extends View {
     }
 
     public HintView2 show() {
-        prepareBlur();
+        if (glass == null) {
+            prepareBlur();
+        }
         if (shown) {
             bounceShow();
         }
@@ -791,6 +963,12 @@ public class HintView2 extends View {
     private long flickerStart;
 
     protected void drawBgPath(Canvas canvas, float alpha) {
+        if (glass != null) {
+            glass.setAlpha(Math.max(1, (int) (0xFF * alpha)));
+            glass.draw(canvas);
+            drawFlicker(canvas);
+            return;
+        }
         if (blurBackgroundPaint != null) {
             canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
             canvas.drawPath(path, blurBackgroundPaint);
@@ -809,6 +987,10 @@ public class HintView2 extends View {
         backgroundPaint.setAlpha((int) (wasAlpha * alpha));
         canvas.drawPath(path, backgroundPaint);
         backgroundPaint.setAlpha(wasAlpha);
+        drawFlicker(canvas);
+    }
+
+    private void drawFlicker(Canvas canvas) {
         if (flicker) {
             final int delay = 4, duration = 1000;
             final int gradientWidth = dp(64);
@@ -840,6 +1022,10 @@ public class HintView2 extends View {
             invalidate();
         }
         if (showT <= 0) {
+            if (glass != null) {
+                // hidden: nothing to capture under it
+                glass.setAlpha(0);
+            }
             return;
         }
 
@@ -862,6 +1048,7 @@ public class HintView2 extends View {
         final float height = innerPadding.top + contentHeight + innerPadding.bottom;
         if (!pathSet || Math.abs(width - pathLastWidth) > 0.1f || Math.abs(height - pathLastHeight) > 0.1f) {
             fillPath(path, pathLastWidth = width, pathLastHeight = height, 0.0f, bounds, boundsWithArrow);
+            updateGlassShape();
             if (flicker) {
                 fillPath(flickerStrokePath, width, height, flickerStrokePathExtrude, flickerBounds, null);
             }
@@ -1079,7 +1266,7 @@ public class HintView2 extends View {
 
     @Override
     protected boolean verifyDrawable(@NonNull Drawable who) {
-        return who == textDrawable || who == selectorDrawable || who == icon || super.verifyDrawable(who);
+        return who == textDrawable || who == selectorDrawable || who == icon || who == glass || super.verifyDrawable(who);
     }
 
     @Override

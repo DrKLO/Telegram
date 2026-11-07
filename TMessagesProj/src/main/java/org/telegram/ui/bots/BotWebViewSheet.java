@@ -1199,7 +1199,20 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 Math.max(cutoutInsets.right, insets.getStableInsetRight()),
                 Math.max(cutoutInsets.bottom, insets.getStableInsetBottom())
             );
-            if (Build.VERSION.SDK_INT <= 28) {
+            if (Build.VERSION.SDK_INT == 29) {
+                // FLAG_LAYOUT_NO_LIMITS window gets no insets on Q, take them from the activity window
+                final Activity activity = AndroidUtilities.findActivity(getContext());
+                final WindowInsets activityInsets = activity != null && activity.getWindow() != null ? activity.getWindow().getDecorView().getRootWindowInsets() : null;
+                if (activityInsets != null) {
+                    this.insets.set(
+                        Math.max(this.insets.left, activityInsets.getStableInsetLeft()),
+                        Math.max(this.insets.top, activityInsets.getStableInsetTop()),
+                        Math.max(this.insets.right, activityInsets.getStableInsetRight()),
+                        Math.max(this.insets.bottom, activityInsets.getStableInsetBottom())
+                    );
+                }
+            }
+            if (Build.VERSION.SDK_INT <= 29) {
                 this.insets.top = Math.max(this.insets.top, AndroidUtilities.getStatusBarHeight(getContext()));
             }
             final androidx.core.graphics.Insets keyboardInsets = insetsCompat.getInsets(WindowInsetsCompat.Type.ime());

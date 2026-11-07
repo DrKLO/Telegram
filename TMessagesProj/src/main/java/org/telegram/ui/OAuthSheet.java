@@ -118,7 +118,7 @@ public class OAuthSheet {
             } else {
                 final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                 if (fragment == null) return;
-                Browser.openUrlInSystemBrowser(fragment.getContext(), r.url);
+                Browser.openUrlInSystemBrowser(fragment.getContext(), r.url, true);
             }
             return;
         } else if (result instanceof TLRPC.TL_urlAuthResultDefault) {

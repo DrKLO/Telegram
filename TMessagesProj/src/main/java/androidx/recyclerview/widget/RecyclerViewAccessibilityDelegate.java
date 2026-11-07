@@ -40,7 +40,9 @@ public class RecyclerViewAccessibilityDelegate extends AccessibilityDelegateComp
     }
 
     boolean shouldIgnore() {
-        return mRecyclerView.hasPendingAdapterUpdates();
+        // content-changed events are dispatched at the end of dispatchLayoutStep1 while the state
+        // is still pre-layout, so item positions aren't settled yet
+        return mRecyclerView.hasPendingAdapterUpdates() || mRecyclerView.mState.isPreLayout();
     }
 
     @Override

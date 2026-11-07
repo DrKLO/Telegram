@@ -4445,7 +4445,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                                 Uri uri = Utilities.uriParseSafe(query);
                                 if (spans.length > 0 && start == 0 && end > 0 || uri != null && uri.getScheme() != null) {
                                     if (uri != null && uri.getScheme() == null && uri.getHost() == null && uri.getPath() != null) {
-                                        query = Browser.replace(uri, "https", null, uri.getPath(), "/");
+                                        query = Browser.replace(uri, "https", null, uri.getEncodedPath(), "/");
                                     }
                                     page.getWebView().loadUrl(query);
                                 } else {
@@ -4484,7 +4484,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                         if (uri != null && TextUtils.equals(uri.getScheme(), "javascript")) return;
                         if (spans.length > 0 && start == 0 && end > 0 || uri != null && uri.getScheme() != null) {
                             if (uri != null && uri.getScheme() == null && uri.getHost() == null && uri.getPath() != null) {
-                                url = Browser.replace(uri, "https", null, uri.getPath(), "/");
+                                url = Browser.replace(uri, "https", null, uri.getEncodedPath(), "/");
                             }
                             page.getWebView().loadUrl(url);
                         } else {

@@ -2448,9 +2448,11 @@ final class RoundVideoCameraController {
 
     /**
      * Picks the AE target range for the requested frame rate. A range topping out at the target
-     * that may drop to half of it is preferred, so auto exposure lengthens the exposure in low
-     * light instead of underexposing at a locked rate. The narrowest range containing the target
-     * is only the fallback.
+     * with the lowest lower bound is preferred, so auto exposure lengthens the exposure in low
+     * light instead of underexposing at a locked rate. Weak front sensors often advertise only
+     * [10,30]-like ranges besides a locked [30,30], so at 30 fps any lower bound is accepted;
+     * at higher rates the range may drop only to half of the target. The narrowest range
+     * containing the target is only the fallback.
      */
     @Nullable
     private static Range<Integer> findBestFpsRange(
@@ -2458,7 +2460,7 @@ final class RoundVideoCameraController {
             int targetFps
     ) {
         if (ranges == null) return null;
-        int minimumFps = targetFps / 2;
+        int minimumFps = targetFps > 30 ? targetFps / 2 : 1;
         Range<Integer> variable = null;
         Range<Integer> narrowest = null;
         for (Range<Integer> range : ranges) {

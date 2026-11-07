@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Layout;
@@ -188,6 +189,7 @@ public class RichEditText extends EditTextCaption implements Theme.Colorable {
                 listener.onTextWillChange(RichEditText.this, count, after);
             }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (before > 0 && count == 0) lastDeleteTime = SystemClock.uptimeMillis();
                 markPathDirty = true;
                 refreshEmptyHintGravity();
                 updateLongClickForEmpty();
@@ -279,11 +281,40 @@ public class RichEditText extends EditTextCaption implements Theme.Colorable {
         this.softEnterNewline = enable;
     }
 
+    private static final long DELETE_HOLD_MS = 500;
+    private long lastDeleteTime;
+    private int pendingInputType = -1;
+    private final Runnable applyPendingInputType = new Runnable() {
+        @Override
+        public void run() {
+            if (pendingInputType < 0) return;
+            final long left = lastDeleteTime + DELETE_HOLD_MS - SystemClock.uptimeMillis();
+            if (left > 0 && isFocused()) {
+                postDelayed(this, left);
+                return;
+            }
+            final int type = pendingInputType;
+            pendingInputType = -1;
+            setInputType(type);
+        }
+    };
+
     @Override
     public void setInputType(int type) {
-        final boolean changed = getInputType() != type;
+        // TextView restarts the IME input on every call, and a restart cancels a held backspace:
+        // skip no-op calls and defer real changes until deletions stop.
+        if (getInputType() == type) {
+            pendingInputType = -1;
+            return;
+        }
+        if (isFocused() && SystemClock.uptimeMillis() - lastDeleteTime < DELETE_HOLD_MS) {
+            if (pendingInputType < 0) postDelayed(applyPendingInputType, DELETE_HOLD_MS);
+            pendingInputType = type;
+            return;
+        }
+        pendingInputType = -1;
         super.setInputType(type);
-        if (changed && isFocused()) {
+        if (isFocused()) {
             final InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) imm.restartInput(this);
         }
@@ -330,6 +361,14 @@ public class RichEditText extends EditTextCaption implements Theme.Colorable {
         if (e == null || text == null || text.length() == 0) return;
         ignoreTextChange = true;
         e.append(text);
+        ignoreTextChange = false;
+    }
+
+    public void prependSilently(CharSequence text) {
+        final Editable e = getText();
+        if (e == null || text == null || text.length() == 0) return;
+        ignoreTextChange = true;
+        e.insert(0, text);
         ignoreTextChange = false;
     }
 
@@ -614,6 +653,7 @@ public class RichEditText extends EditTextCaption implements Theme.Colorable {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_DEL && listener != null) {
+            lastDeleteTime = SystemClock.uptimeMillis();
             if (length() == 0) {
                 listener.onBackspaceOnEmpty(this);
                 return true;

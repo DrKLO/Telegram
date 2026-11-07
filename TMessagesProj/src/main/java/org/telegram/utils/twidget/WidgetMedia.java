@@ -343,6 +343,8 @@ public final class WidgetMedia {
     public static WidgetSandboxMessage find(String url) {
         Entry entry = isWidgetUrl(url) ? entries.get(url) : null;
         if (entry == null) return null;
+        // Kill switch (AppGlobalConfig#widgetsDisabled): no runtime, the block keeps its placeholder.
+        if (WidgetSandboxSession.disabledByConfig()) return null;
         synchronized (entry) {
             if (entry.message == null) {
                 if (entry.html == null) entry.html = inflate(entry.payload);
@@ -588,6 +590,20 @@ public final class WidgetMedia {
             MessagesStorage.getInstance(entry.account).putWidgetStorage(entry.dialogId, entry.messageId, value);
         }
         pendingWrites.clear();
+    }
+
+    /**
+     * The kill switch turned on (AppGlobalConfig#widgetsDisabled): every widget running now, shown or measured off
+     * screen, stops at once; their last frames stay drawn. Nothing starts again while it is on. Any thread.
+     */
+    public static void onKillSwitch() {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (!WidgetSandboxSession.disabledByConfig()) return;
+            toMeasure.clear();
+            for (Entry entry : entries.values()) {
+                if (entry.message != null && entry.message.hasSession()) entry.message.unload();
+            }
+        });
     }
 
     /** MessagesStorage cleared the account's local database: the state in memory goes too. Any thread. */

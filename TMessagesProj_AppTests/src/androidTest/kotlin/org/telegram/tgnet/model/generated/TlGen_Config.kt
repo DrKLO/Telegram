@@ -16,6 +16,7 @@ public sealed class TlGen_Config : TlGen_Object {
     public val revoke_pm_inbox: Boolean,
     public val blocked_mode: Boolean,
     public val force_try_ipv6: Boolean,
+    public val fpnv_allowed: Boolean,
     public val date: Int,
     public val expires: Int,
     public val test_mode: Boolean,
@@ -74,6 +75,7 @@ public sealed class TlGen_Config : TlGen_Object {
         if (force_try_ipv6) result = result or 16384U
         if (reactions_default != null) result = result or 32768U
         if (autologin_token != null) result = result or 65536U
+        if (fpnv_allowed) result = result or 131072U
         return result
       }
 

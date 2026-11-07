@@ -576,6 +576,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public HashMap<String, EmojiSound> emojiSounds = new HashMap<>();
     public HashMap<Long, ArrayList<TLRPC.TL_sendMessageEmojiInteraction>> emojiInteractions = new HashMap<>();
     public boolean remoteConfigLoaded;
+    public boolean fpnvAllowed;
     public int ringtoneDurationMax;
     public int ringtoneSizeMax;
     public boolean storiesExportNopublicLink;
@@ -1577,6 +1578,7 @@ public class MessagesController extends BaseController implements NotificationCe
         long time = System.currentTimeMillis();
 
         remoteConfigLoaded = mainPreferences.getBoolean("remoteConfigLoaded", false);
+        fpnvAllowed = mainPreferences.getBoolean("fpnvAllowed", false);
         secretWebpagePreview = mainPreferences.getInt("secretWebpage2", 2);
         maxGroupCount = mainPreferences.getInt("maxGroupCount", 200);
         maxMegagroupCount = mainPreferences.getInt("maxMegagroupCount", 10000);
@@ -5663,6 +5665,7 @@ public class MessagesController extends BaseController implements NotificationCe
             revokeTimeLimit = config.revoke_time_limit;
             revokeTimePmLimit = config.revoke_pm_time_limit;
             canRevokePmInbox = config.revoke_pm_inbox;
+            fpnvAllowed = config.fpnv_allowed;
             linkPrefix = config.me_url_prefix;
             boolean forceTryIpV6 = config.force_try_ipv6;
             if (linkPrefix.endsWith("/")) {
@@ -5773,6 +5776,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 editor.remove("pk");
             }
             editor.putBoolean("canRevokePmInbox", canRevokePmInbox);
+            editor.putBoolean("fpnvAllowed", fpnvAllowed);
             editor.putBoolean("blockedCountry", blockedCountry);
             editor.putString("gifSearchBot", gifSearchBot);
             editor.putString("imageSearchBot", imageSearchBot);
@@ -8076,6 +8080,52 @@ public class MessagesController extends BaseController implements NotificationCe
         editor.apply();
         userPeerSettings.put(dialogId, settings);
         getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialogId);
+    }
+
+    // incoming links and bot buttons are hidden while the report spam bar is shown and we haven't written anything in the chat
+    public boolean isUntrustedDialog(long dialogId) {
+        if (dialogId == 0 || DialogObject.isEncryptedDialog(dialogId) || dialogId == getUserConfig().getClientUserId()) {
+            return false;
+        }
+        return (
+            notificationsPreferences.getInt("dialog_bar_vis3" + dialogId, 0) == 2 &&
+            notificationsPreferences.getBoolean("dialog_bar_report" + dialogId, false) &&
+            !notificationsPreferences.getBoolean("dialog_bar_replied" + dialogId, false)
+        );
+    }
+
+    public void checkDialogReplied(long dialogId, ArrayList<MessageObject> messages) {
+        if (messages == null || notificationsPreferences.getBoolean("dialog_bar_replied" + dialogId, false)) {
+            return;
+        }
+        for (int i = 0; i < messages.size(); ++i) {
+            final MessageObject msg = messages.get(i);
+            if (msg != null && !msg.scheduled && isOwnWrittenMessage(dialogId, msg.messageOwner)) {
+                markDialogReplied(dialogId);
+                return;
+            }
+        }
+    }
+
+    public void checkDialogRepliedMessages(long dialogId, ArrayList<TLRPC.Message> messages) {
+        if (messages == null || notificationsPreferences.getBoolean("dialog_bar_replied" + dialogId, false)) {
+            return;
+        }
+        for (int i = 0; i < messages.size(); ++i) {
+            if (isOwnWrittenMessage(dialogId, messages.get(i))) {
+                markDialogReplied(dialogId);
+                return;
+            }
+        }
+    }
+
+    private static boolean isOwnWrittenMessage(long dialogId, TLRPC.Message message) {
+        return message != null && message.out && !(message instanceof TLRPC.TL_messageService) && message.peer_id != null && MessageObject.getDialogId(message) == dialogId;
+    }
+
+    private void markDialogReplied(long dialogId) {
+        notificationsPreferences.edit().putBoolean("dialog_bar_replied" + dialogId, true).apply();
+        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialogId));
     }
 
     public TLRPC.PeerSettings getPeerSettings(long dialogId) {
@@ -11909,6 +11959,9 @@ public class MessagesController extends BaseController implements NotificationCe
             FileLog.d("processLoadedMessages size " + messagesRes.messages.size() + " in chat " + dialogId + " topic_id " + threadMessageId + " count " + count + " max_id " + max_id + " cache " + isCache + " guid " + classGuid + " load_type " + load_type + " last_message_id " + last_message_id + " index " + loadIndex + " firstUnread " + first_unread + " unread_count " + unread_count + " last_date " + last_date + " queryFromServer " + queryFromServer + " isTopic " + isTopic + " mode " + mode);
         }
         Timer.Task t1 = Timer.start(loaderLogger, "processLoadedMessages");
+        if (mode == 0 && messagesRes.messages != null) {
+            checkDialogRepliedMessages(dialogId, messagesRes.messages);
+        }
 
         long startProcessTime = SystemClock.elapsedRealtime();
         boolean createDialog = false;
@@ -19569,7 +19622,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 AndroidUtilities.runOnUIThread(() -> LocaleController.getInstance().saveRemoteLocaleStringsForCurrentLocale(update.difference, currentAccount));
             } else if (baseUpdate instanceof TL_update.TL_updateLangPackTooLong) {
                 TL_update.TL_updateLangPackTooLong update = (TL_update.TL_updateLangPackTooLong) baseUpdate;
-                LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false, null);
+                AndroidUtilities.runOnUIThread(() -> LocaleController.getInstance().reloadCurrentRemoteLocale(currentAccount, update.lang_code, false, null));
             } else if (baseUpdate instanceof TL_update.TL_updateChannelAvailableMessages) {
                 TL_update.TL_updateChannelAvailableMessages update = (TL_update.TL_updateChannelAvailableMessages) baseUpdate;
                 if (clearHistoryMessages == null) {
@@ -21924,6 +21977,7 @@ public class MessagesController extends BaseController implements NotificationCe
         boolean updateRating = false;
         boolean hasNotOutMessage = false;
         if (!scheduled && !quickReplies && !welcomeMessages) {
+            checkDialogReplied(dialogId, messages);
             for (int a = 0; a < messages.size(); a++) {
                 MessageObject message = messages.get(a);
                 if (lastMessage == null || (!isEncryptedChat && message.getId() > lastMessage.getId() || (isEncryptedChat || message.getId() < 0 && lastMessage.getId() < 0) && message.getId() < lastMessage.getId()) || message.messageOwner.date > lastMessage.messageOwner.date) {

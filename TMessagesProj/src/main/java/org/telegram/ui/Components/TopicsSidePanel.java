@@ -45,6 +45,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -67,6 +68,7 @@ import org.telegram.ui.Components.Forum.ForumUtilities;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 
 /**
  * The topics as a panel that slides in from the right, over the chat it pushes aside: the sidebar, apart from the
@@ -121,6 +123,15 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
     private final ArrayList<TLRPC.TL_forumTopic> serverResults = new ArrayList<>();
     private int serverSearchReqId;
     private Runnable serverSearch;
+
+    // topics' icons shared by two or more topics, as tags under the search: one chosen shows only its topics
+    private static final int TAGS_HEIGHT = 36;
+    private final RecyclerListView tagsView;
+    private final TagsAdapter tagsAdapter;
+    private final ArrayList<IconGroup> iconGroups = new ArrayList<>();
+    private String chosenIcon;
+    private float tagsShown;
+    private ValueAnimator tagsAnimator;
 
     /** With the switch, a button over the chat at the left goes back to the tabs. */
     public TopicsSidePanel(Context context, int currentAccount, long dialogId, Theme.ResourcesProvider resourcesProvider, Delegate delegate) {
@@ -255,7 +266,7 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
         headerView.addView(subtitleView, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, dp(58), dp(26), dp(6), 0));
 
         // search field
-        // a raised surface pill: the view is 4dp larger on each side so its shadow isn't clipped
+        // a flat gray pill, inset 4dp in its view
         final FrameLayout searchContainer = new FrameLayout(context);
         final int shadowPad = dp(4);
         searchContainer.setPadding(shadowPad, shadowPad, shadowPad, shadowPad);
@@ -267,10 +278,7 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
                 rect.set(getBounds());
                 rect.inset(shadowPad, shadowPad);
                 final float r = rect.height() / 2f;
-                paint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                paint.setShadowLayer(dp(1.5f), 0, dp(.5f), 0x1A000000);
-                canvas.drawRoundRect(rect, r, r, paint);
-                paint.setShadowLayer(dp(.5f), 0, 0, 0x1F000000);
+                paint.setColor(getThemedColor(Theme.key_dialogSearchBackground));
                 canvas.drawRoundRect(rect, r, r, paint);
             }
             @Override public void setAlpha(int alpha) {}
@@ -278,10 +286,10 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
             @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
         });
         final ImageView searchIcon = new ImageView(context);
-        searchIcon.setScaleType(ImageView.ScaleType.CENTER);
+        searchIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         searchIcon.setImageResource(R.drawable.outline_header_search);
         searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.SRC_IN));
-        searchContainer.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+        searchContainer.addView(searchIcon, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
         searchField = new EditText(context);
         searchField.setBackground(null);
         searchField.setPadding(0, 0, 0, 0);
@@ -316,6 +324,8 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
         itemAnimator.setDelayAnimations(false);
         itemAnimator.setMoveInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
         itemAnimator.setDurations(350);
+        // filtered out rows are gone quickly: the ones moving up don't pass through them
+        itemAnimator.setRemoveDuration(160);
         listView.setItemAnimator(itemAnimator);
         // the list's selector is the rows' only ripple, rounded like their highlight
         listView.setSelectorRadius(dp(16));
@@ -326,9 +336,13 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
             if (delegate != null) {
                 delegate.onTopicSelected(item.getId());
             }
-            // an opened result ends the search: the full list is back next time
+            // an opened result ends the search and the icon's filter: the full list is back next time
+            final boolean filtered = chosenIcon != null;
+            chosenIcon = null;
             if (searchField.length() > 0) {
                 searchField.setText("");
+            } else if (filtered) {
+                update();
             }
             searchField.clearFocus();
             close();
@@ -363,6 +377,39 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
             }
         });
         panel.addView(listView, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, dp(8), top + dp(100), dp(8), 0));
+
+        // the icons' tags, between the search and the list
+        tagsView = new RecyclerListView(context, resourcesProvider) {
+            @Override
+            public Integer getSelectorColor(int position) {
+                return 0;
+            }
+        };
+        final LinearLayoutManager tagsLayoutManager = new LinearLayoutManager(context, RecyclerView.HORIZONTAL, false);
+        tagsView.setLayoutManager(tagsLayoutManager);
+        tagsView.setPadding(dp(9), 0, dp(9), 0);
+        tagsView.setClipToPadding(false);
+        tagsView.setHorizontalScrollBarEnabled(false);
+        tagsView.setOverScrollMode(OVER_SCROLL_NEVER);
+        // tags come and go as their counts change: they fade and scale, the others slide to their places
+        final DefaultItemAnimator tagsAnimatorItems = new DefaultItemAnimator();
+        tagsAnimatorItems.setSupportsChangeAnimations(false);
+        tagsAnimatorItems.setDelayAnimations(false);
+        tagsAnimatorItems.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        tagsAnimatorItems.setDurations(320);
+        tagsView.setItemAnimator(tagsAnimatorItems);
+        tagsView.setAdapter(tagsAdapter = new TagsAdapter());
+        tagsView.setOnItemClickListener((view, position) -> {
+            if (position < 0 || position >= iconGroups.size()) return;
+            final String key = iconGroups.get(position).key;
+            chosenIcon = key.equals(chosenIcon) ? null : key;
+            AndroidUtilities.forEachViews(tagsView, v -> {
+                if (v instanceof TagButton) ((TagButton) v).updateChosen(true);
+            });
+            update();
+        });
+        tagsView.setVisibility(GONE);
+        panel.addView(tagsView, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, TAGS_HEIGHT, Gravity.LEFT | Gravity.TOP, 0, top + dp(100), 0, 0));
 
         // the list fades out at its edges
         final int background = getThemedColor(Theme.key_windowBackgroundWhite);
@@ -554,7 +601,9 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
     }
 
     public void setProgress(float value) {
+        final boolean opening = progress <= 0 && value > 0;
         progress = Utilities.clamp01(value);
+        if (opening && tagsView != null) animateTagsPop();
         panel.setTranslationX(getPanelWidth() * (1f - progress));
         setVisibility(progress > 0 || touching ? VISIBLE : GONE);
         invalidate();
@@ -739,6 +788,269 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
     private void update() {
         if (getVisibility() != VISIBLE && progress <= 0 && adapter.getItemCount() > 0) return;
         adapter.update();
+        listView.post(this::checkLoadMore);
+    }
+
+    // a short list (a filtered one, or the first page) doesn't scroll to its end: the next page is asked for here
+    private void checkLoadMore() {
+        if (saved || progress <= 0) return;
+        final LinearLayoutManager lm = (LinearLayoutManager) listView.getLayoutManager();
+        if (lm == null || lm.findLastVisibleItemPosition() < adapter.getItemCount() - 3) return;
+        final TopicsController controller = MessagesController.getInstance(currentAccount).getTopicsController();
+        if (!controller.endIsReached(-dialogId)) {
+            controller.loadTopics(-dialogId);
+        }
+    }
+
+    private static class IconGroup {
+        String key;
+        TLRPC.TL_forumTopic topic; // the first one: its icon is the tag's
+        int count;
+    }
+
+    /** What the topic's icon is: its custom emoji, or the color of the default one. Null for the general topic and in direct messages. */
+    private String getIconKey(TLRPC.TL_forumTopic topic) {
+        if (topic == null || mono || saved || topic.id == 1) return null;
+        return topic.icon_emoji_id != 0 ? "e" + topic.icon_emoji_id : "c" + topic.icon_color;
+    }
+
+    private boolean matchesIcon(Item item) {
+        return chosenIcon == null || item.topic != null && chosenIcon.equals(getIconKey(item.topic));
+    }
+
+    // the tags are shown when at least two icons are each shared by at least two topics
+    private void updateIconGroups(ArrayList<TLRPC.TL_forumTopic> topics) {
+        final LinkedHashMap<String, IconGroup> groups = new LinkedHashMap<>();
+        // for now only in the private beta
+        if (topics != null && BuildVars.DEBUG_PRIVATE_VERSION) {
+            for (TLRPC.TL_forumTopic topic : topics) {
+                final String key = getIconKey(topic);
+                if (key == null) continue;
+                IconGroup group = groups.get(key);
+                if (group == null) {
+                    group = new IconGroup();
+                    group.key = key;
+                    group.topic = topic;
+                    groups.put(key, group);
+                }
+                group.count++;
+            }
+        }
+        final ArrayList<IconGroup> shown = new ArrayList<>();
+        for (IconGroup group : groups.values()) {
+            if (group.count >= 2) shown.add(group);
+        }
+        if (shown.size() < 2) shown.clear();
+        // the most used first; a stable sort keeps the topics' order among equals
+        java.util.Collections.sort(shown, (a, b) -> Integer.compare(b.count, a.count));
+
+        boolean hasChosen = false;
+        for (IconGroup group : shown) {
+            if (group.key.equals(chosenIcon)) hasChosen = true;
+        }
+        if (!hasChosen) chosenIcon = null;
+
+        final ArrayList<IconGroup> old = new ArrayList<>(iconGroups);
+        iconGroups.clear();
+        iconGroups.addAll(shown);
+        if (old.isEmpty() || shown.isEmpty() || tagsShown <= 0) {
+            tagsAdapter.notifyDataSetChanged();
+        } else {
+            DiffUtil.calculateDiff(new DiffUtil.Callback() {
+                @Override public int getOldListSize() { return old.size(); }
+                @Override public int getNewListSize() { return shown.size(); }
+                @Override
+                public boolean areItemsTheSame(int o, int n) {
+                    return old.get(o).key.equals(shown.get(n).key);
+                }
+                @Override
+                public boolean areContentsTheSame(int o, int n) {
+                    return old.get(o).count == shown.get(n).count;
+                }
+            }).dispatchUpdatesTo(tagsAdapter);
+        }
+        setTagsShown(!iconGroups.isEmpty());
+    }
+
+    private boolean tagsVisible;
+
+    private void setTagsShown(boolean show) {
+        if (tagsVisible == show) return;
+        tagsVisible = show;
+        if (tagsAnimator != null) {
+            tagsAnimator.cancel();
+            tagsAnimator = null;
+        }
+        tagsAnimator = ValueAnimator.ofFloat(tagsShown, show ? 1f : 0f);
+        tagsAnimator.addUpdateListener(a -> applyTagsShown((float) a.getAnimatedValue()));
+        tagsAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (tagsAnimator == animation) tagsAnimator = null;
+            }
+        });
+        tagsAnimator.setDuration(320);
+        tagsAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        tagsAnimator.start();
+    }
+
+    // the list moves down under the tags as they come in
+    private void applyTagsShown(float t) {
+        tagsShown = t;
+        tagsView.setVisibility(t > 0 ? VISIBLE : GONE);
+        tagsView.setAlpha(t);
+        tagsView.setTranslationY(-dp(8) * (1f - t));
+        applyTagsPop(t);
+        final int listTop = AndroidUtilities.statusBarHeight + dp(100) + (int) (dp(TAGS_HEIGHT) * t);
+        ((FrameLayout.LayoutParams) listView.getLayoutParams()).topMargin = listTop;
+        if (topFade != null) ((FrameLayout.LayoutParams) topFade.getLayoutParams()).topMargin = listTop;
+        panel.requestLayout();
+    }
+
+    // the tags scale and fade in
+    private void applyTagsPop(float t) {
+        final int count = tagsView.getChildCount();
+        for (int i = 0; i < count; i++) {
+            final View child = tagsView.getChildAt(i);
+            final float scale = lerp(.6f, 1f, t);
+            child.setScaleX(scale);
+            child.setScaleY(scale);
+            child.setAlpha(t);
+        }
+    }
+
+    private ValueAnimator tagsPopAnimator;
+
+    // the panel coming in shows its tags coming in too, whenever they were laid out
+    private void animateTagsPop() {
+        if (tagsPopAnimator != null) tagsPopAnimator.cancel();
+        if (!tagsVisible || tagsAnimator != null) return;
+        applyTagsPop(0);
+        tagsPopAnimator = ValueAnimator.ofFloat(0f, 1f);
+        tagsPopAnimator.addUpdateListener(a -> applyTagsPop((float) a.getAnimatedValue()));
+        tagsPopAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (tagsPopAnimator == animation) tagsPopAnimator = null;
+                applyTagsPop(1f);
+            }
+        });
+        tagsPopAnimator.setDuration(320);
+        tagsPopAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        tagsPopAnimator.start();
+    }
+
+    private class TagsAdapter extends RecyclerListView.SelectionAdapter {
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            final TagButton button = new TagButton(parent.getContext());
+            button.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            return new RecyclerListView.Holder(button);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            ((TagButton) holder.itemView).set(iconGroups.get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return iconGroups.size();
+        }
+    }
+
+    private final TextPaint tagCountPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+    {
+        tagCountPaint.setTextSize(dp(13));
+        tagCountPaint.setTypeface(AndroidUtilities.bold());
+    }
+
+    /** A tag as in the search of saved messages: the topics' icon and how many topics have it. */
+    private class TagButton extends FrameLayout {
+        private final BackupImageView iconView;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rect = new RectF();
+        private final AnimatedFloat chosenProgress = new AnimatedFloat(this, 0, 260, CubicBezierInterpolator.EASE_OUT_QUINT);
+        private String key;
+        private String countText = "";
+        // a text colored emoji takes the color of the count: black, or white when chosen
+        private AnimatedEmojiDrawable emojiDrawable;
+        private int emojiColor;
+        private boolean chosen;
+
+        TagButton(Context context) {
+            super(context);
+            setWillNotDraw(false);
+            ScaleStateListAnimator.apply(this);
+            iconView = new BackupImageView(context);
+            addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.CENTER_VERTICAL, 3 + 7, 0, 0, 0));
+        }
+
+        void set(IconGroup group) {
+            final boolean same = group.key.equals(key);
+            if (tagsShown >= 1f && tagsPopAnimator == null) {
+                // a reused view may keep the scale and alpha of the row's appearance
+                setScaleX(1f);
+                setScaleY(1f);
+                setAlpha(1f);
+            }
+            key = group.key;
+            countText = String.valueOf(group.count);
+            setContentDescription(countText);
+            if (!same) {
+                iconView.setAnimatedEmojiDrawable(null);
+                iconView.clearImage();
+                emojiDrawable = null;
+                emojiColor = 0;
+                if (group.topic.icon_emoji_id != 0) {
+                    // its own drawable, not the cached one the rows share: its color filter stays on the tag
+                    emojiDrawable = new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW, currentAccount, group.topic.icon_emoji_id);
+                    iconView.setAnimatedEmojiDrawable(emojiDrawable);
+                } else {
+                    // the default icon without its letter: only its color is what the topics share
+                    iconView.setImageDrawable(new org.telegram.ui.Components.Forum.ForumBubbleDrawable(group.topic.icon_color));
+                }
+            }
+            updateChosen(same);
+            requestLayout();
+            invalidate();
+        }
+
+        void updateChosen(boolean animated) {
+            chosen = key != null && key.equals(chosenIcon);
+            if (!animated) chosenProgress.set(chosen ? 1f : 0f, true);
+            invalidate();
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            final int width = dp(3 + 7 + 20 + 5) + (int) Math.ceil(tagCountPaint.measureText(countText)) + dp(10 + 3);
+            super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
+        }
+
+        @Override
+        protected void onDraw(@NonNull Canvas canvas) {
+            final float t = chosenProgress.set(chosen ? 1f : 0f);
+            final int accent = getThemedColor(Theme.key_chat_inReactionButtonBackground);
+            rect.set(dp(3), (getHeight() - dp(28)) / 2f, getWidth() - dp(3), (getHeight() + dp(28)) / 2f);
+            // not chosen: the gray of the search field
+            paint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_dialogSearchBackground), accent, t));
+            canvas.drawRoundRect(rect, dp(10), dp(10), paint);
+            final int textColor = ColorUtils.blendARGB(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), getThemedColor(Theme.key_chat_inReactionButtonTextSelected), t);
+            tagCountPaint.setColor(textColor);
+            if (emojiDrawable != null && emojiColor != textColor) {
+                emojiColor = textColor;
+                emojiDrawable.setColorFilter(new PorterDuffColorFilter(textColor, PorterDuff.Mode.SRC_IN));
+                iconView.invalidate();
+            }
+            canvas.drawText(countText, dp(3 + 7 + 20 + 5), rect.centerY() - (tagCountPaint.descent() + tagCountPaint.ascent()) / 2f, tagCountPaint);
+        }
     }
 
     /** The user or chat a row stands for: a saved chat, or the sender of a direct messages topic. */
@@ -832,11 +1144,14 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
 
         void update() {
             // the same query on a shown list animates: rows move to their new places
+            // a changed icon's filter animates too: the filtered out rows fade away, the others move to their places
             final boolean animated = TextUtils.equals(lastQuery, query) && progress > 0 && !items.isEmpty();
             lastQuery = query;
             final ArrayList<Item> old = new ArrayList<>(items);
             items.clear();
-            if (TextUtils.isEmpty(query)) {
+            final ArrayList<TLRPC.TL_forumTopic> topics = saved ? null : MessagesController.getInstance(currentAccount).getTopicsController().getTopics(-dialogId);
+            if (!saved) updateIconGroups(topics);
+            if (TextUtils.isEmpty(query) && chosenIcon == null) {
                 items.add(new Item());
             }
             if (saved) {
@@ -850,12 +1165,11 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
                 return;
             }
             final HashSet<Long> shown = new HashSet<>();
-            final ArrayList<TLRPC.TL_forumTopic> topics = MessagesController.getInstance(currentAccount).getTopicsController().getTopics(-dialogId);
             if (topics != null) {
                 for (TLRPC.TL_forumTopic topic : topics) {
                     final Item item = new Item();
                     item.topic = topic;
-                    if (!matchesQuery(item)) continue;
+                    if (!matchesQuery(item) || !matchesIcon(item)) continue;
                     items.add(item);
                     shown.add(item.getId());
                 }
@@ -864,7 +1178,7 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
                 for (TLRPC.TL_forumTopic topic : serverResults) {
                     final Item item = new Item();
                     item.topic = topic;
-                    if (!shown.add(item.getId())) continue;
+                    if (!matchesIcon(item) || !shown.add(item.getId())) continue;
                     items.add(item);
                 }
             }

@@ -88,7 +88,7 @@ import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.HintView;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
@@ -110,6 +110,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private SimpleActionBarDoneButton doneButton;
     private RecyclerListView listView;
     private MessageCell messageCell;
+    // the hint of the preview is over the list, not in it: the glass of the screen captures the list
+    private HintView2 previewHint;
+    private final int[] previewHintLocation = new int[2];
 
     private int initialRulesType;
     private int initialRulesSubType;
@@ -334,7 +337,6 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         private ChatMessageCell cell;
         private Drawable backgroundDrawable;
         private Drawable shadowDrawable;
-        private HintView hintView;
         private MessageObject messageObject;
 
         public MessageCell(Context context) {
@@ -375,16 +377,20 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             cell.setFullyDraw(true);
             cell.setMessageObject(messageObject, null, false, false, false);
             addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            hintView = new HintView(context, 1, true);
-            addView(hintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
         }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
             super.dispatchDraw(canvas);
-            hintView.showForMessageCell(cell, false);
+            updatePreviewHint();
         }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            updatePreviewHint();
+        }
+
 
         @Override
         protected void onDraw(Canvas canvas) {
@@ -438,6 +444,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
+            updatePreviewHint();
             if (backgroundGradientDisposable != null) {
                 backgroundGradientDisposable.dispose();
                 backgroundGradientDisposable = null;
@@ -588,6 +595,23 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         listView.setVerticalScrollBarEnabled(false);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (messageCell != null) {
+            previewHint = new HintView2(context, HintView2.DIRECTION_TOP)
+                .setMultilineText(true)
+                .setMaxWidth(250)
+                .setDuration(-1)
+                .setInnerPadding(11, 6, 11, 7)
+                .setHideByTouch(false);
+            previewHint.setPadding(dp(19), 0, dp(19), 0);
+            previewHint.setGlass(getBaseSimpleGlass().factory);
+            frameLayout.addView(previewHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    updatePreviewHint();
+                }
+            });
+        }
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (position == currentPhotoForRestRow) {
@@ -1636,17 +1660,41 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
     }
 
+    /** Under the name of the forward in the preview, as the old hint was; hidden with the preview. */
+    private void updatePreviewHint() {
+        if (previewHint == null || messageCell == null || fragmentView == null) {
+            return;
+        }
+        if (messageCell.getParent() != listView || !messageCell.isAttachedToWindow()) {
+            previewHint.hide(false);
+            return;
+        }
+        messageCell.getLocationInWindow(previewHintLocation);
+        final int cellX = previewHintLocation[0], cellY = previewHintLocation[1];
+        fragmentView.getLocationInWindow(previewHintLocation);
+        previewHint.showAt(
+            cellX - previewHintLocation[0] + messageCell.cell.getLeft() + messageCell.cell.getForwardNameCenterX(),
+            cellY - previewHintLocation[1] + messageCell.getPaddingTop() + dp(44),
+            false);
+    }
+
+    private void setPreviewHintText(CharSequence text) {
+        if (previewHint != null) {
+            previewHint.setText(text);
+        }
+    }
+
     private void setMessageText() {
         if (messageCell != null) {
             messageCell.messageObject.messageOwner.fwd_from.from_id = new TLRPC.TL_peerUser();
             if (currentType == TYPE_EVERYBODY) {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsEverybody));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsEverybody));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             } else if (currentType == TYPE_NOBODY) {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsNobody));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsNobody));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
             } else {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsContacts));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsContacts));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             }
             messageCell.cell.forceResetMessageObject();

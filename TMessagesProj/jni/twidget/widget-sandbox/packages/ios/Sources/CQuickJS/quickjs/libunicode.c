@@ -1285,7 +1285,7 @@ int unicode_script(CharRange *cr,
         cr_free(cr1);
         cr_free(cr2);
     }
-    goto fail;
+    return -1;
 }
 
 #define M(id) (1U << UNICODE_GC_ ## id)

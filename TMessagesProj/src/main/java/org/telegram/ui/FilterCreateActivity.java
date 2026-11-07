@@ -91,7 +91,7 @@ import org.telegram.ui.Components.EditTextEmoji;
 import org.telegram.ui.Components.EditTextSuggestionsFix;
 import org.telegram.ui.Components.EmojiView;
 import org.telegram.ui.Components.FolderBottomSheet;
-import org.telegram.ui.Components.HintView;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
@@ -733,30 +733,27 @@ public class FilterCreateActivity extends BaseFragment {
         });
     }
 
-    private HintView saveHintView;
+    private HintView2 saveHintView;
     private void showSaveHint() {
-        if (saveHintView != null && saveHintView.getVisibility() == View.VISIBLE) {
+        if (saveHintView != null && saveHintView.isShowing() || !(fragmentView instanceof FrameLayout)) {
             return;
         }
 
-        saveHintView = new HintView(getContext(), 6, true) {
-            @Override
-            public void setVisibility(int visibility) {
-                super.setVisibility(visibility);
-                if (visibility != VISIBLE) {
-                    try {
-                        ((ViewGroup) getParent()).removeView(this);
-                    } catch (Exception ignore) {}
-                }
-            }
-        };
-        saveHintView.textView.setMaxWidth(AndroidUtilities.displaySize.x);
-        saveHintView.setExtraTranslationY(AndroidUtilities.dp(-16));
-        saveHintView.setText(LocaleController.getString(R.string.FilterFinishCreating));
-        ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.rightMargin = AndroidUtilities.dp(3);
-        getParentLayout().getOverlayContainerView().addView(saveHintView, params);
-        saveHintView.showForView(doneItem, true);
+        final HintView2 hint = saveHintView = new HintView2(getContext(), HintView2.DIRECTION_TOP)
+            .setMultilineText(true)
+            .setDuration(2300)
+            .setHideByTouch(true)
+            .useScale(true)
+            .setInnerPadding(11, 6, 11, 7)
+            // the arrow on the pill of the done button, as the old hint was
+            .setAnchorGap(-AndroidUtilities.dp(10));
+        hint.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
+        hint.setGlass(getBaseSimpleGlass().factory);
+        hint.setText(LocaleController.getString(R.string.FilterFinishCreating));
+        hint.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(hint));
+        // over the header, under its done button
+        ((FrameLayout) fragmentView).addView(hint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+        hint.showForView(doneItem, true);
     }
 
     public static boolean canAddToFolder(TLRPC.Chat chat) {

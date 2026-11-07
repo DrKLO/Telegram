@@ -50,6 +50,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.utils.pip.PipCoordinator;
+import org.telegram.utils.pip.PipSession;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -261,7 +263,7 @@ public class PhotoViewerWebView extends FrameLayout {
             @Override
             public void draw(Canvas canvas) {
                 super.draw(canvas);
-                if (PipVideoOverlay.getInnerView() == this && progressBarBlackBackground.getVisibility() == VISIBLE) {
+                if (getParent() != PhotoViewerWebView.this && progressBarBlackBackground.getVisibility() == VISIBLE) {
                     canvas.drawColor(Color.BLACK);
                     drawBlackBackground(canvas, getWidth(), getHeight());
                 }
@@ -630,24 +632,26 @@ public class PhotoViewerWebView extends FrameLayout {
     }
 
     public boolean openInPip() {
-        boolean inAppOnly = isInAppOnly();
-        if (!inAppOnly && !checkInlinePermissions()) {
-            return false;
-        }
         if (progressBar.getVisibility() == View.VISIBLE) {
             return false;
         }
-        if (PipVideoOverlay.isVisible()) {
-            PipVideoOverlay.dismiss();
+        final PipSession floating = PipCoordinator.getInstance().findFloating();
+        if (floating != null) {
+            floating.dismiss();
             AndroidUtilities.runOnUIThread(this::openInPip, 300);
             return true;
         }
 
         progressBarBlackBackground.setVisibility(VISIBLE);
-        if (PipVideoOverlay.show(inAppOnly, (Activity) getContext(), this, webView, currentWebpage.embed_width, currentWebpage.embed_height, false)) {
-            PipVideoOverlay.setPhotoViewer(PhotoViewer.getInstance());
-        }
-        return true;
+        return photoViewer.startEmbedPip();
+    }
+
+    public int getEmbedWidth() {
+        return currentWebpage != null ? currentWebpage.embed_width : 0;
+    }
+
+    public int getEmbedHeight() {
+        return currentWebpage != null ? currentWebpage.embed_height : 0;
     }
 
     public boolean isYouTube() {
@@ -799,7 +803,7 @@ public class PhotoViewerWebView extends FrameLayout {
             parent.removeView(webView);
         }
         addView(webView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        PipVideoOverlay.dismiss();
+        photoViewer.completeEmbedPipExpand();
     }
 
     public void release() {

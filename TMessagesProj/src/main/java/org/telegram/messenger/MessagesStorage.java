@@ -1874,6 +1874,9 @@ public class MessagesStorage extends BaseController {
                     if ((flags & TopicsController.TOPIC_FLAG_ICON) != 0) {
                         topicToUpdate.icon_emoji_id = fromTopic.icon_emoji_id;
                         topicToUpdate.flags |= 1;
+                        if (fromTopic.icon_color != 0) {
+                            topicToUpdate.icon_color = fromTopic.icon_color;
+                        }
                     }
                     if ((flags & TopicsController.TOPIC_FLAG_PIN) != 0) {
                         topicToUpdate.pinned = fromTopic.pinned;

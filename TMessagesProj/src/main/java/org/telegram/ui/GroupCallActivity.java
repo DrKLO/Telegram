@@ -117,8 +117,6 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.pip.PipSource;
-import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.voip.GroupCallMessage;
 import org.telegram.messenger.voip.GroupCallMessagesController;
@@ -206,7 +204,7 @@ import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
 import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
 import org.telegram.ui.Components.voip.GroupCallStatusIcon;
 import org.telegram.ui.Components.voip.PrivateVideoPreviewDialog;
-import org.telegram.ui.Components.voip.RTMPStreamPipOverlay;
+import org.telegram.ui.Components.voip.RtmpStreamPipContent;
 import org.telegram.ui.Components.voip.VoIPTextureView;
 import org.telegram.ui.Components.voip.VoIPToggleButton;
 import org.telegram.ui.Stories.recorder.DominantColors;
@@ -466,7 +464,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     GroupCallFullscreenAdapter fullscreenAdapter;
     ViewTreeObserver.OnPreDrawListener requestFullscreenListener;
     public CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable();
-    private PipSource pipSource;
     private boolean isInDrawRenderNodeBlur;
 
     public static boolean isLandscapeMode;
@@ -557,6 +554,17 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
         }
     };
+
+    /** Between the stream and the leave button; MIN_VALUE when there is no stream cell. */
+    private int getWatchersTopMargin(int listPaddingTop) {
+        final GroupCallGridCell cell = findGroupCallGridCell();
+        if (cell == null) {
+            return Integer.MIN_VALUE;
+        }
+        final int leaveButtonTop = buttonsContainer.getTop() + buttonsContainer.getMeasuredHeight() / 2 - leaveButton.getMeasuredHeight() / 2;
+        final int top = listPaddingTop + ActionBar.getCurrentActionBarHeight() + cell.getMeasuredHeight();
+        return top + (leaveButtonTop - top) / 2 - dp(32);
+    }
 
     private GroupCallGridCell findGroupCallGridCell() {
         for (int i = 0; i < listView.getChildCount(); i++) {
@@ -2484,6 +2492,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 int totalHeight = MeasureSpec.getSize(heightMeasureSpec);
                 ignoreLayout = true;
                 boolean landscape = MeasureSpec.getSize(widthMeasureSpec) > totalHeight && !AndroidUtilities.isTablet();
+                if (parentActivity != null && AndroidUtilities.isInPictureInPictureMode(parentActivity)) {
+                    // the sheet is hidden in system PiP: the PiP window's shape is not an orientation
+                    // (a stream would switch to fullscreen and stay there after PiP)
+                    landscape = isLandscapeMode;
+                }
                 renderersContainer.listWidth = MeasureSpec.getSize(widthMeasureSpec);
                 boolean tablet = AndroidUtilities.isTablet() && MeasureSpec.getSize(widthMeasureSpec) > totalHeight && !isRtmpStream();
                 if (isLandscapeMode != landscape) {
@@ -2725,12 +2738,9 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
                 if (watchersView != null) {
                     layoutParams = (LayoutParams) watchersView.getLayoutParams();
-                    GroupCallGridCell cell = findGroupCallGridCell();
-                    if (cell != null) {
-                        int leaveButtonTop = buttonsContainer.getTop() + buttonsContainer.getMeasuredHeight() / 2 - leaveButton.getMeasuredHeight() / 2;
-                        int top = padding + ActionBar.getCurrentActionBarHeight() + cell.getMeasuredHeight();
-                        int diff = (leaveButtonTop - top) / 2;
-                        layoutParams.topMargin = top + diff - dp(32);
+                    final int topMargin = getWatchersTopMargin(padding);
+                    if (topMargin != Integer.MIN_VALUE) {
+                        layoutParams.topMargin = topMargin;
                         layoutParams.height = dp(70);
                     }
                 }
@@ -2795,6 +2805,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 renderersContainer.inLayout = false;
                 updateLayout(false);
                 wasLayout = true;
+
+                if (watchersView != null) {
+                    // measured from the buttons' previous layout: one more pass when they moved
+                    // (back from system PiP the first pass still sees the PiP window's layout)
+                    final int topMargin = getWatchersTopMargin(listView.getPaddingTop());
+                    if (topMargin != Integer.MIN_VALUE && topMargin != ((LayoutParams) watchersView.getLayoutParams()).topMargin) {
+                        post(this::requestLayout);
+                    }
+                }
 
                 if (needAnimate && listView.getLeft() != fromX) {
                     float dx = fromX - listView.getLeft();
@@ -4739,20 +4758,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         ThemeBind.selectorBackground(pipItem, Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6), null, ThemeBind.of(Theme.key_voipgroup_actionBarItemsSelector));
         pipItem.setOnClickListener(v -> {
             if (isRtmpStream()) {
-                if (PipUtils.checkAnyPipPermissions(parentActivity)) {
-                    RTMPStreamPipOverlay.show(parentActivity);
-                    dismiss();
-                } else {
-                    AlertsCreator.createDrawOverlayPermissionDialog(parentActivity, null, true).show();
-                }
+                // the floating window: an overlay with the permission, an in-app window without it
+                RtmpStreamPipContent.openFloating(parentActivity);
                 return;
             }
-            if (AndroidUtilities.checkInlinePermissions(parentActivity)) {
-                GroupCallPip.clearForce();
-                dismiss();
-            } else {
-                AlertsCreator.createDrawOverlayGroupCallPermissionDialog(getContext()).show();
-            }
+            // our own floating bubble: an overlay window with the permission, an in-app one without;
+            // system PiP replaces the in-app one only when the user leaves the app
+            GroupCallPip.clearForce();
+            dismiss();
         });
 
         screenShareItem = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_voipgroup_actionBarItems));
@@ -6404,9 +6417,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         // NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.stopAllHeavyOperations, 2048);
         super.show();
 
-        if (RTMPStreamPipOverlay.isVisible()) {
-            RTMPStreamPipOverlay.dismiss();
-        }
+        RtmpStreamPipContent.onSheetShown();
     }
 
     @Override
@@ -6450,10 +6461,6 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
         if (VoIPService.getSharedInstance() != null) {
             VoIPService.getSharedInstance().clearRemoteSinks();
-        }
-        if (pipSource != null) {
-            pipSource.destroy();
-            pipSource = null;
         }
     }
 
@@ -9554,9 +9561,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
     }
 
     private void onUserLeaveHint() {
-        if (isRtmpStream() && AndroidUtilities.checkInlinePermissions(parentActivity) && !RTMPStreamPipOverlay.isVisible()) {
-            dismiss();
-            AndroidUtilities.runOnUIThread(() -> RTMPStreamPipOverlay.show(parentActivity), 100);
+        // with the overlay permission the stream goes on in the overlay window; without it the
+        // open sheet goes to system PiP (RtmpStreamPipContent)
+        if (isRtmpStream() && AndroidUtilities.checkInlinePermissions(parentActivity) && !RtmpStreamPipContent.isFloating()) {
+            RtmpStreamPipContent.openFloating(parentActivity);
+        } else if (!isRtmpStream() && AndroidUtilities.checkInlinePermissions(parentActivity)) {
+            // the call goes on in the overlay bubble once the app is stopped (as 1:1 calls do),
+            // even if the user has not pressed the PiP button in this call
+            GroupCallPip.clearForce();
         }
     }
 
@@ -9603,6 +9615,11 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
     public boolean isRtmpStream() {
         return call != null && call.call.rtmp_stream;
+    }
+
+    /** Participant the user opened full screen in the call sheet, if any (utils.pip picks it first). */
+    public @Nullable ChatObject.VideoParticipant getFullscreenVideoParticipant() {
+        return renderersContainer != null && renderersContainer.inFullscreenMode ? renderersContainer.fullscreenParticipant : null;
     }
 
     public boolean isConference() {

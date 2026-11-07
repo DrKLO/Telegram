@@ -172,6 +172,39 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         onBoundPropsChanged();
     }
 
+    public static final int ARROW_NONE = -1;
+    public static final int ARROW_LEFT = 0;
+    public static final int ARROW_TOP = 1;
+    public static final int ARROW_RIGHT = 2;
+    public static final int ARROW_BOTTOM = 3;
+
+    /**
+     * An arrow out of a side (a hint): the bounds hold it, the rect is {@code height} smaller on that side. The arrow is a
+     * rounded square turned by 45°: its tip is rounded by {@code tipRadius}, it meets the edge with fillets of
+     * {@code filletRadius}. {@code position} is where its axis is along the side (x for the top and the bottom), in the
+     * coordinates of the bounds; it stays clear of the corners. For the liquid glass, the thickness of the lens should
+     * not be over the radius of the tip, nor over the corners', or the lens breaks at their axes.
+     */
+    public BlurredBackgroundDrawable setArrow(int side, float position, float height, float tipRadius, float filletRadius) {
+        final Props p = boundProps;
+        if (p.arrowSide != side || p.arrowPosition != position || p.arrowHeight != height || p.arrowTipRadius != tipRadius || p.arrowFilletRadius != filletRadius) {
+            p.arrowSide = side;
+            p.arrowPosition = position;
+            p.arrowHeight = height;
+            p.arrowTipRadius = tipRadius;
+            p.arrowFilletRadius = filletRadius;
+            p.build();
+
+            onBoundPropsChanged();
+            invalidateSelf();
+        }
+        return this;
+    }
+
+    public BlurredBackgroundDrawable clearArrow() {
+        return setArrow(ARROW_NONE, 0, 0, 0, 0);
+    }
+
     public Rect getPaddedBounds() {
         return boundProps.boundsWithPadding;
     }
@@ -335,22 +368,43 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         return this;
     }
 
+    private boolean evenRim;
+
+    /** The stroke colors as an even stroke along the whole edge, not the crescents (a hint: its arrow has no top). */
+    public BlurredBackgroundDrawable setEvenRim(boolean evenRim) {
+        if (this.evenRim != evenRim) {
+            this.evenRim = evenRim;
+            rimFromColors = null;
+            invalidateSelf();
+        }
+        return this;
+    }
+
     private GlassRim getRim() {
         if (rim != null) {
             return rim;
         }
         if (rimFromColors == null) {
-            rimFromColors = GlassRim.of(lightAngle,
-                boundProps.strokeWidthTop, strokeColorTop,
-                boundProps.strokeWidthBottom, strokeColorBottom,
-                outlineWidth, outlineColor);
+            rimFromColors = evenRim
+                ? GlassRim.evenOf(
+                    boundProps.strokeWidthTop, strokeColorTop,
+                    boundProps.strokeWidthBottom, strokeColorBottom,
+                    outlineWidth, outlineColor)
+                : GlassRim.of(lightAngle,
+                    boundProps.strokeWidthTop, strokeColorTop,
+                    boundProps.strokeWidthBottom, strokeColorBottom,
+                    outlineWidth, outlineColor);
         }
         return rimFromColors;
     }
 
     private void drawRim(Canvas canvas, float alpha) {
         final Rect r = boundProps.boundsWithPadding;
-        rimRenderer.draw(canvas, r.left, r.top, r.right, r.bottom, boundProps.radii, getRim(), alpha);
+        if (boundProps.hasArrow()) {
+            rimRenderer.drawPath(canvas, boundProps.path, boundProps.shapeKey, r.left, r.top, r.right, r.bottom, getRim(), alpha);
+        } else {
+            rimRenderer.draw(canvas, r.left, r.top, r.right, r.bottom, boundProps.radii, getRim(), alpha);
+        }
     }
 
 
@@ -377,24 +431,176 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         boolean radiiAreSame = true;
         final Rect boundsWithPadding = new Rect();
 
+        int arrowSide = ARROW_NONE;
+        float arrowPosition, arrowHeight, arrowTipRadius, arrowFilletRadius;
+        /** The rect without the arrow. */
+        final RectF body = new RectF();
+        /** The arrow along its side, from the side's start (see {@link #buildArrowPath}); half its width at the edge. */
+        float arrowAxis, arrowHalfBase;
+        /** The space along the side from the arrow to the corners. */
+        float arrowFreeStart, arrowFreeEnd;
+        /** What the shape with the arrow depends on, for the baked rim. */
+        long shapeKey;
+        private final Matrix arrowMatrix = new Matrix();
+        private final RectF arrowOval = new RectF();
+        private final float[] arrowRadii = new float[4];
+
+        boolean hasArrow() {
+            return arrowSide != ARROW_NONE && arrowHeight > 0;
+        }
+
         void build() {
             radiiAreSame = RadiiUtils.radiiAreSame(radii);
 
             boundsWithPadding.set(bounds);
             boundsWithPadding.inset(padding, padding);
+            body.set(boundsWithPadding);
 
             path.rewind();
-            path.addRoundRect(
-                boundsWithPadding.left,
-                boundsWithPadding.top,
-                boundsWithPadding.right,
-                boundsWithPadding.bottom,
-                radii, Path.Direction.CW);
+            if (hasArrow()) {
+                buildArrowPath();
+            } else {
+                path.addRoundRect(
+                    boundsWithPadding.left,
+                    boundsWithPadding.top,
+                    boundsWithPadding.right,
+                    boundsWithPadding.bottom,
+                    radii, Path.Direction.CW);
+            }
             path.close();
         }
 
+        /**
+         * The rect with the arrow, built with its side on top (the side along x, the arrow up) and turned into place.
+         * The geometry is the shader's one (liquid_glass_shader.agsl, sdArrowEdge).
+         */
+        private void buildArrowPath() {
+            final boolean vertical = arrowSide == ARROW_LEFT || arrowSide == ARROW_RIGHT;
+            switch (arrowSide) {
+                case ARROW_LEFT: body.left += arrowHeight; break;
+                case ARROW_TOP: body.top += arrowHeight; break;
+                case ARROW_RIGHT: body.right -= arrowHeight; break;
+                default: body.bottom -= arrowHeight; break;
+            }
+            final float w = vertical ? body.height() : body.width();
+            final float h = vertical ? body.width() : body.height();
+            // the corners as they are with the side on top: top-left, top-right, bottom-right, bottom-left
+            final int first;
+            switch (arrowSide) {
+                case ARROW_LEFT: first = 3; break;
+                case ARROW_TOP: first = 0; break;
+                case ARROW_RIGHT: first = 1; break;
+                default: first = 2; break;
+            }
+            final float maxRadius = Math.max(0, Math.min(w, h) / 2f);
+            for (int i = 0; i < 4; i++) {
+                arrowRadii[i] = Math.min(radii[((first + i) % 4) * 2], maxRadius);
+            }
+            final float rTL = arrowRadii[0], rTR = arrowRadii[1], rBR = arrowRadii[2], rBL = arrowRadii[3];
+            final float ah = arrowHeight;
+            final float rt = Math.min(arrowTipRadius, ah);
+            final float rf = arrowFilletRadius;
+            final float S = (float) Math.sqrt(0.5);
+            final float SQ2m1 = (float) Math.sqrt(2) - 1;
+            arrowHalfBase = ah + (rt + rf) * SQ2m1;
+
+            float ax;
+            switch (arrowSide) {
+                case ARROW_LEFT: ax = body.bottom - arrowPosition; break;
+                case ARROW_TOP: ax = arrowPosition - body.left; break;
+                case ARROW_RIGHT: ax = arrowPosition - body.top; break;
+                default: ax = body.right - arrowPosition; break;
+            }
+            final float minAx = rTL + arrowHalfBase, maxAx = w - rTR - arrowHalfBase;
+            ax = minAx <= maxAx ? MathUtils.clamp(ax, minAx, maxAx) : w / 2f;
+            arrowAxis = ax;
+            arrowFreeStart = ax - rTL;
+            arrowFreeEnd = w - rTR - ax;
+
+            path.moveTo(rTL, 0);
+            // the fillet, the side up to the tip, the tip, the side down, the fillet
+            final float cf = arrowHalfBase;
+            arrowOval.set(ax - cf - rf, -2 * rf, ax - cf + rf, 0);
+            path.arcTo(arrowOval, 90, -45, false);
+            arrowOval.set(ax - rt, -ah, ax + rt, -ah + 2 * rt);
+            path.arcTo(arrowOval, 225, 90, false);
+            arrowOval.set(ax + cf - rf, -2 * rf, ax + cf + rf, 0);
+            path.arcTo(arrowOval, 135, -45, false);
+            corner(w - rTR * 2, 0, rTR, 270);
+            corner(w - rBR * 2, h - rBR * 2, rBR, 0);
+            corner(0, h - rBL * 2, rBL, 90);
+            corner(0, 0, rTL, 180);
+
+            switch (arrowSide) {
+                case ARROW_LEFT: arrowMatrix.setRotate(-90); arrowMatrix.postTranslate(body.left, body.bottom); break;
+                case ARROW_TOP: arrowMatrix.setTranslate(body.left, body.top); break;
+                case ARROW_RIGHT: arrowMatrix.setRotate(90); arrowMatrix.postTranslate(body.right, body.top); break;
+                default: arrowMatrix.setRotate(180); arrowMatrix.postTranslate(body.right, body.bottom); break;
+            }
+            path.transform(arrowMatrix);
+
+            long k = 0xcbf29ce484222325L;
+            k = mix(k, arrowSide);
+            k = mix(k, Math.round(w * 4));
+            k = mix(k, Math.round(h * 4));
+            k = mix(k, Math.round(ax * 4));
+            k = mix(k, Math.round(ah * 4));
+            k = mix(k, Math.round(rt * 4));
+            k = mix(k, Math.round(rf * 4));
+            for (float r : arrowRadii) {
+                k = mix(k, Math.round(r * 4));
+            }
+            // the subpixel position of the body in the bounds
+            k = mix(k, Math.round((body.left - boundsWithPadding.left) * 4));
+            k = mix(k, Math.round((body.top - boundsWithPadding.top) * 4));
+            shapeKey = k;
+        }
+
+        private void corner(float left, float top, float r, float startAngle) {
+            if (r <= 0) {
+                // a sharp corner is the corner of its oval
+                path.lineTo(left, top);
+                return;
+            }
+            arrowOval.set(left, top, left + r * 2, top + r * 2);
+            path.arcTo(arrowOval, startAngle, 90, false);
+        }
+
+        private static long mix(long k, int v) {
+            k ^= v;
+            return k * 0x100000001b3L;
+        }
+
+        /** The direction out of the body on the arrow's side, x and y. */
+        float arrowDirX() {
+            return arrowSide == ARROW_LEFT ? -1 : arrowSide == ARROW_RIGHT ? 1 : 0;
+        }
+
+        float arrowDirY() {
+            return arrowSide == ARROW_TOP ? -1 : arrowSide == ARROW_BOTTOM ? 1 : 0;
+        }
+
+        /** The point of the edge on the arrow's axis, in the coordinates of the bounds. */
+        float arrowAxisX() {
+            switch (arrowSide) {
+                case ARROW_LEFT: return body.left;
+                case ARROW_RIGHT: return body.right;
+                case ARROW_TOP: return body.left + arrowAxis;
+                default: return body.right - arrowAxis;
+            }
+        }
+
+        float arrowAxisY() {
+            switch (arrowSide) {
+                case ARROW_TOP: return body.top;
+                case ARROW_BOTTOM: return body.bottom;
+                case ARROW_RIGHT: return body.top + arrowAxis;
+                default: return body.bottom - arrowAxis;
+            }
+        }
+
         void drawShadows(Canvas canvas, Paint paint, boolean useInAppKeyboardOptimization) {
-            if (useInAppKeyboardOptimization) {
+            if (useInAppKeyboardOptimization && !hasArrow()) {
                 final float bottom = MathUtils.clamp(boundsWithPadding.top + radii[0] * 2,
                         boundsWithPadding.top, boundsWithPadding.bottom);
 
@@ -409,7 +615,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         }
 
         void draw(Canvas canvas, Paint paint) {
-            if (radiiAreSame) {
+            if (radiiAreSame && !hasArrow()) {
                 canvas.drawRoundRect(
                     boundsWithPadding.left,
                     boundsWithPadding.top,
@@ -433,7 +639,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             viewOutlineProvider = new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    BlurredBackgroundDrawable.getOutline(outline, boundProps.boundsWithPadding, boundProps.radii);
+                    BlurredBackgroundDrawable.this.getOutline(outline);
                 }
             };
         }
@@ -442,6 +648,16 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
 
     @Override
     public void getOutline(@NonNull Outline outline) {
+        if (boundProps.hasArrow()) {
+            // a path with the fillets is not convex: before Android 11 the outline is the rect alone
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                outline.setPath(boundProps.path);
+            } else {
+                final RectF body = boundProps.body;
+                outline.setRoundRect((int) body.left, (int) body.top, (int) body.right, (int) body.bottom, boundProps.radii[0]);
+            }
+            return;
+        }
         BlurredBackgroundDrawable.getOutline(outline, boundProps.boundsWithPadding, boundProps.radii);
     }
 
@@ -744,6 +960,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
     /** An opaque tint or a color source: the fill and the shadow as a nine-patch, baked once per color. */
     private final class ImplColor extends Impl {
         private final Blur3HashImpl hashBuilder = new Blur3HashImpl();
+        private final Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Rect ninePatchPadding = new Rect();
         private NinePatchDrawable ninePatch;
         private long ninePatchHash;
@@ -760,6 +977,19 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         /** The fill (may be transparent: the shadow alone) in the shape. */
         void drawFill(Canvas canvas, int fillColor) {
             if (Color.alpha(fillColor) == 0 && Color.alpha(shadowColor) == 0) {
+                return;
+            }
+            if (boundProps.hasArrow()) {
+                // not sliceable: the path with its shadow
+                final float alpha = getAlpha() / 255f;
+                arrowPaint.setColor(Theme.multAlpha(fillColor, alpha));
+                final int shadow = Theme.multAlpha(shadowColor, alpha * shadowAlpha);
+                if (Color.alpha(shadow) != 0) {
+                    arrowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadow);
+                } else {
+                    arrowPaint.clearShadowLayer();
+                }
+                canvas.drawPath(boundProps.path, arrowPaint);
                 return;
             }
             final NinePatchDrawable ninePatch = check(fillColor);
@@ -919,6 +1149,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
         private final Paint paintShadow = new Paint(Paint.ANTI_ALIAS_FLAG);
         private LiquidGlassEffect liquidGlassEffect;
         private boolean invalidated = true;
+        private boolean clipToOutline = true;
         private final RectF sourceBounds = new RectF();
 
         /** How much the lens is downsampled: as the source is. */
@@ -941,7 +1172,9 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
 
         @Override
         void setClipToOutline(boolean clipToOutline) {
-            renderNode.setClipToOutline(clipToOutline);
+            this.clipToOutline = clipToOutline;
+            // the arrow's path is not an outline every Android clips by: the canvas clips it
+            renderNode.setClipToOutline(clipToOutline && !boundProps.hasArrow());
         }
 
         @Override
@@ -984,6 +1217,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
                 renderNodeFill.setPosition(0, 0, b.width(), b.height());
                 renderNode.setPosition(0, 0, b.width(), b.height());
                 renderNode.setOutline(outline);
+                renderNode.setClipToOutline(clipToOutline && !boundProps.hasArrow());
                 invalidated = true;
             }
         }
@@ -1025,12 +1259,26 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             renderNodeFill.setTranslationY(originY - sT);
 
             if (liquidGlassEffect != null && Build.VERSION.SDK_INT >= 33) {
+                final RectF body = boundProps.body;
                 final int thickness = Math.max(Math.min(
                     boundProps.liquidThickness <= 0 ? dp(11) : boundProps.liquidThickness,
-                    Math.min(b.width(), b.height()) / 5), 1);
+                    (int) (Math.min(body.width(), body.height()) / 5)), 1);
 
+                if (boundProps.hasArrow()) {
+                    // the stripe the arrow changes, with the lens' band past its fillets, but clear of the corners
+                    final float stripe = Math.max(boundProps.arrowHalfBase, Math.min(boundProps.arrowHalfBase + thickness + 1,
+                        Math.min(boundProps.arrowFreeStart, boundProps.arrowFreeEnd)));
+                    liquidGlassEffect.setArrow(
+                        boundProps.arrowAxisX() - body.centerX(), boundProps.arrowAxisY() - body.centerY(),
+                        boundProps.arrowDirX(), boundProps.arrowDirY(),
+                        boundProps.arrowHeight, Math.min(boundProps.arrowTipRadius, boundProps.arrowHeight), boundProps.arrowFilletRadius,
+                        stripe);
+                } else {
+                    liquidGlassEffect.clearArrow();
+                }
                 liquidGlassEffect.update(
-                    b.width(), b.height(),
+                    body.width(), body.height(),
+                    body.left - b.left, body.top - b.top,
                     boundProps.shaderRadii[0], boundProps.shaderRadii[2], boundProps.shaderRadii[4], boundProps.shaderRadii[6],
                     thickness,
                     boundProps.liquidIntensity,
@@ -1085,6 +1333,9 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
 
             final Rect b = boundProps.boundsWithPadding;
             canvas.save();
+            if (boundProps.hasArrow()) {
+                canvas.clipPath(boundProps.path);
+            }
             canvas.translate(b.left, b.top);
             canvas.drawRenderNode(renderNode);
             canvas.restore();

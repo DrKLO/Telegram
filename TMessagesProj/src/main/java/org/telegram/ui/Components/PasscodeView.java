@@ -102,6 +102,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         } else if (id == NotificationCenter.passcodeDismissed && isAppLock()) {
             if (args[0] != this) {
                 setVisibility(GONE);
+                onHidden();
             }
         }
     }

@@ -169,6 +169,8 @@ public final class WidgetSandboxMessage implements WidgetSandboxSession.Listener
     /** UI: runs the widget's scripts, starting a new session when the old one was unloaded. */
     public void activate() {
         if (active) return;
+        // Kill switch: nothing starts, the last frame (if any) stays as it is.
+        if (WidgetSandboxSession.disabledByConfig()) return;
         active = true;
         if (session != null) {
             session.releaseScripts();

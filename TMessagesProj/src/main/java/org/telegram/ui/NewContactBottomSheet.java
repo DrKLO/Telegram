@@ -701,7 +701,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         notesField.setBackground(null);
         notesField.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
         notesField.getEditText().setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        notesField.setHint("Notes");
+        notesField.setHint(LocaleController.getString(R.string.ProfileNotes));
         qrButtonContainer.addView(notesField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.TOP, 0, 0, 0, 0));
         notesField.getEditText().setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {

@@ -54,6 +54,7 @@ import org.telegram.ui.LaunchActivity;
 
 import java.lang.ref.WeakReference;
 import java.net.IDN;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -162,10 +163,14 @@ public class Browser {
     }
 
     public static void openUrlInSystemBrowser(Context context, String url) {
+        openUrlInSystemBrowser(context, url, false);
+    }
+
+    public static void openUrlInSystemBrowser(Context context, String url, boolean keepWebAuthTokens) {
         if (url == null) {
             return;
         }
-        openUrl(context, Uri.parse(url), false, true, false, null, null, false, false, false);
+        openUrl(context, Uri.parse(url), false, true, false, null, null, false, false, false, keepWebAuthTokens);
     }
 
     public static void openUrl(Context context, Uri uri) {
@@ -292,9 +297,77 @@ public class Browser {
         openUrl(context, uri, allowCustom, tryTelegraph, false, inCaseLoading, null, false, true, false);
     }
 
+    private static boolean isWebAuthTokenParam(String part) {
+        final int eq = part.indexOf('=');
+        String name = eq < 0 ? part : part.substring(0, eq);
+        for (int i = 0; i < 4; ++i) {
+            final String decoded = Uri.decode(name);
+            if (TextUtils.equals(decoded, name)) break;
+            name = decoded;
+        }
+        while (name.startsWith("?")) {
+            name = name.substring(1);
+        }
+        name = name.toLowerCase();
+        return name.startsWith("tgwebauth") || name.equals("autologin_token");
+    }
+
+    private static String withoutWebAuthTokenParams(String encoded) {
+        if (encoded == null) return null;
+        final StringBuilder sb = new StringBuilder();
+        boolean removed = false, first = true;
+        for (String part : encoded.split("&", -1)) {
+            if (isWebAuthTokenParam(part)) {
+                removed = true;
+                continue;
+            }
+            if (!first) sb.append('&');
+            first = false;
+            sb.append(part);
+        }
+        return removed ? sb.toString() : null;
+    }
+
+    private static String withoutWebAuthTokenFragmentParams(String encoded) {
+        if (encoded == null) return null;
+        final int question = encoded.indexOf('?');
+        if (question < 0) {
+            return withoutWebAuthTokenParams(encoded);
+        }
+        final String routePart = encoded.substring(0, question);
+        final String paramsPart = encoded.substring(question + 1);
+        final String route = withoutWebAuthTokenParams(routePart);
+        final String params = withoutWebAuthTokenParams(paramsPart);
+        if (route == null && params == null) return null;
+        final String rest = params != null ? params : paramsPart;
+        return (route != null ? route : routePart) + (rest.isEmpty() ? "" : "?" + rest);
+    }
+
+    public static Uri withoutWebAuthTokens(Uri uri) {
+        if (uri == null || !("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))) {
+            return uri;
+        }
+        final String query = withoutWebAuthTokenParams(uri.getEncodedQuery());
+        final String fragment = withoutWebAuthTokenFragmentParams(uri.getEncodedFragment());
+        if (query == null && fragment == null) {
+            return uri;
+        }
+        final Uri.Builder builder = uri.buildUpon();
+        if (query != null) builder.encodedQuery(query.isEmpty() ? null : query);
+        if (fragment != null) builder.encodedFragment(fragment.isEmpty() ? null : fragment);
+        return builder.build();
+    }
+
     public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser, boolean allowIntent, boolean allowInAppBrowser, boolean forceRequest) {
+        openUrl(context, uri, _allowCustom, tryTelegraph, forceNotInternalForApps, inCaseLoading, browser, allowIntent, allowInAppBrowser, forceRequest, false);
+    }
+
+    public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser, boolean allowIntent, boolean allowInAppBrowser, boolean forceRequest, boolean keepWebAuthTokens) {
         if (context == null || uri == null) {
             return;
+        }
+        if (!keepWebAuthTokens) {
+            uri = withoutWebAuthTokens(uri);
         }
         final int currentAccount = UserConfig.selectedAccount;
         boolean[] forceBrowser = new boolean[]{false};
@@ -507,7 +580,7 @@ public class Browser {
             final boolean isIntentScheme = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("intent");
             if (isIntentScheme && !allowIntent) return false;
             final Intent intent = isIntentScheme ?
-                    Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME) :
+                    parseWebIntent(uri.toString()) :
                     new Intent(Intent.ACTION_VIEW, uri);
             if (!TextUtils.isEmpty(browser)) {
                 intent.setPackage(browser);
@@ -548,6 +621,19 @@ public class Browser {
         return false;
     }
 
+    // intent:// links come from web content: like Chrome, only let them reach browsable activities
+    public static Intent parseWebIntent(String url) throws URISyntaxException {
+        final Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        intent.setComponent(null);
+        final Intent selector = intent.getSelector();
+        if (selector != null) {
+            selector.addCategory(Intent.CATEGORY_BROWSABLE);
+            selector.setComponent(null);
+        }
+        return intent;
+    }
+
     public static boolean openInExternalApp(Context context, String url, boolean allowIntent) {
         if (url == null) return false;
         try {
@@ -557,13 +643,13 @@ public class Browser {
                 uri,
                 uri.getScheme() == null ? "https" : uri.getScheme(),
                     null, uri.getHost() != null ? uri.getHost().toLowerCase() : uri.getHost(),
-                TextUtils.isEmpty(uri.getPath()) ? "/" : uri.getPath()
+                TextUtils.isEmpty(uri.getEncodedPath()) ? "/" : uri.getEncodedPath()
             );
             uri = Uri.parse(url);
             final boolean isIntentScheme = url.startsWith("intent://") || uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("intent");
             if (isIntentScheme && !allowIntent) return false;
             final Intent intent = isIntentScheme ?
-                Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME) :
+                parseWebIntent(uri.toString()) :
                 new Intent(Intent.ACTION_VIEW, uri);
             if (!isIntentScheme && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 intent.addCategory(Intent.CATEGORY_BROWSABLE);
@@ -830,8 +916,8 @@ public class Browser {
             modifiedUriBuilder.append(scheme).append("://");
         }
         if (newUserInfo == null) {
-            if (originalUri.getUserInfo() != null) {
-                modifiedUriBuilder.append(originalUri.getUserInfo()).append("@");
+            if (originalUri.getEncodedUserInfo() != null) {
+                modifiedUriBuilder.append(originalUri.getEncodedUserInfo()).append("@");
             }
         } else if (!TextUtils.isEmpty(newUserInfo)) {
             modifiedUriBuilder.append(newUserInfo).append("@");
@@ -848,16 +934,68 @@ public class Browser {
         }
         if (newPath != null) {
             modifiedUriBuilder.append(newPath);
-        } else if (originalUri.getPath() != null) {
-            modifiedUriBuilder.append(originalUri.getPath());
+        } else if (originalUri.getEncodedPath() != null) {
+            modifiedUriBuilder.append(originalUri.getEncodedPath());
         }
-        if (originalUri.getQuery() != null) {
-            modifiedUriBuilder.append("?").append(originalUri.getQuery());
+        if (originalUri.getEncodedQuery() != null) {
+            modifiedUriBuilder.append("?").append(originalUri.getEncodedQuery());
         }
-        if (originalUri.getFragment() != null) {
-            modifiedUriBuilder.append("#").append(originalUri.getFragment());
+        if (originalUri.getEncodedFragment() != null) {
+            modifiedUriBuilder.append("#").append(originalUri.getEncodedFragment());
         }
         return modifiedUriBuilder.toString();
+    }
+
+    // readable url for confirmation dialogs: %xx decoded in path, query and fragment only
+    public static String formatUrlForDisplay(String url, boolean unicodeHost) {
+        if (url == null) return null;
+        try {
+            final Uri uri = Uri.parse(url);
+            if (uri.getHost() == null) return url;
+            final StringBuilder sb = new StringBuilder();
+            if (uri.getScheme() != null) {
+                sb.append(uri.getScheme()).append("://");
+            }
+            if (uri.getEncodedUserInfo() != null) {
+                sb.append(uri.getEncodedUserInfo()).append("@");
+            }
+            sb.append(unicodeHost ? IDN_toUnicode(uri.getHost()) : uri.getHost());
+            if (uri.getPort() != -1) {
+                sb.append(":").append(uri.getPort());
+            }
+            if (uri.getEncodedPath() != null) {
+                sb.append(decodeForDisplay(uri.getEncodedPath()));
+            }
+            if (uri.getEncodedQuery() != null) {
+                sb.append("?").append(decodeForDisplay(uri.getEncodedQuery()));
+            }
+            if (uri.getEncodedFragment() != null) {
+                sb.append("#").append(decodeForDisplay(uri.getEncodedFragment()));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            FileLog.e(e, false);
+            return url;
+        }
+    }
+
+    private static String decodeForDisplay(String encoded) {
+        if (encoded.indexOf('%') < 0) return encoded;
+        final String decoded = Uri.decode(encoded);
+        if (decoded.indexOf('\uFFFD') >= 0) return encoded;
+        final StringBuilder sb = new StringBuilder(decoded.length());
+        for (int i = 0; i < decoded.length(); ) {
+            final int cp = decoded.codePointAt(i);
+            final int len = Character.charCount(cp);
+            if (Character.isISOControl(cp) || Character.getType(cp) == Character.FORMAT) {
+                // keep invisible and bidi characters encoded
+                sb.append(Uri.encode(decoded.substring(i, i + len)));
+            } else {
+                sb.append(decoded, i, i + len);
+            }
+            i += len;
+        }
+        return sb.toString();
     }
 
 }

@@ -287,6 +287,16 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
                     if (doneButton != null && doneButton.isLoading()) {
                         return;
                     }
+                    String publicUsername = ChatObject.getPublicUsername(currentChat);
+                    if (isPrivate && !TextUtils.isEmpty(publicUsername)) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(context, getResourceProvider());
+                        builder.setTitle(LocaleController.getString(isChannel ? R.string.MakeChannelPrivateTitle : R.string.MakeGroupPrivateTitle));
+                        builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(isChannel ? R.string.MakeChannelPrivateText : R.string.MakeGroupPrivateText, getMessagesController().linkPrefix + "/" + publicUsername)));
+                        builder.setPositiveButton(LocaleController.getString(R.string.Continue), (dialogInterface, i) -> processDone());
+                        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                        showDialog(builder.create());
+                        return;
+                    }
                     processDone();
                 }
             }

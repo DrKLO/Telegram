@@ -7,7 +7,9 @@ import android.os.Trace;
 import android.view.Choreographer;
 
 import org.json.JSONObject;
+import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.R;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
@@ -251,12 +253,27 @@ public final class WidgetSandboxSession {
     }
 
     /**
+     * The kill switch (AppGlobalConfig#widgetsDisabled): true when the config of any logged-in account turns
+     * widgets off. No native session is created then, so no widget code runs in the client. Any thread.
+     */
+    public static boolean disabledByConfig() {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated() && AppGlobalConfig.getInstance(a).widgetsDisabled.get()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Creates the native session on the calling background thread. `holdScripts` is kept for the
      * test screens: widget-sandbox v0.1.0 has no held boot, the scripts always run at once.
      */
     public void start(int widthPx, boolean holdScripts) throws Exception {
         if (Looper.myLooper() == Looper.getMainLooper())
             throw new IllegalStateException("Start WidgetSandboxSession off UI");
+        // The last gate before any widget code runs: every session, the chat's and the debug runners', comes here.
+        if (disabledByConfig()) throw new IllegalStateException("Widgets are disabled by the app config");
         // Set before the session exists: nothing reads it until the creator hands this object over.
         if (this.widthPx == 0) this.widthPx = widthPx;
         Trace.beginSection("WidgetSandbox:Create");

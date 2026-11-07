@@ -652,7 +652,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         if (ia > 0.004f && icon != null) {
             computeViewRect(icon, tmpRect);
             final float s = 1f - 0.15f * Utilities.clamp01(m / 0.3f);
-            canvas.saveLayerAlpha(tmpRect.left, tmpRect.top, tmpRect.right, tmpRect.bottom, (int) (255 * ia));
+            saveFaded(canvas, tmpRect.left, tmpRect.top, tmpRect.right, tmpRect.bottom, ia);
             canvas.scale(s * (1f + wobble * 0.5f), s * (1f - wobble), tmpRect.centerX(), tmpRect.centerY());
             canvas.translate(tmpRect.left, tmpRect.top);
             icon.draw(canvas);
@@ -671,14 +671,14 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
                 tx = Math.round(tx);
                 ty = Math.round(ty);
             }
-            canvas.saveLayerAlpha(bulgedRect.left, bulgedRect.top, bulgedRect.right, bulgedRect.bottom, (int) (255 * ca));
+            saveFaded(canvas, bulgedRect.left, bulgedRect.top, bulgedRect.right, bulgedRect.bottom, ca);
             canvas.translate(tx, ty);
             super.dispatchDraw(canvas);
             canvas.restore();
         } else if (ca > 0.004f) {
             // the width leads: a content scaled with it never sticks out of the sides of the shape
             final float cs = Math.max(0.3f, shapeRect.width() / Math.max(1f, endRect.width()));
-            canvas.saveLayerAlpha(shapeRect.left, shapeRect.top, shapeRect.right, shapeRect.bottom, (int) (255 * ca));
+            saveFaded(canvas, shapeRect.left, shapeRect.top, shapeRect.right, shapeRect.bottom, ca);
             canvas.translate(shapeRect.right - endRect.right, shapeRect.top - endRect.top);
             canvas.scale(cs, cs, endRect.right, endRect.top);
             super.dispatchDraw(canvas);
@@ -688,6 +688,18 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
 
         if (animating) {
             invalidate();
+        }
+    }
+
+    /**
+     * A layer only while fading: the open menu draws its rows straight into the clip. The rows clip themselves by a path
+     * (the swipe back pages), inside a layer that drops all of them on some Android 9 GPUs (Xiaomi): only the glass was left.
+     */
+    private static void saveFaded(Canvas canvas, float left, float top, float right, float bottom, float alpha) {
+        if (alpha >= 1f) {
+            canvas.save();
+        } else {
+            canvas.saveLayerAlpha(left, top, right, bottom, (int) (255 * alpha));
         }
     }
 

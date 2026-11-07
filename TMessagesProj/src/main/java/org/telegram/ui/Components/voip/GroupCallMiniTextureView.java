@@ -1458,7 +1458,8 @@ public class GroupCallMiniTextureView extends FrameLayout implements GroupCallSt
                     VoIPService.getSharedInstance().setLocalSink(null, participant.presentation);
                 }
             } else {
-                if (VoIPService.getSharedInstance() != null && !RTMPStreamPipOverlay.isVisible()) {
+                // a PiP window keeps its own receiver of the stream (VoIPService extra sinks)
+                if (VoIPService.getSharedInstance() != null) {
                     VoIPService.getSharedInstance().removeRemoteSink(participant.participant, participant.presentation);
                 }
             }

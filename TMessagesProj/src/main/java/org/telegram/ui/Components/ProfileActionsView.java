@@ -18,7 +18,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
 import android.view.HapticFeedbackConstants;
@@ -372,10 +371,8 @@ public class ProfileActionsView extends View {
         }
 
         final boolean isButtonColorLight = isButtonColorLight();
-        float useFilledWhiteIcon = !isButtonColorLight ? 1 : MathUtils.clamp((parentExpanded - 0.75f) / 0.25f, 0, 1);
-        if (isButtonColorLight && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            useFilledWhiteIcon = 0f;
-        }
+        // over the photo the buttons are the dimmed photo on every Android (see ProfileButtonsGlass): white icons there
+        final float useFilledWhiteIcon = !isButtonColorLight ? 1 : MathUtils.clamp((parentExpanded - 0.75f) / 0.25f, 0, 1);
 
         final int textColor = ColorUtils.blendARGB(Color.BLACK, Color.WHITE, useFilledWhiteIcon);
         if (lastColorFilter == null || lastColorFilterColor != textColor) {

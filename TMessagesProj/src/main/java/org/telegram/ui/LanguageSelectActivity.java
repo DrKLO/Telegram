@@ -34,7 +34,6 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.Utilities;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -337,7 +336,7 @@ public class LanguageSelectActivity extends BaseFragment implements Notification
                     });
                     if (reqId != 0) {
                         progressDialog.setOnCancelListener(di -> {
-                            ConnectionsManager.getInstance(currentAccount).cancelRequest(reqId, true);
+                            LocaleController.getInstance().cancelRemoteLanguageRequest(reqId);
                         });
                     }
 

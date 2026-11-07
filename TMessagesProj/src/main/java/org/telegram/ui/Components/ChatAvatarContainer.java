@@ -402,7 +402,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             if (pressed) {
                 bounce.setPressed(false);
                 pressed = false;
-                if (isClickable()) {
+                if (isClickable() && ev.getAction() == MotionEvent.ACTION_UP) {
                     openProfile(false);
                 }
                 AndroidUtilities.cancelRunOnUIThread(this.onLongClick);

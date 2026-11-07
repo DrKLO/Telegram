@@ -268,6 +268,7 @@ public class VoIPGroupNotification {
                 0,
                 new Intent(context, LaunchActivity.class)
                     .setAction("voip_answer")
+                    .putExtra(LaunchActivity.EXTRA_VOIP_ANSWER_TOKEN, LaunchActivity.VOIP_ANSWER_TOKEN)
                     .putExtra("group_call_invite_msg_id", msg_id)
                     .putExtra("currentAccount", account),
                 PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT

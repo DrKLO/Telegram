@@ -62,7 +62,7 @@ import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.HideViewAfterAnimation;
-import org.telegram.ui.Components.HintView;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SharedMediaLayout;
@@ -115,7 +115,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
     Callback callback;
     ChatActivity chatActivity;
 
-    HintView selectDaysHint;
+    HintView2 selectDaysHint;
 
 
     private int dateSelectedStart;
@@ -419,9 +419,18 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
             removeDaysButton.setOnClickListener(view -> {
                 if (lastDaysSelected == 0) {
                     if (selectDaysHint == null) {
-                        selectDaysHint = new HintView(contentView.getContext(), 8);
-                        selectDaysHint.setExtraTranslationY(dp(24));
-                        contentView.addView(selectDaysHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+                        selectDaysHint = new HintView2(contentView.getContext(), HintView2.DIRECTION_BOTTOM)
+                            .setMultilineText(true)
+                            .setMaxWidth(310)
+                            .setDuration(2300)
+                            .setHideByTouch(true)
+                            .useScale(true)
+                            .setInnerPadding(11, 6, 11, 7)
+                            // the arrow into the pill of the bottom bar, as the old hint was
+                            .setAnchorGap(-dp(10));
+                        selectDaysHint.setPadding(dp(8), 0, dp(8), 0);
+                        selectDaysHint.setGlass(getBaseSimpleGlass().factory);
+                        contentView.addView(selectDaysHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
                         selectDaysHint.setText(LocaleController.getString(R.string.SelectDaysTooltip));
                     }
                     selectDaysHint.showForView(bottomBar, true);

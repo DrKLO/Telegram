@@ -16,7 +16,10 @@ import java.util.Arrays;
 public class LiquidGlassEffect {
 
     private final RenderNode node;
-    private final RuntimeShader shader;
+    // the arrow costs the shader a lot: a shape without it keeps the plain one
+    private final RuntimeShader plainShader;
+    private RuntimeShader arrowShader;
+    private RuntimeShader shader;
     private RenderEffect effect;
 
     /** The effects by the phase of the node on the grid of the downsample, they keep the uniforms they were made with. */
@@ -27,7 +30,7 @@ public class LiquidGlassEffect {
     public LiquidGlassEffect(RenderNode node) {
         this.node = node;
         final String code = AndroidUtilities.readRes(R.raw.liquid_glass_shader);
-        shader = new RuntimeShader(code);
+        shader = plainShader = new RuntimeShader(code);
         node.setRenderEffect(effect = RenderEffect.createRuntimeShaderEffect(shader, "img"));
     }
 
@@ -42,12 +45,42 @@ public class LiquidGlassEffect {
     private float index;
     private int foregroundColor;
 
+    private float arrowHeight, arrowTipRadius, arrowFilletRadius, arrowStripe;
+    private float arrowAxisX, arrowAxisY, arrowDirX, arrowDirY;
+    private boolean arrowChanged;
+
     /**
-     * Sizes are of the shape on the screen. The node may be downsampled: {@code downsample} pixels of the screen in a
-     * pixel of it, its origin {@code nodeOffset} away from the shape's. The shader works in the pixels of the node.
+     * An arrow on a side of the shape (a hint), see {@link org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable#setArrow}.
+     * In the pixels of the screen: the point of the edge on the arrow's axis from the shape's center, the direction out of
+     * it, the half width of the stripe of the edge the arrow changes.
+     */
+    public void setArrow(float axisX, float axisY, float dirX, float dirY, float height, float tipRadius, float filletRadius, float stripe) {
+        if (arrowAxisX != axisX || arrowAxisY != axisY || arrowDirX != dirX || arrowDirY != dirY
+                || arrowHeight != height || arrowTipRadius != tipRadius || arrowFilletRadius != filletRadius || arrowStripe != stripe) {
+            arrowAxisX = axisX;
+            arrowAxisY = axisY;
+            arrowDirX = dirX;
+            arrowDirY = dirY;
+            arrowHeight = height;
+            arrowTipRadius = tipRadius;
+            arrowFilletRadius = filletRadius;
+            arrowStripe = stripe;
+            arrowChanged = true;
+        }
+    }
+
+    public void clearArrow() {
+        setArrow(0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    /**
+     * Sizes are of the shape on the screen, its rect {@code bodyX, bodyY} from the shape's origin (the arrow is out of it).
+     * The node may be downsampled: {@code downsample} pixels of the screen in a pixel of it, its origin {@code nodeOffset}
+     * away from the shape's. The shader works in the pixels of the node.
      */
     public void update(
         float width, float height,
+        float bodyX, float bodyY,
         float radiusLeftTop, float radiusRightTop, float radiusRightBottom, float radiusLeftBottom,
 
         float thickness,
@@ -80,8 +113,18 @@ public class LiquidGlassEffect {
             Math.abs(this.thickness - thickness) > 0.1f ||
             Math.abs(this.intensity - intensity) > 0.1f ||
             Math.abs(this.index - index) > 0.1f ||
-            this.foregroundColor != foregroundColor
+            this.foregroundColor != foregroundColor ||
+            arrowChanged
         ) {
+            arrowChanged = false;
+            if (arrowHeight > 0) {
+                if (arrowShader == null) {
+                    arrowShader = new RuntimeShader(AndroidUtilities.readRes(R.raw.liquid_glass_arrow_shader));
+                }
+                shader = arrowShader;
+            } else {
+                shader = plainShader;
+            }
             this.foregroundColor = foregroundColor;
 
             final float a = Color.alpha(foregroundColor) / 255f;
@@ -105,6 +148,10 @@ public class LiquidGlassEffect {
             shader.setFloatUniform("refract_intensity", this.intensity = intensity);
             shader.setFloatUniform("refract_index", this.index = index);
             shader.setFloatUniform("foreground_color_premultiplied", r, g, b, a);
+            if (shader == arrowShader) {
+                shader.setFloatUniform("arrow", arrowHeight * scale, arrowTipRadius * scale, arrowFilletRadius * scale, arrowStripe * scale);
+                shader.setFloatUniform("arrow_axis", arrowAxisX * scale, arrowAxisY * scale, arrowDirX, arrowDirY);
+            }
 
             // and the last one for a node off the grid of the screen, e.g. a view on its way
             final int poolSize = downsample * downsample + 1;
@@ -117,8 +164,8 @@ public class LiquidGlassEffect {
             }
         }
 
-        final float centerX = (width / 2 - nodeOffsetX) / downsample;
-        final float centerY = (height / 2 - nodeOffsetY) / downsample;
+        final float centerX = (bodyX + width / 2 - nodeOffsetX) / downsample;
+        final float centerY = (bodyY + height / 2 - nodeOffsetY) / downsample;
         final boolean onGrid = nodeOffsetX == (int) nodeOffsetX && nodeOffsetY == (int) nodeOffsetY;
         final int effectIndex = onGrid
             ? Math.floorMod((int) -nodeOffsetY, downsample) * downsample + Math.floorMod((int) -nodeOffsetX, downsample)

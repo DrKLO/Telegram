@@ -26,8 +26,7 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation files('../TMessagesProj/libs/libgsaverification-client.aar')
 
-    implementation platform("com.google.firebase:firebase-bom:32.7.0")
-    implementation "com.google.firebase:firebase-crashlytics:18.6.0"
+    implementation "com.google.firebase:firebase-crashlytics"
 }
 
 android {

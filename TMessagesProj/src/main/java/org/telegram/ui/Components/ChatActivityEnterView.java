@@ -741,6 +741,13 @@ public class ChatActivityEnterView extends FrameLayout implements
     private int[] location = new int[2];
 
     private Activity parentActivity;
+    /** The hints on the glass of the chat, when in one. */
+    private void setHintGlass(HintView2 hint) {
+        if (parentFragment != null) {
+            hint.setGlass(parentFragment.getGlassHintFactory());
+        }
+    }
+
     private ChatActivity parentFragment;
     private long dialog_id;
     private boolean ignoreTextChange;
@@ -1288,6 +1295,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             pauseHint.setJoint(1, 0);
             pauseHint.setMultilineText(true);
             pauseHint.setText(getString(R.string.VoicePauseHint));
+            setHintGlass(pauseHint);
             MessagesController.getGlobalMainSettings().edit().putInt("voicepausehint", MessagesController.getGlobalMainSettings().getInt("voicepausehint", 0) + 1).apply();
             addView(pauseHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL, 0, 0, 54, 58));
             final HintView2 thisHintView = pauseHint;
@@ -1304,6 +1312,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             hideHintView();
             onceHint = new HintView2(getContext(), HintView2.DIRECTION_RIGHT);
             onceHint.setJoint(1, 0);
+            setHintGlass(onceHint);
             onceHint.setMultilineText(true);
             int text;
             if (isInVideoMode) {
@@ -2987,6 +2996,30 @@ public class ChatActivityEnterView extends FrameLayout implements
                     return false;
                 }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            @Override
+            public boolean dispatchHoverEvent(MotionEvent event) {
+                // the container is wider than its buttons and covers the attach button, don't steal explore-by-touch there
+                if (event.getAction() != MotionEvent.ACTION_HOVER_EXIT && !isOverShownButton(event.getX(), event.getY())) {
+                    return false;
+                }
+                return super.dispatchHoverEvent(event);
+            }
+
+            private boolean isOverShownButton(float x, float y) {
+                for (int i = 0; i < getChildCount(); ++i) {
+                    final View child = getChildAt(i);
+                    if (child.getVisibility() != VISIBLE || child.getAlpha() <= 0f) {
+                        continue;
+                    }
+                    final float right = child.getX() + child.getWidth();
+                    final float left = child == sendButton ? right - sendButton.width() : child.getX();
+                    if (x >= left && x < right && y >= child.getY() && y < child.getY() + child.getHeight()) {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             @Override
@@ -6134,6 +6167,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 final HintView2 thisHint = aiHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
                 aiHint.setMultilineText(true);
                 aiHint.setText(getString(R.string.AIEditorHint));
+                setHintGlass(aiHint);
                 aiHint.setJointPx(0f, aiButton.getWidth() / 2f + dp(4));
                 addView(aiHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP, 0, -200 + 4, 0, 0));
                 aiHint.setOnHiddenListener(() -> removeView(thisHint));
@@ -10095,7 +10129,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             CharSequence editingText;
             if (caption) {
-                currentLimit = accountInstance.getMessagesController().maxCaptionLength;
+                currentLimit = accountInstance.getMessagesController().getCaptionMaxLengthLimit();
                 editingText = editingMessageObject.caption;
             } else {
                 currentLimit = accountInstance.getMessagesController().getMaxMessageLength();
@@ -11149,6 +11183,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             birthdayHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
             birthdayHint.setRounding(13);
+            setHintGlass(birthdayHint);
             birthdayHint.setMultilineText(true);
             setBirthdayHintText();
             birthdayHint.setPadding(dp(12), 0, dp(12), 0);
@@ -11170,6 +11205,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (sendSuggestHintView == null && suggestButton != null && suggestButton.getVisibility() == VISIBLE && MessagesController.getGlobalMainSettings().getInt("channelsuggesthint2", 0) < 2) {
             sendSuggestHintView = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
             sendSuggestHintView.setRounding(13);
+            setHintGlass(sendSuggestHintView);
             sendSuggestHintView.setMultilineText(true);
             sendSuggestHintView.setText(LocaleController.formatString(R.string.SuggestAPostBelowHint, ForumUtilities.getMonoForumTitle(currentAccount, dialog_id, true)));
             sendSuggestHintView.setPadding(dp(12), 0, dp(12), 0);

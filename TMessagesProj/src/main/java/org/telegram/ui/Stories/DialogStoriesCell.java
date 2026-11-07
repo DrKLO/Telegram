@@ -757,6 +757,10 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                     cellCollapsedProgress = (float) Math.pow(collapsedProgress, 0.25f);
                 }
                 cell.setProgressToCollapsed(cellCollapsedProgress, collapsedProgress2, overscrollProgress, overscrollSelectedPosition == cell.position);
+                cell.params.rightTopAngleToExclude = 0;
+                cell.params.rightBottomAngleToExclude = 0;
+                cell.params.leftTopAngleToExclude = 0;
+                cell.params.leftBottomAngleToExclude = 0;
                 if (adapterPosition > animateFromPosition && adapterPosition < animateFromPosition + animateToDialogIds.size()) {
                     StoryCell previousCell = (StoryCell) recyclerListView.getChildAt(i - 1);
                     if (previousCell != null) {
@@ -798,10 +802,6 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                         cell.params.useArcProgress = false;
                     }
                 } else {
-                    cell.params.rightTopAngleToExclude = 0;
-                    cell.params.rightBottomAngleToExclude = 0;
-                    cell.params.leftTopAngleToExclude= 0;
-                    cell.params.leftBottomAngleToExclude = 0;
                     cell.params.useArcProgress = false;
                 }
 

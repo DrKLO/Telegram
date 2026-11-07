@@ -475,6 +475,17 @@ public class TableLayout extends View {
         requestLayout();
     }
 
+    private boolean balancedColumns;
+
+    /** Size columns to fit the given width with limited wrapping, scrolling only when cells would wrap too much. */
+    public void setBalancedColumns(boolean balanced) {
+        if (balancedColumns == balanced) {
+            return;
+        }
+        balancedColumns = balanced;
+        requestLayout();
+    }
+
     public void setRenderWidth(int width) {
         final int naturalWidth = getMeasuredWidth();
         drawingWidth = Math.max(naturalWidth, width);
@@ -977,7 +988,75 @@ public class TableLayout extends View {
         child.measure(getTotalMargin(child, true) + childWidth, getTotalMargin(child, false) + childHeight, first);
     }
 
+    private void measureChildrenFirstPassBalanced(int widthSpec, int heightSpec) {
+        final int N = getChildCount();
+        final int width = MeasureSpec.getSize(widthSpec);
+        final int padding = itemPaddingLeft * 2;
+        // Let a single column take the whole width, but keep some of the next one visible.
+        final int maxColumnWidth = colCount > 1 ? Math.round(width * 0.8f) : width;
+        final int maxContentWidth = Math.max(1, maxColumnWidth - padding);
+
+        final ArrayList<TableColumnBalancer.Cell> metrics = new ArrayList<>(N);
+        final TableColumnBalancer.Cell[] byChild = new TableColumnBalancer.Cell[N];
+        for (int i = 0; i < N; i++) {
+            final Child c = getChildAt(i);
+            final LayoutParams lp = c.getLayoutParams();
+            final Interval span = lp.columnSpec.span;
+            c.setTextLayout(delegate.createTextLayout(c.cell, maxContentWidth));
+            if (c.textLayout == null) {
+                lp.width = 0;
+                lp.height = 0;
+                measureChildWithMargins2(c, widthSpec, heightSpec, 0, 0, true);
+                continue;
+            }
+            lp.height = Math.max(minimumCellHeight, c.textHeight + itemPaddingTop + itemPaddingBottom);
+            final int emojiCount = c.textLayout.getEmojiOnlyCount();
+            final TableColumnBalancer.Cell cell;
+            if (emojiCount > 0) {
+                cell = TableColumnBalancer.fixed(span.min, span.size(), lp.height * emojiCount);
+            } else {
+                final Layout layout = c.textLayout.getLayout();
+                cell = TableColumnBalancer.measure(
+                    layout != null ? layout.getText() : null,
+                    layout != null ? layout.getPaint() : null,
+                    span.min, span.size(), padding, maxContentWidth, c.textWidth
+                );
+            }
+            byChild[i] = cell;
+            metrics.add(cell);
+        }
+
+        final int[] columnWidths = TableColumnBalancer.compute(metrics, colCount, width, 0);
+
+        for (int i = 0; i < N; i++) {
+            final Child c = getChildAt(i);
+            final TableColumnBalancer.Cell cell = byChild[i];
+            if (cell == null) continue;
+            final LayoutParams lp = c.getLayoutParams();
+            if (c.textLayout.getEmojiOnlyCount() > 0) {
+                lp.width = cell.maxWidth;
+            } else {
+                final Interval span = lp.columnSpec.span;
+                int target = 0;
+                for (int col = Math.max(0, span.min); col < Math.min(colCount, span.max); col++) {
+                    target += columnWidths[col];
+                }
+                target = Math.max(1, target - padding);
+                if (c.textWidth > target) {
+                    c.setTextLayout(delegate.createTextLayout(c.cell, target));
+                    lp.height = Math.max(minimumCellHeight, c.textHeight + itemPaddingTop + itemPaddingBottom);
+                }
+                lp.width = c.textWidth + padding;
+            }
+            measureChildWithMargins2(c, widthSpec, heightSpec, lp.width, lp.height, true);
+        }
+    }
+
     private void measureChildrenWithMargins(int widthSpec, int heightSpec, boolean firstPass) {
+        if (firstPass && balancedColumns && mOrientation == HORIZONTAL) {
+            measureChildrenFirstPassBalanced(widthSpec, heightSpec);
+            return;
+        }
         int N = getChildCount();
         //float maxWidth = 0;
         for (int i = 0; i < N; i++) {

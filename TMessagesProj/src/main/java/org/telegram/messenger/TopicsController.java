@@ -311,6 +311,26 @@ public class TopicsController extends BaseController {
                             oldTopic.pinned = newTopic.pinned;
                             changed = true;
                         }
+                        if (!fromCache) {
+                            int updateFlags = 0;
+                            if (!TextUtils.equals(oldTopic.title, newTopic.title)) {
+                                oldTopic.title = newTopic.title;
+                                updateFlags |= TOPIC_FLAG_TITLE;
+                            }
+                            if (oldTopic.icon_emoji_id != newTopic.icon_emoji_id || oldTopic.icon_color != newTopic.icon_color) {
+                                oldTopic.icon_emoji_id = newTopic.icon_emoji_id;
+                                oldTopic.icon_color = newTopic.icon_color;
+                                updateFlags |= TOPIC_FLAG_ICON;
+                            }
+                            if (oldTopic.hidden != newTopic.hidden) {
+                                oldTopic.hidden = newTopic.hidden;
+                                updateFlags |= TOPIC_FLAG_HIDE;
+                            }
+                            if (updateFlags != 0) {
+                                getMessagesStorage().updateTopicData(-chatId, newTopic, updateFlags);
+                                changed = true;
+                            }
+                        }
                     }
                 }
             }

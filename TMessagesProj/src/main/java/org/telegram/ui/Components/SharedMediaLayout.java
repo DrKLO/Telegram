@@ -164,6 +164,7 @@ import org.telegram.ui.ProfileActivity2;
 import org.telegram.ui.ProfileStoriesCollectionTabs;
 import org.telegram.ui.SelectStoriesBottomSheet;
 import org.telegram.ui.Stars.StarsController;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Stories.StoriesController;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.UserListPoller;
@@ -261,6 +262,10 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
     private long topicId;
 
     private UndoView undoView;
+
+    private long getPlaylistTopicId() {
+        return ChatObject.isForum(profileActivity.getCurrentAccount(), dialog_id) ? topicId : 0;
+    }
 
     public boolean checkPinchToZoom(MotionEvent ev) {
         final int selectedType = mediaPages[0].selectedType;
@@ -1610,7 +1615,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
     protected boolean isActionModeShowed;
 
     final Delegate delegate;
-    private HintView fwdRestrictedHint;
+    private HintView2 fwdRestrictedHint;
     private Theme.ResourcesProvider resourcesProvider;
 
     private Runnable applyBulletin;
@@ -1748,7 +1753,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                             MediaController.getInstance().setVoiceMessagesPlaylist(result ? sharedMediaData[MediaDataController.MEDIA_MUSIC].messages : null, false);
                             return result;
                         } else if (messageObject.isMusic()) {
-                            return MediaController.getInstance().setPlaylist(sharedMediaData[MediaDataController.MEDIA_MUSIC].messages, messageObject, mergeDialogId);
+                            return MediaController.getInstance().setPlaylist(sharedMediaData[MediaDataController.MEDIA_MUSIC].messages, messageObject, mergeDialogId, true, null, getPlaylistTopicId());
                         }
                         return false;
                     }
@@ -3645,7 +3650,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
 //        return customTabs() ? 0 : (48 /*+ 42*/);
     }
 
-    public void setForwardRestrictedHint(HintView hintView) {
+    public void setForwardRestrictedHint(HintView2 hintView) {
         fwdRestrictedHint = hintView;
     }
 
@@ -6558,7 +6563,29 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
         }
     }
 
+    private boolean isComputingLayout() {
+        for (int a = 0; a < mediaPages.length; a++) {
+            if (mediaPages[a] == null) continue;
+            if (mediaPages[a].listView != null && mediaPages[a].listView.isComputingLayout()) {
+                return true;
+            }
+            if (mediaPages[a].animationSupportingListView != null && mediaPages[a].animationSupportingListView.isComputingLayout()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void updateAdapters() {
+        if (isComputingLayout()) {
+            post(() -> {
+                if (isComputingLayout()) {
+                    return;
+                }
+                updateAdapters();
+            });
+            return;
+        }
         if (photoVideoAdapter != null) {
             photoVideoAdapter.notifyDataSetChanged();
         }
@@ -7970,7 +7997,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                                     MediaController.getInstance().setVoiceMessagesPlaylist(result ? sharedMediaData[currentType].messages : null, false);
                                     return result;
                                 } else if (messageObject.isMusic()) {
-                                    return MediaController.getInstance().setPlaylist(sharedMediaData[currentType].messages, messageObject, mergeDialogId);
+                                    return MediaController.getInstance().setPlaylist(sharedMediaData[currentType].messages, messageObject, mergeDialogId, true, null, getPlaylistTopicId());
                                 }
                                 return false;
                             }
@@ -9286,7 +9313,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                             }
                             return result;
                         } else if (messageObject.isMusic()) {
-                            return MediaController.getInstance().setPlaylist(searchResult, messageObject, mergeDialogId);
+                            return MediaController.getInstance().setPlaylist(searchResult, messageObject, mergeDialogId, true, null, getPlaylistTopicId());
                         }
                         return false;
                     }

@@ -369,7 +369,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
         }
         commentTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG, false);
         InputFilter[] inputFilters = new InputFilter[1];
-        inputFilters[0] = new InputFilter.LengthFilter(MessagesController.getInstance(UserConfig.selectedAccount).maxCaptionLength);
+        inputFilters[0] = new InputFilter.LengthFilter(MessagesController.getInstance(UserConfig.selectedAccount).getCaptionMaxLengthLimit());
         commentTextView.setFilters(inputFilters);
         commentTextView.setHint(LocaleController.getString(R.string.AddCaption));
         EditTextBoldCursor editText = commentTextView.getEditText();

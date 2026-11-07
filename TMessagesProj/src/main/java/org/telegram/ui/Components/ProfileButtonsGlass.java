@@ -35,7 +35,8 @@ import me.vkryl.core.reference.ReferenceList;
  * over the expanded photo it is the photo under the button, blurred, more saturated and darker. The header's buttons go over
  * to the glass of the simple screens when the header becomes one.
  * <p>
- * Without a capture (before Android 12, with the blur off) the buttons are the button color over whatever is under them.
+ * The capture is there with the blur off too: the buttons have no other look over the photo, so they ignore the power saving.
+ * Without a capture (before Android 12) the photo under them is darkened as the capture has it, without the blur.
  */
 public final class ProfileButtonsGlass {
     /** What the photo under the buttons goes through, as the blur of the photo under the action buttons had it. */
@@ -102,6 +103,7 @@ public final class ProfileButtonsGlass {
 
     public ProfileButtonsGlass(@NonNull GlassEngine engine, @NonNull BaseFragmentSimpleGlass simpleGlass) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            simpleGlass.setCaptureIgnoresBlurSetting(true);
             captureCanvas = simpleGlass.getCaptureSourceCanvas();
             photoSource = captureCanvas != null ? getFilteredSource(captureCanvas) : null;
         } else {
@@ -243,6 +245,7 @@ public final class ProfileButtonsGlass {
         private final GlassSource simpleSource;
 
         private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint dimPaint = new Paint();
         private RadialGradient gradient;
         private int gradientColor;
         private float gradientRadius;
@@ -260,11 +263,15 @@ public final class ProfileButtonsGlass {
         public void draw(@NonNull Canvas canvas, float left, float top, float right, float bottom) {
             final float simple = simpleSource != null ? simpleProgress : 0f;
             if (simple < 1f) {
-                final boolean photo = photoSource != null && canvas.isHardwareAccelerated() && GlassEngine.getCurrentGlassSettings().isBlurEnabled;
+                // the photo ignores the blur setting: the button color over the photo is a blot (white in the light theme)
+                final boolean photo = photoSource != null && canvas.isHardwareAccelerated();
                 if (photo) {
                     photoSource.draw(canvas, left, top, right, bottom);
+                } else if (photoProgress > 0) {
+                    dimPaint.setColor(Theme.multAlpha(0xFF000000, (1f - PHOTO_BRIGHTNESS) * photoProgress));
+                    canvas.drawRect(left, top, right, bottom, dimPaint);
                 }
-                final float fill = photo ? 1f - photoProgress : 1f;
+                final float fill = 1f - photoProgress;
                 if (fill > 0) {
                     drawFill(canvas, left, top, right, bottom, fill, 0);
                 }
@@ -297,7 +304,7 @@ public final class ProfileButtonsGlass {
         @Override
         public boolean isDownsampledSourceSupported() {
             final GlassFadeBlurredDrawable.GlassFadeDownsampledSource photo = photoDownsampled(), simple = simpleDownsampled();
-            return GlassEngine.getCurrentGlassSettings().isBlurEnabled && photo != null && photo.isDownsampledSourceSupported() && photo.getDownsample() > 1
+            return photo != null && photo.isDownsampledSourceSupported() && photo.getDownsample() > 1
                 && (simpleSource == null || simple != null && simple.isDownsampledSourceSupported());
         }
 

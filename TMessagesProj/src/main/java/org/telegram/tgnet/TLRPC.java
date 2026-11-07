@@ -2807,6 +2807,90 @@ public class TLRPC {
         }
     }
 
+    public static class TL_auth_firebasePnvIntent extends TLObject {
+        public static final int constructor = 0xdf5ac00c;
+
+        public String nonce;
+        public String digital_credential_payload;
+
+        public static TL_auth_firebasePnvIntent TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(TL_auth_firebasePnvIntent.class, constructor != TL_auth_firebasePnvIntent.constructor ? null : new TL_auth_firebasePnvIntent(), stream, constructor, exception);
+        }
+
+        public void readParams(InputSerializedData stream, boolean exception) {
+            nonce = stream.readString(exception);
+            digital_credential_payload = stream.readString(exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(nonce);
+            stream.writeString(digital_credential_payload);
+        }
+    }
+
+    public static class TL_auth_initFirebasePnvLogin extends TLMethod<TL_auth_firebasePnvIntent> {
+        public static final int constructor = 0x644F15C0;
+
+        public int flags;
+        public ArrayList<Long> except_ids;
+        public int api_id;
+        public String api_hash;
+
+        public TL_auth_firebasePnvIntent deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_auth_firebasePnvIntent.TLdeserialize(stream, constructor, exception);
+        }
+
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, except_ids != null);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, FLAG_0)) {
+                Vector.serializeLong(stream, except_ids);
+            }
+            stream.writeInt32(api_id);
+            stream.writeString(api_hash);
+        }
+    }
+
+    public static class TL_auth_finishFirebasePnvLogin extends TLMethod<auth_Authorization> {
+        public static final int constructor = 0x2c85094c;
+
+        public String google_token;
+
+        public auth_Authorization deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return auth_Authorization.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeString(google_token);
+        }
+    }
+
+    public static class TL_auth_firebasePnvSignUp extends TLMethod<auth_Authorization> {
+        public static final int constructor = 0x783f6b56;
+
+        public int flags;
+        public boolean no_joined_notifications;
+        public String first_name;
+        public String last_name;
+
+        public auth_Authorization deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return auth_Authorization.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, no_joined_notifications);
+            stream.writeInt32(flags);
+            stream.writeString(first_name);
+            stream.writeString(last_name);
+        }
+    }
+
     public static class PollAnswer extends TLObject {
         public int flags;
         public TL_textWithEntities text = new TL_textWithEntities();
@@ -33728,6 +33812,7 @@ public class TLRPC {
         public boolean revoke_pm_inbox;
         public boolean blocked_mode;
         public boolean force_try_ipv6;
+        public boolean fpnv_allowed;
         public int date;
         public int expires;
         public boolean test_mode;
@@ -33783,6 +33868,7 @@ public class TLRPC {
             revoke_pm_inbox = hasFlag(flags, FLAG_6);
             blocked_mode = hasFlag(flags, FLAG_8);
             force_try_ipv6 = hasFlag(flags, FLAG_14);
+            fpnv_allowed = hasFlag(flags, FLAG_17);
             date = stream.readInt32(exception);
             expires = stream.readInt32(exception);
             test_mode = stream.readBool(exception);
@@ -33856,6 +33942,7 @@ public class TLRPC {
             flags = setFlag(flags, FLAG_6, revoke_pm_inbox);
             flags = setFlag(flags, FLAG_8, blocked_mode);
             flags = setFlag(flags, FLAG_14, force_try_ipv6);
+            flags = setFlag(flags, FLAG_17, fpnv_allowed);
             stream.writeInt32(flags);
             stream.writeInt32(date);
             stream.writeInt32(expires);
@@ -51838,20 +51925,24 @@ public class TLRPC {
         }
     }
 
-    public static class TL_auth_signUp extends TLObject {
-        public static final int constructor = 0x80eee427;
+    public static class TL_auth_signUp extends TLMethod<auth_Authorization> {
+        public static final int constructor = 0xaac7b717;
 
+        public int flags;
+        public boolean no_joined_notifications;
         public String phone_number;
         public String phone_code_hash;
         public String first_name;
         public String last_name;
 
-        public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
+        public auth_Authorization deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
             return auth_Authorization.TLdeserialize(stream, constructor, exception);
         }
 
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, no_joined_notifications);
+            stream.writeInt32(flags);
             stream.writeString(phone_number);
             stream.writeString(phone_code_hash);
             stream.writeString(first_name);

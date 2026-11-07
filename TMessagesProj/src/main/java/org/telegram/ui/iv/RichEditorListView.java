@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.utils.code.highlight.CodeHighlighting;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.AppGlobalConfig;
@@ -5236,13 +5237,26 @@ public class RichEditorListView extends UniversalRecyclerView {
             row.quoteIds.remove(row.quoteIds.size() - 1);
             collapseSingleBlockQuotes();
             renumberAllRuns();
-            adapter.update(false);
-            if (history != null) history.record();
-            post(() -> focusRow(row));
+            if (hasFocusedEdit()) {
+                updateKeepingFocus();
+                if (history != null) history.record();
+            } else {
+                adapter.update(false);
+                if (history != null) history.record();
+                post(() -> focusRow(row));
+            }
             return true;
         }
         if (idx <= 0) return false;
         BlockRow prev = rows.get(idx - 1);
+        if (prev.detailsEnd && moveIntoDetails(row, idx)) {
+            if (history != null) history.record();
+            return true;
+        }
+        if (isDetailsHeader(prev) && absorbDetailsTitle(prev, row, idx)) {
+            if (history != null) history.record();
+            return true;
+        }
         if (isDetailsHeader(prev) || prev.detailsEnd) {
             if (empty && !(isDetailsHeader(prev) && (idx + 1 >= rows.size() || rows.get(idx + 1).detailsEnd))) {
                 if (history != null) history.flush();
@@ -5258,12 +5272,21 @@ public class RichEditorListView extends UniversalRecyclerView {
             if (history != null) history.flush();
             rows.remove(idx - 1);
             renumberAllRuns();
-            adapter.update(false);
-            if (history != null) history.record();
-            post(() -> focusRow(row));
+            if (hasFocusedEdit()) {
+                updateKeepingFocus();
+                if (history != null) history.record();
+            } else {
+                adapter.update(false);
+                if (history != null) history.record();
+                post(() -> focusRow(row));
+            }
             return true;
         }
         if (history != null) history.flush();
+        if (absorbPrevious(prev, row, idx)) {
+            if (history != null) history.record();
+            return true;
+        }
         final View pv = findViewByItemObject(prev);
         final int removePos = itemRows.indexOf(row);
         if (pv instanceof RichTextCell && removePos >= 0) {
@@ -5330,6 +5353,97 @@ public class RichEditorListView extends UniversalRecyclerView {
             }
         });
         return true;
+    }
+
+    // Joins a row into the previous one by moving the previous text into the focused editor and letting
+    // this row take over the previous block, instead of moving focus up. A focus change restarts the
+    // IME input, which cancels a held backspace.
+    private boolean absorbPrevious(BlockRow prev, BlockRow row, int idx) {
+        if (!isFormattable(prev.block) || !isFormattable(row.block)) return false;
+        final View cv = findViewByItemObject(row);
+        if (!(cv instanceof RichTextCell)) return false;
+        final RichEditText et = ((RichTextCell) cv).getEditText();
+        if (!et.isFocused()) return false;
+        final CharSequence prevStyled = Emoji.replaceEmoji(RichTextCell.readStyledText(prev.block), et.getPaint().getFontMetricsInt(), false,
+            isHeading(prev.block) ? .85f : 1f);
+        final int targetOff = prevStyled.length();
+        et.prependSilently(prevStyled);
+        RichTextCell.applyStyledTextToBlock(prev.block, et.getText());
+        row.block = prev.block;
+        row.level = prev.level;
+        row.num = prev.num;
+        row.checkbox = prev.checkbox;
+        row.checked = prev.checked;
+        row.quoteIds.clear();
+        row.quoteIds.addAll(prev.quoteIds);
+        rows.remove(idx - 1);
+        collapseSingleBlockQuotes();
+        renumberAllRuns();
+        updateKeepingFocus();
+        et.setSelection(Math.min(targetOff, et.length()));
+        return true;
+    }
+
+    private boolean isFocusedTextRow(BlockRow row) {
+        final View v = findViewByItemObject(row);
+        return v instanceof RichTextCell && ((RichTextCell) v).getEditText().isFocused();
+    }
+
+    // Backspace at the start of the row right after a details block: the row moves in as its
+    // last body row (opening it) and joins that row, keeping the focused editor.
+    private boolean moveIntoDetails(BlockRow row, int idx) {
+        if (!isFormattable(row.block) || !isFocusedTextRow(row)) return false;
+        int header = -1;
+        for (int i = idx - 1, depth = 0; i >= 0; i--) {
+            final BlockRow r = rows.get(i);
+            if (r.detailsEnd) depth++;
+            else if (isDetailsHeader(r) && --depth == 0) { header = i; break; }
+        }
+        if (header < 0) return false;
+        if (history != null) history.flush();
+        ((TL_iv.pageBlockDetails) rows.get(header).block).open = true;
+        rows.remove(idx);
+        rows.add(idx - 1, row);
+        final BlockRow last = rows.get(idx - 2);
+        if (!isDetailsHeader(last) && !last.detailsEnd && absorbPrevious(last, row, idx - 1)) return true;
+        renumberAllRuns();
+        updateKeepingFocus();
+        return true;
+    }
+
+    // Backspace at the start of the only body row of a details block: the title joins the row
+    // and the details block is removed, keeping the focused editor.
+    private boolean absorbDetailsTitle(BlockRow header, BlockRow row, int idx) {
+        if (idx + 1 >= rows.size() || !rows.get(idx + 1).detailsEnd) return false;
+        if (!isFormattable(row.block) || !isFocusedTextRow(row)) return false;
+        if (history != null) history.flush();
+        final RichEditText et = ((RichTextCell) findViewByItemObject(row)).getEditText();
+        final CharSequence title = Emoji.replaceEmoji(RichTextStyle.toSpannable(((TL_iv.pageBlockDetails) header.block).title),
+            et.getPaint().getFontMetricsInt(), false);
+        final int targetOff = title.length();
+        et.prependSilently(title);
+        RichTextCell.applyStyledTextToBlock(row.block, et.getText());
+        rows.remove(idx + 1);
+        rows.remove(idx - 1);
+        renumberAllRuns();
+        updateKeepingFocus();
+        et.setSelection(Math.min(targetOff, et.length()));
+        return true;
+    }
+
+    // Applies row changes with a diff and rebinds the visible text cells in place, so the focused
+    // editor stays attached to its view and keeps the IME connection.
+    private void updateKeepingFocus() {
+        final RecyclerView.ItemAnimator animator = getItemAnimator();
+        setItemAnimator(null);
+        adapter.update(true);
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child instanceof RichTextCell) {
+                ((RichTextCell) child).rebindInPlace();
+            }
+        }
+        post(() -> setItemAnimator(animator));
     }
 
     private void onLanguageClick(BlockRow row, View btn) {
@@ -7346,27 +7460,29 @@ public class RichEditorListView extends UniversalRecyclerView {
             return true;
         }
 
-        String startText = RichTextCell.readPlainText(startRow.block);
-        String endText = sCell == eCell ? startText : RichTextCell.readPlainText(endRow.block);
+        CharSequence startText = RichTextCell.readStyledText(startRow.block);
+        CharSequence endText = sCell == eCell ? startText : RichTextCell.readStyledText(endRow.block);
+        if (startText == null) startText = "";
+        if (endText == null) endText = "";
         sOff = Math.max(0, Math.min(sOff, startText.length()));
         eOff = Math.max(0, Math.min(eOff, endText.length()));
 
-        String head = startText.substring(0, sOff);
-        String tail = endText.substring(eOff);
+        CharSequence head = startText.subSequence(0, sOff);
+        CharSequence tail = endText.subSequence(eOff, endText.length());
 
         int finalCell;
         int finalOffset;
 
         if (insertedLines.length <= 1) {
             String inserted = insertedLines.length == 0 ? "" : insertedLines[0];
-            RichTextCell.applyTextToBlock(startRow.block, head + inserted + tail);
+            RichTextCell.applyStyledTextToBlock(startRow.block, new SpannableStringBuilder(head).append(inserted).append(tail));
             if (eCell > sCell) {
                 for (int i = eCell; i > sCell; i--) rows.remove(i);
             }
             finalCell = sCell;
             finalOffset = head.length() + inserted.length();
         } else {
-            RichTextCell.applyTextToBlock(startRow.block, head + insertedLines[0]);
+            RichTextCell.applyStyledTextToBlock(startRow.block, new SpannableStringBuilder(head).append(insertedLines[0]));
             if (eCell > sCell) {
                 for (int i = eCell; i > sCell; i--) rows.remove(i);
             }
@@ -7377,7 +7493,7 @@ public class RichEditorListView extends UniversalRecyclerView {
             }
             String lastLine = insertedLines[insertedLines.length - 1];
             TL_iv.pageBlockParagraph tailBlock = new TL_iv.pageBlockParagraph();
-            applyPlainText(tailBlock, lastLine + tail);
+            RichTextCell.applyStyledTextToBlock(tailBlock, new SpannableStringBuilder(lastLine).append(tail));
             rows.add(sCell + insertedLines.length - 1, new BlockRow(tailBlock, startRow.level, startRow.num > 0 ? startRow.num + insertedLines.length - 1 : startRow.num));
             finalCell = sCell + insertedLines.length - 1;
             finalOffset = lastLine.length();

@@ -987,6 +987,14 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             return Theme.getColor(key, resourcesProvider);
         }
 
+        /**
+         * The top of the sheet's background drawn under the layout, in its coordinates, as it is drawn now; {@code round} is
+         * how round its top corners are, 0 when it is pulled up to the top of the screen.
+         */
+        public void onSheetBackground(float top, float round) {
+
+        }
+
         public boolean shouldHideBottomButtons() {
             return true;
         }
@@ -1996,6 +2004,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                             //canvas.restore();
                         }
                     }
+
+                    // where the sheet begins over the layout, in its coordinates
+                    layout.onSheetBackground(top + backgroundPaddingTop - child.getTop() - child.getTranslationY(), rad);
 
                     boolean result;
                     if (child != contactsLayout && child != quickRepliesLayout && child != audioLayout) {
@@ -4184,6 +4195,16 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         writeButtonContainer.setTranslationY(lerp(bottomPannelTranslation, (topCommentContainer.getTop() + topCommentContainer.getTranslationY()) - writeButtonContainer.getTop() + dp(8), CubicBezierInterpolator.EASE_BOTH.getInterpolation(topCommentFactor)));
     }
 
+    private void checkUi_bottomFadeEnabled(AttachAlertLayout layout) {
+        final boolean disableFade = layout.disableBottomFade();
+        if (fadeView != null) {
+            fadeView.setFadeHeightBottom(disableFade ? 0 : dp(48));
+        }
+        if (bottomFadeView != null) {
+            bottomFadeView.setVisibility(disableFade ? View.INVISIBLE : View.VISIBLE);
+        }
+    }
+
     private void checkUi_bottomFade() {
         float alphaNeg = 1;
 
@@ -4628,13 +4649,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         }
         int t = currentAttachLayout.getFirstOffset() - dp(11) - scrollOffsetY[0];
         nextAttachLayout = layout;
-        final boolean disableFade = nextAttachLayout.disableBottomFade();
-        if (fadeView != null) {
-            fadeView.setFadeHeightBottom(disableFade ? 0 : dp(48));
-        }
-        if (bottomFadeView != null) {
-            bottomFadeView.setVisibility(disableFade ? View.INVISIBLE : View.VISIBLE);
-        }
+        checkUi_bottomFadeEnabled(nextAttachLayout);
         actionBar.setVisibility(nextAttachLayout.needsActionBar() != 0 ? View.VISIBLE : View.INVISIBLE);
         // actionBarShadow.setVisibility(actionBar.getVisibility());
         if (actionBar.isSearchFieldVisible()) {
@@ -6155,6 +6170,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }
         }
 
+        if (isStickerMode) {
+            // the picked photo is only the source of a new sticker and is never sent to the chat
+            photosEnabled = true;
+            videosEnabled = true;
+        }
+
         if (restrictEphemeralMessageTypes) {
             pollsEnabled = false;
             todoEnabled = false;
@@ -6242,6 +6263,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             layoutToSet.setVisibility(View.VISIBLE);
             layoutToSet.onShow(null);
             layoutToSet.onShown();
+            checkUi_bottomFadeEnabled(layoutToSet);
             actionBar.setVisibility(layoutToSet.needsActionBar() != 0 ? View.VISIBLE : View.INVISIBLE);
             // actionBarShadow.setVisibility(actionBar.getVisibility());
 

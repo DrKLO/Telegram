@@ -108,6 +108,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     private final HashMap<Long, AnimatedEmojiSpan> initialSelectedEmojis = new LinkedHashMap<>();
     private final List<TLRPC.TL_availableReaction> allAvailableReactions = new ArrayList<>();
     private boolean initialPaid;
+    private int initialSelectedType;
 
     private final int maxReactionsCount = getMessagesController().boostsChannelLevelMax;
     private boolean emojiKeyboardVisible = false;
@@ -385,6 +386,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
             }
 
             actionButton.setLoading(true);
+            initialSelectedType = selectedType;
             getMessagesController().setCustomChatReactions(chatId, selectedType, grabReactions(false), currentReactionsCount = reactionsCount, allowPaid, error -> {
                 if (isFinishing()) {
                     return;
@@ -520,6 +522,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
         }
         initialSelectedEmojis.putAll(selectedEmojisMap);
         initialPaid = paid;
+        initialSelectedType = selectedType;
 
         fragmentView = rootLayout;
         return rootLayout;
@@ -786,7 +789,7 @@ public class ChatCustomReactionsEditActivity extends BaseFragment implements Not
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
         AndroidUtilities.cancelRunOnUIThread(checkAfterFastDeleteRunnable);
-        if (selectedType == SELECT_TYPE_NONE && reactionsCount != currentReactionsCount) {
+        if (selectedType == SELECT_TYPE_NONE && (reactionsCount != currentReactionsCount || initialSelectedType != SELECT_TYPE_NONE && !initialPaid && !paid)) {
             getMessagesController().setCustomChatReactions(chatId, selectedType, grabReactions(false), reactionsCount, null, null, null);
         }
         getNotificationCenter().removeObserver(this, NotificationCenter.reactionsDidLoad);

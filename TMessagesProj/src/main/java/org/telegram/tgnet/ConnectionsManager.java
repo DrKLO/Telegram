@@ -14,6 +14,7 @@ import android.util.Base64;
 
 import androidx.annotation.Keep;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter;
@@ -339,6 +340,27 @@ public class ConnectionsManager extends BaseController {
         }, null, null, null, requestFlags, dcId, ConnectionTypeGeneric, true);
     }
 
+    public static class RequestException extends RuntimeException {
+        public final int code;
+        public final String text;
+
+        public RequestException(TLRPC.TL_error error) {
+            super(error != null && error.text != null ? error.text : null);
+            if (error != null) {
+                this.code = error.code;
+                this.text = error.text;
+            } else {
+                this.code = 0;
+                this.text = "NULL";
+            }
+        }
+
+        @Nullable
+        @Override
+        public String getMessage() {
+            return text;
+        }
+    }
 
 
     public int sendRequestTypedAndProcessUpdates(TLMethod<TLRPC.Updates> method, Executor executor, Utilities.Callback2<TLRPC.Updates, TLRPC.TL_error> completionBlock) {
@@ -1035,7 +1057,7 @@ public class ConnectionsManager extends BaseController {
     public static native void native_discardConnection(int currentAccount, int datacenterId, int connectionType);
     public static native void native_failNotRunningRequest(int currentAccount, int token);
     public static native void native_receivedIntegrityCheckClassic(int currentAccount, int requestToken, String nonce, String token);
-    public static native void native_receivedCaptchaResult(int currentAccount, int[] requestTokens, String token);
+    public static native void native_receivedCaptchaResult(int currentAccount, int requestToken, int generation, String token);
     public static native boolean native_isGoodPrime(byte[] prime, int g);
 
 
@@ -1560,8 +1582,8 @@ public class ConnectionsManager extends BaseController {
     }
 
     @Keep
-    public static void onCaptchaCheck(final int currentAccount, final int requestToken, final String action, final String key_id) {
-        CaptchaController.request(currentAccount, requestToken, action, key_id);
+    public static void onCaptchaCheck(final int currentAccount, final int requestToken, final int generation, final String action, final String key_id) {
+        AndroidUtilities.runOnUIThread(() -> CaptchaController.request(currentAccount, requestToken, generation, action, key_id));
     }
 
     public static native byte[] nativeTestGenerateClientHello(String domain);

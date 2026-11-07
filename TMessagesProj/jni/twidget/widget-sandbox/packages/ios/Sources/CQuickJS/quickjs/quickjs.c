@@ -9468,6 +9468,7 @@ static JSValue js_bytecode_autoinit(JSContext *ctx, JSObject *p, JSAtom atom,
                                      "Object.defineProperty", 3,
                                      JS_CFUNC_generic_magic, 0),
                 JS_AtomToValue(ctx, JS_ATOM_Symbol_iterator),
+                JS_NewCFunction(ctx, js_call_function, "call", 2),
             };
             return js_bytecode_eval(ctx, qjsc_builtin_array_fromasync,
                                     sizeof(qjsc_builtin_array_fromasync),
@@ -40431,9 +40432,8 @@ static int JS_ReadFunctionBytecode(BCReaderState *s, JSFunctionBytecode *b,
 
 static JSValue JS_ReadBigInt(BCReaderState *s)
 {
-    JSValue obj = JS_UNDEFINED;
     uint32_t len, i, n;
-    JSBigInt *p;
+    JSBigInt *p = NULL;
     js_limb_t v;
     uint8_t v8;
 
@@ -40472,7 +40472,7 @@ static JSValue JS_ReadBigInt(BCReaderState *s)
     bc_read_trace(s, "}\n");
     return JS_CompactBigInt(s->ctx, p);
  fail:
-    JS_FreeValue(s->ctx, obj);
+    js_free(s->ctx, p);
     return JS_EXCEPTION;
 }
 
@@ -41077,6 +41077,7 @@ static JSValue JS_ReadRegExp(BCReaderState *s)
     JSContext *ctx = s->ctx;
     JSString *pattern;
     JSString *bc;
+    JSValue obj;
 
     pattern = JS_ReadString(s);
     if (!pattern)
@@ -41095,9 +41096,16 @@ static JSValue JS_ReadRegExp(BCReaderState *s)
         return JS_ThrowInternalError(ctx, "bad regexp bytecode");
     }
 
-    return js_regexp_constructor_internal(ctx, JS_UNDEFINED,
-                                          JS_MKPTR(JS_TAG_STRING, pattern),
-                                          JS_MKPTR(JS_TAG_STRING, bc));
+    obj = js_regexp_constructor_internal(ctx, JS_UNDEFINED,
+                                         JS_MKPTR(JS_TAG_STRING, pattern),
+                                         JS_MKPTR(JS_TAG_STRING, bc));
+    if (JS_IsException(obj))
+        return JS_EXCEPTION;
+    if (BC_add_object_ref(s, obj)) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+    return obj;
 }
 
 static JSValue JS_ReadDate(BCReaderState *s)
@@ -44820,6 +44828,7 @@ static JSValue js_array_find(JSContext *ctx, JSValueConst this_val,
             }
         }
         JS_FreeValue(ctx, val);
+        val = JS_UNDEFINED;
         JS_FreeValue(ctx, index_val);
     }
     JS_FreeValue(ctx, obj);
@@ -50796,14 +50805,13 @@ static JSValue JS_RegExpDelete(JSContext *ctx, JSValueConst this_val, JSValue ar
     if (JS_IsException(str_val))
         goto fail;
     str = JS_VALUE_GET_STRING(str_val);
+    val = JS_GetProperty(ctx, this_val, JS_ATOM_lastIndex);
+    if (JS_IsException(val) || JS_ToLengthFree(ctx, &last_index, val))
+        goto fail;
     re_bytecode = str8(re->bytecode);
     re_flags = lre_get_flags(re_bytecode);
     if ((re_flags & (LRE_FLAG_GLOBAL | LRE_FLAG_STICKY)) == 0) {
         last_index = 0;
-    } else {
-        val = JS_GetProperty(ctx, this_val, JS_ATOM_lastIndex);
-        if (JS_IsException(val) || JS_ToLengthFree(ctx, &last_index, val))
-            goto fail;
     }
     /* size by alloc_count: the register executor uses capture[] beyond
        the capture positions for its registers (see js_regexp_exec). */
@@ -54776,12 +54784,20 @@ static void js_map_finalizer(JSRuntime *rt, JSValueConst val)
     if (s) {
         /* if the object is deleted we are sure that no iterator is
            using it */
+        if (s->is_weak) {
+            /* first pass to remove the weak references, so that freeing
+               a value (e.g. a symbol that is also a key of this map)
+               cannot reset and free records we have yet to visit */
+            list_for_each(el, &s->records) {
+                mr = list_entry(el, JSMapRecord, link);
+                if (!mr->empty)
+                    delete_map_weak_ref(rt, mr);
+            }
+        }
         list_for_each_safe(el, el1, &s->records) {
             mr = list_entry(el, JSMapRecord, link);
             if (!mr->empty) {
-                if (s->is_weak)
-                    delete_map_weak_ref(rt, mr);
-                else
+                if (!s->is_weak)
                     JS_FreeValueRT(rt, mr->key);
                 JS_FreeValueRT(rt, mr->value);
             }

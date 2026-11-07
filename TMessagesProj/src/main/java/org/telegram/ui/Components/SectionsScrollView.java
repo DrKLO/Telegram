@@ -237,6 +237,7 @@ public class SectionsScrollView extends ScrollView implements IBlur3Capture {
         if (to.getParent() != contentView && toLp instanceof MarginLayoutParams) {
             toBottomMargin = ((MarginLayoutParams) toLp).bottomMargin;
         }
+        toBottomMargin += getTrailingPaddingBottom(to);
 
         final float left = contentView.getX() + getChildX(from);
         final float top = contentView.getY() + getChildY(from) - fromTopMargin;
@@ -250,6 +251,23 @@ public class SectionsScrollView extends ScrollView implements IBlur3Capture {
         sections[sectionsCount++] = right;
         sections[sectionsCount++] = bottom;
         sections[sectionsCount++] = from.getAlpha();
+    }
+
+    // bottom paddings of the gathered parents that end with this child (e.g. under LinkActionView buttons)
+    private float getTrailingPaddingBottom(View child) {
+        float padding = 0.0f;
+        while (child.getParent() instanceof ViewGroup && child.getParent() != contentView) {
+            final ViewGroup parent = (ViewGroup) child.getParent();
+            for (int i = parent.getChildCount() - 1; i >= 0; --i) {
+                final View last = parent.getChildAt(i);
+                if (last.getVisibility() == View.GONE) continue;
+                if (last != child) return padding;
+                break;
+            }
+            padding += parent.getPaddingBottom();
+            child = parent;
+        }
+        return padding;
     }
 
     private void ensureSectionsCapacity() {

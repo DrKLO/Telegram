@@ -4,11 +4,13 @@ import static org.telegram.messenger.AndroidUtilities.dpf2;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.Px;
+import androidx.core.graphics.ColorUtils;
 
 /**
  * How the edge of a glass shape catches the light. Inside: two crescents, each the shape minus its own copy shifted along
  * the light (the top one lit, the bottom one opposite). Outside: a ring whose strength may change around the shape
- * (stronger at the sides, the "Dark out" rim of the QR screen) or stay even (an outline).
+ * (stronger at the sides, the "Dark out" rim of the QR screen) or stay even (an outline). Or, instead of the crescents, an
+ * even stroke inside along the whole edge (a hint, whose arrow has no top and bottom).
  * <p>
  * Every layer is a white mask baked once into a nine-patch ({@link GlassRimRenderer}) and tinted when drawn: colors,
  * alpha and themes cost nothing, only the geometry is baked.
@@ -34,9 +36,20 @@ public final class GlassRim {
     /** How fast the ring goes from the sides to the lit edges: |cos θ|^exp. */
     public final float ringExp;
 
+    /** The even stroke inside the edge. */
+    public final @Px float strokeWidth;
+    public final @ColorInt int strokeColor;
+
     public GlassRim(float lightAngle,
                     float topWidth, int topColor, float bottomWidth, int bottomColor,
                     float ringWidth, int ringColor, float ringTop, float ringBottom, float ringSides, float ringExp) {
+        this(lightAngle, topWidth, topColor, bottomWidth, bottomColor, ringWidth, ringColor, ringTop, ringBottom, ringSides, ringExp, 0, 0);
+    }
+
+    public GlassRim(float lightAngle,
+                    float topWidth, int topColor, float bottomWidth, int bottomColor,
+                    float ringWidth, int ringColor, float ringTop, float ringBottom, float ringSides, float ringExp,
+                    float strokeWidth, int strokeColor) {
         this.lightAngle = lightAngle;
         this.topWidth = topWidth;
         this.topColor = topColor;
@@ -48,6 +61,8 @@ public final class GlassRim {
         this.ringBottom = ringBottom;
         this.ringSides = ringSides;
         this.ringExp = ringExp;
+        this.strokeWidth = strokeWidth;
+        this.strokeColor = strokeColor;
     }
 
     /** The crescents of the glass's stroke colors and an even outline. */
@@ -55,11 +70,24 @@ public final class GlassRim {
         return new GlassRim(lightAngle, topWidth, topColor, bottomWidth, bottomColor, outlineWidth, outlineColor, 1, 1, 1, 0);
     }
 
+    /**
+     * The glass's stroke colors as an even stroke along the whole edge: of the mean width and the mean color of the top
+     * and the bottom ones, with an even outline.
+     */
+    public static GlassRim evenOf(float topWidth, int topColor, float bottomWidth, int bottomColor, float outlineWidth, int outlineColor) {
+        return new GlassRim(LIGHT_TOP, 0, 0, 0, 0, outlineWidth, outlineColor, 1, 1, 1, 0,
+            (topWidth + bottomWidth) / 2f, ColorUtils.blendARGB(topColor, bottomColor, .5f));
+    }
+
     public GlassRim withLightAngle(float lightAngle) {
         if (this.lightAngle == lightAngle) {
             return this;
         }
-        return new GlassRim(lightAngle, topWidth, topColor, bottomWidth, bottomColor, ringWidth, ringColor, ringTop, ringBottom, ringSides, ringExp);
+        return new GlassRim(lightAngle, topWidth, topColor, bottomWidth, bottomColor, ringWidth, ringColor, ringTop, ringBottom, ringSides, ringExp, strokeWidth, strokeColor);
+    }
+
+    boolean hasStroke() {
+        return strokeWidth > 0.05f && (strokeColor >>> 24) != 0;
     }
 
     boolean hasTop() {

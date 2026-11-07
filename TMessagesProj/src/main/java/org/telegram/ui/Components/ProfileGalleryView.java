@@ -1318,7 +1318,7 @@ public class ProfileGalleryView extends CircularViewPager implements Notificatio
         @Nullable
         @Override
         public CharSequence getPageTitle(int position) {
-            return (getRealPosition(position) + 1) + "/" + (dialogPhotos == null ? 0 : dialogPhotos.getCount());
+            return (getRealPosition(position) + 1) + "/" + getRealCount();
         }
 
         @Override
