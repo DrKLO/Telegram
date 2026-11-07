@@ -755,12 +755,7 @@ public class GramWallet implements GramWalletStreaming.IGramWalletStreamingSubsc
 
     private boolean isValidMessageHash(String hash) {
         if (TextUtils.isEmpty(hash)) return false;
-        try {
-            transactionHashBytes(hash);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+        return transactionHashKey(hash) != null;
     }
 
     private boolean sameMessageHash(String first, String second) {
@@ -818,27 +813,132 @@ public class GramWallet implements GramWalletStreaming.IGramWalletStreamingSubsc
         );
     }
 
-    public static boolean sameTransactionHash(String first, String second) {
-        if (TextUtils.isEmpty(first) || TextUtils.isEmpty(second)) return false;
-        if (TextUtils.equals(first, second)) return true;
-        try {
-            return Arrays.equals(transactionHashBytes(first), transactionHashBytes(second));
-        } catch (IllegalArgumentException e) {
-            return false;
+    /**
+     * For each source transaction in order: replaces the first row of target that is the same object
+     * or {@link #transactionMatches} it, otherwise appends it. Indexed by match keys instead of comparing every pair.
+     */
+    public static void mergeTransactions(ArrayList<TL_wallet.walletTransaction> target, List<TL_wallet.walletTransaction> source) {
+        final java.util.IdentityHashMap<TL_wallet.walletTransaction, java.util.TreeSet<Integer>> byObject = new java.util.IdentityHashMap<>();
+        final HashMap<String, java.util.TreeSet<Integer>> byKey = new HashMap<>();
+        for (int i = 0; i < target.size(); ++i) {
+            indexTransaction(byObject, byKey, i, target.get(i), true);
+        }
+        for (TL_wallet.walletTransaction t : source) {
+            int found = firstIndex(byObject.get(t), -1);
+            for (String key : transactionMatchKeys(t)) {
+                found = firstIndex(byKey.get(key), found);
+            }
+            if (found >= 0) {
+                final TL_wallet.walletTransaction old = target.get(found);
+                if (old != t) {
+                    indexTransaction(byObject, byKey, found, old, false);
+                    target.set(found, t);
+                    indexTransaction(byObject, byKey, found, t, true);
+                }
+            } else {
+                target.add(t);
+                indexTransaction(byObject, byKey, target.size() - 1, t, true);
+            }
         }
     }
 
-    private static byte[] transactionHashBytes(String hash) {
-        if (hash.matches("[0-9a-fA-F]{64}")) {
-            byte[] bytes = new byte[32];
-            for (int i = 0; i < bytes.length; ++i) {
-                bytes[i] = (byte) Integer.parseInt(hash.substring(i * 2, i * 2 + 2), 16);
-            }
-            return bytes;
+    private static int firstIndex(java.util.TreeSet<Integer> indices, int current) {
+        if (indices == null || indices.isEmpty()) return current;
+        final int first = indices.first();
+        return current < 0 ? first : Math.min(current, first);
+    }
+
+    private static void indexTransaction(
+        java.util.IdentityHashMap<TL_wallet.walletTransaction, java.util.TreeSet<Integer>> byObject,
+        HashMap<String, java.util.TreeSet<Integer>> byKey,
+        int index, TL_wallet.walletTransaction t, boolean add
+    ) {
+        java.util.TreeSet<Integer> indices = byObject.get(t);
+        if (add) {
+            if (indices == null) byObject.put(t, indices = new java.util.TreeSet<>());
+            indices.add(index);
+        } else if (indices != null) {
+            indices.remove(index);
         }
-        byte[] bytes = android.util.Base64.decode(hash.replace('-', '+').replace('_', '/'), android.util.Base64.DEFAULT);
-        if (bytes.length != 32) throw new IllegalArgumentException("Invalid transaction hash");
-        return bytes;
+        for (String key : transactionMatchKeys(t)) {
+            indices = byKey.get(key);
+            if (add) {
+                if (indices == null) byKey.put(key, indices = new java.util.TreeSet<>());
+                indices.add(index);
+            } else if (indices != null) {
+                indices.remove(index);
+            }
+        }
+    }
+
+    /** Two transactions share a key exactly when {@link #transactionMatches} is true for them */
+    private static ArrayList<String> transactionMatchKeys(TL_wallet.walletTransaction t) {
+        final ArrayList<String> keys = new ArrayList<>(5);
+        if (t == null) return keys;
+        if (!TextUtils.isEmpty(t.id)) keys.add("i" + t.id);
+        addHashMatchKey(keys, 't', t.tx_hash);
+        addHashMatchKey(keys, 'm', t.messageHash);
+        if (!t.incoming) {
+            addHashMatchKey(keys, 'g', t.gaslessMessageBodyHash);
+            addHashMatchKey(keys, 'n', t.normalMessageBodyHash);
+        }
+        return keys;
+    }
+
+    private static void addHashMatchKey(ArrayList<String> keys, char field, String hash) {
+        if (TextUtils.isEmpty(hash)) return;
+        // sameTransactionHash: equal strings always match, valid hashes match by their bytes
+        final String key = transactionHashKey(hash);
+        keys.add(key != null ? field + "x" + key : field + "r" + hash);
+    }
+
+    public static boolean sameTransactionHash(String first, String second) {
+        if (TextUtils.isEmpty(first) || TextUtils.isEmpty(second)) return false;
+        if (TextUtils.equals(first, second)) return true;
+        final String a = transactionHashKey(first);
+        return a != null && a.equals(transactionHashKey(second));
+    }
+
+    // hash string -> lowercase hex of its 32 bytes, or "" when it isn't a valid hash.
+    // Matching runs on the main thread for every pair of transactions, so the decoding is cached.
+    private static final android.util.LruCache<String, String> transactionHashKeys = new android.util.LruCache<>(4096);
+
+    /** Canonical form of a hex or (url-safe) base64 transaction hash, null when invalid */
+    @Nullable
+    public static String transactionHashKey(String hash) {
+        if (TextUtils.isEmpty(hash)) return null;
+        String key = transactionHashKeys.get(hash);
+        if (key == null) {
+            key = computeTransactionHashKey(hash);
+            transactionHashKeys.put(hash, key);
+        }
+        return key.isEmpty() ? null : key;
+    }
+
+    private static String computeTransactionHashKey(String hash) {
+        if (isHex64(hash)) return hash.toLowerCase(Locale.ROOT);
+        final byte[] bytes;
+        try {
+            bytes = android.util.Base64.decode(hash.replace('-', '+').replace('_', '/'), android.util.Base64.DEFAULT);
+        } catch (IllegalArgumentException e) {
+            return "";
+        }
+        if (bytes.length != 32) return "";
+        final StringBuilder sb = new StringBuilder(64);
+        for (byte b : bytes) {
+            sb.append(Character.forDigit((b >> 4) & 15, 16));
+            sb.append(Character.forDigit(b & 15, 16));
+        }
+        return sb.toString();
+    }
+
+    private static boolean isHex64(String s) {
+        if (s.length() != 64) return false;
+        for (int i = 0; i < 64; ++i) {
+            final char c = s.charAt(i);
+            if (!(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F')) return false;
+        }
+        return true;
     }
 
     private static String transferRawAddress(String address) {

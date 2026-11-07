@@ -1,0 +1,61 @@
+<!doctype html>
+<html data-test="auto/19-limits">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: limits and the strict policy</title>
+<!-- conformance {"title":"Strict limits: a 30 K text value and a 6 K data-* attribute render, the complex-script budget, the 64-timer cap, 4000 canvas commands per canvas and task, a data: image up to 1024 × 1024 pixels, attr() under strict (past a counted limit the widget stops: auto/31–35)"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var d=document,w=d.documentElement,p=typeof TelegramWidget!="undefined",j=window.__conformanceMode||(p?"sandbox":"native"),c=[],k={},f=[];var C,l,g,u,M,x,h,m,A=e=>typeof e=="string"?d.querySelector(e):e;var T=()=>{m=m||setTimeout(b,0)};function i(e,t,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),a=k[e+"|"+t]||(k[e+"|"+t]=c[c.length]=[e,t]);return a[2]=s,a[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),T(),s}function D(e,t,n,o){if(o&&o.sandboxOnly&&!p)return i(e,t,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(e,t,!1,"threw "+s,o)}return r==null?i(e,t,null,"not applicable",o):i(e,t,r instanceof Array?!!r[0]:!!r,r[1],o)}var O=(e,t,n,o,r)=>D(e,t,[n,o],r);function R(e,t,n){h=()=>{for(let s of c)s[2]=="pending"&&(s[2]="fail",s[3]+=" (timed out)");u=1,b()};let o=(s,a)=>{r.done||(r.done=i(e,t,s,a,n))},r={done:n&&n.sandboxOnly&&!p,pass:s=>o(!0,s),fail:s=>o(!1,s),skip:s=>o(null,s),result:(s,a)=>o(!!s,a)};return i(e,t,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}var B=(e,t,n)=>getComputedStyle(A(e),n).getPropertyValue(t).trim();function E(e){let t=A(e).getBoundingClientRect();return{x:t.left,y:t.top,w:t.width,h:t.height,r:t.right,b:t.bottom}}function I(e,t,n){let o=B(e,t||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var F=e=>{f.push(e)};var J=()=>{},N=e=>{let t=e.getBoundingClientRect();return[t.left,t.top,t.width,t.height].map(n=>Math.round(n*10)/10)};function b(){m=0,g&&!u&&J();let e={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of c)e[o[2]]++;let t=g&&!f.length,n=u||t&&!e.pending?"done":t&&M?"awaiting":"running";u=n=="done",w.setAttribute("data-conformance",JSON.stringify({v:1,id:w.getAttribute("data-test"),mode:j,status:n,n:e,checks:c,targets:C,stages:l})),y&&y(n,e)}var y;function q(){y=(e,t)=>{let n=[e];for(let o in t)t[o]&&n.push(o+" "+t[o]);d.getElementById("conf-list").textContent=[n.join(" · ")].concat(c.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function S(){if(l||(l={},[].forEach.call(d.querySelectorAll("[data-stage]"),t=>{l[t.getAttribute("data-stage")]=N(t)})),!f.length)return g=1,x&&h&&setTimeout(h,x),T();let e;try{e=f.shift()()}catch(t){i("harness","step",!1,t)}setTimeout(S,e||0)}function _(e){e=e||{},M=e.awaitInput,x=e.awaitInput||e.deadline,b();let t=()=>{t=()=>{},setTimeout(S,e.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>t()))}catch(n){}setTimeout(()=>t(),400)}q();return{color:I,ok:O,rect:E,run:_,sandbox:p,step:F,wait:R}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+.t{white-space:nowrap;overflow:hidden;width:200px}
+[data-big]{color:rgb(9,9,9)}
+#attr-ok::before{content:attr(data-label)}
+#attr-cls::before{content:attr(class)}
+</style>
+</head>
+<body>
+<div class="conf-head">19 · Limits</div>
+<div class="conf-probes">
+  <div class="t" id="t30"></div><div class="t" id="cjk-small"></div><div class="t" id="cjk-big"></div>
+  <span id="big-attr">big data-*</span> <span id="attr-ok" data-label="ok"></span> <span id="attr-cls" class="cls"></span>
+  <img id="img-ok" alt="" style="width:6px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAQAAQMAAABF07nAAAAAA1BMVEUqiuDzxmxVAAAAlklEQVR42u3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADvBgQeAAEN3jhkAAAAAElFTkSuQmCC"><img id="img-big" alt="" style="width:6px" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAEAAAQAAQMAAACqEdL+AAAAA1BMVEUqiuDzxmxVAAAAl0lEQVR42u3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAArwYIHgABJD3WogAAAABJRU5ErkJggg==">
+</div>
+<div id="conf-list"></div>
+<script>
+var S = T.sandbox ? {} : { sandboxOnly: true };
+var rep = function (s, n) { return new Array(n + 1).join(s); };
+function onImage(id, name, want, opts) {
+  var h = T.wait('limit.image-pixels', name, opts), el = document.getElementById(id);
+  var judge = function (ev) { var n = el.naturalWidth; h.result(want(ev.type, n), ev.type + ', naturalWidth ' + n); };
+  el.addEventListener('load', judge);
+  el.addEventListener('error', judge);
+  if (el.complete && el.naturalWidth) judge({ type: 'load' });
+}
+onImage('img-ok', 'a 1024 \u00d7 1024 data: image decodes', function (t, n) { return t === 'load' && n === 1024; });
+onImage('img-big', 'a 1025 \u00d7 1024 data: image is the 48 px placeholder', function (t, n) { return t === 'load' && n === 48; }, S);
+T.step(function () {
+  // One long word each: the strict churn limit charges per word, not per character.
+  document.getElementById('t30').textContent = rep('a', 30 * 1024);
+  T.ok('limit.text-node', 'a 30 K text node renders', T.rect('#t30').h > 0, String(T.rect('#t30').h));
+  document.getElementById('cjk-small').textContent = rep('漢', 3000);
+  document.getElementById('cjk-big').textContent = rep('字', 6000);
+  T.ok('limit.text-budget', '3000 CJK characters render', T.rect('#cjk-small').h > 0, String(T.rect('#cjk-small').h));
+  T.ok('limit.text-budget', 'past 8192 complex-script units in the document the text is refused', T.rect('#cjk-big').h === 0, String(T.rect('#cjk-big').h), S);
+  document.getElementById('big-attr').setAttribute('data-big', rep('z', 6 * 1024));
+  T.ok('limit.attribute', 'a 6 K data-* attribute reaches the renderer', T.color('#big-attr', 'color') === '9,9,9,1', T.color('#big-attr', 'color'));
+  T.ok('behaviour.policy-strict', 'attr() of a text attribute (data-*) works', T.rect('#attr-ok').w > 5, String(T.rect('#attr-ok').w));
+  T.ok('behaviour.policy-strict', 'attr() of a non-text attribute (class) is dropped', T.rect('#attr-cls').w === 0, String(T.rect('#attr-cls').w), S);
+  var made = 0, err = null, ids = [];
+  try { for (var i = 0; i < 400; i++) { ids.push(setTimeout(function () {}, 60000)); made++; } } catch (e) { err = e; }
+  for (var j = 0; j < ids.length; j++) clearTimeout(ids[j]);
+  T.ok('limit.timers', 'the 65th live timer throws RangeError', !!err && err.name === 'RangeError' && made >= 50 && made <= 64, made + ' made, ' + (err && err.name), S);
+  var cx = document.createElement('canvas').getContext('2d'), drawn = 0, cerr = null;
+  try { for (var k = 0; k < 4001; k++) { cx.fillRect(k, 0, 1, 1); drawn++; } } catch (e) { cerr = e; }
+  T.ok('limit.canvas-commands', 'the 4001st command for one canvas in one task throws RangeError', !!cerr && cerr.name === 'RangeError' && drawn === 4000, drawn + ' drawn, ' + (cerr && cerr.name), S);
+});
+T.run({ deadline: 4000 });
+</script>
+</body>
+</html>

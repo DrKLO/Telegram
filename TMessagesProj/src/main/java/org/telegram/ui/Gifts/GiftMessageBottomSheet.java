@@ -23,6 +23,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -34,6 +35,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.Bulletin;
@@ -47,9 +49,9 @@ import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
+import org.telegram.utils.glass.source.GlassSource;
+import org.telegram.utils.glass.source.GlassSourceBitmap;
+import org.telegram.utils.glass.source.GlassSourceWrapped;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.Components.chat.ChatInputViewsContainer;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
@@ -67,7 +69,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
     private final StarGiftUniqueActionView starGiftUniqueActionView;
 
     private final WallpaperBitmapProvider wallpaperBitmapProvider = new WallpaperBitmapProvider();
-    private final @NonNull BlurredBackgroundSourceWrapped navbarContentSourceWallpaper;
+    private final @NonNull GlassSourceWrapped navbarContentSourceWallpaper;
     private final @NonNull BlurredBackgroundDrawableViewFactory navbarContentDrawableFactory;
 
     private final ChatInputViewsContainer chatInputViewsContainer;
@@ -100,7 +102,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
         this.toDialogId = toDialogId;
         this.captionLimit = MessagesController.getInstance(currentAccount).stargiftsMessageLengthMax;
 
-        navbarContentSourceWallpaper = new BlurredBackgroundSourceWrapped();
+        navbarContentSourceWallpaper = new GlassSourceWrapped();
         navbarContentDrawableFactory = new BlurredBackgroundDrawableViewFactory(navbarContentSourceWallpaper);
         containerView = sizeNotifierFrameLayout = new SizeNotifierFrameLayout(context) {
             @Override
@@ -122,8 +124,8 @@ public class GiftMessageBottomSheet extends BottomSheet {
             @Override
             protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
                 if (child == backgroundView) {
-                    if (navbarContentSourceWallpaper.getSource() instanceof BlurredBackgroundSourceBitmap) {
-                        ((BlurredBackgroundSourceBitmap) navbarContentSourceWallpaper.getSource())
+                    if (navbarContentSourceWallpaper.getSource() instanceof GlassSourceBitmap) {
+                        ((GlassSourceBitmap) navbarContentSourceWallpaper.getSource())
                                 .setParentSize(getWidth(), getHeight(), 0);
                     }
                     navbarContentSourceWallpaper.draw(canvas, 0, 0, getWidth(), getHeight());
@@ -145,7 +147,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
                     ((MotionBackgroundDrawable) drawable).setFastRenderAllowed();
                 }
 
-                final BlurredBackgroundSource source = wallpaperBitmapProvider.updateSourceFromBackgroundViewDrawable(drawable);
+                final GlassSource source = wallpaperBitmapProvider.updateSourceFromBackgroundViewDrawable(drawable);
                 navbarContentSourceWallpaper.setSource(source);
             }
         };
@@ -266,9 +268,9 @@ public class GiftMessageBottomSheet extends BottomSheet {
                     captionLimitView.animate().setListener(null).cancel();
                     captionLimitView.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(100).start();
                     if (beforeLimit < 0) {
-                        captionLimitView.setTextColor(getThemedColor(Theme.key_text_RedRegular));
+                        ThemeBind.textColor(captionLimitView, Theme.key_text_RedRegular, GiftMessageBottomSheet.this.resourcesProvider);
                     } else {
-                        captionLimitView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+                        ThemeBind.textColor(captionLimitView, Theme.key_windowBackgroundWhiteGrayText, GiftMessageBottomSheet.this.resourcesProvider);
                     }
                 } else {
                     captionLimitView.animate().alpha(0).scaleX(0.5f).scaleY(0.5f).setDuration(100).setListener(new AnimatorListenerAdapter() {
@@ -367,7 +369,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
         captionLimitView.setScaleProperty(0.6f);
         captionLimitView.setVisibility(View.GONE);
         captionLimitView.setTextSize(dp(15));
-        captionLimitView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(captionLimitView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         captionLimitView.setTypeface(AndroidUtilities.bold());
         captionLimitView.setGravity(Gravity.CENTER);
         containerView.addView(captionLimitView, LayoutHelper.createFrame(56, 20, Gravity.BOTTOM | Gravity.RIGHT, 3, 0, 3, 54));
@@ -410,7 +412,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
         });
 
         previewInChatHeader = new TextView(context);
-        previewInChatHeader.setTextColor(getThemedColor(Theme.key_chat_serviceText));
+        ThemeBind.textColor(previewInChatHeader, Theme.key_chat_serviceText, resourcesProvider);
         previewInChatHeader.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         previewInChatHeader.setTypeface(AndroidUtilities.bold());
         previewInChatHeader.setText(LocaleController.getString(R.string.GiftMessagePreviewInChat));
@@ -421,7 +423,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
 
         publicCheckboxButton = new FrameLayout(context);
         TextView publicCheckboxTextView = new TextView(context);
-        publicCheckboxTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
+        ThemeBind.textColor(publicCheckboxTextView, Theme.key_chat_serviceText, resourcesProvider);
         publicCheckboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         publicCheckboxTextView.setTypeface(AndroidUtilities.bold());
         publicCheckboxTextView.setText(LocaleController.getString(R.string.GiftMessageMakeMessagePublic));
@@ -578,5 +580,24 @@ public class GiftMessageBottomSheet extends BottomSheet {
 
     public void setCallback(Callback callback) {
         mCallback = callback;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (writeButton != null) {
+                writeButton.setScrimViewBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void dismissInternal() {
+        super.dismissInternal();
+        // it registers itself in NotificationCenter in its constructor, only onDestroy() unregisters it
+        commentView.onDestroy();
     }
 }

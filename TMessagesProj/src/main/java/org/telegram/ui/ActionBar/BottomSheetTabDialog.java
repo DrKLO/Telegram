@@ -51,17 +51,7 @@ public class BottomSheetTabDialog extends Dialog {
         this.sheet = sheet;
         this.sheetView = sheet.getWindowView();
 
-        navigationBar = new View(getContext()) {
-            @Override
-            protected void dispatchDraw(@NonNull Canvas canvas) {
-                canvas.drawRect(0,0,getWidth(),getHeight(),navigationBarPaint);
-            }
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.navigationBarHeight);
-                setTranslationY(AndroidUtilities.navigationBarHeight);
-            }
-        };
+        navigationBar = new NavigationBarView(getContext());
         navigationBarPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         setContentView(windowView = new WindowView(sheetView), new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -108,6 +98,38 @@ public class BottomSheetTabDialog extends Dialog {
                     return insets.consumeSystemWindowInsets();
                 }
             });
+        }
+    }
+
+    private class NavigationBarView extends View implements Theme.Colorable {
+        public NavigationBarView(android.content.Context context) {
+            super(context);
+        }
+        @Override
+        protected void dispatchDraw(@NonNull Canvas canvas) {
+            canvas.drawRect(0,0,getWidth(),getHeight(),navigationBarPaint);
+        }
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.navigationBarHeight);
+            setTranslationY(AndroidUtilities.navigationBarHeight);
+        }
+        @Override
+        public void updateColors() {
+            try {
+                if (sheet == null) {
+                    return;
+                }
+                final int color = sheet.getNavigationBarColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                if (navigationBarPaint.getColor() != color) {
+                    navigationBarPaint.setColor(color);
+                    invalidate();
+                    AndroidUtilities.setNavigationBarColor(BottomSheetTabDialog.this, color);
+                    AndroidUtilities.setLightNavigationBar(BottomSheetTabDialog.this, AndroidUtilities.computePerceivedBrightness(color) >= .721f);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
     }
 

@@ -22,6 +22,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
@@ -56,9 +57,9 @@ class WalletSearchTabs extends FrameLayout {
         field = new EditTextBoldCursor(context);
         field.setSingleLine(true);
         field.setTextSize(15);
-        field.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        field.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
-        field.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(field, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.hintTextColor(field, Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
+        ThemeBind.cursorColor(field, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         field.setHint(LocaleController.getString(R.string.WalletSearchGifts));
         field.setBackground(null);
         field.setPadding(0, 0, 0, 0);
@@ -79,7 +80,7 @@ class WalletSearchTabs extends FrameLayout {
         addView(field, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP, 40, 0, 44, 0));
         button = new View(context);
         button.setContentDescription(LocaleController.getString(R.string.Search));
-        button.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 1));
+        ThemeBind.selectorBackground(button, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 1), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         button.setOnClickListener(v -> setOpen(!open));
         addView(button, LayoutHelper.createFrame(40, 40, Gravity.TOP | Gravity.RIGHT));
     }

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "useDefineForClassFields": true
+  },
+  // The package's sources are type-checked as part of this program (workspace symlink), so its
+  // ambient declarations (virtual bundles, the renderer transport define) must be visible here too.
+  "include": ["src", "bench", "tests", "vite.config.ts", "../../packages/core/src/types.d.ts"]
+}

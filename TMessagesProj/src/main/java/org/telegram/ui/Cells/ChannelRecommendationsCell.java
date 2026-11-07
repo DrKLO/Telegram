@@ -271,6 +271,7 @@ public class ChannelRecommendationsCell {
             AndroidUtilities.rectTmp.set(ox + serviceTextLeft - dp(8.66f), dp(4), ox + serviceTextRight + dp(8.66f), dp(4 + 3.33f + 3.33f) + serviceTextHeight);
             cell.drawServiceBackground(canvas, AndroidUtilities.rectTmp, dp(11), 1f);
             canvas.translate(ox, dp(4 + 3.33f));
+            serviceTextPaint.setColor(cell.getThemedColor(Theme.key_chat_serviceText));
             serviceText.draw(canvas);
             canvas.restore();
 
@@ -307,6 +308,7 @@ public class ChannelRecommendationsCell {
             final float s = .4f + .6f * expandT;
             canvas.scale(s, s, backgroundBounds.centerX(), backgroundBounds.top - dp(6));
 
+            backgroundPaint.setColor(cell.getThemedColor(Theme.key_chat_inBubble));
             backgroundPaint.setAlpha((int) (0xFF * expandT));
             backgroundPaint.setShadowLayer(dpf2(1), 0, dpf2(0.33f), ColorUtils.setAlphaComponent(Color.BLACK, (int) (27 * expandT)));
             canvas.drawPath(backgroundPath, backgroundPaint);
@@ -457,16 +459,23 @@ public class ChannelRecommendationsCell {
 //                    Drawable avatar = cell.getContext().getResources().getDrawable(resId).mutate();
 //                    avatarImageReceiver[i].setImageBitmap(avatar);
                     final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-                    final int color = Theme.blendOver(cell.getThemedColor(Theme.key_chat_inBubble), Theme.multAlpha(cell.getThemedColor(Theme.key_windowBackgroundWhiteGrayText), .50f));
-                    paint.setColor(color);
+                    final int[] color = new int[] { Theme.blendOver(cell.getThemedColor(Theme.key_chat_inBubble), Theme.multAlpha(cell.getThemedColor(Theme.key_windowBackgroundWhiteGrayText), .50f)) };
+                    paint.setColor(color[0]);
                     avatarImageReceiver[i].setImageBitmap(new Drawable() {
                         @Override
                         public void draw(@NonNull Canvas canvas) {
+                            final int newColor = Theme.blendOver(cell.getThemedColor(Theme.key_chat_inBubble), Theme.multAlpha(cell.getThemedColor(Theme.key_windowBackgroundWhiteGrayText), .50f));
+                            if (newColor != color[0]) {
+                                final int paintAlpha = paint.getAlpha();
+                                color[0] = newColor;
+                                paint.setColor(newColor);
+                                paint.setAlpha(paintAlpha);
+                            }
                             canvas.drawCircle(getBounds().centerX(), getBounds().centerY(), getBounds().width() / 2f, paint);
                         }
                         @Override
                         public void setAlpha(int alpha) {
-                            paint.setAlpha(Theme.multAlpha(color, alpha / 255f));
+                            paint.setAlpha(Theme.multAlpha(color[0], alpha / 255f));
                         }
                         @Override
                         public void setColorFilter(@Nullable ColorFilter colorFilter) {

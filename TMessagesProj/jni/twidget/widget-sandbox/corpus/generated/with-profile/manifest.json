@@ -1,0 +1,147 @@
+{
+  "model": "claude-fable-5-1 (authored in a Claude Code session, not via the API)",
+  "generated": "2026-10-08T19:01:25.564Z",
+  "note": "Author had docs/widget-runtime-profile.md in context and followed it.",
+  "entries": [
+    {
+      "index": 0,
+      "prompt": "Show me a mortgage calculator: loan amount, interest rate, years → monthly payment and total interest.",
+      "file": "01-show-me-a-mortgage-calculator-loan-amount.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 1,
+      "prompt": "Make an interactive quiz about the solar system with 5 questions and a score at the end.",
+      "file": "02-make-an-interactive-quiz-about-the-solar.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 2,
+      "prompt": "Visualize this weekly budget as a chart: rent 1200, groceries 450, transport 180, entertainment 220, savings 400.",
+      "file": "03-visualize-this-weekly-budget-as-a-chart.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 3,
+      "prompt": "Build a tip calculator with a slider for the tip percentage and a way to split the bill between people.",
+      "file": "04-build-a-tip-calculator-with-a-slider-for.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 4,
+      "prompt": "Create a Pomodoro timer with start/pause/reset and a visual progress ring.",
+      "file": "05-create-a-pomodoro-timer-with-start-pause.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 5,
+      "prompt": "Show a comparison table of three laptops (price, weight, battery, screen) that I can sort by each column.",
+      "file": "06-show-a-comparison-table-of-three-laptops.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 6,
+      "prompt": "Make a BMI calculator with metric and imperial units and a colored result scale.",
+      "file": "07-make-a-bmi-calculator-with-metric-and.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 7,
+      "prompt": "Draw a line chart of monthly temperatures for Berlin vs Madrid (make up plausible data).",
+      "file": "08-draw-a-line-chart-of-monthly-temperatures.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 8,
+      "prompt": "Create a unit converter for length, weight and temperature.",
+      "file": "09-create-a-unit-converter-for-length-weight.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 9,
+      "prompt": "Show me an interactive multiplication table where I can highlight a row and column by hovering.",
+      "file": "10-show-me-an-interactive-multiplication.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 10,
+      "prompt": "Make a to-do list widget where I can add, check off and delete tasks.",
+      "file": "11-make-a-to-do-list-widget-where-i-can-add.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 11,
+      "prompt": "Create a countdown to New Year with days, hours, minutes and seconds.",
+      "file": "12-create-a-countdown-to-new-year-with-days.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 12,
+      "prompt": "Visualize a simple project timeline (Gantt-style) for a 6-week website build.",
+      "file": "13-visualize-a-simple-project-timeline-gantt.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 13,
+      "prompt": "Build a color palette generator: pick a base color and show 5 harmonious shades with hex codes I can tap to copy.",
+      "file": "14-build-a-color-palette-generator-pick-a.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 14,
+      "prompt": "Create a flashcard widget for 8 Spanish words with flip animation and “know / don’t know” buttons.",
+      "file": "15-create-a-flashcard-widget-for-8-spanish.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 15,
+      "prompt": "Make a bar chart of the top 6 programming languages by popularity with tooltips.",
+      "file": "16-make-a-bar-chart-of-the-top-6-programming.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 16,
+      "prompt": "Show a tic-tac-toe game against a simple computer opponent.",
+      "file": "17-show-a-tic-tac-toe-game-against-a-simple.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 17,
+      "prompt": "Create a currency converter for USD, EUR, GBP and JPY with editable rates.",
+      "file": "18-create-a-currency-converter-for-usd-eur.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 18,
+      "prompt": "Make a step-by-step recipe card for pancakes with checkboxes for ingredients and a timer for each step.",
+      "file": "19-make-a-step-by-step-recipe-card-for.html",
+      "stop": "in-session",
+      "usage": null
+    },
+    {
+      "index": 19,
+      "prompt": "Build a habit tracker grid for one month where I can tap days to mark them done, with a streak counter.",
+      "file": "20-build-a-habit-tracker-grid-for-one-month.html",
+      "stop": "in-session",
+      "usage": null
+    }
+  ]
+}

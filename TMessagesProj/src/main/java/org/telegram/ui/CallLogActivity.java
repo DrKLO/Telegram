@@ -5,6 +5,7 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.MessagesController.findUpdatesAndRemove;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -18,11 +19,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.Layout;
 import android.text.SpannableString;
@@ -33,6 +31,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -41,13 +40,11 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -55,7 +52,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
@@ -63,6 +60,7 @@ import org.telegram.messenger.AccountInstance;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -82,7 +80,6 @@ import org.telegram.ui.Components.FragmentContextView;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
-import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.ProgressButton;
 import org.telegram.ui.Components.QRCodeBottomSheet;
 import org.telegram.ui.Components.RLottieImageView;
@@ -95,18 +92,12 @@ import org.telegram.ui.Components.TextHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
-import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
-import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
-import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
-import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
+import org.telegram.utils.glass.source.GlassSourceRenderNode;
 import org.telegram.ui.Components.voip.VoIPHelper;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -124,23 +115,19 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class CallLogActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate {
-	private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
 	private EmptyTextProgressView emptyView;
 	private LinearLayoutManager layoutManager;
 	private UniversalRecyclerView listView;
+	private View actionBarBackground;
 	private RecyclerAnimationScrollHelper scrollHelper;
 	private FragmentFloatingButton floatingButton;
 	private FlickerLoadingView flickerLoadingView;
 	private SizeNotifierFrameLayout contentView;
-	private HeaderShadowView headerShadowView;
 	private HintView2 hideCallTabsHintView;
 	private boolean needFinishFragment = true;
 	private boolean hasMainTabs;
 
-	private @Nullable ImageView actionModeCloseView;
-	private NumberTextView selectedDialogsCountTextView;
-	private final ArrayList<View> actionModeViews = new ArrayList<>();
 
 	private ActionBarMenuItem otherItem;
 
@@ -157,11 +144,6 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	private FrameLayout fragmentContextViewWrapper;
 	private FragmentContextView fragmentContextView;
 
-	private Drawable greenDrawable;
-	private Drawable greenDrawable2;
-	private Drawable redDrawable;
-	private Drawable redDrawable2;
-	private ImageSpan iconOut, iconIn, iconMissedIn, getIconMissedOut;
 	private TLRPC.User lastCallUser;
 	private TLRPC.Chat lastCallChat;
 
@@ -175,6 +157,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	private static final int TYPE_MISSED_OUT = 3;
 
 	private static final int delete = 2;
+	private static final int delete_all = 3;
 
 	public CallLogActivity() {
 		this(null);
@@ -182,21 +165,6 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	public CallLogActivity(Bundle args) {
 		super(args);
-
-		iBlur3SourceColor = new BlurredBackgroundSourceColor();
-		iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundGray));
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-			scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
-			iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
-			iBlur3SourceGlass = new BlurredBackgroundSourceRenderNode(null);
-			iBlur3FactoryLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceGlass);
-			iBlur3FactoryLiquidGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
-		} else {
-			scrollableViewNoiseSuppressor = null;
-			iBlur3SourceGlassFrosted = null;
-			iBlur3SourceGlass = null;
-			iBlur3FactoryLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
-		}
 	}
 
 	private class EmptyTextProgressView extends FrameLayout {
@@ -228,7 +196,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			});
 
 			emptyTextView1 = new TextView(context);
-			emptyTextView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+			ThemeBind.textColor(emptyTextView1, Theme.key_windowBackgroundWhiteBlackText);
 			emptyTextView1.setText(getString(R.string.MakeYourFirstCall));
 			emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
 			emptyTextView1.setTypeface(AndroidUtilities.bold());
@@ -241,7 +209,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				help = help.replace('\n', ' ');
 			}
 			emptyTextView2.setText(help);
-			emptyTextView2.setTextColor(Theme.getColor(Theme.key_emptyListPlaceholder));
+			ThemeBind.textColor(emptyTextView2, Theme.key_emptyListPlaceholder);
 			emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
 			emptyTextView2.setGravity(Gravity.CENTER);
 			emptyTextView2.setLineSpacing(AndroidUtilities.dp(2), 1);
@@ -482,8 +450,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			addView(avatarsImageView, LayoutHelper.createFrame(72, LayoutHelper.MATCH_PARENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, -2, 0, 0, 0));
 
 			imageView = new ImageView(context);
-			imageView.setColorFilter(Theme.getColor(Theme.key_telegram_color_text), PorterDuff.Mode.SRC_IN);
-			imageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+			ThemeBind.colorFilter(imageView, Theme.key_telegram_color_text, PorterDuff.Mode.SRC_IN);
+			ThemeBind.selectorBackground(imageView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1), null, ThemeBind.of(Theme.key_listSelector));
 			imageView.setScaleType(ImageView.ScaleType.CENTER);
 			imageView.setContentDescription(getString(R.string.Call));
 			addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 8, 0, 8, 0));
@@ -515,10 +483,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			}
 			switch (row.type) {
 				case TYPE_OUT:
-					subtitle.setSpan(iconOut(getContext()), ldir.length(), ldir.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+					subtitle.setSpan(iconOut(), ldir.length(), ldir.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 					break;
 				case TYPE_IN:
-					subtitle.setSpan(iconIn(getContext()), ldir.length(), ldir.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+					subtitle.setSpan(iconIn(), ldir.length(), ldir.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 					break;
 				case TYPE_MISSED_IN:
 					subtitle.setSpan(iconMissedIn(getContext()), ldir.length(), ldir.length() + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -566,17 +534,25 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			imageView.setOnClickListener(imageOnClick);
 		}
 
-		private static ImageSpan iconOut(Context context) {
-			final Drawable greenDrawable = context.getResources().getDrawable(R.drawable.mini_call_out_16).mutate();
-			greenDrawable.setBounds(0, 0, greenDrawable.getIntrinsicWidth(), greenDrawable.getIntrinsicHeight());
-			greenDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.MULTIPLY));
-			return new ImageSpan(greenDrawable, ImageSpan.ALIGN_BOTTOM);
+		private Drawable iconOutDrawable, iconInDrawable;
+
+		private ImageSpan iconOut() {
+			if (iconOutDrawable == null) {
+				final Drawable greenDrawable = getContext().getResources().getDrawable(R.drawable.mini_call_out_16).mutate();
+				greenDrawable.setBounds(0, 0, greenDrawable.getIntrinsicWidth(), greenDrawable.getIntrinsicHeight());
+				ThemeBind.drawableColorFilter(profileSearchCell, greenDrawable, Theme.key_windowBackgroundWhiteGrayText3, PorterDuff.Mode.MULTIPLY);
+				iconOutDrawable = greenDrawable;
+			}
+			return new ImageSpan(iconOutDrawable, ImageSpan.ALIGN_BOTTOM);
 		}
-		private static ImageSpan iconIn(Context context) {
-			final Drawable greenDrawable2 = context.getResources().getDrawable(R.drawable.mini_call_in_16).mutate();
-			greenDrawable2.setBounds(0, 0, greenDrawable2.getIntrinsicWidth(), greenDrawable2.getIntrinsicHeight());
-			greenDrawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.MULTIPLY));
-			return new ImageSpan(greenDrawable2, ImageSpan.ALIGN_BOTTOM);
+		private ImageSpan iconIn() {
+			if (iconInDrawable == null) {
+				final Drawable greenDrawable2 = getContext().getResources().getDrawable(R.drawable.mini_call_in_16).mutate();
+				greenDrawable2.setBounds(0, 0, greenDrawable2.getIntrinsicWidth(), greenDrawable2.getIntrinsicHeight());
+				ThemeBind.drawableColorFilter(profileSearchCell, greenDrawable2, Theme.key_windowBackgroundWhiteGrayText3, PorterDuff.Mode.MULTIPLY);
+				iconInDrawable = greenDrawable2;
+			}
+			return new ImageSpan(iconInDrawable, ImageSpan.ALIGN_BOTTOM);
 		}
 		private static ImageSpan iconMissedIn(Context context) {
 			final Drawable redDrawable = context.getResources().getDrawable(R.drawable.mini_call_in_16).mutate();
@@ -616,7 +592,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		}
 	}
 
-	private static class GroupCallCell extends FrameLayout {
+	private static class GroupCallCell extends FrameLayout implements Theme.Colorable {
 
 		private final ProfileSearchCell profileSearchCell;
 		private final ProgressButton button;
@@ -637,9 +613,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 			button.setText(text);
 			button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-			button.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+			ThemeBind.textColor(button, Theme.key_featuredStickers_buttonText);
 			button.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
 			button.setBackgroundRoundRect(Theme.getColor(Theme.key_telegram_color), Theme.getColor(Theme.key_featuredStickers_addButtonPressed), 16);
+			ThemeBind.fillBackground(button, button.getBackground(), ThemeBind.of(Theme.key_telegram_color));
 			button.setPadding(AndroidUtilities.dp(14), 0, AndroidUtilities.dp(14), 0);
 			addView(button, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 16, 14, 0));
 		}
@@ -687,7 +664,20 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				return item;
 			}
 		}
-	}
+	
+	    @Override
+	    public void updateColors() {
+	        try {
+    	        button.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+    	        invalidate();
+	    
+	        } catch (Exception e) {
+	            FileLog.e(e);
+	        }
+	    }
+}
+
+	private NotificationCenter.ObserversGroup observersGroup;
 
 	@Override
 	public boolean onFragmentCreate() {
@@ -695,11 +685,18 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		getCalls(0, 50);
 		activeGroupCalls = getMessagesController().getActiveGroupCalls();
 
-		getNotificationCenter().addObserver(this, NotificationCenter.didReceiveNewMessages);
-		getNotificationCenter().addObserver(this, NotificationCenter.messagesDeleted);
-		getNotificationCenter().addObserver(this, NotificationCenter.activeGroupCallsUpdated);
-		getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
-		getNotificationCenter().addObserver(this, NotificationCenter.groupCallUpdated);
+		if (observersGroup != null) {
+			observersGroup.removeAllObservers();
+			observersGroup = null;
+		}
+
+		observersGroup = getNotificationCenter()
+			.createObserversGroup(this)
+			.add(NotificationCenter.didReceiveNewMessages)
+			.add(NotificationCenter.messagesDeleted)
+			.add(NotificationCenter.activeGroupCallsUpdated)
+			.add(NotificationCenter.chatInfoDidLoad)
+			.add(NotificationCenter.groupCallUpdated);
 
 		if (arguments != null) {
 			needFinishFragment = arguments.getBoolean("needFinishFragment", true);
@@ -714,53 +711,56 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	@Override
 	public void onFragmentDestroy() {
+		if (observersGroup != null) {
+			observersGroup.removeAllObservers();
+			observersGroup = null;
+		}
 		super.onFragmentDestroy();
-		getNotificationCenter().removeObserver(this, NotificationCenter.didReceiveNewMessages);
-		getNotificationCenter().removeObserver(this, NotificationCenter.messagesDeleted);
-		getNotificationCenter().removeObserver(this, NotificationCenter.activeGroupCallsUpdated);
-		getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
-		getNotificationCenter().removeObserver(this, NotificationCenter.groupCallUpdated);
 	}
 
-	@SuppressLint("UseCompatLoadingForDrawables")
-    @Override
+	@Override
+	protected boolean useSimpleActionBar() {
+		return true;
+	}
+
+	@Override
 	public View createView(Context context) {
+		setHasOwnBackground(true);
 		if (!hasMainTabs) {
-			actionBar.setBackButtonDrawable(new BackDrawable(false));
+			simpleActionBar.setBackButtonDrawable(new BackDrawable(false));
 		}
-		actionBar.setAllowOverlayTitle(true);
-		actionBar.setTitle(getString(R.string.Calls));
-		actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+		simpleActionBar.setTitle(getString(R.string.Calls));
+		simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
 			@Override
 			public void onItemClick(int id) {
 				if (id == -1) {
-					if (actionBar.isActionModeShowed()) {
+					if (simpleActionBar.isActionModeShowed()) {
 						hideActionMode(true);
 					} else {
 						finishFragment();
 					}
 				} else if (id == delete) {
 					showDeleteAlert(false);
+				} else if (id == delete_all) {
+					showDeleteAlert(true);
 				}
 			}
 		});
 
-		ActionBarMenu menu = actionBar.createMenu();
+		SimpleActionBarMenu menu = simpleActionBar.createMenu();
 		otherItem = menu.addItem(10, R.drawable.ic_ab_other);
 		otherItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
-		otherItem.setOnClickListener(v -> showItemOptions());
+		otherItem.addSubItem(delete_all, R.drawable.msg_delete, getString(R.string.DeleteAllCalls))
+			.setColors(getThemedColor(Theme.key_text_RedRegular), getThemedColor(Theme.key_text_RedRegular));
 
 		listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
-		listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
+		listView.setCaptureSectionsDecoratorAllowed(true);
 		listView.setSections();
+		listView.setSectionsDrawBackground(true);
 		listView.adapter.setApplyBackground(false);
 		contentView = new SizeNotifierFrameLayout(context) {
 			@Override
 			protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-				measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
-				((MarginLayoutParams) topPanelLayout.getLayoutParams()).topMargin = actionBar.getMeasuredHeight() - dp(14);
-				((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
-				((MarginLayoutParams) headerShadowView.getLayoutParams()).topMargin = actionBar.getMeasuredHeight();
 				checkUi_listViewPadding();
 				super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 			}
@@ -769,87 +769,29 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			protected void onLayout(boolean changed, int l, int t, int r, int b) {
 				super.onLayout(changed, l, t, r, b);
 				checkUi_floatingButton();
-				checkUi_listClip();
-			}
-
-			@Override
-			protected void dispatchDraw(Canvas canvas) {
-				if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
-					blur3_InvalidateBlur();
-
-					final int width = getMeasuredWidth();
-					final int height = getMeasuredHeight();
-					if (iBlur3SourceGlassFrosted != null && !iBlur3SourceGlassFrosted.inRecording()) {
-						//if (iBlur3SourceGlassFrosted.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
-						final Canvas c = iBlur3SourceGlassFrosted.beginRecording(width, height);
-						c.drawColor(getThemedColor(Theme.key_windowBackgroundGray));
-						if (SharedConfig.chatBlurEnabled()) {
-							scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
-						}
-						iBlur3SourceGlassFrosted.endRecording();
-						//}
-					}
-					if (iBlur3SourceGlass != null && !iBlur3SourceGlass.inRecording()) {
-						//if (iBlur3SourceGlass.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
-						final Canvas c = iBlur3SourceGlass.beginRecording(width, height);
-						c.drawColor(getThemedColor(Theme.key_windowBackgroundGray));
-						if (SharedConfig.chatBlurEnabled()) {
-							scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
-						}
-						iBlur3SourceGlass.endRecording();
-						//}
-					}
-					iBlur3Invalidated = false;
-				}
-
-				super.dispatchDraw(canvas);
-			}
-
-			@Override
-			public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top) {
-				if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !SharedConfig.chatBlurEnabled() || iBlur3SourceGlassFrosted == null) {
-					canvas.drawRect(rectTmp, blurScrimPaint);
-					return;
-				}
-
-				canvas.save();
-				canvas.translate(0, -y);
-				iBlur3SourceGlassFrosted.draw(canvas, rectTmp.left, rectTmp.top + y, rectTmp.right, rectTmp.bottom + y);
-				canvas.restore();
-
-				final int oldScrimAlpha = blurScrimPaint.getAlpha();
-				blurScrimPaint.setAlpha(ChatActivity.ACTION_BAR_BLUR_ALPHA);
-				canvas.drawRect(rectTmp, blurScrimPaint);
-				blurScrimPaint.setAlpha(oldScrimAlpha);
 			}
 		};
 
-		iBlur3FactoryLiquidGlass.setSourceRootView(new ViewPositionWatcher(contentView), contentView);
-
-
-		iBlur3Capture = new ViewGroupPartRenderer(listView, contentView, listView::drawChild);
-		listView.addEdgeEffectListener(() -> listView.postOnAnimation(() -> {
-			checkUi_listClip();
-			blur3_InvalidateBlur();
-		}));
-
 		fragmentView = contentView;
-		fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
 		flickerLoadingView = new FlickerLoadingView(context);
 		flickerLoadingView.setViewType(FlickerLoadingView.CALL_LOG_TYPE);
-		flickerLoadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+		ThemeBind.backgroundColor(flickerLoadingView, Theme.key_windowBackgroundGray);
 		flickerLoadingView.showDate(false);
 		emptyView = new EmptyTextProgressView(context, flickerLoadingView);
-		contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
 		listView.setClipToPadding(false);
 		listView.setEmptyView(emptyView);
 		listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
 		listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
 		scrollHelper = new RecyclerAnimationScrollHelper(listView, layoutManager);
-		scrollHelper.setScrollListener(this::blur3_InvalidateBlur);
-		contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, -ADDITIONAL_LIST_HEIGHT_DP, 0, -ADDITIONAL_LIST_HEIGHT_DP));
+		scrollHelper.setScrollListener(glassEngine::invalidate);
+		contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT));
+		contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+		actionBarBackground = new View(context);
+		actionBarBackground.setBackground(getBaseSimpleGlass().createActionBarFadeDrawable(actionBarBackground));
+		contentView.addView(actionBarBackground, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
 
 		listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
 			private boolean scrollUpdated;
@@ -866,20 +808,10 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					}
 				}
 
-				final View topChild = recyclerView.getChildAt(0);
-				int firstViewTop = topChild != null ? topChild.getTop() : 0;
-
 				if (dy != 0 && scrollUpdated) {
 					floatingButton.setButtonVisible(dy < 0, true);
 				}
 				scrollUpdated = true;
-
-				headerShadowView.setShadowVisible(!(firstVisibleItem == 0 && firstViewTop >= listView.getPaddingTop()), true);
-
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableViewNoiseSuppressor != null) {
-					scrollableViewNoiseSuppressor.onScrolled(dx, dy);
-					blur3_InvalidateBlur();
-				}
 			}
 		});
 
@@ -896,16 +828,14 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		contentView.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
 
 		topPanelLayout = new DialogsActivityTopPanelLayout(context);
-		topPanelLayout.setPadding(dp(11), dp(21), dp(11), dp(21));
-		topPanelLayout.setOnAnimatedHeightChangedListener(() -> {
-			blur3_InvalidateBlur();
-			checkUi_listViewPadding();
-		});
+		// the content exactly in the glass: the layout's background starts 14dp in and is inset by 7dp
+		topPanelLayout.setPadding(dp(11), dp(14) + dp(7), dp(11), dp(14) + dp(7));
+		topPanelLayout.setOnAnimatedHeightChangedListener(this::checkUi_listViewPadding);
 
-		BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
-		topPanelLayoutBackground.setRadius(dp(24));
-		topPanelLayoutBackground.setPadding(dp(7));
-		topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
+		topPanelLayout.setBlurredBackground(getBaseSimpleGlass().factory.create(topPanelLayout)
+			.setColorProvider(BlurredBackgroundProviderImpl.topPanel(resourceProvider))
+			.setRadius(dp(24))
+			.setPadding(dp(7)));
 
 		fragmentContextViewWrapper = new FrameLayout(context);
 		topPanelLayout.addView(fragmentContextViewWrapper);
@@ -918,15 +848,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		};
 		fragmentContextViewWrapper.addView(fragmentContextView);
 		topPanelLayout.setCallFragmentContextView(fragmentContextView);
-		contentView.addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, -14, 0, 0));
-		contentView.addView(actionBar);
-
-		headerShadowView = new HeaderShadowView(context, parentLayout);
-		headerShadowView.setShadowVisible(false, false);
-		contentView.addView(headerShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 5, Gravity.TOP));
-
-		actionBar.setDrawBlurBackground(contentView);
-		actionBar.setAdaptiveBackground(listView);
+		// its glass 6dp from the sides of the screen (the layout's background is 4dp from its sides, inset by 7dp)
+		contentView.addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, -5, -14, -5, 0));
+		contentView.addView(simpleActionBar);
 
 		Bulletin.addDelegate(this, new Bulletin.Delegate() {
 			@Override
@@ -1049,7 +973,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			openCreateCall();
 		} else if (item.object instanceof CallLogRow) {
 			CallLogRow row = (CallLogRow) item.object;
-			if (actionBar.isActionModeShowed()) {
+			if (simpleActionBar.isActionModeShowed()) {
 				addOrRemoveSelectedDialog(row.calls, (CallCell) view);
 			} else if (row.call_id != 0 && !row.calls.isEmpty()) {
 				final boolean video = row.video;
@@ -1131,17 +1055,6 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		}
 	}
 
-	@Override
-	public ActionBar createActionBar(Context context) {
-		ActionBar actionBar = super.createActionBar(context);
-		actionBar.setUseContainerForTitles();
-		actionBar.createAdditionalSubTitleOverlayContainer();
-		actionBar.getAdditionalSubTitleOverlayContainer().setTranslationX(dp(4));
-		actionBar.getAdditionalSubTitleOverlayContainer().setTranslationY(-dp(2));
-		actionBar.getTitlesContainer().setTranslationX(dp(4));
-		actionBar.setAddToContainer(false);
-		return actionBar;
-	}
 
 	@SuppressLint("NotifyDataSetChanged")
     private void showDeleteAlert(boolean all) {
@@ -1185,7 +1098,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		showDialog(alertDialog);
 		TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
 		if (button != null) {
-			button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+			ThemeBind.textColor(button, Theme.key_text_RedBold);
 		}
 	}
 
@@ -1210,7 +1123,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	}
 
 	private void hideActionMode(boolean animated) {
-		actionBar.hideActionMode();
+		simpleActionBar.hideActionMode();
 		selectedIds.clear();
 		for (int a = 0, N = listView.getChildCount(); a < N; a++) {
 			View child = listView.getChildAt(a);
@@ -1231,30 +1144,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	}
 
 	private void createActionMode() {
-		if (actionBar.actionModeIsExist(null)) {
+		if (simpleActionBar.actionModeIsExist()) {
 			return;
 		}
-		final ActionBarMenu actionMode = actionBar.createActionMode();
+		final SimpleActionBarMenu actionMode = simpleActionBar.createActionMode();
 
-		if (hasMainTabs) {
-			actionModeCloseView = new ImageView(getContext());
-			actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
-			actionModeCloseView.setImageDrawable(new BackDrawable(true));
-			actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-			actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
-			actionModeCloseView.setOnClickListener(v -> hideActionMode(true));
-			actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, Gravity.CENTER_VERTICAL));
-			actionModeViews.add(actionModeCloseView);
-		}
 
-		selectedDialogsCountTextView = new NumberTextView(actionMode.getContext());
-		selectedDialogsCountTextView.setTextSize(18);
-		selectedDialogsCountTextView.setTypeface(AndroidUtilities.bold());
-		selectedDialogsCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
-		actionMode.addView(selectedDialogsCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, hasMainTabs ? 18 : 72, 0, 0, 0));
-		selectedDialogsCountTextView.setOnTouchListener((v, event) -> true);
-
-		actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete)));
+		actionMode.addItemWithWidth(delete, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete));
 	}
 
 	private boolean addOrRemoveSelectedDialog(ArrayList<TLRPC.Message> messages, CallCell cell) {
@@ -1283,7 +1179,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	private void showOrUpdateActionMode() {
 		boolean updateAnimated = false;
-		if (actionBar.isActionModeShowed()) {
+		if (simpleActionBar.isActionModeShowed()) {
 			if (selectedIds.isEmpty()) {
 				hideActionMode(true);
 				return;
@@ -1291,21 +1187,9 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			updateAnimated = true;
 		} else {
 			createActionMode();
-			actionBar.showActionMode();
-
-			AnimatorSet animatorSet = new AnimatorSet();
-			ArrayList<Animator> animators = new ArrayList<>();
-			for (int a = 0; a < actionModeViews.size(); a++) {
-				View view = actionModeViews.get(a);
-				view.setPivotY(ActionBar.getCurrentActionBarHeight() / 2f);
-				AndroidUtilities.clearDrawableAnimation(view);
-				animators.add(ObjectAnimator.ofFloat(view, View.SCALE_Y, 0.1f, 1.0f));
-			}
-			animatorSet.playTogether(animators);
-			animatorSet.setDuration(200);
-			animatorSet.start();
+			simpleActionBar.showActionMode();
 		}
-		selectedDialogsCountTextView.setNumber(selectedIds.size(), updateAnimated);
+		simpleActionBar.setActionModeCount(selectedIds.size(), updateAnimated);
 	}
 
 	private void getCalls(int max_id, final int count) {
@@ -1528,25 +1412,18 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	}
 
 	private void checkUi_listViewPadding() {
-		listView.setPadding(
-			0,
-			dp(ADDITIONAL_LIST_HEIGHT_DP) + actionBar.getMeasuredHeight() + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(14)),
-			0,
-			dp(ADDITIONAL_LIST_HEIGHT_DP) + navigationBarHeight + additionNavigationBarHeight
-		);
+		BaseFragmentSimpleGlass.setListViewParams(listView, mSystemInsets.top, mSystemInsets.bottom,
+			ActionBar.getCurrentActionBarHeight() + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7)), additionNavigationBarHeight);
+
+		actionBarBackground.getLayoutParams().height = mSystemInsets.top
+			+ ActionBar.getCurrentActionBarHeight() + simpleActionBar.getExtraHeight()
+			+ (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7));
+
+		// its glass 7dp under the header's buttons
+		((ViewGroup.MarginLayoutParams) topPanelLayout.getLayoutParams()).topMargin = BaseFragmentSimpleGlass.getPillGlassTop(mSystemInsets.top) - dp(14) - dp(7);
+		((ViewGroup.MarginLayoutParams) emptyView.getLayoutParams()).topMargin = mSystemInsets.top + ActionBar.getCurrentActionBarHeight();
 
 		emptyView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
-	}
-
-
-	private final Rect tmpClipRect = new Rect();
-	private void checkUi_listClip() {
-		if (listView.hasActiveEdgeEffects()) {
-			listView.setClipBounds(null);
-			return;
-		}
-		tmpClipRect.set(0, dp(ADDITIONAL_LIST_HEIGHT_DP) + actionBar.getMeasuredHeight(), listView.getMeasuredWidth(), listView.getMeasuredHeight() - dp(ADDITIONAL_LIST_HEIGHT_DP));
-		listView.setClipBounds(tmpClipRect);
 	}
 
 	@Override
@@ -1556,7 +1433,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	@Override
 	public boolean onBackPressed(boolean invoked) {
-		if (actionBar.isActionModeShowed()) {
+		if (simpleActionBar.isActionModeShowed()) {
 			if (invoked) hideActionMode(true);
 			return false;
 		}
@@ -1567,82 +1444,33 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 	public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
-			if (listView != null) {
-				int count = listView.getChildCount();
-				for (int a = 0; a < count; a++) {
-					View child = listView.getChildAt(a);
-					if (child instanceof CallCell) {
-						CallCell cell = (CallCell) child;
-						cell.profileSearchCell.update(0);
-					}
-				}
-			}
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::cellDelegateThemeColors;
 
-			if (actionModeCloseView != null) {
-				actionModeCloseView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-				actionModeCloseView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector)));
-			}
-
-			if (actionBar != null) {
-				actionBar.updateColors();
-			}
-		};
-
-		themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
 //		themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-		themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-		themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-		themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-		themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-		themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-		themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{EmptyTextProgressView.class}, new String[]{"emptyTextView1"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-		themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{EmptyTextProgressView.class}, new String[]{"emptyTextView2"}, null, null, null, Theme.key_emptyListPlaceholder));
 
 		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{LoadingCell.class}, new String[]{"progressBar"}, null, null, null, Theme.key_progressCircle));
 
-		themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
 		if (floatingButton != null) {
 			themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chats_actionIcon));
 			themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_chats_actionBackground));
 			themeDescriptions.add(new ThemeDescription(floatingButton.imageView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_chats_actionPressedBackground));
 		}
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_telegram_color_text));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, null, new Drawable[]{Theme.dialogs_verifiedCheckDrawable}, null, Theme.key_chats_verifiedCheck));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, null, new Drawable[]{Theme.dialogs_verifiedDrawable}, null, Theme.key_chats_verifiedBackground));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, Theme.dialogs_offlinePaint, null, null, Theme.key_windowBackgroundWhiteGrayText3));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, Theme.dialogs_onlinePaint, null, null, Theme.key_windowBackgroundWhiteBlueText3));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, null, new Paint[]{Theme.dialogs_namePaint[0], Theme.dialogs_namePaint[1], Theme.dialogs_searchNamePaint}, null, null, Theme.key_chats_name));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, null, new Paint[]{Theme.dialogs_nameEncryptedPaint[0], Theme.dialogs_nameEncryptedPaint[1], Theme.dialogs_searchNameEncryptedPaint}, null, null, Theme.key_chats_secretName));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{CallCell.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
-		themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
 
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{greenDrawable, greenDrawable2, Theme.calllog_msgCallUpRedDrawable, Theme.calllog_msgCallDownRedDrawable}, null, Theme.key_windowBackgroundWhiteGrayText3));
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, new Drawable[]{redDrawable, redDrawable2, Theme.calllog_msgCallUpGreenDrawable, Theme.calllog_msgCallDownGreenDrawable}, null, Theme.key_fill_RedNormal));
-		themeDescriptions.add(new ThemeDescription(flickerLoadingView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-		themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
-		themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
 		return themeDescriptions;
 	}
 
 	public static void showCallLinkSheet(Context context, int currentAccount, TLRPC.InputGroupCall inputGroupCall, String link, Theme.ResourcesProvider resourcesProvider, boolean withJoinButton, boolean creator) {
 		final BottomSheet.Builder b = new BottomSheet.Builder(context, false, resourcesProvider, Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+		b.bottomSheet.setBackgroundColorKey(Theme.key_dialogBackground);
+		b.bottomSheet.fixNavigationBarKey(Theme.key_dialogBackground);
 
 		final String[] currentLink = new String[] { link };
 		final LinearLayout linearLayout = new LinearLayout(context);
@@ -1661,14 +1489,14 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		imageView.setScaleX(2f);
 		imageView.setScaleY(2f);
 		circle.addView(imageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
-		circle.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+		ThemeBind.fillBackground(circle, Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
 		topView.addView(circle, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL, 0, 12, 0, 0));
 
 		final ImageView optionsView = new ImageView(context);
 		optionsView.setScaleType(ImageView.ScaleType.CENTER);
 		optionsView.setImageResource(R.drawable.ic_ab_other);
-		optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-		optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+		ThemeBind.colorFilter(optionsView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+		ThemeBind.selectorBackground(optionsView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
 		if (creator) {
 			topView.addView(optionsView, LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.TOP, 0, 0, 0, 0));
 		}
@@ -1689,7 +1517,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			formattedLink = formattedLink.substring("https://".length());
 		FrameLayout linkContainer = new FrameLayout(context);
 		ScaleStateListAnimator.apply(linkContainer, .01f, 1.2f);
-		linkContainer.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider), Theme.blendOver(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider), Theme.getColor(Theme.key_listSelector, resourcesProvider)), 12, 12));
+		ThemeBind.selectorBackground(linkContainer, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider), Theme.blendOver(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider), Theme.getColor(Theme.key_listSelector, resourcesProvider)), 12, 12), ThemeBind.of(Theme.key_windowBackgroundGray), ThemeBind.blendOver(Theme.key_windowBackgroundGray, Theme.key_listSelector), resourcesProvider);
 		linearLayout.addView(linkContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
 
 		LinkSpanDrawable.LinksTextView linkText = TextHelper.makeLinkTextView(context, 13, Theme.key_windowBackgroundWhiteBlackText, false, resourcesProvider);
@@ -1701,7 +1529,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		linkOptionsView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_ab_other));
 		linkOptionsView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
 		linkOptionsView.setScaleType(ImageView.ScaleType.CENTER);
-		linkOptionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider), PorterDuff.Mode.SRC_IN));
+		ThemeBind.colorFilter(linkOptionsView, Theme.key_dialogTextGray3, resourcesProvider, PorterDuff.Mode.SRC_IN);
 		linkContainer.addView(linkOptionsView, LayoutHelper.createFrame(40, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
 		LinearLayout buttonsLayout = new LinearLayout(context);
@@ -1743,7 +1571,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				}
 			};
 			or.setGravity(Gravity.CENTER);
-			or.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+			ThemeBind.textColor(or, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
 			or.setText(" " + getString(R.string.GroupCallCreatedLinkJoinOr) + " ");
 			or.setTextSize(14);
 			linearLayout.addView(or, LayoutHelper.createLinear(190, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 28, 12, 28, 8));
@@ -2048,42 +1876,25 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 
 	/* Blur */
 
-	private final @Nullable DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
-	private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlassFrosted;
-	private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlass;
-	private final @NonNull BlurredBackgroundSourceColor iBlur3SourceColor;
-	private final @NonNull BlurredBackgroundDrawableViewFactory iBlur3FactoryLiquidGlass;
-
-	private IBlur3Capture iBlur3Capture;
-	private boolean iBlur3Invalidated;
-
-	private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
-	private final RectF iBlur3PositionActionBar = new RectF();
-	private final RectF iBlur3PositionMainTabs = new RectF(); {
-		iBlur3Positions.add(iBlur3PositionActionBar);
-		iBlur3Positions.add(iBlur3PositionMainTabs);
-	}
-
-	private void blur3_InvalidateBlur() {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
-			return;
-		}
-
-		final int additionalList = dp(48) + (int) topPanelLayout.getAnimatedHeightWithPadding(dp(7));
-		final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(DialogsActivity.MAIN_TABS_MARGIN);
-		final int mainTabTop = mainTabBottom - dp(DialogsActivity.MAIN_TABS_HEIGHT);
-
-		iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), actionBar.getMeasuredHeight() + additionalList);
-		iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
-		iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
-
-		scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
-		scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+	@Nullable
+	@Override
+	protected RecyclerListView getListViewForSimpleGlass() {
+		return listView;
 	}
 
 	@Override
-	public BlurredBackgroundSourceRenderNode getGlassSource() {
-		return iBlur3SourceGlass;
+	public GlassSourceRenderNode getGlassSource() {
+		return getBaseSimpleGlass().getGlassSource();
+	}
+
+	@Override
+	public GlassSourceRenderNode getFrostedGlassSource() {
+		return getBaseSimpleGlass().getFrostedGlassSource();
+	}
+
+	@Override
+	protected boolean useFadeDrawableForActionBar() {
+		return false;
 	}
 
 	@Override
@@ -2095,4 +1906,59 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 			scrollHelper.scrollToPosition(0, 0, false, true);
 		}
 	}
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            cellDelegateThemeColors();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void cellDelegateThemeColors() {
+        if (listView != null) {
+        	int count = listView.getChildCount();
+        	for (int a = 0; a < count; a++) {
+        		View child = listView.getChildAt(a);
+        		if (child instanceof CallCell) {
+        			CallCell cell = (CallCell) child;
+        			cell.profileSearchCell.update(0);
+        		}
+        	}
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_windowBackgroundWhiteBlueHeader);
+        keys.add(Theme.key_windowBackgroundGrayShadow);
+        keys.add(Theme.key_fill_RedNormal);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText3);
+        keys.add(Theme.key_avatar_backgroundPink);
+        keys.add(Theme.key_avatar_backgroundBlue);
+        keys.add(Theme.key_avatar_backgroundCyan);
+        keys.add(Theme.key_avatar_backgroundGreen);
+        keys.add(Theme.key_avatar_backgroundViolet);
+        keys.add(Theme.key_avatar_backgroundOrange);
+        keys.add(Theme.key_avatar_backgroundRed);
+        keys.add(Theme.key_avatar_text);
+        keys.add(Theme.key_chats_secretName);
+        keys.add(Theme.key_chats_name);
+        keys.add(Theme.key_windowBackgroundWhiteBlueText3);
+        keys.add(Theme.key_chats_verifiedBackground);
+        keys.add(Theme.key_chats_verifiedCheck);
+        keys.add(Theme.key_telegram_color_text);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_emptyListPlaceholder);
+        keys.add(Theme.key_windowBackgroundWhiteBlackText);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
+    }
 }

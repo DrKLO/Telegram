@@ -47,6 +47,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.PremiumPreviewFragment;
@@ -243,16 +244,16 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         editText.setFocusable(editText.isEnabled());
         editText.setCursorSize(dp(20));
         editText.setCursorWidth(1.5f);
-        editText.setCursorColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         if (style == STYLE_FRAGMENT) {
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             editText.setMaxLines(4);
             editText.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             editText.setBackground(null);
-            editText.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
-            editText.setHintTextColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
-            editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            editText.setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
+            ThemeBind.lineColors(editText, Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular, resourcesProvider);
+            ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
+            ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            ThemeBind.editHandlesColor(editText, Theme.key_chat_TextSelectionCursor, resourcesProvider);
             editText.setPadding(LocaleController.isRTL ? dp(40) : 0, 0, LocaleController.isRTL ? 0 : dp(40), dp(11));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 11 : 0, 1, LocaleController.isRTL ? 0 : 11, 0));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
@@ -278,8 +279,8 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             editText.setMaxLines(4);
             editText.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-            editText.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
-            editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.hintTextColor(editText, Theme.key_dialogTextHint, resourcesProvider);
+            ThemeBind.textColor(editText, Theme.key_dialogTextBlack, resourcesProvider);
             editText.setBackground(null);
             editText.setPadding(0, dp(11), 0, dp(12));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 48, 0));
@@ -287,8 +288,8 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             editText.setMaxLines(4);
             editText.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-            editText.setHintTextColor(getThemedColor(Theme.key_dialogTextHint));
-            editText.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.hintTextColor(editText, Theme.key_dialogTextHint, resourcesProvider);
+            ThemeBind.textColor(editText, Theme.key_dialogTextBlack, resourcesProvider);
             editText.setBackground(null);
             editText.setPadding(0, dp(11), 0, dp(12));
             addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 48, 0, 0, 0));
@@ -305,7 +306,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
         emojiButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         emojiButton.setImageDrawable(emojiIconDrawable = new ReplaceableIconDrawable(context));
         if (style == STYLE_FRAGMENT) {
-            emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, emojiIconDrawable, Theme.key_chat_messagePanelIcons, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             emojiIconDrawable.setIcon(R.drawable.smiles_tab_smiles, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 0, 0, 0, 5));
         } else if (style == STYLE_STORY || style == STYLE_PHOTOVIEWER) {
@@ -313,19 +314,19 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(40, 40, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         } else if (style == STYLE_GIFT) {
-            emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, emojiIconDrawable, Theme.key_chat_messagePanelIcons, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.RIGHT, 0, 0, 0, 0));
         } else if (style == STYLE_CALL) {
-            emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_graySectionText), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, emojiIconDrawable, Theme.key_graySectionText, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         } else {
-            emojiIconDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, emojiIconDrawable, Theme.key_chat_messagePanelIcons, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             emojiIconDrawable.setIcon(R.drawable.input_smile, false);
             addView(emojiButton, LayoutHelper.createFrame(48, 48, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         }
-        emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        ThemeBind.selectorBackground(emojiButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         emojiButton.setOnClickListener(view -> {
             if (!emojiButton.isEnabled() || emojiButton.getAlpha() < 0.5f || (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress())) {
                 return;
@@ -335,7 +336,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
                     editText.hideActionMode();
                     ItemOptions itemOptions = ItemOptions.makeOptions(parent, resourcesProvider, emojiButton, false, false, true);
                     itemOptions.setMaxHeight(dp(280));
-                    editText.extendActionMode(null, new MenuToItemOptions(itemOptions, editText::performMenuAction, editText.getOnPremiumMenuLockClickListener()));
+                    editText.extendActionMode(null, new MenuToItemOptions(itemOptions, editText));
                     itemOptions.forceTop(true);
                     itemOptions.show();
                 } else {
@@ -488,7 +489,7 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
     }
 
     @Override

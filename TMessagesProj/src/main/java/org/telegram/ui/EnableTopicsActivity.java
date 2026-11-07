@@ -15,15 +15,18 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -44,6 +47,7 @@ public class EnableTopicsActivity extends BaseFragment {
     private TLRPC.Chat currentChat;
     private boolean forum;
     private boolean isTabs;
+    private boolean isSidebar;
 
     private UniversalRecyclerView listView;
 
@@ -51,11 +55,18 @@ public class EnableTopicsActivity extends BaseFragment {
         this.dialogId = dialogId;
     }
 
-    private Utilities.Callback2<Boolean, Boolean> onForumChanged;
-    public void setOnForumChanged(boolean forum, boolean tabs, Utilities.Callback2<Boolean, Boolean> listener) {
+    private Utilities.Callback3<Boolean, Boolean, Boolean> onForumChanged;
+    public void setOnForumChanged(boolean forum, boolean tabs, boolean sidebar, Utilities.Callback3<Boolean, Boolean, Boolean> listener) {
         this.forum = forum;
         this.isTabs = tabs;
+        this.isSidebar = sidebar;
         onForumChanged = listener;
+    }
+
+    private void notifyForumChanged() {
+        if (onForumChanged != null) {
+            onForumChanged.run(forum, isTabs, isSidebar);
+        }
     }
 
     @Override
@@ -65,11 +76,15 @@ public class EnableTopicsActivity extends BaseFragment {
     }
 
     @Override
-    public View createView(Context context) {
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+    @Override
+    public View createView(Context context) {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -77,7 +92,7 @@ public class EnableTopicsActivity extends BaseFragment {
                 }
             }
         });
-        actionBar.setTitle(getString(R.string.TopicsTitle));
+        simpleActionBar.setTitle(getString(R.string.TopicsTitle));
 
         FrameLayout contentView = new FrameLayout(context);
 
@@ -91,9 +106,8 @@ public class EnableTopicsActivity extends BaseFragment {
             }
         };
         listView.setSections();
-        listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
+        listView.setSectionsDrawBackground(true);
         contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-        actionBar.setAdaptiveBackground(listView);
 
         return fragmentView = contentView;
     }
@@ -104,19 +118,9 @@ public class EnableTopicsActivity extends BaseFragment {
         if (forum) {
             items.add(UItem.asShadow(null));
             items.add(UItem.asHeader(getString(R.string.TopicsLayout)));
-            items.add(TopicsLayoutSwitcher.Factory.asSwitcher(2, v -> {
-                ((TopicsLayoutSwitcher) v.getParent()).setChecked(isTabs = true, true);
-                if (onForumChanged != null) {
-                    onForumChanged.run(forum, isTabs);
-                }
-                topicsLayoutChanged();
-            }, v -> {
-                ((TopicsLayoutSwitcher) v.getParent()).setChecked(isTabs = false, true);
-                if (onForumChanged != null) {
-                    onForumChanged.run(forum, isTabs);
-                }
-                topicsLayoutChanged();
-            }).setChecked(isTabs));
+            final UItem switcher = TopicsLayoutSwitcher.Factory.asSwitcher(2, this::onLayoutSelected);
+            switcher.intValue = getLayout();
+            items.add(switcher);
             items.add(UItem.asShadow(getString(R.string.TopicsLayoutInfo)));
         }
     }
@@ -141,179 +145,217 @@ public class EnableTopicsActivity extends BaseFragment {
             }
 
             forum = !forum;
-            if (onForumChanged != null) {
-                onForumChanged.run(forum, isTabs);
-            }
+            notifyForumChanged();
             ((TextCheckCell) view).setChecked(forum);
             listView.adapter.update(true);
         }
     }
 
-    private static class TopicsLayoutSwitcher extends LinearLayout {
+    private static final int LAYOUT_TABS = 0, LAYOUT_LIST = 1, LAYOUT_SIDEBAR = 2;
+
+    private int getLayout() {
+        // the sidebar wins over the tabs: a chat with both shows only the sidebar
+        return isSidebar ? LAYOUT_SIDEBAR : isTabs ? LAYOUT_TABS : LAYOUT_LIST;
+    }
+
+    // the sidebar is the third layout: with it the forum opens as the list, and the chats have the sidebar instead of tabs
+    private void onLayoutSelected(int layout) {
+        if (layout == getLayout()) return;
+        isTabs = layout == LAYOUT_TABS;
+        isSidebar = layout == LAYOUT_SIDEBAR;
+        notifyForumChanged();
+        topicsLayoutChanged();
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    private static class TopicsLayoutSwitcher extends LinearLayout implements Theme.Colorable {
+
+        private static final int[] ANIMATIONS = { R.raw.topics_tabs, R.raw.topics_list, R.raw.topics_sidebar };
+        private static final int[] TITLES = { R.string.TopicsLayoutTabs, R.string.TopicsLayoutList, R.string.TopicsSidebar };
+        private static final int MAX_IMAGE_SIZE = 160;
+        // the drawing takes this much of the animation's width, the rest is empty
+        private static final float ART_WIDTH = .61f;
 
         private final Theme.ResourcesProvider resourcesProvider;
-
-        private final FrameLayout leftLayout;
-        private final BackupImageView leftImageView;
-        private final FrameLayout leftTitleLayout;
-        private final TextView leftTitleUnselected;
-        private final FrameLayout leftTitleBackground;
-        private final TextView leftTitleSelected;
-
-        private final FrameLayout rightLayout;
-        private final BackupImageView rightImageView;
-        private final FrameLayout rightTitleLayout;
-        private final TextView rightTitleUnselected;
-        private final FrameLayout rightTitleBackground;
-        private final TextView rightTitleSelected;
+        private final FrameLayout[] layouts = new FrameLayout[3];
+        private final BackupImageView[] images = new BackupImageView[3];
+        private final FrameLayout[] titleLayouts = new FrameLayout[3];
+        private final FrameLayout[] titleBackgrounds = new FrameLayout[3];
+        private final float[] checkedT = new float[3];
+        private final int[] lastColors = new int[3];
+        private Utilities.Callback<Integer> onSelected;
+        private UItem item;
+        private int selected = -1;
+        private ValueAnimator animator;
+        private int imageSize;
 
         public TopicsLayoutSwitcher(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             this.resourcesProvider = resourcesProvider;
             setOrientation(HORIZONTAL);
             setPadding(dp(8), 0, dp(8), 0);
+            setClipChildren(false);
 
-            leftLayout = new FrameLayout(context);
-            ScaleStateListAnimator.apply(leftLayout, .05f, 1.25f);
-            addView(leftLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 226, 1, Gravity.FILL));
-            leftImageView = new BackupImageView(context);
-            leftImageView.setImageDrawable(new RLottieDrawable(R.raw.topics_tabs, dp(160), dp(160)));
-            leftLayout.addView(leftImageView, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12.33f, 0, 0));
+            for (int i = 0; i < 3; i++) {
+                final int index = i;
+                final FrameLayout layout = new FrameLayout(context);
+                layout.setClipChildren(false);
+                ScaleStateListAnimator.apply(layout, .05f, 1.25f);
+                layout.setOnClickListener(v -> {
+                    if (onSelected != null && index != selected) {
+                        // the item keeps the choice for rebinds, the list is not rebuilt: that would cut the animation short
+                        if (item != null) item.intValue = index;
+                        setSelected(index, true);
+                        onSelected.run(index);
+                    }
+                });
+                addView(layout, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1, Gravity.FILL));
+                layouts[i] = layout;
 
-            leftTitleLayout = new FrameLayout(context);
-            leftTitleUnselected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundWhiteGrayText2, true);
-            leftTitleUnselected.setText(getString(R.string.TopicsLayoutTabs));
-            leftTitleUnselected.setPadding(dp(12), 0, dp(12), 0);
-            leftTitleLayout.addView(leftTitleUnselected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-            leftTitleBackground = new FrameLayout(context);
-            leftTitleBackground.setPadding(dp(12), 0, dp(12), 0);
-            leftTitleBackground.setBackground(Theme.createRoundRectDrawable(dp(13), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-            leftTitleLayout.addView(leftTitleBackground, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER));
-            leftTitleSelected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundCheckText, true);
-            leftTitleSelected.setText(getString(R.string.TopicsLayoutTabs));
-            leftTitleBackground.addView(leftTitleSelected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-            leftLayout.addView(leftTitleLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 182, 0, 0));
+                final BackupImageView image = new BackupImageView(context);
+                image.setImageDrawable(new RLottieDrawable(ANIMATIONS[i], dp(MAX_IMAGE_SIZE), dp(MAX_IMAGE_SIZE)));
+                layout.addView(image, LayoutHelper.createFrame(MAX_IMAGE_SIZE, MAX_IMAGE_SIZE, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12, 0, 0));
+                images[i] = image;
 
-            rightLayout = new FrameLayout(context);
-            ScaleStateListAnimator.apply(rightLayout, .05f, 1.25f);
-            addView(rightLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 226, 1, Gravity.FILL));
-            rightImageView = new BackupImageView(context);
-            rightImageView.setImageDrawable(new RLottieDrawable(R.raw.topics_list, dp(160), dp(160)));
-            rightLayout.addView(rightImageView, LayoutHelper.createFrame(160, 160, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 12.33f, 0, 0));
+                final FrameLayout titleLayout = new FrameLayout(context);
+                final TextView titleUnselected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundWhiteGrayText2, true);
+                titleUnselected.setText(getString(TITLES[i]));
+                titleUnselected.setSingleLine();
+                titleUnselected.setPadding(dp(10), 0, dp(10), 0);
+                titleLayout.addView(titleUnselected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                final FrameLayout titleBackground = new FrameLayout(context);
+                titleBackground.setPadding(dp(10), 0, dp(10), 0);
+                ThemeBind.fillBackground(titleBackground, Theme.createRoundRectDrawable(dp(13), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
+                titleLayout.addView(titleBackground, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER));
+                final TextView titleSelected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundCheckText, true);
+                titleSelected.setText(getString(TITLES[i]));
+                titleSelected.setSingleLine();
+                titleBackground.addView(titleSelected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+                layout.addView(titleLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
+                titleLayouts[i] = titleLayout;
+                titleBackgrounds[i] = titleBackground;
+            }
 
-            rightTitleLayout = new FrameLayout(context);
-            rightTitleUnselected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundWhiteGrayText2, true);
-            rightTitleUnselected.setText(getString(R.string.TopicsLayoutList));
-            rightTitleUnselected.setPadding(dp(12), 0, dp(12), 0);
-            rightTitleLayout.addView(rightTitleUnselected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-            rightTitleBackground = new FrameLayout(context);
-            rightTitleBackground.setPadding(dp(12), 0, dp(12), 0);
-            rightTitleBackground.setBackground(Theme.createRoundRectDrawable(dp(13), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-            rightTitleLayout.addView(rightTitleBackground, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER));
-            rightTitleSelected = TextHelper.makeTextView(context, 14, Theme.key_windowBackgroundCheckText, true);
-            rightTitleSelected.setText(getString(R.string.TopicsLayoutList));
-            rightTitleBackground.addView(rightTitleSelected, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-            rightLayout.addView(rightTitleLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 26, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 182, 0, 0));
-
-            setChecked(false, false);
+            setSelected(0, false);
         }
 
+        // three in a row: the pictures' empty sides go past the columns, only the drawings have to fit
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), heightMeasureSpec);
+            final int width = MeasureSpec.getSize(widthMeasureSpec);
+            final int column = (width - getPaddingLeft() - getPaddingRight()) / 3;
+            final int size = Math.max(dp(48), Math.min(dp(MAX_IMAGE_SIZE), (int) ((column - dp(8)) / ART_WIDTH)));
+            if (size != imageSize) {
+                imageSize = size;
+                for (int i = 0; i < 3; i++) {
+                    final FrameLayout.LayoutParams imageParams = (FrameLayout.LayoutParams) images[i].getLayoutParams();
+                    imageParams.width = imageParams.height = size;
+                    ((FrameLayout.LayoutParams) titleLayouts[i].getLayoutParams()).topMargin = dp(12 + 10) + size;
+                }
+            }
+            final int height = dp(12 + 10 + 26 + 18) + size;
+            super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
         }
 
-        private ValueAnimator animator;
-        private float tabsAlpha;
-        public void setChecked(boolean checked, boolean animated) {
+        public void setSelected(int index, boolean animated) {
+            // the rebind after a pick finds it chosen already, in the middle of its animation
+            if (selected == index) return;
+            selected = index;
             if (animator != null) {
                 animator.cancel();
                 animator = null;
             }
+            for (int i = 0; i < 3; i++) {
+                final float to = i == index ? 1f : 0f;
+                if (animated) {
+                    titleBackgrounds[i].animate()
+                        .scaleX(to).scaleY(to).alpha(to)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setDuration(320)
+                        .start();
+                } else {
+                    titleBackgrounds[i].animate().cancel();
+                    titleBackgrounds[i].setScaleX(to);
+                    titleBackgrounds[i].setScaleY(to);
+                    titleBackgrounds[i].setAlpha(to);
+                }
+            }
             if (animated) {
-                leftTitleBackground.animate()
-                    .scaleX(!checked ? 0f : 1f)
-                    .scaleY(!checked ? 0f : 1f)
-                    .alpha(!checked ? 0f : 1f)
-                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                    .setDuration(320)
-                    .start();
-                rightTitleBackground.animate()
-                    .scaleX(checked ? 0f : 1f)
-                    .scaleY(checked ? 0f : 1f)
-                    .alpha(checked ? 0f : 1f)
-                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                    .setDuration(320)
-                    .start();
-                animator = ValueAnimator.ofFloat(tabsAlpha, checked ? 1f : 0f);
+                final float[] from = checkedT.clone();
+                animator = ValueAnimator.ofFloat(0f, 1f);
                 animator.addUpdateListener(anm -> {
-                    tabsAlpha = (float) anm.getAnimatedValue();
-                    leftImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                        Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                        Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                        tabsAlpha
-                    ), PorterDuff.Mode.SRC_IN));
-                    leftImageView.invalidate();
-                    rightImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                        Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                        Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                        1f - tabsAlpha
-                    ), PorterDuff.Mode.SRC_IN));
-                    rightImageView.invalidate();
+                    final float t = (float) anm.getAnimatedValue();
+                    for (int i = 0; i < 3; i++) {
+                        checkedT[i] = AndroidUtilities.lerp(from[i], i == index ? 1f : 0f, t);
+                    }
+                    applyColors();
                 });
                 animator.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
-                        tabsAlpha = checked ? 1.0f : 0.0f;
-                        leftImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                            Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                            Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                            tabsAlpha
-                        ), PorterDuff.Mode.SRC_IN));
-                        leftImageView.invalidate();
-                        rightImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                            Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                            Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                            1f - tabsAlpha
-                        ), PorterDuff.Mode.SRC_IN));
-                        rightImageView.invalidate();
+                        if (animator == animation) {
+                            animator = null;
+                        }
                     }
                 });
                 animator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
                 animator.setDuration(320);
                 animator.start();
             } else {
-                leftTitleBackground.animate().cancel();
-                rightTitleBackground.animate().cancel();
-                leftTitleBackground.setScaleX(!checked ? 0f : 1f);
-                leftTitleBackground.setScaleY(!checked ? 0f : 1f);
-                leftTitleBackground.setAlpha(!checked ? 0f : 1f);
-                rightTitleBackground.setScaleX(checked ? 0f : 1f);
-                rightTitleBackground.setScaleY(checked ? 0f : 1f);
-                rightTitleBackground.setAlpha(checked ? 0f : 1f);
-
-                tabsAlpha = checked ? 1.0f : 0.0f;
-                leftImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                    tabsAlpha
-                ), PorterDuff.Mode.SRC_IN));
-                leftImageView.invalidate();
-                rightImageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.blendARGB(
-                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
-                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                    1f - tabsAlpha
-                ), PorterDuff.Mode.SRC_IN));
-                rightImageView.invalidate();
+                for (int i = 0; i < 3; i++) {
+                    checkedT[i] = i == index ? 1f : 0f;
+                }
+                applyColors();
             }
-            final ImageReceiver imageReceiver = (checked ? leftImageView : rightImageView).getImageReceiver();
-            final RLottieDrawable lottie = imageReceiver.getLottieAnimation();
+            final RLottieDrawable lottie = images[index].getImageReceiver().getLottieAnimation();
             if (lottie != null) {
-                if (lottie.getProgress() > (checked ? .85f : .80f)) {
+                if (lottie.getProgress() > .80f) {
                     lottie.setProgress(0f, false);
                 }
                 lottie.restart(true);
             }
+        }
+
+        private void applyColors() {
+            for (int i = 0; i < 3; i++) {
+                final int color = ColorUtils.blendARGB(
+                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider),
+                    Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
+                    checkedT[i]
+                );
+                // only recreate the filters when the colors changed (runs on every theme frame)
+                if (color != lastColors[i]) {
+                    lastColors[i] = color;
+                    images[i].setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+                    images[i].invalidate();
+                }
+            }
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                if (animator == null || !animator.isRunning()) {
+                    applyColors();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhiteGrayText5);
         }
 
         public static final class Factory extends UItem.UItemFactory<TopicsLayoutSwitcher> {
@@ -325,17 +367,17 @@ public class EnableTopicsActivity extends BaseFragment {
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                ((TopicsLayoutSwitcher) view).leftLayout.setOnClickListener((View.OnClickListener) item.object);
-                ((TopicsLayoutSwitcher) view).rightLayout.setOnClickListener((View.OnClickListener) item.object2);
-                ((TopicsLayoutSwitcher) view).setChecked(item.checked, false);
+                ((TopicsLayoutSwitcher) view).onSelected = (Utilities.Callback<Integer>) item.object;
+                ((TopicsLayoutSwitcher) view).item = item;
+                ((TopicsLayoutSwitcher) view).setSelected(item.intValue, false);
             }
 
-            public static UItem asSwitcher(int id, View.OnClickListener leftClick, View.OnClickListener rightClick) {
+            public static UItem asSwitcher(int id, Utilities.Callback<Integer> onSelected) {
                 UItem item = UItem.ofFactory(Factory.class);
                 item.id = id;
-                item.object = leftClick;
-                item.object2 = rightClick;
+                item.object = onSelected;
                 return item;
             }
         }

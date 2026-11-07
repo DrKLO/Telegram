@@ -141,6 +141,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.CheckBoxCell;
@@ -812,7 +813,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             textView.setSingleLine(true);
             textView.setGravity(Gravity.LEFT);
             textView.setEllipsize(TextUtils.TruncateAt.END);
-            textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+            ThemeBind.textColor(textView, Theme.key_voipgroup_actionBarItems);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             double vol = ChatObject.getParticipantVolume(currentParticipant) / 100.0;
             textView.setText(String.format(Locale.US, "%d%%", (int) (vol > 0 ? Math.max(vol, 1) : 0)));
@@ -1975,14 +1976,14 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         actionBar.getAdditionalSubtitleTextView().setPadding(dp(24), 0, 0, 0);
         AndroidUtilities.updateViewVisibilityAnimated(actionBar.getAdditionalSubtitleTextView(), drawSpeakingSubtitle, 1f, false);
         actionBar.getAdditionalSubtitleTextView().setTextColor(Theme.getColor(Theme.key_voipgroup_speakingText));
-        actionBar.setSubtitleColor(Theme.getColor(Theme.key_voipgroup_lastSeenTextUnscrolled));
+        ThemeBind.actionBarSubtitleColor(actionBar, Theme.key_voipgroup_lastSeenTextUnscrolled);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setOccupyStatusBar(false);
         actionBar.setAllowOverlayTitle(false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_voipgroup_actionBarItems), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setTitleColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
-        actionBar.setSubtitleColor(Theme.getColor(Theme.key_voipgroup_lastSeenTextUnscrolled));
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_voipgroup_actionBarItems, false);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, false);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_voipgroup_actionBarItems);
+        ThemeBind.actionBarSubtitleColor(actionBar, Theme.key_voipgroup_lastSeenTextUnscrolled);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -2041,7 +2042,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     dialog.show();
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_voipgroup_leaveCallMenu));
+                        ThemeBind.textColor(button, Theme.key_voipgroup_leaveCallMenu);
                     }
                     dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
                 } else if (id == screen_capture_item) {
@@ -2094,7 +2095,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                 builder.setView(linearLayout);
 
                                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                                editText.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                                ThemeBind.textColor(editText, Theme.key_voipgroup_nameText);
                                 editText.setMaxLines(1);
                                 editText.setLines(1);
                                 editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -2102,8 +2103,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                                 editText.setSingleLine(true);
                                 editText.setHint(getString(R.string.VoipGroupSaveFileHint));
                                 editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                                editText.setHintTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
-                                editText.setCursorColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                                ThemeBind.hintTextColor(editText, Theme.key_voipgroup_lastSeenText);
+                                ThemeBind.cursorColor(editText, Theme.key_voipgroup_nameText);
                                 editText.setCursorSize(dp(20));
                                 editText.setCursorWidth(1.5f);
                                 editText.setPadding(0, dp(4), 0, 0);
@@ -2180,7 +2181,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     builder.setView(linearLayout);
 
                     editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    editText.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                    ThemeBind.textColor(editText, Theme.key_voipgroup_nameText);
                     editText.setMaxLines(1);
                     editText.setLines(1);
                     editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -2188,8 +2189,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     editText.setSingleLine(true);
                     editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
                     editText.setHint(currentChat != null ? currentChat.title : "");
-                    editText.setHintTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
-                    editText.setCursorColor(Theme.getColor(Theme.key_voipgroup_nameText));
+                    ThemeBind.hintTextColor(editText, Theme.key_voipgroup_lastSeenText);
+                    ThemeBind.cursorColor(editText, Theme.key_voipgroup_nameText);
                     editText.setCursorSize(dp(20));
                     editText.setCursorWidth(1.5f);
                     editText.setPadding(0, dp(4), 0, 0);
@@ -2380,7 +2381,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         }
                         cell.setTextColor(color);
                         cell.setIconColor(color);
-                        cell.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_actionBarItems), (int) (255 * 0.05f)), 2));
+                        ThemeBind.selectorBackground(cell, Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_voipgroup_actionBarItems), (int) (255 * 0.05f)), 2), null, ThemeBind.alpha(Theme.key_voipgroup_actionBarItems, (int) (255 * 0.05f)));
                     }
                 }
             }
@@ -2438,19 +2439,19 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
         };
 
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.groupCallUpdated);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.needShowAlert);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.didLoadChatAdmins);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.applyGroupCallVisibleParticipants);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.mainUserInfoChanged);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.groupCallScreencastStateChanged);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.groupCallSpeakingUsersUpdated);
-        accountInstance.getNotificationCenter().addObserver(this, NotificationCenter.conferenceEmojiUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didEndCall);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.groupCallUpdated);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.needShowAlert);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.didLoadChatAdmins);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.applyGroupCallVisibleParticipants);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.userInfoDidLoad);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.mainUserInfoChanged);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.updateInterfaces);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.groupCallScreencastStateChanged);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.groupCallSpeakingUsersUpdated);
+        accountInstance.getNotificationCenter().addWeakObserver(this, NotificationCenter.conferenceEmojiUpdated);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.didEndCall);
 
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate();
 
@@ -3575,8 +3576,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     int offset = dp(74);
                     float top = scrollOffsetY - offset;
-                    if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight() && listView.canScrollVertically(1)) {
                         View child = listView.getChildAt(0);
+                    if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight() && listView.canScrollVertically(1)) {
                         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(0);
                         if (holder != null && holder.itemView.getTop() > 0) {
                             listView.smoothScrollBy(0, holder.itemView.getTop());
@@ -3652,7 +3653,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, 14, 14, 14, 231));
         listView.setAdapter(listAdapter);
         listView.setTopBottomSelectorRadius(13);
-        listView.setSelectorDrawableColor(Theme.getColor(Theme.key_voipgroup_listSelector));
+        ThemeBind.listSelectorColor(listView, Theme.key_voipgroup_listSelector);
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (view instanceof GroupCallGridCell) {
                 fullscreenFor(((GroupCallGridCell) view).getParticipant());
@@ -4686,7 +4687,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         otherItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
         otherItem.setSubMenuOpenSide(2);
         otherItem.setDelegate(id -> actionBar.getActionBarMenuOnItemClick().onItemClick(id));
-        otherItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6));
+        ThemeBind.selectorBackground(otherItem, Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6), null, ThemeBind.of(Theme.key_voipgroup_actionBarItemsSelector));
         otherItem.setOnClickListener(v -> {
             if (call == null || renderersContainer.inFullscreenMode) {
                 return;
@@ -4735,7 +4736,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         pipItem.setLongClickEnabled(false);
         pipItem.setIcon(R.drawable.msg_voice_pip);
         pipItem.setContentDescription(getString(R.string.AccDescrPipMode));
-        pipItem.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6));
+        ThemeBind.selectorBackground(pipItem, Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6), null, ThemeBind.of(Theme.key_voipgroup_actionBarItemsSelector));
         pipItem.setOnClickListener(v -> {
             if (isRtmpStream()) {
                 if (PipUtils.checkAnyPipPermissions(parentActivity)) {
@@ -4758,7 +4759,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         screenShareItem.setLongClickEnabled(false);
         screenShareItem.setIcon(R.drawable.msg_screencast);
         screenShareItem.setContentDescription(getString(R.string.AccDescrPipMode));
-        screenShareItem.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6));
+        ThemeBind.selectorBackground(screenShareItem, Theme.createSelectorDrawable(Theme.getColor(Theme.key_voipgroup_actionBarItemsSelector), 6), null, ThemeBind.of(Theme.key_voipgroup_actionBarItemsSelector));
         screenShareItem.setOnClickListener(v -> {
             VoIPService voIPService = VoIPService.getSharedInstance();
             if (voIPService == null) {
@@ -4775,7 +4776,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             @Override
             protected TextView createTextView() {
                 TextView textView = new TextView(context);
-                textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+                ThemeBind.textColor(textView, Theme.key_voipgroup_actionBarItems);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setGravity(Gravity.LEFT | Gravity.TOP);
@@ -4810,7 +4811,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 super.onDraw(canvas);
             }
         };
-        liveLabelTextView.setTextColor(getThemedColor(Theme.key_voipgroup_actionBarItems));
+        ThemeBind.textColor(liveLabelTextView, Theme.key_voipgroup_actionBarItems, resourcesProvider);
         liveLabelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         liveLabelTextView.setText(getString(R.string.VoipChannelLabelLive));
         liveLabelTextView.setMaxLines(1);
@@ -4840,7 +4841,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
         actionBarShadow = new View(context);
         actionBarShadow.setAlpha(0.0f);
-        actionBarShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+        ThemeBind.backgroundColor(actionBarShadow, Theme.key_dialogShadowLine);
         containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1));
 
         for (int a = 0; a < 2; a++) {
@@ -4862,7 +4863,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         accountSelectCell.setTag(R.id.fit_width_tag, 240);
         otherItem.addSubItem(user_item, accountSelectCell, LayoutHelper.WRAP_CONTENT, dp(48));
         otherItem.setShowSubmenuByMove(false);
-        accountSelectCell.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_voipgroup_listSelector), 6, 6));
+        ThemeBind.selectorBackground(accountSelectCell, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_voipgroup_listSelector), 6, 6), null, ThemeBind.of(Theme.key_voipgroup_listSelector));
         everyoneItem = otherItem.addSubItem(eveyone_can_speak_item, 0, getString(R.string.VoipGroupAllCanSpeak), true);
         everyoneItem.updateSelectorBackground(true, false);
         adminItem = otherItem.addSubItem(admin_can_speak_item, 0, getString(R.string.VoipGroupOnlyAdminsCanSpeak), true);
@@ -5510,15 +5511,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
 
 
         callMessageHideButton = new ImageView(context);
-        callMessageHideButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        callMessageHideButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_graySectionText, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.selectorBackground(callMessageHideButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(callMessageHideButton, Theme.key_graySectionText, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         callMessageHideButton.setScaleType(ImageView.ScaleType.CENTER);
         callMessageHideButton.setImageResource(R.drawable.arrow_more);
         callMessageHideButton.setOnClickListener(v -> hideKeyboardOrEmojiView());
 
         callMessageSendButton = new ImageView(context);
-        callMessageSendButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        callMessageSendButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.selectorBackground(callMessageSendButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(callMessageSendButton, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         callMessageSendButton.setScaleType(ImageView.ScaleType.CENTER);
         callMessageSendButton.setImageResource(R.drawable.ic_send);
         callMessageSendButton.setOnClickListener(v -> {
@@ -7684,7 +7685,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         if (!fromOverlayWindow) {
             TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
             if (button != null) {
-                button.setTextColor(Theme.getColor(Theme.key_voipgroup_leaveCallMenu));
+                ThemeBind.textColor(button, Theme.key_voipgroup_leaveCallMenu);
             }
             dialog.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
         }
@@ -7726,7 +7727,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             builder.setDialogButtonColorKey(Theme.key_voipgroup_listeningText);
 
             TextView messageTextView = new TextView(getContext());
-            messageTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+            ThemeBind.textColor(messageTextView, Theme.key_voipgroup_actionBarItems);
             messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
 
@@ -7753,7 +7754,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             }
 
             TextView textView = new TextView(getContext());
-            textView.setTextColor(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+            ThemeBind.textColor(textView, Theme.key_voipgroup_actionBarItems);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             textView.setTypeface(AndroidUtilities.bold());
             textView.setLines(1);
@@ -7816,7 +7817,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             if (option == 2) {
                 TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_voipgroup_leaveCallMenu));
+                    ThemeBind.textColor(button, Theme.key_voipgroup_leaveCallMenu);
                 }
             }
         } else if (option == 6) {
@@ -10780,6 +10781,42 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             if (!reactionsContainerLayout.skipEnterAnimation && alpha == 1) {
                 reactionsContainerLayout.skipEnterAnimation = true;
             }
+        }
+    }
+
+    private static void setSubItemColors(ActionBarMenuSubItem item, int color) {
+        if (item != null) {
+            item.setColors(color, color);
+        }
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (radialProgressView != null) {
+                radialProgressView.setProgressColor(Theme.getColor(Theme.key_voipgroup_connectingProgress));
+            }
+            if (otherItem != null) {
+                otherItem.setPopupItemsColor(Theme.getColor(Theme.key_voipgroup_actionBarItems), false);
+                otherItem.setPopupItemsColor(Theme.getColor(Theme.key_voipgroup_actionBarItems), true);
+                otherItem.setPopupItemsSelectorColor(Theme.getColor(Theme.key_voipgroup_listSelector));
+            }
+            // everyoneItem / adminItem: colors depend on the checked state (set when the menu opens), not recolored here
+            final int items = Theme.getColor(Theme.key_voipgroup_actionBarItems);
+            setSubItemColors(enableComments, items);
+            setSubItemColors(disableComments, items);
+            setSubItemColors(soundItem, items);
+            setSubItemColors(noiseItem, items);
+            setSubItemColors(leaveItem, Theme.getColor(Theme.key_voipgroup_leaveCallMenu));
+            setSubItemColors(inviteItem, items);
+            setSubItemColors(editTitleItem, items);
+            setSubItemColors(permissionItem, items);
+            setSubItemColors(recordItem, items);
+            setSubItemColors(screenItem, items);
+    
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

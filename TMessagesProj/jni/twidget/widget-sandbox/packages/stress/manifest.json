@@ -1,0 +1,3720 @@
+{
+ "version": 2,
+ "limits": {
+  "heavyBoxes": 16,
+  "backdropBoxes": 2,
+  "nodes": 2000,
+  "opsPerBatch": 10000,
+  "cssRules": 400,
+  "canvasPerSend": 4000,
+  "layoutQueries": 128,
+  "docText": 49152,
+  "textValue": 32768,
+  "attr": 8192,
+  "complexText": 8192
+ },
+ "run": {
+  "warmupMs": 2000,
+  "measureMs": 10000,
+  "width": 390
+ },
+ "loads": [
+  {
+   "id": "shadow-static",
+   "title": "Blurred shadows, static",
+   "stresses": "boxes with a blurred box-shadow that never change: what an idle heavy widget costs per frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256
+   ],
+   "fit": null,
+   "widgets": [
+    "shadow-static/0",
+    "shadow-static/8",
+    "shadow-static/16",
+    "shadow-static/32",
+    "shadow-static/64",
+    "shadow-static/128",
+    "shadow-static/256"
+   ]
+  },
+  {
+   "id": "shadow-moving",
+   "title": "Blurred shadows, moving",
+   "stresses": "boxes with a blurred box-shadow that move and change colour every frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512
+   ],
+   "fit": "heavy",
+   "widgets": [
+    "shadow-moving/0",
+    "shadow-moving/4",
+    "shadow-moving/8",
+    "shadow-moving/16",
+    "shadow-moving/32",
+    "shadow-moving/64",
+    "shadow-moving/128",
+    "shadow-moving/256",
+    "shadow-moving/512"
+   ]
+  },
+  {
+   "id": "ars-cell",
+   "title": "The ARS cell, moving",
+   "stresses": "the ARS stress test: each cell has a gradient, a blurred and an inset shadow, a border, opacity .85 and a label, and moves every frame",
+   "param": "cells",
+   "unit": "cells",
+   "levels": [
+    0,
+    16,
+    64,
+    128,
+    256,
+    512,
+    1000
+   ],
+   "fit": "heavy",
+   "widgets": [
+    "ars-cell/0",
+    "ars-cell/16",
+    "ars-cell/64",
+    "ars-cell/128",
+    "ars-cell/256",
+    "ars-cell/512",
+    "ars-cell/1000"
+   ]
+  },
+  {
+   "id": "opacity-moving",
+   "title": "Opacity, moving",
+   "stresses": "boxes with opacity .85 (and nothing else heavy) that move and change colour every frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512
+   ],
+   "fit": "heavy",
+   "widgets": [
+    "opacity-moving/0",
+    "opacity-moving/8",
+    "opacity-moving/16",
+    "opacity-moving/32",
+    "opacity-moving/64",
+    "opacity-moving/128",
+    "opacity-moving/256",
+    "opacity-moving/512"
+   ]
+  },
+  {
+   "id": "filter-moving",
+   "title": "Filter, moving",
+   "stresses": "boxes with filter: blur(1px) brightness(1.15) that move and change colour every frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256
+   ],
+   "fit": "heavy",
+   "widgets": [
+    "filter-moving/0",
+    "filter-moving/4",
+    "filter-moving/8",
+    "filter-moving/16",
+    "filter-moving/32",
+    "filter-moving/64",
+    "filter-moving/128",
+    "filter-moving/256"
+   ]
+  },
+  {
+   "id": "backdrop-count",
+   "title": "Backdrop filter, count",
+   "stresses": "fixed 64×44 px panels with backdrop-filter: blur(6px) over stripes that move every frame",
+   "param": "panels",
+   "unit": "panels",
+   "levels": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    8,
+    16
+   ],
+   "fit": null,
+   "widgets": [
+    "backdrop-count/0",
+    "backdrop-count/1",
+    "backdrop-count/2",
+    "backdrop-count/3",
+    "backdrop-count/4",
+    "backdrop-count/8",
+    "backdrop-count/16"
+   ]
+  },
+  {
+   "id": "backdrop-area",
+   "title": "Backdrop filter, area",
+   "stresses": "one panel with backdrop-filter: blur(8px) covering a share of the 300 px field, over stripes that move every frame",
+   "param": "area",
+   "unit": "% of the field",
+   "levels": [
+    0,
+    10,
+    25,
+    50,
+    100
+   ],
+   "fit": null,
+   "widgets": [
+    "backdrop-area/0",
+    "backdrop-area/10",
+    "backdrop-area/25",
+    "backdrop-area/50",
+    "backdrop-area/100"
+   ]
+  },
+  {
+   "id": "gradient-moving",
+   "title": "Gradients, moving",
+   "stresses": "boxes whose linear-gradient background turns and changes colour every frame while they move",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    16,
+    64,
+    128,
+    256,
+    512,
+    1000
+   ],
+   "fit": "plain",
+   "widgets": [
+    "gradient-moving/0",
+    "gradient-moving/16",
+    "gradient-moving/64",
+    "gradient-moving/128",
+    "gradient-moving/256",
+    "gradient-moving/512",
+    "gradient-moving/1000"
+   ]
+  },
+  {
+   "id": "clip-moving",
+   "title": "Rounded clip, moving",
+   "stresses": "boxes with overflow: hidden and border-radius clipping a child, moving and changing colour every frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    0,
+    16,
+    64,
+    128,
+    256,
+    512,
+    1000
+   ],
+   "fit": "plain",
+   "widgets": [
+    "clip-moving/0",
+    "clip-moving/16",
+    "clip-moving/64",
+    "clip-moving/128",
+    "clip-moving/256",
+    "clip-moving/512",
+    "clip-moving/1000"
+   ]
+  },
+  {
+   "id": "dom-static",
+   "title": "Document size, static",
+   "stresses": "a static document of N small elements: the boot batch, the idle cost of a large document",
+   "param": "elements",
+   "unit": "elements",
+   "levels": [
+    100,
+    250,
+    500,
+    1000,
+    2000,
+    3000,
+    4000
+   ],
+   "fit": null,
+   "widgets": [
+    "dom-static/100",
+    "dom-static/250",
+    "dom-static/500",
+    "dom-static/1000",
+    "dom-static/2000",
+    "dom-static/3000",
+    "dom-static/4000"
+   ]
+  },
+  {
+   "id": "dom-tick",
+   "title": "Document size, a few changing",
+   "stresses": "N small static elements and 8 labels whose text changes every frame: the cost of a small change in a large document (a renderer that rebuilds the whole document pays for all N)",
+   "param": "elements",
+   "unit": "elements",
+   "levels": [
+    100,
+    500,
+    1000,
+    2000,
+    3000,
+    4000
+   ],
+   "fit": null,
+   "widgets": [
+    "dom-tick/100",
+    "dom-tick/500",
+    "dom-tick/1000",
+    "dom-tick/2000",
+    "dom-tick/3000",
+    "dom-tick/4000"
+   ]
+  },
+  {
+   "id": "style-churn",
+   "title": "Style and text churn",
+   "stresses": "plain boxes (nothing heavy) whose position, colour and label change every frame: three ops per box per frame",
+   "param": "boxes",
+   "unit": "boxes",
+   "levels": [
+    16,
+    64,
+    256,
+    1000,
+    2000,
+    3000,
+    4000
+   ],
+   "fit": "plain",
+   "widgets": [
+    "style-churn/16",
+    "style-churn/64",
+    "style-churn/256",
+    "style-churn/1000",
+    "style-churn/2000",
+    "style-churn/3000",
+    "style-churn/4000"
+   ]
+  },
+  {
+   "id": "text-volume",
+   "title": "Text volume",
+   "stresses": "N characters of Latin text in paragraphs, one counter changing every frame",
+   "param": "characters",
+   "unit": "chars",
+   "levels": [
+    1024,
+    4096,
+    16384,
+    49152,
+    65536,
+    131072
+   ],
+   "fit": null,
+   "widgets": [
+    "text-volume/1024",
+    "text-volume/4096",
+    "text-volume/16384",
+    "text-volume/49152",
+    "text-volume/65536",
+    "text-volume/131072"
+   ]
+  },
+  {
+   "id": "complex-text",
+   "title": "Complex scripts",
+   "stresses": "N characters of Arabic, Hebrew, Devanagari, Thai and CJK text; one 128-character paragraph is rewritten every frame (shaping on change)",
+   "param": "characters",
+   "unit": "chars",
+   "levels": [
+    256,
+    1024,
+    2048,
+    4096,
+    8192,
+    16384
+   ],
+   "fit": null,
+   "widgets": [
+    "complex-text/256",
+    "complex-text/1024",
+    "complex-text/2048",
+    "complex-text/4096",
+    "complex-text/8192",
+    "complex-text/16384"
+   ]
+  },
+  {
+   "id": "emoji",
+   "title": "Emoji",
+   "stresses": "N colour emoji in rows of 32, eight of them cycling every frame",
+   "param": "emoji",
+   "unit": "emoji",
+   "levels": [
+    50,
+    200,
+    500,
+    1000,
+    2000,
+    4000
+   ],
+   "fit": null,
+   "widgets": [
+    "emoji/50",
+    "emoji/200",
+    "emoji/500",
+    "emoji/1000",
+    "emoji/2000",
+    "emoji/4000"
+   ]
+  },
+  {
+   "id": "canvas-cmds",
+   "title": "Canvas commands per frame",
+   "stresses": "a 600×600 canvas (300 px on screen) redrawn every frame with N commands (fillStyle + fillRect pairs)",
+   "param": "commands",
+   "unit": "commands per frame",
+   "levels": [
+    200,
+    1000,
+    2000,
+    4000,
+    8000,
+    16000
+   ],
+   "fit": null,
+   "widgets": [
+    "canvas-cmds/200",
+    "canvas-cmds/1000",
+    "canvas-cmds/2000",
+    "canvas-cmds/4000",
+    "canvas-cmds/8000",
+    "canvas-cmds/16000"
+   ]
+  },
+  {
+   "id": "svg-path",
+   "title": "SVG path, morphing",
+   "stresses": "one SVG path of N line segments whose d attribute is rewritten every frame",
+   "param": "segments",
+   "unit": "segments",
+   "levels": [
+    50,
+    200,
+    500,
+    1000,
+    2000,
+    4000
+   ],
+   "fit": null,
+   "widgets": [
+    "svg-path/50",
+    "svg-path/200",
+    "svg-path/500",
+    "svg-path/1000",
+    "svg-path/2000",
+    "svg-path/4000"
+   ]
+  },
+  {
+   "id": "layout-queries",
+   "title": "Layout queries per frame",
+   "stresses": "N pairs of a style write and a getBoundingClientRect read per frame on 40 bars: each read forces a layout, answered synchronously by the renderer",
+   "param": "queries",
+   "unit": "queries per frame",
+   "levels": [
+    0,
+    1,
+    4,
+    16,
+    64,
+    256
+   ],
+   "fit": null,
+   "widgets": [
+    "layout-queries/0",
+    "layout-queries/1",
+    "layout-queries/4",
+    "layout-queries/16",
+    "layout-queries/64",
+    "layout-queries/256"
+   ]
+  },
+  {
+   "id": "css-rules",
+   "title": "CSS rules",
+   "stresses": "N descendant style rules in stylesheets of 200 rules each; 8 containers change class every frame, so 64 boxes match against all N again",
+   "param": "rules",
+   "unit": "rules",
+   "levels": [
+    50,
+    200,
+    400,
+    800,
+    1600,
+    3200
+   ],
+   "fit": null,
+   "widgets": [
+    "css-rules/50",
+    "css-rules/200",
+    "css-rules/400",
+    "css-rules/800",
+    "css-rules/1600",
+    "css-rules/3200"
+   ]
+  }
+ ],
+ "widgets": [
+  {
+   "id": "shadow-static/0",
+   "file": "widgets/shadow-static/000000.html",
+   "load": "shadow-static",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 0,
+    "nodes": 8
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1696,
+    "zlib": 1020
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/8",
+   "file": "widgets/shadow-static/000008.html",
+   "load": "shadow-static",
+   "level": 1,
+   "value": 8,
+   "heavyBoxes": 8,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 8,
+    "nodes": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1696,
+    "zlib": 1023
+   },
+   "measured": {
+    "nodes": 27,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/16",
+   "file": "widgets/shadow-static/000016.html",
+   "load": "shadow-static",
+   "level": 2,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 16,
+    "nodes": 24
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1702,
+    "zlib": 1027
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 33,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/32",
+   "file": "widgets/shadow-static/000032.html",
+   "load": "shadow-static",
+   "level": 3,
+   "value": 32,
+   "heavyBoxes": 32,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 32,
+    "nodes": 40
+   },
+   "crosses": [
+    "heavyBoxes 32 > 16"
+   ],
+   "size": {
+    "raw": 1702,
+    "zlib": 1027
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 65,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/64",
+   "file": "widgets/shadow-static/000064.html",
+   "load": "shadow-static",
+   "level": 4,
+   "value": 64,
+   "heavyBoxes": 64,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 64,
+    "nodes": 72
+   },
+   "crosses": [
+    "heavyBoxes 64 > 16"
+   ],
+   "size": {
+    "raw": 1702,
+    "zlib": 1028
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 129,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/128",
+   "file": "widgets/shadow-static/000128.html",
+   "load": "shadow-static",
+   "level": 5,
+   "value": 128,
+   "heavyBoxes": 128,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 128,
+    "nodes": 136
+   },
+   "crosses": [
+    "heavyBoxes 128 > 16"
+   ],
+   "size": {
+    "raw": 1708,
+    "zlib": 1030
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 257,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-static/256",
+   "file": "widgets/shadow-static/000256.html",
+   "load": "shadow-static",
+   "level": 6,
+   "value": 256,
+   "heavyBoxes": 256,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 256,
+    "nodes": 264
+   },
+   "crosses": [
+    "heavyBoxes 256 > 16"
+   ],
+   "size": {
+    "raw": 1708,
+    "zlib": 1030
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 513,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/0",
+   "file": "widgets/shadow-moving/000000.html",
+   "load": "shadow-moving",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 0,
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1916,
+    "zlib": 1126
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/4",
+   "file": "widgets/shadow-moving/000004.html",
+   "load": "shadow-moving",
+   "level": 1,
+   "value": 4,
+   "heavyBoxes": 4,
+   "backdropBoxes": 0,
+   "changedBoxes": 4,
+   "estimates": {
+    "heavyBoxes": 4,
+    "nodes": 12,
+    "opsPerBatch": 8
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1916,
+    "zlib": 1130
+   },
+   "measured": {
+    "nodes": 23,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/8",
+   "file": "widgets/shadow-moving/000008.html",
+   "load": "shadow-moving",
+   "level": 2,
+   "value": 8,
+   "heavyBoxes": 8,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "heavyBoxes": 8,
+    "nodes": 16,
+    "opsPerBatch": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1916,
+    "zlib": 1131
+   },
+   "measured": {
+    "nodes": 27,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/16",
+   "file": "widgets/shadow-moving/000016.html",
+   "load": "shadow-moving",
+   "level": 3,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "heavyBoxes": 16,
+    "nodes": 24,
+    "opsPerBatch": 32
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1922,
+    "zlib": 1134
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 34,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/32",
+   "file": "widgets/shadow-moving/000032.html",
+   "load": "shadow-moving",
+   "level": 4,
+   "value": 32,
+   "heavyBoxes": 32,
+   "backdropBoxes": 0,
+   "changedBoxes": 32,
+   "estimates": {
+    "heavyBoxes": 32,
+    "nodes": 40,
+    "opsPerBatch": 64
+   },
+   "crosses": [
+    "heavyBoxes 32 > 16"
+   ],
+   "size": {
+    "raw": 1922,
+    "zlib": 1134
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 66,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/64",
+   "file": "widgets/shadow-moving/000064.html",
+   "load": "shadow-moving",
+   "level": 5,
+   "value": 64,
+   "heavyBoxes": 64,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "heavyBoxes": 64,
+    "nodes": 72,
+    "opsPerBatch": 128
+   },
+   "crosses": [
+    "heavyBoxes 64 > 16"
+   ],
+   "size": {
+    "raw": 1922,
+    "zlib": 1135
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 130,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/128",
+   "file": "widgets/shadow-moving/000128.html",
+   "load": "shadow-moving",
+   "level": 6,
+   "value": 128,
+   "heavyBoxes": 128,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "heavyBoxes": 128,
+    "nodes": 136,
+    "opsPerBatch": 256
+   },
+   "crosses": [
+    "heavyBoxes 128 > 16"
+   ],
+   "size": {
+    "raw": 1928,
+    "zlib": 1137
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 258,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/256",
+   "file": "widgets/shadow-moving/000256.html",
+   "load": "shadow-moving",
+   "level": 7,
+   "value": 256,
+   "heavyBoxes": 256,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "heavyBoxes": 256,
+    "nodes": 264,
+    "opsPerBatch": 512
+   },
+   "crosses": [
+    "heavyBoxes 256 > 16"
+   ],
+   "size": {
+    "raw": 1928,
+    "zlib": 1137
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 514,
+    "height": 325
+   }
+  },
+  {
+   "id": "shadow-moving/512",
+   "file": "widgets/shadow-moving/000512.html",
+   "load": "shadow-moving",
+   "level": 8,
+   "value": 512,
+   "heavyBoxes": 512,
+   "backdropBoxes": 0,
+   "changedBoxes": 512,
+   "estimates": {
+    "heavyBoxes": 512,
+    "nodes": 520,
+    "opsPerBatch": 1024
+   },
+   "crosses": [
+    "heavyBoxes 512 > 16"
+   ],
+   "size": {
+    "raw": 1928,
+    "zlib": 1136
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1025,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/0",
+   "file": "widgets/ars-cell/000000.html",
+   "load": "ars-cell",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 0,
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2155,
+    "zlib": 1248
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/16",
+   "file": "widgets/ars-cell/000016.html",
+   "load": "ars-cell",
+   "level": 1,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "heavyBoxes": 16,
+    "nodes": 40,
+    "opsPerBatch": 64
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2161,
+    "zlib": 1255
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 65,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/64",
+   "file": "widgets/ars-cell/000064.html",
+   "load": "ars-cell",
+   "level": 2,
+   "value": 64,
+   "heavyBoxes": 64,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "heavyBoxes": 64,
+    "nodes": 136,
+    "opsPerBatch": 256
+   },
+   "crosses": [
+    "heavyBoxes 64 > 16"
+   ],
+   "size": {
+    "raw": 2161,
+    "zlib": 1256
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 257,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/128",
+   "file": "widgets/ars-cell/000128.html",
+   "load": "ars-cell",
+   "level": 3,
+   "value": 128,
+   "heavyBoxes": 128,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "heavyBoxes": 128,
+    "nodes": 264,
+    "opsPerBatch": 512
+   },
+   "crosses": [
+    "heavyBoxes 128 > 16"
+   ],
+   "size": {
+    "raw": 2167,
+    "zlib": 1260
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 513,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/256",
+   "file": "widgets/ars-cell/000256.html",
+   "load": "ars-cell",
+   "level": 4,
+   "value": 256,
+   "heavyBoxes": 256,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "heavyBoxes": 256,
+    "nodes": 520,
+    "opsPerBatch": 1024
+   },
+   "crosses": [
+    "heavyBoxes 256 > 16"
+   ],
+   "size": {
+    "raw": 2167,
+    "zlib": 1261
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/512",
+   "file": "widgets/ars-cell/000512.html",
+   "load": "ars-cell",
+   "level": 5,
+   "value": 512,
+   "heavyBoxes": 512,
+   "backdropBoxes": 0,
+   "changedBoxes": 512,
+   "estimates": {
+    "heavyBoxes": 512,
+    "nodes": 1032,
+    "opsPerBatch": 2048
+   },
+   "crosses": [
+    "heavyBoxes 512 > 16"
+   ],
+   "size": {
+    "raw": 2167,
+    "zlib": 1259
+   },
+   "measured": {
+    "nodes": 1043,
+    "maxBatchOps": 1025,
+    "height": 325
+   }
+  },
+  {
+   "id": "ars-cell/1000",
+   "file": "widgets/ars-cell/001000.html",
+   "load": "ars-cell",
+   "level": 6,
+   "value": 1000,
+   "heavyBoxes": 1000,
+   "backdropBoxes": 0,
+   "changedBoxes": 1000,
+   "estimates": {
+    "heavyBoxes": 1000,
+    "nodes": 2008,
+    "opsPerBatch": 4000
+   },
+   "crosses": [
+    "heavyBoxes 1000 > 16",
+    "nodes 2019 > 2000"
+   ],
+   "size": {
+    "raw": 2173,
+    "zlib": 1258
+   },
+   "measured": {
+    "nodes": 2019,
+    "maxBatchOps": 2001,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/0",
+   "file": "widgets/opacity-moving/000000.html",
+   "load": "opacity-moving",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 0,
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1879,
+    "zlib": 1104
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/8",
+   "file": "widgets/opacity-moving/000008.html",
+   "load": "opacity-moving",
+   "level": 1,
+   "value": 8,
+   "heavyBoxes": 8,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "heavyBoxes": 8,
+    "nodes": 16,
+    "opsPerBatch": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1879,
+    "zlib": 1107
+   },
+   "measured": {
+    "nodes": 27,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/16",
+   "file": "widgets/opacity-moving/000016.html",
+   "load": "opacity-moving",
+   "level": 2,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "heavyBoxes": 16,
+    "nodes": 24,
+    "opsPerBatch": 32
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1885,
+    "zlib": 1111
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 34,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/32",
+   "file": "widgets/opacity-moving/000032.html",
+   "load": "opacity-moving",
+   "level": 3,
+   "value": 32,
+   "heavyBoxes": 32,
+   "backdropBoxes": 0,
+   "changedBoxes": 32,
+   "estimates": {
+    "heavyBoxes": 32,
+    "nodes": 40,
+    "opsPerBatch": 64
+   },
+   "crosses": [
+    "heavyBoxes 32 > 16"
+   ],
+   "size": {
+    "raw": 1885,
+    "zlib": 1111
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 66,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/64",
+   "file": "widgets/opacity-moving/000064.html",
+   "load": "opacity-moving",
+   "level": 4,
+   "value": 64,
+   "heavyBoxes": 64,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "heavyBoxes": 64,
+    "nodes": 72,
+    "opsPerBatch": 128
+   },
+   "crosses": [
+    "heavyBoxes 64 > 16"
+   ],
+   "size": {
+    "raw": 1885,
+    "zlib": 1112
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 130,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/128",
+   "file": "widgets/opacity-moving/000128.html",
+   "load": "opacity-moving",
+   "level": 5,
+   "value": 128,
+   "heavyBoxes": 128,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "heavyBoxes": 128,
+    "nodes": 136,
+    "opsPerBatch": 256
+   },
+   "crosses": [
+    "heavyBoxes 128 > 16"
+   ],
+   "size": {
+    "raw": 1891,
+    "zlib": 1113
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 258,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/256",
+   "file": "widgets/opacity-moving/000256.html",
+   "load": "opacity-moving",
+   "level": 6,
+   "value": 256,
+   "heavyBoxes": 256,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "heavyBoxes": 256,
+    "nodes": 264,
+    "opsPerBatch": 512
+   },
+   "crosses": [
+    "heavyBoxes 256 > 16"
+   ],
+   "size": {
+    "raw": 1891,
+    "zlib": 1114
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 514,
+    "height": 325
+   }
+  },
+  {
+   "id": "opacity-moving/512",
+   "file": "widgets/opacity-moving/000512.html",
+   "load": "opacity-moving",
+   "level": 7,
+   "value": 512,
+   "heavyBoxes": 512,
+   "backdropBoxes": 0,
+   "changedBoxes": 512,
+   "estimates": {
+    "heavyBoxes": 512,
+    "nodes": 520,
+    "opsPerBatch": 1024
+   },
+   "crosses": [
+    "heavyBoxes 512 > 16"
+   ],
+   "size": {
+    "raw": 1891,
+    "zlib": 1113
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1025,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/0",
+   "file": "widgets/filter-moving/000000.html",
+   "load": "filter-moving",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "heavyBoxes": 0,
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1896,
+    "zlib": 1117
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/4",
+   "file": "widgets/filter-moving/000004.html",
+   "load": "filter-moving",
+   "level": 1,
+   "value": 4,
+   "heavyBoxes": 4,
+   "backdropBoxes": 0,
+   "changedBoxes": 4,
+   "estimates": {
+    "heavyBoxes": 4,
+    "nodes": 12,
+    "opsPerBatch": 8
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1896,
+    "zlib": 1120
+   },
+   "measured": {
+    "nodes": 23,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/8",
+   "file": "widgets/filter-moving/000008.html",
+   "load": "filter-moving",
+   "level": 2,
+   "value": 8,
+   "heavyBoxes": 8,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "heavyBoxes": 8,
+    "nodes": 16,
+    "opsPerBatch": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1896,
+    "zlib": 1120
+   },
+   "measured": {
+    "nodes": 27,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/16",
+   "file": "widgets/filter-moving/000016.html",
+   "load": "filter-moving",
+   "level": 3,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "heavyBoxes": 16,
+    "nodes": 24,
+    "opsPerBatch": 32
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1902,
+    "zlib": 1124
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 34,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/32",
+   "file": "widgets/filter-moving/000032.html",
+   "load": "filter-moving",
+   "level": 4,
+   "value": 32,
+   "heavyBoxes": 32,
+   "backdropBoxes": 0,
+   "changedBoxes": 32,
+   "estimates": {
+    "heavyBoxes": 32,
+    "nodes": 40,
+    "opsPerBatch": 64
+   },
+   "crosses": [
+    "heavyBoxes 32 > 16"
+   ],
+   "size": {
+    "raw": 1902,
+    "zlib": 1124
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 66,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/64",
+   "file": "widgets/filter-moving/000064.html",
+   "load": "filter-moving",
+   "level": 5,
+   "value": 64,
+   "heavyBoxes": 64,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "heavyBoxes": 64,
+    "nodes": 72,
+    "opsPerBatch": 128
+   },
+   "crosses": [
+    "heavyBoxes 64 > 16"
+   ],
+   "size": {
+    "raw": 1902,
+    "zlib": 1125
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 130,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/128",
+   "file": "widgets/filter-moving/000128.html",
+   "load": "filter-moving",
+   "level": 6,
+   "value": 128,
+   "heavyBoxes": 128,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "heavyBoxes": 128,
+    "nodes": 136,
+    "opsPerBatch": 256
+   },
+   "crosses": [
+    "heavyBoxes 128 > 16"
+   ],
+   "size": {
+    "raw": 1908,
+    "zlib": 1127
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 258,
+    "height": 325
+   }
+  },
+  {
+   "id": "filter-moving/256",
+   "file": "widgets/filter-moving/000256.html",
+   "load": "filter-moving",
+   "level": 7,
+   "value": 256,
+   "heavyBoxes": 256,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "heavyBoxes": 256,
+    "nodes": 264,
+    "opsPerBatch": 512
+   },
+   "crosses": [
+    "heavyBoxes 256 > 16"
+   ],
+   "size": {
+    "raw": 1908,
+    "zlib": 1127
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 514,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/0",
+   "file": "widgets/backdrop-count/000000.html",
+   "load": "backdrop-count",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 0,
+    "backdropBoxes": 0,
+    "nodes": 18
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1963,
+    "zlib": 1120
+   },
+   "measured": {
+    "nodes": 29,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/1",
+   "file": "widgets/backdrop-count/000001.html",
+   "load": "backdrop-count",
+   "level": 1,
+   "value": 1,
+   "heavyBoxes": 1,
+   "backdropBoxes": 1,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 1,
+    "backdropBoxes": 1,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1963,
+    "zlib": 1122
+   },
+   "measured": {
+    "nodes": 30,
+    "maxBatchOps": 23,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/2",
+   "file": "widgets/backdrop-count/000002.html",
+   "load": "backdrop-count",
+   "level": 2,
+   "value": 2,
+   "heavyBoxes": 2,
+   "backdropBoxes": 2,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 2,
+    "backdropBoxes": 2,
+    "nodes": 20
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1963,
+    "zlib": 1122
+   },
+   "measured": {
+    "nodes": 31,
+    "maxBatchOps": 25,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/3",
+   "file": "widgets/backdrop-count/000003.html",
+   "load": "backdrop-count",
+   "level": 3,
+   "value": 3,
+   "heavyBoxes": 3,
+   "backdropBoxes": 3,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 3,
+    "backdropBoxes": 3,
+    "nodes": 21
+   },
+   "crosses": [
+    "backdropBoxes 3 > 2"
+   ],
+   "size": {
+    "raw": 1963,
+    "zlib": 1122
+   },
+   "measured": {
+    "nodes": 32,
+    "maxBatchOps": 27,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/4",
+   "file": "widgets/backdrop-count/000004.html",
+   "load": "backdrop-count",
+   "level": 4,
+   "value": 4,
+   "heavyBoxes": 4,
+   "backdropBoxes": 4,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 4,
+    "backdropBoxes": 4,
+    "nodes": 22
+   },
+   "crosses": [
+    "backdropBoxes 4 > 2"
+   ],
+   "size": {
+    "raw": 1963,
+    "zlib": 1122
+   },
+   "measured": {
+    "nodes": 33,
+    "maxBatchOps": 29,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/8",
+   "file": "widgets/backdrop-count/000008.html",
+   "load": "backdrop-count",
+   "level": 5,
+   "value": 8,
+   "heavyBoxes": 8,
+   "backdropBoxes": 8,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 8,
+    "backdropBoxes": 8,
+    "nodes": 26
+   },
+   "crosses": [
+    "backdropBoxes 8 > 2"
+   ],
+   "size": {
+    "raw": 1963,
+    "zlib": 1124
+   },
+   "measured": {
+    "nodes": 37,
+    "maxBatchOps": 37,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-count/16",
+   "file": "widgets/backdrop-count/000016.html",
+   "load": "backdrop-count",
+   "level": 6,
+   "value": 16,
+   "heavyBoxes": 16,
+   "backdropBoxes": 16,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 16,
+    "backdropBoxes": 16,
+    "nodes": 34
+   },
+   "crosses": [
+    "backdropBoxes 16 > 2"
+   ],
+   "size": {
+    "raw": 1969,
+    "zlib": 1128
+   },
+   "measured": {
+    "nodes": 45,
+    "maxBatchOps": 53,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-area/0",
+   "file": "widgets/backdrop-area/000000.html",
+   "load": "backdrop-area",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 0,
+    "backdropBoxes": 0,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1901,
+    "zlib": 1082
+   },
+   "measured": {
+    "nodes": 29,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-area/10",
+   "file": "widgets/backdrop-area/000010.html",
+   "load": "backdrop-area",
+   "level": 1,
+   "value": 10,
+   "heavyBoxes": 1,
+   "backdropBoxes": 1,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 1,
+    "backdropBoxes": 1,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1907,
+    "zlib": 1089
+   },
+   "measured": {
+    "nodes": 30,
+    "maxBatchOps": 23,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-area/25",
+   "file": "widgets/backdrop-area/000025.html",
+   "load": "backdrop-area",
+   "level": 2,
+   "value": 25,
+   "heavyBoxes": 1,
+   "backdropBoxes": 1,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 1,
+    "backdropBoxes": 1,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1907,
+    "zlib": 1090
+   },
+   "measured": {
+    "nodes": 30,
+    "maxBatchOps": 23,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-area/50",
+   "file": "widgets/backdrop-area/000050.html",
+   "load": "backdrop-area",
+   "level": 3,
+   "value": 50,
+   "heavyBoxes": 1,
+   "backdropBoxes": 1,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 1,
+    "backdropBoxes": 1,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1907,
+    "zlib": 1089
+   },
+   "measured": {
+    "nodes": 30,
+    "maxBatchOps": 23,
+    "height": 325
+   }
+  },
+  {
+   "id": "backdrop-area/100",
+   "file": "widgets/backdrop-area/000100.html",
+   "load": "backdrop-area",
+   "level": 4,
+   "value": 100,
+   "heavyBoxes": 1,
+   "backdropBoxes": 1,
+   "changedBoxes": 10,
+   "estimates": {
+    "heavyBoxes": 1,
+    "backdropBoxes": 1,
+    "nodes": 19
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1913,
+    "zlib": 1090
+   },
+   "measured": {
+    "nodes": 30,
+    "maxBatchOps": 23,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/0",
+   "file": "widgets/gradient-moving/000000.html",
+   "load": "gradient-moving",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2066,
+    "zlib": 1168
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/16",
+   "file": "widgets/gradient-moving/000016.html",
+   "load": "gradient-moving",
+   "level": 1,
+   "value": 16,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "nodes": 24,
+    "opsPerBatch": 32
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2072,
+    "zlib": 1176
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 34,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/64",
+   "file": "widgets/gradient-moving/000064.html",
+   "load": "gradient-moving",
+   "level": 2,
+   "value": 64,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "nodes": 72,
+    "opsPerBatch": 128
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2072,
+    "zlib": 1176
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 130,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/128",
+   "file": "widgets/gradient-moving/000128.html",
+   "load": "gradient-moving",
+   "level": 3,
+   "value": 128,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "nodes": 136,
+    "opsPerBatch": 256
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2078,
+    "zlib": 1178
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 258,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/256",
+   "file": "widgets/gradient-moving/000256.html",
+   "load": "gradient-moving",
+   "level": 4,
+   "value": 256,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "nodes": 264,
+    "opsPerBatch": 512
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2078,
+    "zlib": 1179
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 514,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/512",
+   "file": "widgets/gradient-moving/000512.html",
+   "load": "gradient-moving",
+   "level": 5,
+   "value": 512,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 512,
+   "estimates": {
+    "nodes": 520,
+    "opsPerBatch": 1024
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2078,
+    "zlib": 1178
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "gradient-moving/1000",
+   "file": "widgets/gradient-moving/001000.html",
+   "load": "gradient-moving",
+   "level": 6,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1000,
+   "estimates": {
+    "nodes": 1008,
+    "opsPerBatch": 2000
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2084,
+    "zlib": 1175
+   },
+   "measured": {
+    "nodes": 1019,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/0",
+   "file": "widgets/clip-moving/000000.html",
+   "load": "clip-moving",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 8,
+    "opsPerBatch": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2040,
+    "zlib": 1156
+   },
+   "measured": {
+    "nodes": 19,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/16",
+   "file": "widgets/clip-moving/000016.html",
+   "load": "clip-moving",
+   "level": 1,
+   "value": 16,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "nodes": 40,
+    "opsPerBatch": 32
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2046,
+    "zlib": 1164
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 65,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/64",
+   "file": "widgets/clip-moving/000064.html",
+   "load": "clip-moving",
+   "level": 2,
+   "value": 64,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "nodes": 136,
+    "opsPerBatch": 128
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2046,
+    "zlib": 1164
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 257,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/128",
+   "file": "widgets/clip-moving/000128.html",
+   "load": "clip-moving",
+   "level": 3,
+   "value": 128,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 128,
+   "estimates": {
+    "nodes": 264,
+    "opsPerBatch": 256
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2052,
+    "zlib": 1166
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 513,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/256",
+   "file": "widgets/clip-moving/000256.html",
+   "load": "clip-moving",
+   "level": 4,
+   "value": 256,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "nodes": 520,
+    "opsPerBatch": 512
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2052,
+    "zlib": 1167
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/512",
+   "file": "widgets/clip-moving/000512.html",
+   "load": "clip-moving",
+   "level": 5,
+   "value": 512,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 512,
+   "estimates": {
+    "nodes": 1032,
+    "opsPerBatch": 1024
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2052,
+    "zlib": 1166
+   },
+   "measured": {
+    "nodes": 1043,
+    "maxBatchOps": 1025,
+    "height": 325
+   }
+  },
+  {
+   "id": "clip-moving/1000",
+   "file": "widgets/clip-moving/001000.html",
+   "load": "clip-moving",
+   "level": 6,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1000,
+   "estimates": {
+    "nodes": 2008,
+    "opsPerBatch": 2000
+   },
+   "crosses": [
+    "nodes 2019 > 2000"
+   ],
+   "size": {
+    "raw": 2058,
+    "zlib": 1164
+   },
+   "measured": {
+    "nodes": 2019,
+    "maxBatchOps": 2001,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/100",
+   "file": "widgets/dom-static/000100.html",
+   "load": "dom-static",
+   "level": 0,
+   "value": 100,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 108,
+    "opsPerBatch": 200
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1559,
+    "zlib": 936
+   },
+   "measured": {
+    "nodes": 119,
+    "maxBatchOps": 201,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/250",
+   "file": "widgets/dom-static/000250.html",
+   "load": "dom-static",
+   "level": 1,
+   "value": 250,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 258,
+    "opsPerBatch": 500
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1559,
+    "zlib": 939
+   },
+   "measured": {
+    "nodes": 269,
+    "maxBatchOps": 501,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/500",
+   "file": "widgets/dom-static/000500.html",
+   "load": "dom-static",
+   "level": 2,
+   "value": 500,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 508,
+    "opsPerBatch": 1000
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1559,
+    "zlib": 938
+   },
+   "measured": {
+    "nodes": 519,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/1000",
+   "file": "widgets/dom-static/001000.html",
+   "load": "dom-static",
+   "level": 3,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 1008,
+    "opsPerBatch": 2000
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1565,
+    "zlib": 936
+   },
+   "measured": {
+    "nodes": 1019,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/2000",
+   "file": "widgets/dom-static/002000.html",
+   "load": "dom-static",
+   "level": 4,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 2008,
+    "opsPerBatch": 4000
+   },
+   "crosses": [
+    "nodes 2019 > 2000"
+   ],
+   "size": {
+    "raw": 1565,
+    "zlib": 937
+   },
+   "measured": {
+    "nodes": 2019,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/3000",
+   "file": "widgets/dom-static/003000.html",
+   "load": "dom-static",
+   "level": 5,
+   "value": 3000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 3008,
+    "opsPerBatch": 6000
+   },
+   "crosses": [
+    "nodes 3019 > 2000"
+   ],
+   "size": {
+    "raw": 1565,
+    "zlib": 936
+   },
+   "measured": {
+    "nodes": 3019,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-static/4000",
+   "file": "widgets/dom-static/004000.html",
+   "load": "dom-static",
+   "level": 6,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 4008,
+    "opsPerBatch": 8000
+   },
+   "crosses": [
+    "nodes 4019 > 2000"
+   ],
+   "size": {
+    "raw": 1565,
+    "zlib": 937
+   },
+   "measured": {
+    "nodes": 4019,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/100",
+   "file": "widgets/dom-tick/000100.html",
+   "load": "dom-tick",
+   "level": 0,
+   "value": 100,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 124,
+    "opsPerBatch": 200
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1854,
+    "zlib": 1077
+   },
+   "measured": {
+    "nodes": 135,
+    "maxBatchOps": 233,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/500",
+   "file": "widgets/dom-tick/000500.html",
+   "load": "dom-tick",
+   "level": 1,
+   "value": 500,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 524,
+    "opsPerBatch": 1000
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1854,
+    "zlib": 1078
+   },
+   "measured": {
+    "nodes": 535,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/1000",
+   "file": "widgets/dom-tick/001000.html",
+   "load": "dom-tick",
+   "level": 2,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 1024,
+    "opsPerBatch": 2000
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1860,
+    "zlib": 1077
+   },
+   "measured": {
+    "nodes": 1035,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/2000",
+   "file": "widgets/dom-tick/002000.html",
+   "load": "dom-tick",
+   "level": 3,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 2024,
+    "opsPerBatch": 4000
+   },
+   "crosses": [
+    "nodes 2035 > 2000"
+   ],
+   "size": {
+    "raw": 1860,
+    "zlib": 1079
+   },
+   "measured": {
+    "nodes": 2035,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/3000",
+   "file": "widgets/dom-tick/003000.html",
+   "load": "dom-tick",
+   "level": 4,
+   "value": 3000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 3024,
+    "opsPerBatch": 6000
+   },
+   "crosses": [
+    "nodes 3035 > 2000"
+   ],
+   "size": {
+    "raw": 1860,
+    "zlib": 1077
+   },
+   "measured": {
+    "nodes": 3035,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "dom-tick/4000",
+   "file": "widgets/dom-tick/004000.html",
+   "load": "dom-tick",
+   "level": 5,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "nodes": 4024,
+    "opsPerBatch": 8000
+   },
+   "crosses": [
+    "nodes 4035 > 2000"
+   ],
+   "size": {
+    "raw": 1860,
+    "zlib": 1078
+   },
+   "measured": {
+    "nodes": 4035,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/16",
+   "file": "widgets/style-churn/000016.html",
+   "load": "style-churn",
+   "level": 0,
+   "value": 16,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "nodes": 40,
+    "opsPerBatch": 48
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2091,
+    "zlib": 1184
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 65,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/64",
+   "file": "widgets/style-churn/000064.html",
+   "load": "style-churn",
+   "level": 1,
+   "value": 64,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 64,
+   "estimates": {
+    "nodes": 136,
+    "opsPerBatch": 192
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2091,
+    "zlib": 1184
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 257,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/256",
+   "file": "widgets/style-churn/000256.html",
+   "load": "style-churn",
+   "level": 2,
+   "value": 256,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 256,
+   "estimates": {
+    "nodes": 520,
+    "opsPerBatch": 768
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2097,
+    "zlib": 1188
+   },
+   "measured": {
+    "nodes": 531,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/1000",
+   "file": "widgets/style-churn/001000.html",
+   "load": "style-churn",
+   "level": 3,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1000,
+   "estimates": {
+    "nodes": 2008,
+    "opsPerBatch": 3000
+   },
+   "crosses": [
+    "nodes 2019 > 2000"
+   ],
+   "size": {
+    "raw": 2103,
+    "zlib": 1184
+   },
+   "measured": {
+    "nodes": 2019,
+    "maxBatchOps": 2001,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/2000",
+   "file": "widgets/style-churn/002000.html",
+   "load": "style-churn",
+   "level": 4,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 2000,
+   "estimates": {
+    "nodes": 4008,
+    "opsPerBatch": 6000
+   },
+   "crosses": [
+    "nodes 4019 > 2000"
+   ],
+   "size": {
+    "raw": 2103,
+    "zlib": 1185
+   },
+   "measured": {
+    "nodes": 4019,
+    "maxBatchOps": 4001,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/3000",
+   "file": "widgets/style-churn/003000.html",
+   "load": "style-churn",
+   "level": 5,
+   "value": 3000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 3000,
+   "estimates": {
+    "nodes": 6008,
+    "opsPerBatch": 9000
+   },
+   "crosses": [
+    "nodes 6019 > 2000"
+   ],
+   "size": {
+    "raw": 2103,
+    "zlib": 1184
+   },
+   "measured": {
+    "nodes": 6019,
+    "maxBatchOps": 6001,
+    "height": 325
+   }
+  },
+  {
+   "id": "style-churn/4000",
+   "file": "widgets/style-churn/004000.html",
+   "load": "style-churn",
+   "level": 6,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 4000,
+   "estimates": {
+    "nodes": 8008,
+    "opsPerBatch": 12000
+   },
+   "crosses": [
+    "nodes 8019 > 2000"
+   ],
+   "size": {
+    "raw": 2103,
+    "zlib": 1185
+   },
+   "measured": {
+    "nodes": 8019,
+    "maxBatchOps": 8001,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/1024",
+   "file": "widgets/text-volume/001024.html",
+   "load": "text-volume",
+   "level": 0,
+   "value": 1024,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 1024,
+    "nodes": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2054,
+    "zlib": 1169
+   },
+   "measured": {
+    "nodes": 27,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/4096",
+   "file": "widgets/text-volume/004096.html",
+   "load": "text-volume",
+   "level": 1,
+   "value": 4096,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 4096,
+    "nodes": 28
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2054,
+    "zlib": 1171
+   },
+   "measured": {
+    "nodes": 39,
+    "maxBatchOps": 41,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/16384",
+   "file": "widgets/text-volume/016384.html",
+   "load": "text-volume",
+   "level": 2,
+   "value": 16384,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 16384,
+    "nodes": 80
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2060,
+    "zlib": 1172
+   },
+   "measured": {
+    "nodes": 91,
+    "maxBatchOps": 145,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/49152",
+   "file": "widgets/text-volume/049152.html",
+   "load": "text-volume",
+   "level": 3,
+   "value": 49152,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 49152,
+    "nodes": 216
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2060,
+    "zlib": 1172
+   },
+   "measured": {
+    "nodes": 227,
+    "maxBatchOps": 417,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/65536",
+   "file": "widgets/text-volume/065536.html",
+   "load": "text-volume",
+   "level": 4,
+   "value": 65536,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 65536,
+    "nodes": 284
+   },
+   "crosses": [
+    "docText 65536 > 49152"
+   ],
+   "size": {
+    "raw": 2060,
+    "zlib": 1172
+   },
+   "measured": {
+    "nodes": 295,
+    "maxBatchOps": 553,
+    "height": 325
+   }
+  },
+  {
+   "id": "text-volume/131072",
+   "file": "widgets/text-volume/131072.html",
+   "load": "text-volume",
+   "level": 5,
+   "value": 131072,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "docText": 131072,
+    "nodes": 558
+   },
+   "crosses": [
+    "docText 131072 > 49152"
+   ],
+   "size": {
+    "raw": 2066,
+    "zlib": 1174
+   },
+   "measured": {
+    "nodes": 569,
+    "maxBatchOps": 1000,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/256",
+   "file": "widgets/complex-text/000256.html",
+   "load": "complex-text",
+   "level": 0,
+   "value": 256,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 256,
+    "docText": 256,
+    "nodes": 12
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2024,
+    "zlib": 1295
+   },
+   "measured": {
+    "nodes": 23,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/1024",
+   "file": "widgets/complex-text/001024.html",
+   "load": "complex-text",
+   "level": 1,
+   "value": 1024,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 1024,
+    "docText": 1024,
+    "nodes": 24
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2030,
+    "zlib": 1294
+   },
+   "measured": {
+    "nodes": 35,
+    "maxBatchOps": 33,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/2048",
+   "file": "widgets/complex-text/002048.html",
+   "load": "complex-text",
+   "level": 2,
+   "value": 2048,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 2048,
+    "docText": 2048,
+    "nodes": 40
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2030,
+    "zlib": 1294
+   },
+   "measured": {
+    "nodes": 51,
+    "maxBatchOps": 65,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/4096",
+   "file": "widgets/complex-text/004096.html",
+   "load": "complex-text",
+   "level": 3,
+   "value": 4096,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 4096,
+    "docText": 4096,
+    "nodes": 72
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2030,
+    "zlib": 1295
+   },
+   "measured": {
+    "nodes": 83,
+    "maxBatchOps": 129,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/8192",
+   "file": "widgets/complex-text/008192.html",
+   "load": "complex-text",
+   "level": 4,
+   "value": 8192,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 8192,
+    "docText": 8192,
+    "nodes": 136
+   },
+   "crosses": [],
+   "size": {
+    "raw": 2030,
+    "zlib": 1295
+   },
+   "measured": {
+    "nodes": 147,
+    "maxBatchOps": 257,
+    "height": 325
+   }
+  },
+  {
+   "id": "complex-text/16384",
+   "file": "widgets/complex-text/016384.html",
+   "load": "complex-text",
+   "level": 5,
+   "value": 16384,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "complexText": 16384,
+    "docText": 16384,
+    "nodes": 264
+   },
+   "crosses": [
+    "complexText 16384 > 8192"
+   ],
+   "size": {
+    "raw": 2036,
+    "zlib": 1296
+   },
+   "measured": {
+    "nodes": 275,
+    "maxBatchOps": 513,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/50",
+   "file": "widgets/emoji/000050.html",
+   "load": "emoji",
+   "level": 0,
+   "value": 50,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 100,
+    "docText": 100,
+    "nodes": 28
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1913,
+    "zlib": 1182
+   },
+   "measured": {
+    "nodes": 39,
+    "maxBatchOps": 41,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/200",
+   "file": "widgets/emoji/000200.html",
+   "load": "emoji",
+   "level": 1,
+   "value": 200,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 400,
+    "docText": 400,
+    "nodes": 38
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1919,
+    "zlib": 1185
+   },
+   "measured": {
+    "nodes": 49,
+    "maxBatchOps": 61,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/500",
+   "file": "widgets/emoji/000500.html",
+   "load": "emoji",
+   "level": 2,
+   "value": 500,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 1000,
+    "docText": 1000,
+    "nodes": 56
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1919,
+    "zlib": 1185
+   },
+   "measured": {
+    "nodes": 67,
+    "maxBatchOps": 97,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/1000",
+   "file": "widgets/emoji/001000.html",
+   "load": "emoji",
+   "level": 3,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 2000,
+    "docText": 2000,
+    "nodes": 88
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1925,
+    "zlib": 1183
+   },
+   "measured": {
+    "nodes": 99,
+    "maxBatchOps": 161,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/2000",
+   "file": "widgets/emoji/002000.html",
+   "load": "emoji",
+   "level": 4,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 4000,
+    "docText": 4000,
+    "nodes": 150
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1925,
+    "zlib": 1184
+   },
+   "measured": {
+    "nodes": 161,
+    "maxBatchOps": 285,
+    "height": 325
+   }
+  },
+  {
+   "id": "emoji/4000",
+   "file": "widgets/emoji/004000.html",
+   "load": "emoji",
+   "level": 5,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 8,
+   "estimates": {
+    "complexText": 8000,
+    "docText": 8000,
+    "nodes": 274
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1925,
+    "zlib": 1185
+   },
+   "measured": {
+    "nodes": 285,
+    "maxBatchOps": 533,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/200",
+   "file": "widgets/canvas-cmds/000200.html",
+   "load": "canvas-cmds",
+   "level": 0,
+   "value": 200,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 201,
+    "nodes": 10
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1814,
+    "zlib": 1043
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/1000",
+   "file": "widgets/canvas-cmds/001000.html",
+   "load": "canvas-cmds",
+   "level": 1,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 1001,
+    "nodes": 10
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1820,
+    "zlib": 1042
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/2000",
+   "file": "widgets/canvas-cmds/002000.html",
+   "load": "canvas-cmds",
+   "level": 2,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 2001,
+    "nodes": 10
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1820,
+    "zlib": 1043
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/4000",
+   "file": "widgets/canvas-cmds/004000.html",
+   "load": "canvas-cmds",
+   "level": 3,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 4001,
+    "nodes": 10
+   },
+   "crosses": [
+    "canvasPerSend 4001 > 4000"
+   ],
+   "size": {
+    "raw": 1820,
+    "zlib": 1044
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/8000",
+   "file": "widgets/canvas-cmds/008000.html",
+   "load": "canvas-cmds",
+   "level": 4,
+   "value": 8000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 8001,
+    "nodes": 10
+   },
+   "crosses": [
+    "canvasPerSend 8001 > 4000"
+   ],
+   "size": {
+    "raw": 1820,
+    "zlib": 1044
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "canvas-cmds/16000",
+   "file": "widgets/canvas-cmds/016000.html",
+   "load": "canvas-cmds",
+   "level": 5,
+   "value": 16000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "canvasPerSend": 16001,
+    "nodes": 10
+   },
+   "crosses": [
+    "canvasPerSend 16001 > 4000"
+   ],
+   "size": {
+    "raw": 1826,
+    "zlib": 1044
+   },
+   "measured": {
+    "nodes": 20,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/50",
+   "file": "widgets/svg-path/000050.html",
+   "load": "svg-path",
+   "level": 0,
+   "value": 50,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 600,
+    "nodes": 12
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1873,
+    "zlib": 1077
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/200",
+   "file": "widgets/svg-path/000200.html",
+   "load": "svg-path",
+   "level": 1,
+   "value": 200,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 2400,
+    "nodes": 12
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1879,
+    "zlib": 1078
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/500",
+   "file": "widgets/svg-path/000500.html",
+   "load": "svg-path",
+   "level": 2,
+   "value": 500,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 6000,
+    "nodes": 12
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1879,
+    "zlib": 1080
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/1000",
+   "file": "widgets/svg-path/001000.html",
+   "load": "svg-path",
+   "level": 3,
+   "value": 1000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 12000,
+    "nodes": 12
+   },
+   "crosses": [
+    "attr 12000 > 8192"
+   ],
+   "size": {
+    "raw": 1885,
+    "zlib": 1078
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/2000",
+   "file": "widgets/svg-path/002000.html",
+   "load": "svg-path",
+   "level": 4,
+   "value": 2000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 24000,
+    "nodes": 12
+   },
+   "crosses": [
+    "attr 24000 > 8192"
+   ],
+   "size": {
+    "raw": 1885,
+    "zlib": 1077
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "svg-path/4000",
+   "file": "widgets/svg-path/004000.html",
+   "load": "svg-path",
+   "level": 5,
+   "value": 4000,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "attr": 48000,
+    "nodes": 12
+   },
+   "crosses": [
+    "attr 48000 > 8192"
+   ],
+   "size": {
+    "raw": 1885,
+    "zlib": 1079
+   },
+   "measured": {
+    "nodes": 21,
+    "maxBatchOps": 22,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/0",
+   "file": "widgets/layout-queries/000000.html",
+   "load": "layout-queries",
+   "level": 0,
+   "value": 0,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 0,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 0
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1687,
+    "zlib": 989
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/1",
+   "file": "widgets/layout-queries/000001.html",
+   "load": "layout-queries",
+   "level": 1,
+   "value": 1,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 1,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 1
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1687,
+    "zlib": 990
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/4",
+   "file": "widgets/layout-queries/000004.html",
+   "load": "layout-queries",
+   "level": 2,
+   "value": 4,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 4,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 4
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1687,
+    "zlib": 993
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/16",
+   "file": "widgets/layout-queries/000016.html",
+   "load": "layout-queries",
+   "level": 3,
+   "value": 16,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 16,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 16
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1693,
+    "zlib": 997
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/64",
+   "file": "widgets/layout-queries/000064.html",
+   "load": "layout-queries",
+   "level": 4,
+   "value": 64,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 40,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 64
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1693,
+    "zlib": 998
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "layout-queries/256",
+   "file": "widgets/layout-queries/000256.html",
+   "load": "layout-queries",
+   "level": 5,
+   "value": 256,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 40,
+   "estimates": {
+    "nodes": 50,
+    "layoutQueries": 256
+   },
+   "crosses": [
+    "layoutQueries 256 > 128"
+   ],
+   "size": {
+    "raw": 1699,
+    "zlib": 1001
+   },
+   "measured": {
+    "nodes": 59,
+    "maxBatchOps": 81,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/50",
+   "file": "widgets/css-rules/000050.html",
+   "load": "css-rules",
+   "level": 0,
+   "value": 50,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 50,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1958,
+    "zlib": 1125
+   },
+   "measured": {
+    "nodes": 93,
+    "maxBatchOps": 150,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/200",
+   "file": "widgets/css-rules/000200.html",
+   "load": "css-rules",
+   "level": 1,
+   "value": 200,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 200,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1964,
+    "zlib": 1127
+   },
+   "measured": {
+    "nodes": 93,
+    "maxBatchOps": 150,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/400",
+   "file": "widgets/css-rules/000400.html",
+   "load": "css-rules",
+   "level": 2,
+   "value": 400,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 400,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [],
+   "size": {
+    "raw": 1964,
+    "zlib": 1128
+   },
+   "measured": {
+    "nodes": 95,
+    "maxBatchOps": 155,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/800",
+   "file": "widgets/css-rules/000800.html",
+   "load": "css-rules",
+   "level": 3,
+   "value": 800,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 800,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [
+    "cssRules 800 > 400"
+   ],
+   "size": {
+    "raw": 1964,
+    "zlib": 1127
+   },
+   "measured": {
+    "nodes": 99,
+    "maxBatchOps": 165,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/1600",
+   "file": "widgets/css-rules/001600.html",
+   "load": "css-rules",
+   "level": 4,
+   "value": 1600,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 1600,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [
+    "cssRules 1600 > 400"
+   ],
+   "size": {
+    "raw": 1970,
+    "zlib": 1126
+   },
+   "measured": {
+    "nodes": 107,
+    "maxBatchOps": 185,
+    "height": 325
+   }
+  },
+  {
+   "id": "css-rules/3200",
+   "file": "widgets/css-rules/003200.html",
+   "load": "css-rules",
+   "level": 5,
+   "value": 3200,
+   "heavyBoxes": 0,
+   "backdropBoxes": 0,
+   "changedBoxes": 72,
+   "estimates": {
+    "cssRules": 3200,
+    "nodes": 80,
+    "opsPerBatch": 240
+   },
+   "crosses": [
+    "cssRules 3200 > 400"
+   ],
+   "size": {
+    "raw": 1970,
+    "zlib": 1126
+   },
+   "measured": {
+    "nodes": 123,
+    "maxBatchOps": 225,
+    "height": 325
+   }
+  }
+ ]
+}

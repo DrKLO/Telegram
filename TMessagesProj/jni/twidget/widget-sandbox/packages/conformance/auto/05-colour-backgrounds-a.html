@@ -1,0 +1,53 @@
+<!doctype html>
+<html data-test="auto/05-colour-backgrounds-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: colour and backgrounds (1/2)</title>
+<!-- conformance {"title":"Colour and backgrounds (1/2): colours, colour functions, light-dark()"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages{height:76px}</style><script>var T=function(){var u=document,m=u.documentElement,M=typeof TelegramWidget!="undefined",j=window.__conformanceMode||(M?"sandbox":"native"),a=[],y={},l=[];var C,c,p,f,k,d,b,g,D=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),q=()=>{g=g||setTimeout(A,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),q(),s}function O(t,e,n,o){if(o&&o.sandboxOnly&&!M)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>O(t,e,[n===o,"got "+w(n)+", want "+w(o)],r);var B=(t,e,n)=>getComputedStyle(D(t),n).getPropertyValue(e).trim();function E(t,e,n){let o=B(t,e||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var I=t=>{l.push(t)};var F=()=>{},J=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function A(){g=0,p&&!f&&F();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&k?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:j,status:n,n:t,checks:a,targets:C,stages:c})),x&&x(n,t)}var x;function T(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function S(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=J(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),q();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(S,t||0)}function N(t){t=t||{},k=t.awaitInput,d=t.awaitInput||t.deadline,A();let e=()=>{e=()=>{},setTimeout(S,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}T();return{color:E,eq:R,run:N,step:I}}();</script><!-- /conformance:harness -->
+<style>
+:root{color-scheme:light dark}
+.q{position:absolute;width:40px;height:30px}
+.q1{left:0;top:0}.q2{left:40px;top:0}.q3{left:0;top:30px}.q4{left:40px;top:30px}
+.s-ld{position:absolute;inset:10px;background:light-dark(#e83,#36c)}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="basic" data-covers="css.color.basic"><div class="q q1" style="background:rebeccapurple"></div><div class="q q2" style="background:#3a3"></div><div class="q q3" style="background:rgba(204,51,51,.5)"></div><div class="q q4" style="background:hsl(210 60% 50%)"></div></div>
+  <div data-stage="modern" data-covers="css.color.modern"><div class="q q1" style="background:oklch(0.62 0.19 30)"></div><div class="q q2" style="background:lab(55 -40 40)"></div><div class="q q3" style="background:hwb(220 20% 20%)"></div><div class="q q4" style="background:color(srgb 0.9 0.6 0.1)"></div></div>
+  <div data-stage="mix" data-covers="css.color.mix"><div class="q q1" style="background:color-mix(in srgb,#c33 50%,#36c)"></div><div class="q q2" style="background:color-mix(in srgb,#3a3,white 40%)"></div><div class="q q3" style="background:color-mix(in oklab,#e83,#36c)"></div><div class="q q4" style="background:color-mix(in srgb,#000 20%,transparent)"></div></div>
+  <div data-stage="light-dark" data-themes="light dark" data-covers="css.color.light-dark"><div class="s-ld"></div></div>
+</div>
+<div class="conf-head">05a · Colour and backgrounds (1/2)</div>
+<div class="conf-probes">
+  <div id="c-named" style="background:rebeccapurple;width:4px;height:4px"></div>
+  <div id="c-hex4" style="background:#f008;width:4px;height:4px"></div>
+  <div id="c-hsl" style="background:hsl(120,100%,25%);width:4px;height:4px"></div>
+  <div id="c-cur" style="color:rgb(0,0,200);border:1px solid currentColor;width:4px;height:4px"></div>
+  <div id="c-tr" style="background:transparent;width:4px;height:4px"></div>
+  <div id="c-ld" style="background:light-dark(rgb(1,2,3),rgb(4,5,6));width:4px;height:4px"></div>
+  <div id="c-mix" style="background:color-mix(in srgb,rgb(200,0,0) 50%,rgb(0,0,200));width:4px;height:4px"></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var C = T.color;
+T.step(function () {
+  T.eq('css.color.basic', 'named colour', C('#c-named'), '102,51,153,1');
+  T.eq('css.color.basic', '#rgba hex', C('#c-hex4'), '255,0,0,0.53');
+  T.eq('css.color.basic', 'hsl()', C('#c-hsl'), '0,128,0,1');
+  T.eq('css.color.basic', 'currentColor', C('#c-cur', 'border-top-color'), '0,0,200,1');
+  T.eq('css.color.basic', 'transparent', C('#c-tr'), '0,0,0,0');
+  var dark = (typeof TelegramWidget !== 'undefined' ? TelegramWidget.theme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+  T.eq('css.color.light-dark', 'light-dark() picks the chat theme', C('#c-ld'), dark ? '4,5,6,1' : '1,2,3,1');
+  T.eq('css.color.mix', 'color-mix() is dropped: no background (profile 1: out)', C('#c-mix'), '0,0,0,0');
+});
+T.run();
+</script>
+<template data-ref="basic"><div style="position:absolute;left:0;top:0;width:40px;height:30px;background:#663399"></div><div style="position:absolute;left:40px;top:0;width:40px;height:30px;background:#33aa33"></div><div style="position:absolute;left:0;top:30px;width:40px;height:30px;background:#e59999"></div><div style="position:absolute;left:40px;top:30px;width:40px;height:30px;background:#3380cc"></div></template>
+<template data-ref="modern"></template>
+<template data-ref="mix"></template>
+</body>
+</html>

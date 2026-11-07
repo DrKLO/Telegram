@@ -1,5 +1,6 @@
 package org.telegram.ui;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -37,6 +38,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
@@ -51,7 +54,7 @@ import org.telegram.ui.Components.StatusBadgeComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MessageSeenView extends FrameLayout {
+public class MessageSeenView extends FrameLayout implements Theme.Colorable {
 
     ArrayList<Long> peerIds = new ArrayList<>();
     ArrayList<Integer> dates = new ArrayList<>();
@@ -86,7 +89,7 @@ public class MessageSeenView extends FrameLayout {
         avatarsImageView.setAvatarsTextSize(AndroidUtilities.dp(22));
         addView(avatarsImageView, LayoutHelper.createFrame(24 + 12 + 12 + 8, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
-        titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        ThemeBind.textColor(titleView, Theme.key_actionBarDefaultSubmenuItem);
 
         TLRPC.TL_messages_getMessageReadParticipants req = new TLRPC.TL_messages_getMessageReadParticipants();
         req.msg_id = messageObject.getId();
@@ -95,7 +98,7 @@ public class MessageSeenView extends FrameLayout {
         iconView = new ImageView(context);
         addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 11, 0, 0, 0));
         Drawable drawable = ContextCompat.getDrawable(context, isVoice ? R.drawable.msg_played : R.drawable.msg_seen).mutate();
-        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, drawable, Theme.key_actionBarDefaultSubmenuItemIcon, PorterDuff.Mode.MULTIPLY);
         iconView.setImageDrawable(drawable);
 
         avatarsImageView.setAlpha(0);
@@ -210,7 +213,7 @@ public class MessageSeenView extends FrameLayout {
                 updateView();
             }
         }));
-        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 6, 0));
+        setBackground(Theme.createRadSelectorDrawable(themedSelectorColor = Theme.getColor(Theme.key_dialogButtonSelector), 6, 0));
         setEnabled(false);
     }
 
@@ -344,7 +347,30 @@ public class MessageSeenView extends FrameLayout {
         return listView;
     }
 
-    public static class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+    public static class UserCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (statusBadgeComponent != null && statusBadgeComponent.getDrawable() instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
+                    final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable drawable = (AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) statusBadgeComponent.getDrawable();
+                    final int color = Theme.getColor(Theme.key_chats_verifiedBackground);
+                    if (drawable.getColor() != null && drawable.getColor() != color) {
+                        drawable.setColor(color);
+                        if (nameView != null) {
+                            nameView.invalidate();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_chats_verifiedBackground);
+        }
 
         private int currentAccount = UserConfig.selectedAccount;
 
@@ -368,7 +394,7 @@ public class MessageSeenView extends FrameLayout {
             nameView.setTextSize(16);
             nameView.setEllipsizeByGradient(!LocaleController.isRTL);
             nameView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            nameView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.textColor(nameView, Theme.key_actionBarDefaultSubmenuItem);
             nameView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             statusBadgeComponent = new StatusBadgeComponent(this);
@@ -379,7 +405,7 @@ public class MessageSeenView extends FrameLayout {
             readView.setLines(1);
             readView.setEllipsize(TextUtils.TruncateAt.END);
             readView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            readView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(readView, Theme.key_windowBackgroundWhiteGrayText);
             readView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             if (LocaleController.isRTL) {
@@ -453,7 +479,7 @@ public class MessageSeenView extends FrameLayout {
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
             statusBadgeComponent.onAttachedToWindow();
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userEmojiStatusUpdated);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.userEmojiStatusUpdated);
         }
 
         @Override
@@ -461,6 +487,22 @@ public class MessageSeenView extends FrameLayout {
             super.onDetachedFromWindow();
             statusBadgeComponent.onDetachedFromWindow();
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.userEmojiStatusUpdated);
+        }
+    }
+
+    private int themedSelectorColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            final int selectorColor = Theme.getColor(Theme.key_dialogButtonSelector);
+            if (getBackground() != null && selectorColor != themedSelectorColor) {
+                themedSelectorColor = selectorColor;
+                Theme.setSelectorDrawableColor(getBackground(), selectorColor, true);
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

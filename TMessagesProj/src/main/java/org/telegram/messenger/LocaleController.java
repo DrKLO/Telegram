@@ -1638,6 +1638,12 @@ public class LocaleController {
             }
         } catch (Exception e) {
             FileLog.e(e);
+            if (res != 0) {
+                // a broken language pack string (bad placeholders): show the built-in one instead of LOC_ERR
+                try {
+                    return String.format(ApplicationLoader.applicationContext.getString(res), args);
+                } catch (Exception ignore) {}
+            }
             return "LOC_ERR: " + key;
         }
     }
@@ -1707,6 +1713,8 @@ public class LocaleController {
             } else {
                 return String.format("%s %s", LocaleController.formatPluralString("Weeks", days / 7), LocaleController.formatPluralString("Days", days % 7));
             }
+        } else if (ttl >= 60 * 60 * 24 * 365 && ttl % (60 * 60 * 24 * 365) == 0) {
+            return LocaleController.formatPluralString("Years", ttl / 60 / 60 / 24 / 365);
         } else {
             return LocaleController.formatPluralString("Months", ttl / 60 / 60 / 24 / 30);
         }

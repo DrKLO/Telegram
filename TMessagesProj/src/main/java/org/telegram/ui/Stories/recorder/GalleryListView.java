@@ -73,6 +73,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -401,7 +402,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
         searchEmptyView = new StickerEmptyView(context, flickerLoadingView, StickerEmptyView.STICKER_TYPE_ALBUM, resourcesProvider);
         searchEmptyView.title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        searchEmptyView.title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        ThemeBind.textColor(searchEmptyView.title, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         searchEmptyView.title.setTypeface(null);
         searchEmptyView.title.setText(getString(R.string.SearchImagesType));
         keyboardNotifier = new KeyboardNotifier(this, h -> searchEmptyView.animate().translationY(-h / 2f + dp(80)).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start());
@@ -536,7 +537,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
             buttonsLayout = new LinearLayout(context);
             buttonsLayout.setOrientation(LinearLayout.VERTICAL);
-            buttonsLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            ThemeBind.backgroundColor(buttonsLayout, Theme.key_dialogBackground, resourcesProvider);
             buttonsLayout.setPadding(dp(10), dp(10), dp(10), dp(AndroidUtilities.navigationBarHeight > 0 ? 0 : 10) + AndroidUtilities.navigationBarHeight);
             addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
             buttonsLayout.setAlpha(0.0f);
@@ -574,7 +575,7 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
             selectButton = new ImageView(context);
             selectButton.setScaleType(ImageView.ScaleType.CENTER);
             selectButton.setImageResource(R.drawable.floating_check);
-            selectButton.setBackground(Theme.createCircleDrawable(dp(56), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+            ThemeBind.fillBackground(selectButton, Theme.createCircleDrawable(dp(56), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
             ScaleStateListAnimator.apply(selectButton, 0.1f, 1.5f);
             addView(selectButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 14, 14));
             selectButton.setOnClickListener(v -> selectMultiple(false));
@@ -1759,8 +1760,8 @@ public class GalleryListView extends FrameLayout implements NotificationCenter.N
 
     @Override
     protected void onAttachedToWindow() {
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.albumsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesDraftsUpdated);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.albumsDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesDraftsUpdated);
         super.onAttachedToWindow();
     }
 

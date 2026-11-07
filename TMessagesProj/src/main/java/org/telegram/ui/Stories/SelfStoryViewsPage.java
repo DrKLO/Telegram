@@ -53,6 +53,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.FixedHeightEmptyCell;
 import org.telegram.ui.Cells.ReactedUserHolderView;
 import org.telegram.ui.ChatActivity;
@@ -88,7 +89,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Objects;
 
-public class SelfStoryViewsPage extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class SelfStoryViewsPage extends FrameLayout implements Theme.Colorable, NotificationCenter.NotificationCenterDelegate {
 
     private final View shadowView;
     private final View shadowView2;
@@ -183,7 +184,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         currentAccount = storyViewer.currentAccount;
 
         titleView = new TextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
@@ -439,11 +440,11 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
         topViewsContainer = new FrameLayout(getContext());
         shadowView = new View(getContext());
-        shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Color.TRANSPARENT}));
+        shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{shadowViewColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider), Color.TRANSPARENT}));
         topViewsContainer.addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8, 0, 0, TOP_PADDING - 8, 0, 0));
 
         shadowView2 = new View(getContext());
-        shadowView2.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        ThemeBind.backgroundColor(shadowView2, Theme.key_dialogBackground, resourcesProvider);
         topViewsContainer.addView(shadowView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 10, 0, 0, TOP_PADDING - 17, 0, 0));
 
         topViewsContainer.addView(headerView);
@@ -698,8 +699,8 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             currentModel.animateDateForUsers.clear();
         }
         listAdapter.updateRows();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesBlocklistUpdate);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesBlocklistUpdate);
         Bulletin.addDelegate(this, new Bulletin.Delegate() {
             @Override
             public int getBottomOffset(int tag) {
@@ -914,8 +915,8 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 case SUBSCRIBE_TO_PREMIUM_TEXT_HINT:
                     LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-                    textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
-                    textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+                    ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+                    ThemeBind.linkTextColor(textView, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
                     int padding = AndroidUtilities.dp(16);
                     int paddingHorizontal = AndroidUtilities.dp(21);
                     textView.setPadding(paddingHorizontal, padding, paddingHorizontal, padding);
@@ -1531,14 +1532,14 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
             allViewersView = new TextView(context);
             allViewersView.setText(LocaleController.getString(R.string.AllViewers));
-            allViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(allViewersView, Theme.key_dialogTextBlack, resourcesProvider);
             allViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             allViewersView.setTypeface(AndroidUtilities.bold());
             allViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
 
             contactsViewersView = new TextView(context);
             contactsViewersView.setText(LocaleController.getString(R.string.Contacts));
-            contactsViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(contactsViewersView, Theme.key_dialogTextBlack, resourcesProvider);
             contactsViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             contactsViewersView.setTypeface(AndroidUtilities.bold());
             contactsViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
@@ -1549,7 +1550,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
 
             buttonContainer = new LinearLayout(getContext());
             buttonContainer.setPadding(AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6), 0);
-            buttonContainer.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(26), Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+            ThemeBind.fillBackground(buttonContainer, Theme.createRoundRectDrawable(AndroidUtilities.dp(26), Theme.getColor(Theme.key_listSelector, resourcesProvider)), ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             buttonContainer.setOrientation(LinearLayout.HORIZONTAL);
             replacableDrawable = new ReplaceableIconDrawable(getContext());
             replacableDrawable.exactlyBounds = true;
@@ -1773,6 +1774,22 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         public void updateClip(int[] clip) {
             clip[0] = AndroidUtilities.dp(TOP_PADDING);
             clip[1] = getMeasuredHeight();
+        }
+    }
+
+    private int shadowViewColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            final int shadowColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+            if (shadowView != null && shadowColor != shadowViewColor) {
+                shadowViewColor = shadowColor;
+                shadowView.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{shadowColor, Color.TRANSPARENT}));
+                invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

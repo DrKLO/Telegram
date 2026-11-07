@@ -73,6 +73,7 @@ import org.telegram.tgnet.tl.TL_update;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
@@ -599,7 +600,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    private static DispatchQueue mediaSendQueue = new DispatchQueue("mediaSendQueue");
+    private static DispatchQueue2 mediaSendQueue = new DispatchQueue2("mediaSendQueue");
     private static ThreadPoolExecutor mediaSendThreadPool;
 
     static {
@@ -2398,7 +2399,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
 
                 final TLRPC.Message newMsg = new TLRPC.TL_message();
-                if (!forwardFromMyName) {
+                // A widget always keeps who it is from: the server ignores drop_author for it (widget-sandbox
+                // docs/sdk-v1.md §5.11, "Forwards").
+                if (!forwardFromMyName || msgObj.messageOwner.media instanceof TLRPC.TL_messageMediaWidget) {
                     boolean forwardFromSaved = msgObj.getDialogId() == myId && msgObj.isFromUser() && msgObj.messageOwner.from_id.user_id == myId;
                     if (msgObj.isForwarded()) {
                         newMsg.fwd_from = new TLRPC.TL_messageFwdHeader();
@@ -2480,6 +2483,19 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
                 if (!canSendPreview && msgObj.messageOwner.media instanceof TLRPC.TL_messageMediaWebPage) {
                     newMsg.media = new TLRPC.TL_messageMediaEmpty();
+                } else if (msgObj.messageOwner.media instanceof TLRPC.TL_messageMediaWidget) {
+                    // The local copy of a forwarded widget is a copy: no chat state, no requests until the server's
+                    // message brings its own flags.
+                    TLRPC.TL_messageMediaWidget original = (TLRPC.TL_messageMediaWidget) msgObj.messageOwner.media;
+                    TLRPC.TL_messageMediaWidget copy = new TLRPC.TL_messageMediaWidget();
+                    copy.is_copy = true;
+                    copy.width = original.width;
+                    copy.height = original.height;
+                    copy.payload = original.payload;
+                    copy.public_data = original.public_data;
+                    copy.public_data_hash = original.public_data_hash;
+                    copy.widget_id = original.widget_id;
+                    newMsg.media = copy;
                 } else {
                     newMsg.media = msgObj.messageOwner.media;
                 }
@@ -4206,7 +4222,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     builder.setView(linearLayout);
 
                     TextView messageTextView = new TextView(parentFragment.getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BotOwnershipTransferAlertText", R.string.BotOwnershipTransferAlertText)));
@@ -4219,10 +4235,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     ImageView dotImageView = new ImageView(parentFragment.getParentActivity());
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(parentFragment.getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
@@ -4241,10 +4257,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     dotImageView = new ImageView(parentFragment.getParentActivity());
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(parentFragment.getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
@@ -4261,7 +4277,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     } else {
                         messageTextView = new TextView(parentFragment.getParentActivity());
-                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                         messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));
@@ -8649,6 +8665,11 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             TLObject photoObject = null;
             if (newMsg.media.storyItem != null) {
                 sentMessage.media = newMsg.media;
+            } else if (newMsg.media instanceof TLRPC.TL_messageMediaWidget) {
+                // The server's flags and state (can_query, widget_id, …): the local copy has none of its own.
+                if (sentMedia instanceof TLRPC.TL_messageMediaWidget) {
+                    newMsg.media = sentMedia;
+                }
             } else if (newMsgObj.isLiveLocation() && sentMessage.media instanceof TLRPC.TL_messageMediaGeoLive) {
                 newMsg.media.period = sentMessage.media.period;
             } else if (newMsgObj.isDice()) {
@@ -9739,10 +9760,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
     @UiThread
     public static void prepareSendingArticle(AccountInstance accountInstance, ArrayList<TL_iv.PageBlock> blocks, boolean rtl, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, SendMessageChatArguments sendMessageChatArguments, long effectId, long monoForumPeerId, long payStars) {
-        prepareSendingArticle(accountInstance, blocks, null, null, null, rtl, dialogId, replyToMsg, replyToTopMsg, notify, scheduleDate, scheduleRepeatPeriod, sendMessageChatArguments, effectId, monoForumPeerId, payStars);
+        prepareSendingArticle(accountInstance, blocks, null, null, null, rtl, dialogId, replyToMsg, replyToTopMsg, null, notify, scheduleDate, scheduleRepeatPeriod, sendMessageChatArguments, effectId, monoForumPeerId, payStars);
     }
 
-    public static void prepareSendingArticle(AccountInstance accountInstance, ArrayList<TL_iv.PageBlock> blocks, ArrayList<TLRPC.Photo> photos, ArrayList<TLRPC.Document> documents, ArrayList<TLRPC.InputUser> users, boolean rtl, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, boolean notify, int scheduleDate, int scheduleRepeatPeriod, SendMessageChatArguments sendMessageChatArguments, long effectId, long monoForumPeerId, long payStars) {
+    public static void prepareSendingArticle(AccountInstance accountInstance, ArrayList<TL_iv.PageBlock> blocks, ArrayList<TLRPC.Photo> photos, ArrayList<TLRPC.Document> documents, ArrayList<TLRPC.InputUser> users, boolean rtl, long dialogId, MessageObject replyToMsg, MessageObject replyToTopMsg, ChatActivity.ReplyQuote quote, boolean notify, int scheduleDate, int scheduleRepeatPeriod, SendMessageChatArguments sendMessageChatArguments, long effectId, long monoForumPeerId, long payStars) {
         if (blocks == null || blocks.isEmpty()) {
             return;
         }
@@ -9769,6 +9790,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         SendMessageParams params = SendMessageParams.ofRichMessage(rich, dialogId, replyToMsg, replyToTopMsg, null, null, notify, scheduleDate, scheduleRepeatPeriod);
         params.richMessageInputUsers = users;
+        params.replyQuote = quote;
         params.sendMessageChatArguments = sendMessageChatArguments;
         params.effect_id = effectId;
         params.monoForumPeer = monoForumPeerId;
@@ -10553,6 +10575,28 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             accountInstance.getSendMessagesHelper().sendMessage(params2);
         } else if (result.send_message instanceof TLRPC.TL_botInlineMessageRichMessage) {
             final SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.ofRichMessage(result.send_message.rich_message, dialogId, replyToMsg, replyToTopMsg, result.send_message.reply_markup, params, notify, scheduleDate, scheduleRepeatPeriod);
+            params2.sendMessageChatArguments = sendMessageChatArguments;
+            params2.replyQuote = quote;
+            params2.payStars = stars;
+            params2.monoForumPeer = monoForumPeerId;
+            accountInstance.getSendMessagesHelper().sendMessage(params2);
+        } else if (result.send_message instanceof TLRPC.TL_botInlineMessageWidget) {
+            // A widget result (widget-sandbox docs/sdk-v1.md §5.11): the local copy shows the widget with the result's
+            // state and no flags until the server's message, with its own flags, replaces it.
+            TLRPC.TL_botInlineMessageWidget inline = (TLRPC.TL_botInlineMessageWidget) result.send_message;
+            TLRPC.TL_messageMediaWidget widget = new TLRPC.TL_messageMediaWidget();
+            widget.width = inline.width;
+            widget.height = inline.height;
+            widget.payload = inline.payload;
+            widget.public_data = inline.public_data;
+            widget.public_data_hash = inline.public_data_hash;
+            widget.chat_data = inline.chat_data;
+            widget.widget_id = inline.widget_id;
+            final SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(widget, dialogId, replyToMsg, replyToTopMsg, result.send_message.reply_markup, params, notify, scheduleDate, scheduleRepeatPeriod);
+            // The result's caption goes with the widget.
+            params2.caption = inline.message;
+            params2.entities = inline.entities;
+            params2.invert_media = inline.invert_media;
             params2.sendMessageChatArguments = sendMessageChatArguments;
             params2.replyQuote = quote;
             params2.payStars = stars;

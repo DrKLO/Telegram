@@ -1,0 +1,42 @@
+<!--
+  safe-area: one widget posted three times: without a caption, with one below it, with one above it (corpus/safe-area/README.md)
+  caption: none, below, above
+  idea: a parcel tracker posted three times. Without a caption, your time sits over its bottom corner and the widget reserves the band and the corner (its last row ends beside the time). With the caption below the widget, the time goes into the caption's line, every value is 0 and the row runs to the edge. With the caption above the widget (invert_media), the time is over the corner again, as without a caption. Compare the three posts: the same file, laid out by what your client passed.
+-->
+<title>Parcel on its way</title>
+<style>
+  body { margin: 0; padding: 12px 14px 0 }
+  .an { margin: 0 0 10px; padding: 6px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; background: var(--tg-theme-secondary-bg-color); color: var(--tg-theme-hint-color) }
+  .an b { color: var(--tg-theme-text-color) }
+  h2 { margin: 0 0 2px; font-size: 17px }
+  .sub { font-size: 13px; color: var(--tg-theme-hint-color) }
+  .bar { display: flex; gap: 4px; margin: 12px 0 6px }
+  .bar i { flex: 1; height: 6px; border-radius: 3px; background: var(--tg-theme-secondary-bg-color) }
+  .bar i.on { background: var(--tg-theme-button-color) }
+  .steps { display: flex; justify-content: space-between; font-size: 11px; color: var(--tg-theme-hint-color) }
+  /* The last row: into the band, out of the corner; with a caption below both are 0 and it runs to the edges. The plain
+     padding first: a client older than v0.4.0 drops a declaration with env() whole. */
+  .row { display: flex; align-items: center; gap: 8px; margin: 12px -14px 0; padding: 8px 14px; padding: 8px max(14px, var(--tg-content-safe-area-corner-right, 0px)) max(8px, calc(env(safe-area-inset-bottom) - 18px)) max(14px, var(--tg-content-safe-area-corner-left, 0px)); border-top: 1px solid var(--tg-theme-section-separator-color); font-size: 13px }
+  .row b { flex: 1 }
+  .row span { color: var(--tg-theme-link-color) }
+  #m { font-weight: 600 }
+</style>
+<div class="an"><b>Posted three times.</b> <span id="m"></span></div>
+<h2>Parcel on its way</h2>
+<div class="sub">From Lisbon · arrives Friday 14:00–16:00</div>
+<div class="bar"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+<div class="steps"><span>Packed</span><span>Sent</span><span>In your city</span><span>Delivered</span></div>
+<div class="row"><b>Courier: Marta</b><span>LX-4821-PT</span></div>
+<script>
+  var TW = window.TelegramWidget;
+  function bottom() {
+    if (TW && TW.contentSafeAreaInset) return TW.contentSafeAreaInset.bottom;
+    return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tg-content-safe-area-inset-bottom')) || 0;
+  }
+  function show() {
+    var b = bottom();
+    document.getElementById('m').textContent = b ? 'No caption below (none, or one above): a ' + b + ' px band, your time over the corner.' : 'A caption below: the time is in its line, every value 0.';
+  }
+  if (TW && TW.onEvent) TW.onEvent('contentSafeAreaChanged', show);
+  show();
+</script>

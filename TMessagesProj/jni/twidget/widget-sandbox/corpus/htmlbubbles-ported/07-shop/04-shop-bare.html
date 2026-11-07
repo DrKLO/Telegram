@@ -1,0 +1,423 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 07-shop.chat, message 4
+  author: shop 14:03 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; } .center { text-align: center; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); } .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .bar { height: 8px; border-radius: 4px; background-color: rgba(127,127,127,0.22); }
+  .bar > div { height: 8px; border-radius: 4px; background-color: var(--blue); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  [data-action] { cursor: pointer; }
+  svg { vertical-align: middle; }
+  [hidden] { display: none !important; }
+
+  .pd { width: 480px; max-width: 100%; box-sizing: border-box; }
+  .pd .hero { position: relative; height: 210px; overflow: hidden; border-radius: 13px 13px 0 0; }
+  /* car.x → translateX of the track, 480 ms outCubic */
+  .pd .track { position: absolute; left: 0; top: 0; width: 100%; height: 210px; transition: transform 480ms cubic-bezier(.33,1,.68,1); }
+  .pd .slide { position: absolute; top: 0; width: 100%; height: 210px; overflow: hidden; }
+  /* paint.k: every tone-dependent colour transitions over 650 ms inOutCubic */
+  .pd .studio { height: 210px; overflow: hidden; text-align: center; background-color: var(--c); background-image: linear-gradient(165deg, rgba(255,255,255,0.9), rgba(255,255,255,0.62)); transition: background-color 650ms cubic-bezier(.65,0,.35,1); }
+  .pd .studio.pk { background-image: linear-gradient(165deg, #f5f5f7, rgba(255,255,255,0.75)); }
+  .pd .jk { display: block; margin: 20px auto 0 auto; animation: drop 750ms cubic-bezier(.33,1,.68,1) 250ms both; }
+  @keyframes drop { 0% { transform: translateY(-46px); } 65% { transform: translateY(5px); } 100% { transform: translateY(0); } }
+  .pd .c { fill: var(--c); } .pd .d { fill: var(--d); } .pd .l { fill: var(--l); } .pd .z { fill: var(--z); } .pd .zs { stroke: var(--z); } .pd .ds { stroke: var(--d); }
+  .pd .c, .pd .d, .pd .l, .pd .z, .pd .zs, .pd .ds { transition: fill 650ms cubic-bezier(.65,0,.35,1), stroke 650ms cubic-bezier(.65,0,.35,1); }
+  .pd .ph { width: 100%; height: 210px; background-size: cover; background-position: center; }
+  .pd .ph.forest { background-image: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.28), transparent 55%), linear-gradient(160deg, #1b4332 0%, #2d6a4f 45%, #52b788 100%); }
+  .pd .ph.dunes { background-image: radial-gradient(ellipse at 70% 15%, rgba(255,255,255,0.45), transparent 50%), linear-gradient(170deg, #f6d5a2 0%, #e0a96d 55%, #b86f3a 100%); }
+  .pd .ph.ocean { background-image: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.35), transparent 50%), linear-gradient(175deg, #a8dadc 0%, #457b9d 50%, #1d3557 100%); }
+  .pd .wipe { position: absolute; left: 0; top: 0; height: 210px; overflow: hidden; width: 0; animation: wipe 650ms cubic-bezier(.65,0,.35,1) forwards; }
+  .pd .wipe .ph { width: 100%; }
+  @keyframes wipe { from { width: 0; } to { width: 100%; } }
+  .pd .pk { display: flex; align-items: center; justify-content: center; text-align: left; }
+  .pd .pkt { margin-left: 14px; font-size: 13px; color: #3a3a3c; }
+  .pd .pkt .big { font-size: 30px; font-weight: 800; color: #1c1c1e; }
+  .pd .ret { position: absolute; left: 12px; top: 12px; color: #ffffff; background-color: var(--c); transition: background-color 650ms cubic-bezier(.65,0,.35,1); }
+  .pd .bagb { position: absolute; right: 12px; top: 9px; height: 28px; line-height: 28px; padding: 0 11px; border-radius: 14px; font-weight: 800; font-size: 13px; color: #1c1c1e; background-color: rgba(255,255,255,0.82); }
+  .pd .bagb:hover { background-color: #ffffff; }
+  .pd .nav { position: absolute; top: 89px; width: 32px; height: 32px; line-height: 30px; border-radius: 16px; text-align: center; font-size: 22px; font-weight: 700; color: #ffffff; background-color: rgba(0,0,0,0.22); }
+  .pd .nav:hover { background-color: rgba(0,0,0,0.48); }
+  .pd .nav.l { left: 10px; } .pd .nav.r { right: 10px; }
+  .pd .cap { position: absolute; left: 12px; bottom: 11px; padding: 2px 9px; border-radius: 9px; font-size: 11px; font-weight: 700; color: #ffffff; background-color: rgba(0,0,0,0.38); }
+  .pd .dots { position: absolute; right: 12px; bottom: 15px; height: 7px; line-height: 7px; }
+  .pd .dot { display: inline-block; width: 7px; height: 7px; border-radius: 4px; margin-left: 5px; background-color: rgba(255,255,255,0.6); transition: width 480ms cubic-bezier(.33,1,.68,1); }
+  .pd .dot.on { width: 19px; }
+  .pd .dot:hover { background-color: #ffffff; }
+  .pd .pr { line-height: 24px; font-size: 18px; display: inline-block; }
+  .pd .lbl { margin-top: 12px; }
+  .pd .opts { margin-top: 5px; }
+  .pd .sw { display: inline-block; width: 30px; height: 30px; border-radius: 17px; margin-right: 8px; border: 2px solid transparent; }
+  .pd .sw:hover { border-color: rgba(127,127,127,0.5); }
+  .pd .sw.sel { border-color: var(--c); transition: border-color 650ms cubic-bezier(.65,0,.35,1); }
+  .pd .sw span { display: block; width: 24px; height: 24px; margin: 3px; border-radius: 12px; }
+  .pd .size { display: inline-block; position: relative; width: 48px; height: 18px; line-height: 18px; padding: 6px 0; margin-right: 6px; text-align: center; border-radius: 9px; border: 1px solid rgba(127,127,127,0.35); font-weight: 600; font-size: 13px; }
+  .pd .size > span:first-child { display: inline-block; }
+  .pd .size:hover { border-color: #34c759; }
+  .pd .size.sel { background-color: light-dark(#1c1c1e, #f2f2f7); color: light-dark(#ffffff, #1c1c1e); border-color: light-dark(#1c1c1e, #f2f2f7); }
+  .pd .size.out { color: rgba(142,142,147,0.8); text-decoration: line-through; border-style: dashed; }
+  .pd .size.out.sel { background-color: light-dark(rgba(255,59,48,0.12), rgba(255,69,58,0.2)); color: light-dark(#ff3b30, #ff453a); border-color: light-dark(#ff3b30, #ff453a); }
+  .pd .size .lo { position: absolute; right: 5px; top: 5px; width: 6px; height: 6px; border-radius: 3px; background-color: #ff9500; }
+  .pd .stock { margin-top: 7px; }
+  .pd .buy { margin-top: 12px; }
+  .pd .qty { display: flex; align-items: center; margin-right: 10px; border-radius: 10px; background-color: rgba(127,127,127,0.12); }
+  .pd .qty button { width: 34px; padding: 8px 0; font-size: 17px; line-height: 20px; background-color: transparent; }
+  .pd .qty button:hover { background-color: rgba(127,127,127,0.2); }
+  .pd .qty button.dim { color: rgba(142,142,147,0.6); }
+  .pd .qn { width: 26px; text-align: center; font-weight: 700; line-height: 20px; font-size: 15px; }
+  .pd .addb { padding: 8px 0; line-height: 20px; font-size: 14px; }
+  .pd .addb.ok { background-color: rgba(52,199,89,0.18); color: light-dark(#248a3d, #30d158); }
+  .pd .toast { margin-top: 10px; padding: 9px 10px 8px 10px; border-radius: 11px; background-color: rgba(52,199,89,0.12); }
+  .pd .toast button { padding: 4px 10px; font-size: 12px; }
+  .pd .toast svg { margin-right: 8px; flex-shrink: 0; }
+  .pd .tbar { height: 3px; margin-top: 8px; border-radius: 2px; background-color: rgba(52,199,89,0.18); }
+  .pd .tbar div { height: 3px; border-radius: 2px; background-color: #34c759; width: 100%; }
+  .pd .tbar div.run { width: 0; transition: width 5000ms linear; }
+  .pd .bagp { margin-top: 10px; padding: 10px 12px; border-radius: 11px; background-color: rgba(127,127,127,0.10); }
+  .pd .bagp .bar > div { transition: width 600ms cubic-bezier(.33,1,.68,1); }
+  .pd .bl { display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(127,127,127,0.18); font-size: 13px; }
+  .pd .swd { width: 12px; height: 12px; border-radius: 6px; margin-right: 8px; }
+  .pd .rm { width: 22px; height: 22px; line-height: 22px; margin-left: 8px; border-radius: 11px; text-align: center; font-size: 11px; color: #8e8e93; }
+  .pd .rm:hover { background-color: rgba(255,59,48,0.14); color: #ff3b30; }
+  .pd .feats { margin-top: 12px; }
+  .pd .fr { height: 21px; overflow: hidden; white-space: nowrap; font-size: 13px; }
+  .pd .fr div { position: relative; animation: featin 320ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes featin { from { transform: translateX(440px); } to { transform: translateX(0); } }
+  .pd .fr svg { margin-right: 6px; }
+  /* bump(): outBack pops of the original (from → 1) */
+  @keyframes pop118 { 0% { transform: scale(1.18); } 60% { transform: scale(0.97); } 100% { transform: scale(1); } }
+  @keyframes pop125 { 0% { transform: scale(1.25); } 60% { transform: scale(0.96); } 100% { transform: scale(1); } }
+  @keyframes pop130 { 0% { transform: scale(1.3); } 60% { transform: scale(0.95); } 100% { transform: scale(1); } }
+  @keyframes pop140 { 0% { transform: scale(1.4); } 60% { transform: scale(0.94); } 100% { transform: scale(1); } }
+  @keyframes pop170 { 0% { transform: scale(1.7); } 60% { transform: scale(0.9); } 100% { transform: scale(1); } }
+  @keyframes pop075 { 0% { transform: scale(0.75); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+  @keyframes pop050 { 0% { transform: scale(0.5); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+  .pd .pr.pop { animation: pop118 420ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .addb.pop { animation: pop125 380ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .size span.pop { animation: pop130 360ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .qn.up { animation: pop140 380ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .qn.down { animation: pop075 320ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .bagb.up { animation: pop170 480ms cubic-bezier(.33,1,.68,1) both; }
+  .pd .bagb.down { animation: pop050 420ms cubic-bezier(.33,1,.68,1) both; }
+  /* transition('fade') / transition('pop') on the bubble */
+  @keyframes fade { from { opacity: 0.25; } to { opacity: 1; } }
+  @keyframes bpop { from { opacity: 0.4; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .pd.fx-fade, .pd.fx-fade2 { animation: fade 220ms ease-out; }
+  .pd.fx-pop, .pd.fx-pop2 { animation: bpop 260ms cubic-bezier(.33,1,.68,1); }
+</style>
+<div class="card pd" id="root">
+  <div class="hero">
+    <div class="track" id="track">
+      <div class="slide" style="left: 0%"><div class="studio">
+        <svg class="jk" width="176" height="176" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="100" cy="191" rx="62" ry="6" fill="#000000" fill-opacity="0.13"/>
+          <path class="d" d="M66 50 C50 54 40 62 36 76 L22 146 C21 152 25 156 31 156 L41 156 C45 156 48 153 49 149 L60 100 Z"/>
+          <path class="d" d="M134 50 C150 54 160 62 164 76 L178 146 C179 152 175 156 169 156 L159 156 C155 156 152 153 151 149 L140 100 Z"/>
+          <rect class="z" x="22" y="146" width="27" height="10" rx="4"/><rect class="z" x="151" y="146" width="27" height="10" rx="4"/>
+          <path class="c" d="M66 48 C80 42 120 42 134 48 L146 92 L148 174 C148 180 144 184 138 184 L62 184 C56 184 52 180 52 174 L54 92 Z"/>
+          <path class="l" d="M66 48 C80 42 100 42 100 42 L100 184 L62 184 C56 184 52 180 52 174 L54 92 Z"/>
+          <path class="d" d="M68 54 C66 30 80 14 100 14 C120 14 134 30 132 54 C120 60 80 60 68 54 Z"/>
+          <path class="z" d="M80 52 C80 36 88 26 100 26 C112 26 120 36 120 52 C110 56 90 56 80 52 Z"/>
+          <path class="zs" d="M100 57 L100 184" stroke-width="3" fill="none"/>
+          <rect x="97" y="62" width="6" height="13" rx="2" fill="#d1d1d6"/>
+          <path class="zs" d="M112 84 L132 80 M64 134 L84 141 M136 134 L116 141" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <path d="M92 57 L90 76 M108 57 L110 76" stroke="#f2f2f7" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <circle cx="90" cy="77" r="2.5" fill="#f2f2f7"/><circle cx="110" cy="77" r="2.5" fill="#f2f2f7"/>
+          <circle cx="75" cy="82" r="4" fill="#ffffff" fill-opacity="0.75"/>
+        </svg></div></div>
+      <div class="slide" id="slide1" style="left: 100%"><div class="ph forest" id="ph"></div></div>
+      <div class="slide" style="left: 200%"><div class="studio pk">
+        <svg width="150" height="150" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="100" cy="186" rx="52" ry="6" fill="#000000" fill-opacity="0.13"/>
+          <path class="c" d="M60 72 C60 62 68 58 78 58 L122 58 C132 58 140 62 140 72 L146 166 C146 174 140 180 132 180 L68 180 C60 180 54 174 54 166 Z"/>
+          <path class="l" d="M60 72 C60 62 68 58 78 58 L100 58 L100 180 L68 180 C60 180 54 174 54 166 Z"/>
+          <rect class="d" x="58" y="58" width="84" height="14" rx="7"/>
+          <path class="zs" d="M84 60 C84 40 116 40 116 60" stroke-width="3" fill="none"/>
+          <rect x="94" y="36" width="12" height="14" rx="4" fill="#d1d1d6"/>
+          <path d="M66 120 L134 120" class="ds" stroke-width="2" stroke-dasharray="5 4" fill="none"/>
+          <circle cx="100" cy="146" r="9" fill="#ffffff" fill-opacity="0.75"/>
+        </svg>
+        <div class="pkt"><div class="big">310 g</div>Stuffs into its own<br>chest pocket</div></div></div>
+    </div>
+    <span class="badge ret">FREE RETURNS</span>
+    <span class="bagb" data-action="bag" id="bagb">🛍 <span id="bagn"></span></span>
+    <span class="nav l" data-action="slide" data-value="prev">‹</span><span class="nav r" data-action="slide" data-value="next">›</span>
+    <span class="cap" id="cap">Studio</span><span class="dots" id="dots"></span>
+  </div>
+  <div class="pad">
+    <div class="row"><b class="grow" style="font-size: 18px">Trailhead Rain Jacket</b><b class="pr" id="price">€0</b></div>
+    <div class="row small muted" style="margin-top: 2px"><span class="grow"><span class="t-orange">★★★★★</span> 4.9 · 218 reviews</span><span id="qnote">Free returns · 60 days</span></div>
+    <div class="caps lbl">Colour: <span class="fg" id="colname">Forest</span></div>
+    <div class="opts" id="swatches"></div>
+    <div class="row lbl"><span class="caps grow">Size: <span class="fg" id="sizename">M</span></span><span class="tiny muted">Runs large · between sizes, size down</span></div>
+    <div class="opts" id="sizes"></div>
+    <div class="small stock" id="stock"></div>
+    <div class="row buy">
+      <div class="qty"><button id="qminus" data-action="qty" data-value="-1">−</button><span class="qn" id="qn">1</span><button id="qplus" data-action="qty" data-value="1">+</button></div>
+      <button class="primary grow addb" id="buy" data-action="add">Add to bag · €0</button>
+    </div>
+    <div class="toast" id="toast" hidden>
+      <div class="row"><span id="toastico"></span>
+        <div class="grow"><b>Added to bag</b><div class="tiny muted" id="toasttxt"></div></div>
+        <button data-action="undo">Undo</button><button data-action="bag" id="toastbag" style="margin-left: 6px">View bag</button></div>
+      <div class="tbar"><div id="tbar"></div></div>
+    </div>
+    <div class="bagp" id="bagp" hidden>
+      <div class="row between"><b>🛍 Your bag</b><span class="small muted" id="bagcount">0 items</span></div>
+      <div id="baglines"></div>
+      <div class="small" style="margin-top: 8px" id="need"></div>
+      <div class="bar" style="margin: 5px 0 8px 0"><div id="shipbar" style="width: 0%; background-color: #ff9500"></div></div>
+      <div class="row"><span class="grow">Subtotal <b id="subv">€0.00</b></span><button class="primary" data-action="checkout" id="checkout">Checkout</button></div>
+    </div>
+    <div class="bagp center" id="placed" hidden>
+      <div style="font-size: 30px">🎉</div><b>Order placed</b>
+      <div class="small muted" id="placedtxt"></div>
+      <button class="primary" data-action="done" style="margin-top: 8px">Done</button>
+    </div>
+    <div class="feats" id="feats"></div>
+  </div>
+</div>
+<script>
+const COLS = [
+  { id: 'green', name: 'Forest', hex: '#2d6a4f', photo: 'forest', where: 'Sintra, after the rain' },
+  { id: 'blue', name: 'Tide', hex: '#2a5298', photo: 'ocean', where: 'Atlantic coast' },
+  { id: 'sand', name: 'Dune', hex: '#e07b39', photo: 'dunes', where: 'Comporta dunes' },
+];
+const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+const STOCK = { green: [6, 2, 9, 4, 0], blue: [0, 7, 3, 0, 1], sand: [5, 1, 0, 6, 0] };
+const SLIDES = ['Studio', 'On location', 'Packs small'];
+const FEATS = [
+  ['drop.fill', '007aff', '20,000 mm waterproof, taped seams'],
+  ['wind', '8e8e93', 'Breathable 3-layer shell'],
+  ['leaf.fill', '34c759', '100% recycled face fabric'],
+  ['scalemass.fill', 'af52de', 'Packs into its own pocket · 310 g'],
+];
+const PRICE = 129, FREE_SHIP = 150, MAX_QTY = 5;
+
+let col = 0, size = 1, qty = 1, slide = 0, nextId = 1, bag = [], toast = null, toastRun = 0, bagOpen = false, placed = null;
+const notify = {};
+const price = { v: 0 }, sub = { v: 0 };
+
+const ICONS = {
+  'checkmark.circle.fill': '<circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  'drop.fill': '<path d="M12 2.5C12 2.5 5.5 10 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10 12 2.5 12 2.5Z"/>',
+  'wind': '<path d="M3 8h9a2.5 2.5 0 1 0-2.5-2.5M3 12h14a2.5 2.5 0 1 1-2.5 2.5M3 16h8a2 2 0 1 1-2 2" fill="none" stroke="COLOR" stroke-width="2" stroke-linecap="round"/>',
+  'leaf.fill': '<path d="M20.5 3.5C9 3.5 4 10 4 20c10 0 16.5-5 16.5-16.5Z"/><path d="M4 20c3-6 7-9.5 11-12" fill="none" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1.4"/>',
+  'scalemass.fill': '<path d="M9 2.5h6l1.2 5H7.8Z"/><path d="M5 8.5h14l2.2 11.3a1 1 0 0 1-1 1.2H3.8a1 1 0 0 1-1-1.2Z"/>',
+};
+const ico = (name, size, color) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#${color}">${ICONS[name].replace(/COLOR/g, '#' + color)}</svg>`;
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const $ = id => document.getElementById(id);
+const root = $('root');
+const rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a, b, t) => '#' + rgb(a).map((q, i) => Math.round(q + (rgb(b)[i] - q) * t).toString(16).padStart(2, '0')).join('');
+const shade = (c, t) => mix(c, '#000000', t);
+const tint = (c, t) => mix(c, '#ffffff', t);
+const stock = () => STOCK[COLS[col].id][size];
+const maxQty = () => Math.min(MAX_QTY, stock());
+const count = () => bag.reduce((s, l) => s + l.qty, 0);
+
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3) };
+const owners = new Map();
+function tween(target, props, duration, easing, onFrame) {
+  const token = {}, from = {}, to = {};
+  for (const key of Object.keys(props)) { from[key] = Number(target[key]) || 0; to[key] = Number(props[key]); owners.set(key, token); }
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / duration), p = easing(t);
+    for (const key in to) if (owners.get(key) === token) target[key] = t >= 1 ? to[key] : from[key] + (to[key] - from[key]) * p;
+    onFrame();
+    if (t < 1) requestAnimationFrame(step); else for (const key in to) if (owners.get(key) === token) owners.delete(key);
+  };
+  step();
+}
+function bubble(kind) { const a = root.classList.contains('fx-' + kind); root.classList.remove('fx-fade', 'fx-fade2', 'fx-pop', 'fx-pop2'); root.classList.add('fx-' + kind + (a ? '2' : '')); }
+root.addEventListener('animationend', e => { if (e.target === root) root.classList.remove('fx-fade', 'fx-fade2', 'fx-pop', 'fx-pop2'); });
+function pop(el, cls, ...others) { el.classList.remove(cls, ...others); void el.offsetWidth; el.classList.add(cls); }
+
+// --- tone (paint.k is a CSS transition on the --c/--d/--l/--z fills) ---
+function paintTone() {
+  const c = COLS[col].hex;
+  root.style.setProperty('--c', c); root.style.setProperty('--d', shade(c, 0.28)); root.style.setProperty('--l', tint(c, 0.16)); root.style.setProperty('--z', shade(c, 0.55));
+}
+function swapPhoto(prev, next) {
+  for (const w of $('slide1').querySelectorAll('.wipe')) w.remove();
+  if (prev === next) return;
+  const w = document.createElement('div');
+  w.className = 'wipe';
+  w.innerHTML = `<div class="ph ${next}"></div>`;
+  w.addEventListener('animationend', () => { $('ph').className = 'ph ' + next; w.remove(); });
+  $('slide1').appendChild(w);
+}
+
+// --- carousel ---
+$('dots').innerHTML = SLIDES.map((_, i) => `<span class="dot${i === 0 ? ' on' : ''}" data-action="slide" data-value="${i}"></span>`).join('');
+function paintSlide() {
+  $('track').style.transform = `translateX(${-slide * 100}%)`;
+  [...$('dots').children].forEach((d, i) => d.classList.toggle('on', i === slide));
+  $('cap').textContent = slide === 1 ? COLS[col].name + ' · ' + COLS[col].where : SLIDES[slide];
+}
+
+// --- options ---
+$('swatches').innerHTML = COLS.map((k, i) => `<span class="sw${i === col ? ' sel' : ''}" data-action="col" data-value="${i}"><span style="background-color: ${k.hex}"></span></span>`).join('');
+$('sizes').innerHTML = SIZES.map((s, i) => `<span class="size" data-action="size" data-value="${i}"><span>${s}</span><span class="lo" hidden></span></span>`).join('');
+function paintOptions() {
+  const c = COLS[col], st = stock(), sel = SIZES[size], key = c.id + sel;
+  $('colname').textContent = c.name; $('sizename').textContent = sel;
+  [...$('swatches').children].forEach((s, i) => s.classList.toggle('sel', i === col));
+  [...$('sizes').children].forEach((s, i) => {
+    const left = STOCK[c.id][i];
+    s.classList.toggle('sel', i === size); s.classList.toggle('out', left === 0);
+    s.lastElementChild.hidden = !(left > 0 && left <= 3);
+  });
+  $('stock').innerHTML = st === 0 ? `<span class="t-red">●</span> ${sel} is sold out in ${c.name}${notify[key] ? ' · we’ll email you when it’s back' : ''}`
+    : st <= 3 ? `<span class="t-orange">●</span> Only <b>${st}</b> left in ${c.name} · ${sel}`
+    : '<span class="t-green">●</span> In stock · ships in 1–2 days';
+  $('qminus').classList.toggle('dim', qty <= 1); $('qplus').classList.toggle('dim', qty >= maxQty());
+  $('qn').textContent = qty;
+  $('qnote').textContent = qty > 1 ? `${qty} × €${PRICE}` : 'Free returns · 60 days';
+  const buy = $('buy');
+  if (st === 0) {
+    buy.dataset.action = 'notify'; buy.classList.remove('primary'); buy.classList.toggle('ok', !!notify[key]);
+    buy.textContent = notify[key] ? '✓ We’ll email you' : '🔔 Notify me when it’s back';
+  } else {
+    buy.dataset.action = 'add'; buy.classList.add('primary'); buy.classList.remove('ok');
+    buy.textContent = `Add to bag · €${Math.round(price.v)}`;
+  }
+  $('cap').textContent = slide === 1 ? c.name + ' · ' + c.where : SLIDES[slide];
+}
+function paintPrice() { $('price').textContent = `€${Math.round(price.v)}`; if ($('buy').dataset.action === 'add') $('buy').textContent = `Add to bag · €${Math.round(price.v)}`; }
+function retarget() { tween(price, { v: PRICE * qty }, 450, ease.outCubic, paintPrice); pop($('price'), 'pop'); }
+function clampQty() { const m = Math.max(1, maxQty()); if (qty > m) { qty = m; retarget(); } }
+
+// --- bag ---
+function paintSub() {
+  $('subv').textContent = `€${sub.v.toFixed(2)}`;
+  const need = FREE_SHIP - sub.v;
+  $('need').innerHTML = need > 0.5 ? `Add <b>€${need.toFixed(0)}</b> more for free express shipping` : '✓ <b class="t-green">Free express shipping</b> unlocked';
+}
+function syncBag() {
+  const total = count() * PRICE, ship = Math.min(1, total / FREE_SHIP);
+  tween(sub, { v: total }, 600, ease.outCubic, paintSub);
+  $('shipbar').style.width = (ship * 100).toFixed(1) + '%';
+  $('shipbar').style.backgroundColor = ship >= 0.999 ? '#34c759' : '#ff9500';
+}
+function paintBag() {
+  const n = count();
+  $('bagn').textContent = n || '';
+  $('placed').hidden = !(bagOpen && placed);
+  $('bagp').hidden = !(bagOpen && !placed);
+  if (placed) $('placedtxt').textContent = `${placed.items} item${placed.items > 1 ? 's' : ''} · €${placed.total.toFixed(2)} · free express delivery`;
+  $('bagcount').textContent = `${n} item${n === 1 ? '' : 's'}`;
+  $('baglines').innerHTML = bag.map(l => `<div class="bl"><span class="swd" style="background-color: ${COLS[l.col].hex}"></span><span class="grow">Rain Jacket <span class="muted">· ${COLS[l.col].name} · ${SIZES[l.size]}</span></span><span class="muted" style="margin-right: 10px">${l.qty} × €${PRICE}</span><b>€${l.qty * PRICE}</b><span class="rm" data-action="remove" data-value="${l.id}">✕</span></div>`).join('')
+    || '<div class="small muted" style="padding: 8px 0">Your bag is empty</div>';
+  $('checkout').hidden = !n;
+  $('toastbag').hidden = bagOpen;
+}
+
+// --- toast (life.toast: 5 s linear bar, then the toast goes away) ---
+function showToast(line) {
+  const me = ++toastRun;
+  toast = line;
+  const t = $('toast'), bar = $('tbar');
+  t.hidden = false;
+  $('toasttxt').textContent = `${COLS[line.col].name} · ${SIZES[line.size]} · ${line.qty} × €${PRICE}`;
+  bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run');
+  setTimeout(() => { if (me !== toastRun) return; bubble('fade'); toast = null; t.hidden = true; }, 5000);
+}
+function hideToast() { toastRun++; toast = null; $('toast').hidden = true; }
+$('toastico').innerHTML = ico('checkmark.circle.fill', 18, '34c759');
+
+// --- features (intro.rows: slide in, row i at 250 + 180 + i × 110 ms) ---
+$('feats').innerHTML = FEATS.map(([icon, tintHex, text], i) => `<div class="fr"><div style="animation-delay: ${430 + i * 110}ms">${ico(icon, 13, tintHex)}${text}</div></div>`).join('');
+
+paintTone(); paintSlide(); paintOptions(); paintBag(); paintSub();
+setTimeout(() => tween(price, { v: PRICE * qty }, 700, ease.outCubic, paintPrice), 250);
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || !root.contains(el)) return;
+  const name = el.dataset.action, value = el.dataset.value, c = COLS[col];
+  if (name === 'col') {
+    const i = Number(value);
+    if (i === col) return;
+    const prev = c.photo;
+    col = i;
+    paintTone(); swapPhoto(prev, COLS[col].photo);
+    clampQty(); paintOptions();
+  } else if (name === 'size') {
+    size = Number(value);
+    clampQty(); paintOptions();
+    pop($('sizes').children[size].firstElementChild, 'pop');
+  } else if (name === 'qty') {
+    const n = clamp(qty + Number(value), 1, Math.max(1, maxQty()));
+    if (n === qty) return pop($('qn'), 'down', 'up');
+    qty = n;
+    pop($('qn'), 'up', 'down');
+    retarget(); paintOptions();
+  } else if (name === 'slide') {
+    slide = value === 'next' ? (slide + 1) % SLIDES.length : value === 'prev' ? (slide + SLIDES.length - 1) % SLIDES.length : Number(value);
+    paintSlide();
+  } else if (name === 'add') {
+    const left = stock();
+    if (!left) return;
+    const n = Math.min(qty, left);
+    STOCK[c.id][size] -= n;
+    const line = { id: nextId++, col, size, qty: n };
+    bag.push(line);
+    bubble('fade');
+    placed = null;
+    showToast(line);
+    pop($('bagb'), 'up', 'down');
+    clampQty(); syncBag(); paintOptions(); paintBag();
+  } else if (name === 'undo' || name === 'remove') {
+    const id = name === 'undo' ? (toast ? toast.id : -1) : Number(value);
+    const line = bag.find(l => l.id === id);
+    if (!line) return;
+    bag = bag.filter(l => l !== line);
+    STOCK[COLS[line.col].id][line.size] += line.qty;
+    bubble('fade');
+    if (toast && toast.id === id) hideToast();
+    pop($('bagb'), 'down', 'up');
+    syncBag(); paintOptions(); paintBag();
+  } else if (name === 'notify') {
+    const key = c.id + SIZES[size];
+    notify[key] = !notify[key];
+    paintOptions();
+    pop($('buy'), 'pop');
+  } else if (name === 'bag') {
+    bubble('fade');
+    bagOpen = !bagOpen;
+    if (!bagOpen) placed = null;
+    paintBag();
+  } else if (name === 'checkout') {
+    if (!bag.length) return;
+    bubble('pop');
+    placed = { items: count(), total: count() * PRICE };
+    bag = []; hideToast();
+    syncBag(); paintOptions(); paintBag();
+  } else if (name === 'done') {
+    bubble('fade');
+    placed = null; bagOpen = false;
+    paintBag();
+  }
+});
+</script>

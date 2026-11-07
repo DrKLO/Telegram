@@ -85,6 +85,7 @@ import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ArticleViewer;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
@@ -127,6 +128,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     public final static int FLAG_FROM_INLINE_SWITCH = 1;
     public final static int FLAG_FROM_SIDE_MENU = 2;
     private int lineColor;
+    private int themedLineColor; // last theme color assigned to lineColor (follows theme switches while unchanged)
 
     public static HashSet<BotWebViewSheet> activeSheets = new HashSet<>();
 
@@ -437,7 +439,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     public BotWebViewSheet(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context, R.style.TransparentDialog);
         this.resourcesProvider = resourcesProvider;
-        lineColor = Theme.getColor(Theme.key_sheet_scrollUp);
+        lineColor = themedLineColor = Theme.getColor(Theme.key_sheet_scrollUp);
 
         swipeContainer = new ChatAttachAlertBotWebViewLayout.WebViewSwipeContainer(context) {
             @Override
@@ -796,6 +798,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                                 webViewContainer.destroyWebView();
                                 NotificationCenter.getInstance(currentAccount).removeObserver(BotWebViewSheet.this, NotificationCenter.webViewResultSent);
                                 NotificationCenter.getGlobalInstance().removeObserver(BotWebViewSheet.this, NotificationCenter.didSetNewTheme);
+                                NotificationCenter.getInstance(currentAccount).removeObserver(BotWebViewSheet.this, NotificationCenter.botDownloadsUpdate);
                                 if (!superDismissed) {
                                     BotWebViewSheet.super.dismiss();
                                     superDismissed = true;
@@ -1062,6 +1065,57 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.parentActivity = parentActivity;
     }
 
+    private boolean themedNavBarColor = true;
+    private boolean hasThemedActionBarSignature;
+    private int themedActionBarSignature;
+
+    private void applyThemeColorsHook() {
+        try {
+            if (actionBar == null || windowView == null || webViewContainer == null || backgroundPaint == null) {
+                return;
+            }
+            if (!overrideActionBarColor) {
+                final int color = getColor(actionBarColorKey < 0 ? Theme.key_windowBackgroundWhite : actionBarColorKey);
+                if (color != actionBarColor) {
+                    final int oldColor = actionBarColor;
+                    actionBarColor = color;
+                    if (actionBar.getBackground() instanceof android.graphics.drawable.ColorDrawable && ((android.graphics.drawable.ColorDrawable) actionBar.getBackground()).getColor() == oldColor) {
+                        actionBar.setBackgroundColor(actionBarColor);
+                    }
+                }
+            }
+            if (themedNavBarColor && botButtons != null) {
+                final int color = getColor(Theme.key_windowBackgroundGray);
+                if (color != navBarColor) {
+                    setNavigationBarColor(color, false);
+                    themedNavBarColor = true;
+                }
+            }
+            if (lineColor == themedLineColor) {
+                lineColor = themedLineColor = Theme.getColor(Theme.key_sheet_scrollUp);
+            }
+            // re-apply the action bar colors only when one of them changed (the setters rebuild popup drawables)
+            int signature = backgroundPaint.getColor();
+            if (!overrideActionBarColor) {
+                signature = 31 * signature + getColor(Theme.key_windowBackgroundWhiteBlackText);
+                signature = 31 * signature + getColor(Theme.key_actionBarWhiteSelector);
+                signature = 31 * signature + getColor(Theme.key_actionBarDefaultSubmenuBackground);
+                signature = 31 * signature + getColor(Theme.key_actionBarDefaultSubmenuItem);
+                signature = 31 * signature + getColor(Theme.key_actionBarDefaultSubmenuItemIcon);
+                signature = 31 * signature + getColor(Theme.key_dialogButtonSelector);
+            }
+            if (!hasThemedActionBarSignature || signature != themedActionBarSignature) {
+                hasThemedActionBarSignature = true;
+                themedActionBarSignature = signature;
+                updateActionBarColors();
+            }
+            updateLightStatusBar();
+            windowView.invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     private void updateActionBarColors() {
         if (!overrideActionBarColor) {
             actionBar.setTitleColor(getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -1172,8 +1226,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             AndroidUtilities.setLightNavigationBar(this, ColorUtils.calculateLuminance(navBarColor) >= 0.721f);
         }
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.botDownloadsUpdate);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.botDownloadsUpdate);
     }
 
     public void updateFullscreenLayout() {
@@ -1387,7 +1441,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         final TLRPC.UserFull userInfo = fakeWebView ? null : MessagesController.getInstance(currentAccount).getUserFull(botId);
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
-            verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.drawableColorFilter(actionBar.getTitleTextView(), verifiedDrawable, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.SRC_IN);
             verifiedDrawable.setAlpha(0xFF);
             actionBar.getTitleTextView().setDrawablePadding(dp(2));
             actionBar.getTitleTextView().setRightDrawable(new Drawable() {
@@ -1513,7 +1567,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                             loadFromResponse();
                         }
                     }));
-                    NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.webViewResultSent);
 
                     break;
                 }
@@ -1588,7 +1642,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                             loadFromResponse();
                         }
                     }));
-                    NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.webViewResultSent);
                     break;
                 }
                 case TYPE_WEB_VIEW_BOT_APP: {
@@ -2391,6 +2445,7 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     }
 
     public void setNavigationBarColor(int color, boolean animated) {
+        themedNavBarColor = false;
         int from = navBarColor;
         int to = color;
 
@@ -2499,9 +2554,26 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         return windowView;
     }
 
-    public class WindowView extends SizeNotifierFrameLayout implements BottomSheetTabsOverlay.SheetView {
+    public class WindowView extends SizeNotifierFrameLayout implements BottomSheetTabsOverlay.SheetView, Theme.Colorable {
         public WindowView(Context context) {
             super(context);
+        }
+
+        @Override
+        public void updateColors() {
+            applyThemeColorsHook();
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhite);
+            colors.add(Theme.key_windowBackgroundGray);
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
+            colors.add(Theme.key_actionBarWhiteSelector);
+            colors.add(Theme.key_actionBarDefaultSubmenuBackground);
+            colors.add(Theme.key_actionBarDefaultSubmenuItem);
+            colors.add(Theme.key_actionBarDefaultSubmenuItemIcon);
+            colors.add(Theme.key_dialogButtonSelector);
         }
 
         {

@@ -18,6 +18,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -40,14 +41,14 @@ public class MemberRequestCell extends FrameLayout {
 
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         nameTextView.setMaxLines(1);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText);
         nameTextView.setTextSize(17);
         nameTextView.setTypeface(AndroidUtilities.bold());
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, LocaleController.isRTL ? 12 : 74, 12, LocaleController.isRTL ? 74 : 12, 0));
 
         statusTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         statusTextView.setMaxLines(1);
-        statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(statusTextView, Theme.key_windowBackgroundWhiteGrayText);
         statusTextView.setTextSize(14);
         addView(statusTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, LocaleController.isRTL ? 12 : 74, 36, LocaleController.isRTL ? 74 : 12, 0));
 
@@ -58,7 +59,7 @@ public class MemberRequestCell extends FrameLayout {
         addButton.setMaxLines(1);
         addButton.setPadding(btnPadding, 0, btnPadding, 0);
         addButton.setText(isChannel ? LocaleController.getString(R.string.AddToChannel) : LocaleController.getString(R.string.AddToGroup));
-        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(addButton, Theme.key_featuredStickers_buttonText);
         addButton.setTextSize(14);
         addButton.setTypeface(AndroidUtilities.bold());
         addButton.setOnClickListener(v -> {
@@ -75,7 +76,7 @@ public class MemberRequestCell extends FrameLayout {
         dismissButton.setMaxLines(1);
         dismissButton.setPadding(btnPadding, 0, btnPadding, 0);
         dismissButton.setText(LocaleController.getString(R.string.Dismiss));
-        dismissButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        ThemeBind.textColor(dismissButton, Theme.key_windowBackgroundWhiteBlueText);
         dismissButton.setTextSize(14);
         dismissButton.setTypeface(AndroidUtilities.bold());
         dismissButton.setOnClickListener(v -> {

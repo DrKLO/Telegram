@@ -54,6 +54,7 @@ import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -600,7 +601,7 @@ public class GramWalletTonConnect {
         return decoded;
     }
 
-    private static void validateTransaction(JSONObject transaction, String address, int now) throws JSONException {
+    static void validateTransaction(JSONObject transaction, String address, int now) throws JSONException {
         validateSigningAccount(transaction, address);
         if (transaction.has("valid_until")) {
             Object expiration = transaction.get("valid_until");
@@ -624,7 +625,7 @@ public class GramWalletTonConnect {
         if (payload.has("from") && !WalletEngine2.sameTonConnectAddress(requiredString(payload, "from"), address)) throw new IllegalArgumentException("Wrong signer");
     }
 
-    private static void validateSignData(JSONObject payload, String address) throws JSONException {
+    static void validateSignData(JSONObject payload, String address) throws JSONException {
         validateSigningAccount(payload, address);
         switch (requiredString(payload, "type")) {
             case "text":
@@ -1170,8 +1171,8 @@ public class GramWalletTonConnect {
         final ImageView closeView = new ImageView(context);
         closeView.setImageResource(R.drawable.ic_ab_close);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
-        closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
-        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(closeView);
         topLayout.addView(closeView, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 0, 0, 0));
 
@@ -1199,7 +1200,7 @@ public class GramWalletTonConnect {
         } else {
             titleView.setText(LocaleController.getString(R.string.WalletConnectToDApp));
         }
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         layout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 36, 16, 36, 0));
 
         String domain = oauth ? auth.domain : AndroidUtilities.getHostAuthority(connection.manifestUrl);
@@ -1214,7 +1215,7 @@ public class GramWalletTonConnect {
         subtitleView.setText(oauth || wallet.tonConnect.requestsProof(connection)
             ? LocaleController.getString(R.string.WalletConnectProofInfo)
             : LocaleController.getString(R.string.WalletConnectInfo));
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         layout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 36, 16, 36, 28));
 
         final FrameLayout cardContainer = new FrameLayout(context);
@@ -1229,7 +1230,7 @@ public class GramWalletTonConnect {
         footerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         footerView.setGravity(Gravity.CENTER);
         footerView.setText(LocaleController.getString(R.string.WalletConnectPermissionInfo));
-        footerView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(footerView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         layout.addView(footerView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 36, 16, 36, 28));
 
         final LinearLayout buttonsLayout = new LinearLayout(context);
@@ -1391,8 +1392,8 @@ public class GramWalletTonConnect {
         ImageView close = new ImageView(context);
         close.setImageResource(R.drawable.ic_ab_close);
         close.setScaleType(ImageView.ScaleType.CENTER);
-        close.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-        close.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
+        ThemeBind.colorFilter(close, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(close, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         close.setContentDescription(LocaleController.getString(R.string.Close));
         close.setOnClickListener(v -> { if (!request.isBusy()) sheet.dismiss(); });
         header.addView(close, LayoutHelper.createLinear(48, 48, 0f, Gravity.CENTER_VERTICAL, 4, 0, 12, 0));
@@ -1409,7 +1410,7 @@ public class GramWalletTonConnect {
         title.setGravity(Gravity.LEFT);
         heading.addView(title, LayoutHelper.createLinear(-1, -2));
         TextView domain = requestText(context, AndroidUtilities.getHostAuthority(request.session.manifest.url), 14, resourcesProvider);
-        domain.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(domain, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         domain.setGravity(Gravity.LEFT);
         domain.setSingleLine(true);
         domain.setEllipsize(TextUtils.TruncateAt.END);
@@ -1420,7 +1421,7 @@ public class GramWalletTonConnect {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(20), dp(16), dp(20), dp(16));
-        card.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(card, Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         TextView content = requestText(context, text ? data.optString("text")
                 : LocaleController.getString(R.string.WalletBinaryDataWarning), text ? 14 : 16, resourcesProvider);
         content.setGravity(Gravity.LEFT);
@@ -1429,7 +1430,7 @@ public class GramWalletTonConnect {
             TextView label = requestText(context, LocaleController.getString(R.string.WalletSigningData), 14, resourcesProvider);
             label.setGravity(Gravity.LEFT);
             label.setTypeface(AndroidUtilities.bold());
-            label.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
+            ThemeBind.textColor(label, Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
             card.addView(label, LayoutHelper.createLinear(-1, -2, 0, 0, 0, 12));
             content.setTypeface(android.graphics.Typeface.MONOSPACE);
         } else {
@@ -1438,7 +1439,7 @@ public class GramWalletTonConnect {
             TextView icon = requestText(context, "!", 12, resourcesProvider);
             icon.setTypeface(AndroidUtilities.bold());
             icon.setTextColor(0xffffffff);
-            icon.setBackground(Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_text_RedBold, resourcesProvider)));
+            ThemeBind.fillBackground(icon, Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_text_RedBold, resourcesProvider)), ThemeBind.of(Theme.key_text_RedBold), resourcesProvider);
             warning.addView(icon, LayoutHelper.createLinear(16, 16, 0f, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
             TextView label = requestText(context, LocaleController.getString(R.string.WalletBinaryData), 14, resourcesProvider);
             label.setGravity(Gravity.LEFT);
@@ -1471,7 +1472,7 @@ public class GramWalletTonConnect {
         if (text) {
             TextView hint = requestText(context, LocaleController.getString(R.string.WalletReviewSigningData), 14, resourcesProvider);
             hint.setGravity(Gravity.LEFT);
-            hint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(hint, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             footer.addView(hint, LayoutHelper.createLinear(-1, -2, 36, 12, 36, 0));
         }
         LinearLayout buttons = new LinearLayout(context);
@@ -1578,8 +1579,8 @@ public class GramWalletTonConnect {
         final ImageView backView = new ImageView(context);
         backView.setImageResource(R.drawable.ic_ab_back);
         backView.setScaleType(ImageView.ScaleType.CENTER);
-        backView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)));
-        backView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(backView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(backView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(backView);
         actionBar.addView(backView, LayoutHelper.createLinear(48, 48, 0f, Gravity.CENTER_VERTICAL | Gravity.LEFT, 4, 0, 0, 0));
 
@@ -1596,14 +1597,14 @@ public class GramWalletTonConnect {
 
         final TextView detailTitle = new TextView(context);
         detailTitle.setTypeface(AndroidUtilities.bold());
-        detailTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(detailTitle, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         detailTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         actionBarText.addView(detailTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         detailTitle.setText(LocaleController.getString(R.string.WalletConfirmAction));
 
         if (!TextUtils.isEmpty(domain)) {
             final TextView subtitle = new TextView(context);
-            subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(subtitle, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             actionBarText.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             subtitle.setText(domain);
@@ -1651,7 +1652,7 @@ public class GramWalletTonConnect {
         loadingFee.setSpan(new LoadingSpan(status, dp(80)), 0, loadingFee.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         status.setText(LocaleController.formatSpannable(R.string.WalletFeeAmount, loadingFee));
         status.setVisibility(signMessage ? android.view.View.GONE : android.view.View.VISIBLE);
-        status.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(status, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         footer.addView(status, LayoutHelper.createLinear(-1, -2, 20, 16, 20, 16));
         final LinearLayout buttons = new LinearLayout(context);
         buttons.setPadding(dp(16), 0, dp(16), dp(16));
@@ -1723,22 +1724,22 @@ public class GramWalletTonConnect {
         return sheet;
     }
 
-    private static LinearLayout transactionBlock(Context context, String title, Theme.ResourcesProvider resourcesProvider) {
+    static LinearLayout transactionBlock(Context context, String title, Theme.ResourcesProvider resourcesProvider) {
         LinearLayout block = new LinearLayout(context);
         block.setOrientation(LinearLayout.VERTICAL);
-        block.setBackground(Theme.createRoundRectDrawable(
-                dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(block, Theme.createRoundRectDrawable(
+                dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         HeaderCell header = new HeaderCell(context, resourcesProvider);
         header.setText(title);
         block.addView(header, LayoutHelper.createLinear(-1, -2));
         return block;
     }
 
-    private static TextView domainView(Context context, String domain, Theme.ResourcesProvider resourcesProvider) {
+    static TextView domainView(Context context, String domain, Theme.ResourcesProvider resourcesProvider) {
         final TextView linkView = new TextView(context);
         linkView.setTypeface(AndroidUtilities.bold());
         linkView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        linkView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        ThemeBind.textColor(linkView, Theme.key_featuredStickers_addButton, resourcesProvider);
         final SpannableStringBuilder ssb = new SpannableStringBuilder();
         // final Drawable verifiedIconBg = context.getResources().getDrawable(R.drawable.verified2_bg).mutate();
         // verifiedIconBg.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
@@ -1754,16 +1755,16 @@ public class GramWalletTonConnect {
         return linkView;
     }
 
-    private static TextView requestText(Context context, CharSequence text, int size, Theme.ResourcesProvider provider) {
+    static TextView requestText(Context context, CharSequence text, int size, Theme.ResourcesProvider provider) {
         TextView view = new TextView(context);
         view.setText(text);
         view.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size);
-        view.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, provider));
+        ThemeBind.textColor(view, Theme.key_windowBackgroundWhiteBlackText, provider);
         view.setGravity(Gravity.CENTER);
         return view;
     }
 
-    private static LinearLayout block(Context context, IconBackgroundColors color, int iconRes, CharSequence title, CharSequence subtitle, CharSequence price, CharSequence comment, Theme.ResourcesProvider resourcesProvider) {
+    static LinearLayout block(Context context, IconBackgroundColors color, int iconRes, CharSequence title, CharSequence subtitle, CharSequence price, CharSequence comment, Theme.ResourcesProvider resourcesProvider) {
         final LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -1787,7 +1788,7 @@ public class GramWalletTonConnect {
         final TextView titleView = new TextView(context);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setSingleLine(subtitle != null);
         if (subtitle == null) {
             titleView.setGravity(Gravity.CENTER_VERTICAL);
@@ -1803,7 +1804,7 @@ public class GramWalletTonConnect {
         if (!TextUtils.isEmpty(subtitle)) {
             final TextView subtitleView = new TextView(context);
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             subtitleView.setSingleLine(true);
             subtitleView.setEllipsize(TextUtils.TruncateAt.END);
             subtitleView.setText(subtitle);
@@ -1818,7 +1819,7 @@ public class GramWalletTonConnect {
             commentView.setBackground(bubble);
             commentView.setPadding(dp(19), dp(9), dp(15), dp(8));
             commentView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            commentView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(commentView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             commentView.setMaxLines(2);
             commentView.setText(comment);
             textLayout.addView(commentView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
@@ -1832,16 +1833,14 @@ public class GramWalletTonConnect {
             priceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             priceView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
             priceView.setText(price);
-            priceView.setTextColor(price.toString().startsWith("+")
-                    ? Theme.getColor(Theme.key_color_green, resourcesProvider)
-                    : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(priceView, price.toString().startsWith("+") ? Theme.key_color_green : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             row.addView(priceView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0f, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
         }
 
         return row;
     }
 
-    private static CharSequence actionPrice(long nanotons) {
+    static CharSequence actionPrice(long nanotons) {
         final String text = GramWallet.formatGrams(nanotons, true);
         final SpannableStringBuilder amount = new SpannableStringBuilder(text);
         final int point = text.indexOf('.');
@@ -1858,7 +1857,7 @@ public class GramWalletTonConnect {
         return amount;
     }
 
-    private static String shortAddress(String address) {
+    static String shortAddress(String address) {
         if (TextUtils.isEmpty(address)) {
             return LocaleController.getString(R.string.WalletUnknownAddress);
         }
@@ -1880,7 +1879,7 @@ public class GramWalletTonConnect {
         return formatted.toString();
     }
 
-    private static CharSequence formatCardDebit(long nanotons) {
+    static CharSequence formatCardDebit(long nanotons) {
         SpannableStringBuilder result = new SpannableStringBuilder();
         SpannableString icon = new SpannableString("GRAM");
         icon.setSpan(new ColoredImageSpan(R.drawable.wallet_gram_large), 0, icon.length(),

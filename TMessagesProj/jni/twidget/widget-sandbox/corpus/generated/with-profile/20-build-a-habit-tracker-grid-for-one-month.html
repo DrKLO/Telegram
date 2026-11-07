@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #0c4a6e; --muted: #6b7280; --day: #f1f5f9; --done: #0ea5e9; --chip: #fef3c7; --chipfg: #92400e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #e0f2fe; --muted: #9ca3af; --day: #1f2937; --done: #0284c7; --chip: #78350f; --chipfg: #fde68a; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  h2 { margin: 0; font-size: 17px; }
+  .streak { background: var(--chip); color: var(--chipfg); padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dow { text-align: center; font-size: 11px; color: var(--muted); }
+  .day { aspect-ratio: 1; border-radius: 8px; background: var(--day); display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: none; color: inherit; padding: 0; transition: transform .1s, background .15s; }
+  .day:active { transform: scale(.9); }
+  .day.done { background: var(--done); color: #fff; font-weight: 600; }
+  .day.today { outline: 2px solid var(--done); outline-offset: -2px; }
+  .day.empty { background: transparent; cursor: default; }
+  .stats { display: flex; justify-content: space-around; margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; }
+  .stats b { display: block; font-size: 18px; color: var(--fg); }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .save { padding: 7px 12px; border: 1px solid var(--done); background: transparent; color: var(--fg); border-radius: 8px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="head"><h2>💧 Drink water</h2><span class="streak" id="streak">🔥 0 day streak</span></div>
+<div class="grid" id="grid"></div>
+<div class="stats"><div><b id="done">0</b>days done</div><div><b id="pct">0%</b>of month</div><div><b id="best">0</b>best streak</div></div>
+<div class="foot"><span>Saved on this device</span><button class="save" id="save">Clear month</button></div>
+<script>
+  var now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  var days = new Date(y, m + 1, 0).getDate();
+  var firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+  // Marked days are kept in this message's localStorage, one key per month, and restored on re-creation.
+  var key = 'habit-' + y + '-' + (m + 1);
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var done = store.get(key) || {};
+  var grid = document.getElementById('grid');
+  var html = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
+  for (var i = 0; i < firstDow; i++) html += '<div class="day empty"></div>';
+  for (var d = 1; d <= days; d++) html += '<button class="day' + (d === today ? ' today' : '') + '" id="day-' + d + '">' + d + '</button>';
+  grid.innerHTML = html;
+  function update() {
+    for (var d = 1; d <= days; d++) document.getElementById('day-' + d).classList.toggle('done', !!done[d]);
+    var streak = 0; for (d = today; d >= 1 && done[d]; d--) streak++;
+    var best = 0, cur = 0, count = 0; for (d = 1; d <= days; d++) { cur = done[d] ? cur + 1 : 0; best = Math.max(best, cur); if (done[d]) count++; }
+    document.getElementById('streak').textContent = '🔥 ' + streak + ' day streak';
+    document.getElementById('done').textContent = count;
+    document.getElementById('pct').textContent = Math.round(count / days * 100) + '%';
+    document.getElementById('best').textContent = best;
+    return { count: count, streak: streak, best: best };
+  }
+  grid.addEventListener('click', function (e) {
+    var el = e.target.closest('.day'); if (!el || !el.id) return;
+    var d = +el.id.split('-')[1];
+    if (done[d]) delete done[d]; else done[d] = true;
+    store.set(key, done);
+    update();
+  });
+  document.getElementById('save').onclick = function () { done = {}; store.set(key, done); update(); };
+  update();
+</script>
+</body>
+</html>

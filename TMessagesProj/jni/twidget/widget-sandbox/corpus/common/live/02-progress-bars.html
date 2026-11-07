@@ -1,0 +1,71 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: four upload tasks whose bars fill with requestAnimationFrame at different speeds (style.width + text every frame for ~4 s), then stop; Restart replays
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .task { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .task .ic { width: 30px; height: 30px; border-radius: 8px; margin-right: 10px; flex-shrink: 0; color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .task .nm { font-weight: 600; }
+  .task .st { font-size: 11px; color: var(--muted); }
+  .task .pc { width: 44px; text-align: right; font-weight: 700; font-family: ui-monospace, monospace; font-size: 13px; }
+  .tr { height: 8px; border-radius: 4px; background-color: var(--fill); overflow: hidden; margin-top: 6px; }
+  .fl { height: 8px; border-radius: 4px; width: 0; }
+  .task.done .fl { background-color: var(--green); }
+  .task.done .pc { color: var(--green); }
+  .sum { margin-top: 10px; }
+  .sum .tr { height: 12px; border-radius: 6px; } .sum .fl { height: 12px; border-radius: 6px; background-color: var(--blue); }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Uploading 4 files</span><span class="tiny muted" id="eta"></span></div>
+  <div id="tasks">
+    <div class="task" data-ms="2600" data-size="12.4 MB"><div class="row"><div class="ic" style="background-color: #5856d6">PDF</div><div class="grow"><div class="nm">kit-v2-spec.pdf</div><div class="st">12.4 MB · waiting</div></div><div class="pc">0%</div></div><div class="tr"><div class="fl" style="background-color: #5856d6"></div></div></div>
+    <div class="task" data-ms="3800" data-size="48.1 MB"><div class="row"><div class="ic" style="background-color: #ff9500">MOV</div><div class="grow"><div class="nm">demo-feed.mov</div><div class="st">48.1 MB · waiting</div></div><div class="pc">0%</div></div><div class="tr"><div class="fl" style="background-color: #ff9500"></div></div></div>
+    <div class="task" data-ms="1400" data-size="2.0 MB"><div class="row"><div class="ic" style="background-color: #34c759">PNG</div><div class="grow"><div class="nm">cover@3x.png</div><div class="st">2.0 MB · waiting</div></div><div class="pc">0%</div></div><div class="tr"><div class="fl" style="background-color: #34c759"></div></div></div>
+    <div class="task" data-ms="3200" data-size="31.7 MB"><div class="row"><div class="ic" style="background-color: #30b0c7">ZIP</div><div class="grow"><div class="nm">icons-all.zip</div><div class="st">31.7 MB · waiting</div></div><div class="pc">0%</div></div><div class="tr"><div class="fl" style="background-color: #30b0c7"></div></div></div>
+  </div>
+  <div class="sum"><div class="row between small"><span class="bold" id="sumtxt">Total 0%</span><span class="muted">94.2 MB</span></div><div class="tr"><div class="fl" id="sumbar"></div></div></div>
+  <div style="text-align: right; margin-top: 10px"><span class="btn" role="button" id="restart">Restart</span></div>
+</div>
+<script>
+const tasks = [...document.querySelectorAll('.task')];
+let run = 0;
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+function start() {
+  const me = ++run, t0 = performance.now();
+  for (const t of tasks) { t.classList.remove('done'); t.querySelector('.fl').style.width = '0'; t.querySelector('.pc').textContent = '0%'; }
+  const total = Math.max(...tasks.map(t => Number(t.dataset.ms)));
+  const frame = () => {
+    if (me !== run) return;
+    const now = performance.now() - t0;
+    let sum = 0;
+    for (const t of tasks) {
+      const ms = Number(t.dataset.ms), p = easeInOut(Math.min(1, now / ms));
+      sum += p;
+      t.querySelector('.fl').style.width = (p * 100).toFixed(1) + '%';
+      t.querySelector('.pc').textContent = Math.round(p * 100) + '%';
+      t.querySelector('.st').textContent = t.dataset.size + (p >= 1 ? ' · done' : p > 0 ? ' · ' + (parseFloat(t.dataset.size) * p).toFixed(1) + ' MB sent' : ' · waiting');
+      t.classList.toggle('done', p >= 1);
+    }
+    const all = sum / tasks.length;
+    document.getElementById('sumbar').style.width = (all * 100).toFixed(1) + '%';
+    document.getElementById('sumtxt').textContent = 'Total ' + Math.round(all * 100) + '%';
+    document.getElementById('eta').textContent = now >= total ? 'all done' : 'about ' + Math.ceil((total - now) / 1000) + ' s left';
+    if (now < total) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+}
+document.getElementById('restart').addEventListener('click', start);
+setTimeout(start, 300);
+</script>

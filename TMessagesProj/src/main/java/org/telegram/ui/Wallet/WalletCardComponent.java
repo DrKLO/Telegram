@@ -610,7 +610,7 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
             }
         }
         if (wallet != null) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.walletUpdate);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.walletUpdate);
         }
     }
 
@@ -645,7 +645,7 @@ public class WalletCardComponent extends FrameLayout implements NotificationCent
         this.currentAccount = currentAccount;
         this.wallet = wallet;
         if (isAttachedToWindow() && this.wallet != null)
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.walletUpdate);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.walletUpdate);
     }
 
     @Override

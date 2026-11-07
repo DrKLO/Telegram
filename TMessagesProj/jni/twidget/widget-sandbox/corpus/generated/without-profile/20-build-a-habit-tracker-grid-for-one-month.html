@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #f0f9ff; }
+  .card { background: #fff; border-radius: 12px; padding: 16px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  h2 { margin: 0; font-size: 18px; }
+  .streak { background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dow { text-align: center; font-size: 11px; color: #9ca3af; }
+  .day { aspect-ratio: 1; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; transition: transform .1s, background .15s; }
+  .day:active { transform: scale(.9); }
+  .day.pop { animation: pop .15s; }
+  @keyframes pop { from { transform: scale(.8); } to { transform: scale(1); } }
+  .day.done { background: #0ea5e9; color: #fff; font-weight: 600; }
+  .day.today { outline: 2px solid #0ea5e9; outline-offset: -2px; }
+  .day.empty { background: transparent; cursor: default; }
+  .stats { display: flex; justify-content: space-around; margin-top: 14px; font-size: 12px; color: #6b7280; text-align: center; }
+  .stats b { display: block; font-size: 18px; color: #0c4a6e; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head"><h2>💧 Drink water</h2><span class="streak" id="streak">🔥 0 day streak</span></div>
+  <div class="grid" id="grid"></div>
+  <div class="stats"><div><b id="done">0</b>days done</div><div><b id="pct">0%</b>of month</div><div><b id="best">0</b>best streak</div></div>
+</div>
+<script>
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  const days = new Date(y, m + 1, 0).getDate();
+  const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+  const key = `habit-${y}-${m}`;
+  let done = new Set((() => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } })());
+  const grid = document.getElementById('grid');
+  grid.innerHTML = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<div class="dow">${d}</div>`).join('') + '<div class="day empty"></div>'.repeat(firstDow) + Array.from({ length: days }, (_, i) => `<div class="day ${i + 1 === today ? 'today' : ''}" data-d="${i + 1}">${i + 1}</div>`).join('');
+  function update() {
+    grid.querySelectorAll('.day[data-d]').forEach(el => el.classList.toggle('done', done.has(+el.dataset.d)));
+    let streak = 0; for (let d = today; d >= 1 && done.has(d); d--) streak++;
+    let best = 0, cur = 0; for (let d = 1; d <= days; d++) { cur = done.has(d) ? cur + 1 : 0; best = Math.max(best, cur); }
+    document.getElementById('streak').textContent = `🔥 ${streak} day streak`;
+    document.getElementById('done').textContent = done.size;
+    document.getElementById('pct').textContent = Math.round(done.size / days * 100) + '%';
+    document.getElementById('best').textContent = best;
+    try { localStorage.setItem(key, JSON.stringify([...done])); } catch { }
+  }
+  grid.addEventListener('animationend', e => e.target.classList.remove('pop'));
+  grid.addEventListener('click', e => {
+    const el = e.target.closest('.day[data-d]'); if (!el) return;
+    const d = +el.dataset.d;
+    if (done.has(d)) done.delete(d); else done.add(d);
+    // A CSS animation rather than el.animate(): Web Animations are not on every client.
+    el.classList.add('pop');
+    update();
+  });
+  update();
+</script>
+</body>
+</html>

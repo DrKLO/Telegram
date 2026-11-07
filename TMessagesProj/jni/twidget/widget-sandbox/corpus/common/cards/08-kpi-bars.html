@@ -1,0 +1,61 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a dashboard without SVG — KPI tiles in a wrapping flex row, a vertical bar chart (flex, align-items: flex-end) and horizontal bars from plain divs
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .tiles { display: flex; flex-wrap: wrap; justify-content: space-between; margin-top: 10px; }
+  .kt { width: 176px; box-sizing: border-box; padding: 9px 11px 8px 11px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border); background-color: var(--fill); }
+  .kt .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; }
+  .kt .dot { width: 7px; height: 7px; border-radius: 4px; margin-right: 5px; }
+  .kt .big { font-size: 22px; font-weight: 800; margin-top: 2px; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+  .badge.up { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .badge.down { background-color: rgba(255,59,48,0.16); color: var(--red); }
+  .caps2 { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+  .chart { display: flex; align-items: flex-end; height: 90px; margin-top: 8px; border-bottom: 1px solid var(--border); }
+  .chart .col { flex-grow: 1; flex-basis: 0; margin: 0 3px; border-radius: 4px 4px 0 0; background-color: var(--blue); }
+  .chart .col.hi { background-color: var(--green); }
+  .chart .col.lo { background-color: var(--fill2); }
+  .labels { display: flex; margin-top: 3px; }
+  .labels span { flex-grow: 1; flex-basis: 0; text-align: center; font-size: 10px; color: var(--muted); }
+  .hbar { margin-top: 6px; }
+  .hbar .row { font-size: 12px; margin-bottom: 4px; }
+  .hbar .nm { width: 84px; flex-shrink: 0; }
+  .hbar .tr { flex-grow: 1; height: 10px; border-radius: 5px; background-color: var(--fill); overflow: hidden; }
+  .hbar .fl { height: 10px; border-radius: 5px; }
+  .hbar .v { width: 44px; text-align: right; flex-shrink: 0; font-weight: 700; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Key numbers</span><span class="small muted">Week 41 vs 40</span></div>
+  <div class="tiles">
+    <div class="kt"><div class="caps"><span class="dot" style="background-color: var(--blue)"></span>Active users</div><div class="row between"><span class="big">48,213</span><span class="badge up">+12.4%</span></div></div>
+    <div class="kt"><div class="caps"><span class="dot" style="background-color: var(--green)"></span>Revenue</div><div class="row between"><span class="big">€182.4k</span><span class="badge up">+8.1%</span></div></div>
+    <div class="kt"><div class="caps"><span class="dot" style="background-color: var(--orange)"></span>Conversion</div><div class="row between"><span class="big">3.42%</span><span class="badge down">−0.3 pp</span></div></div>
+    <div class="kt"><div class="caps"><span class="dot" style="background-color: var(--purple)"></span>NPS</div><div class="row between"><span class="big">61</span><span class="badge up">+4</span></div></div>
+  </div>
+  <div class="caps2">Signups per day</div>
+  <div class="chart">
+    <div class="col lo" style="height: 38%"></div><div class="col" style="height: 52%"></div><div class="col" style="height: 61%"></div><div class="col" style="height: 47%"></div><div class="col hi" style="height: 100%"></div><div class="col" style="height: 74%"></div><div class="col lo" style="height: 30%"></div>
+  </div>
+  <div class="labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+  <div class="caps2">Traffic by source</div>
+  <div class="hbar">
+    <div class="row"><span class="nm">Organic</span><div class="tr"><div class="fl" style="width: 46%; background-color: var(--blue)"></div></div><span class="v">46%</span></div>
+    <div class="row"><span class="nm">Direct</span><div class="tr"><div class="fl" style="width: 24%; background-color: var(--teal)"></div></div><span class="v">24%</span></div>
+    <div class="row"><span class="nm">Social</span><div class="tr"><div class="fl" style="width: 17%; background-color: var(--purple)"></div></div><span class="v">17%</span></div>
+    <div class="row"><span class="nm">Referral</span><div class="tr"><div class="fl" style="width: 9%; background-color: var(--orange)"></div></div><span class="v">9%</span></div>
+    <div class="row"><span class="nm">Email</span><div class="tr"><div class="fl" style="width: 4%; background-color: var(--green)"></div></div><span class="v">4%</span></div>
+  </div>
+</div>

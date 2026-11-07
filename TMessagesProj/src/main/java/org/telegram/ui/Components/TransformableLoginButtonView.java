@@ -13,12 +13,31 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public class TransformableLoginButtonView extends View {
+public class TransformableLoginButtonView extends View implements Theme.Colorable {
+
+    private int themedBackgroundColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            // only while the background still has the theme color (callers may set their own with setBackgroundColor)
+            if (backgroundPaint.getColor() == themedBackgroundColor) {
+                themedBackgroundColor = Theme.getColor(Theme.key_chats_actionBackground);
+                if (backgroundPaint.getColor() != themedBackgroundColor) {
+                    backgroundPaint.setColor(themedBackgroundColor);
+                    invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     public final static int TRANSFORM_OPEN_ARROW = 0, TRANSFORM_ARROW_CHECK = 1;
     private final static float BUTTON_RADIUS_DP = 6, CIRCLE_RADIUS_DP = 32, ARROW_PADDING = 21,
             ARROW_BACK_SIZE = 9, LEFT_CHECK_LINE = 8, RIGHT_CHECK_LINE = 16;
@@ -50,7 +69,7 @@ public class TransformableLoginButtonView extends View {
     public TransformableLoginButtonView(Context context) {
         super(context);
 
-        backgroundPaint.setColor(Theme.getColor(Theme.key_chats_actionBackground));
+        backgroundPaint.setColor(themedBackgroundColor = Theme.getColor(Theme.key_chats_actionBackground));
 
         outlinePaint.setStrokeWidth(AndroidUtilities.dp(2));
         outlinePaint.setStyle(Paint.Style.STROKE);

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMI Calculator</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #1f2937; --muted: #6b7280; --line: #d1d5db; --toggle: #e5e7eb; --on: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --toggle: #374151; --on: #111827; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 12px; }
+  .toggle { display: flex; background: var(--toggle); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
+  .toggle button { flex: 1; border: none; background: transparent; padding: 8px; border-radius: 999px; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .toggle button.on { background: var(--on); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .field { margin-bottom: 10px; }
+  .field .lbl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .num { display: flex; align-items: center; padding: 3px; border: 1px solid var(--line); border-radius: 8px; }
+  .num span { flex: 1; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .num button { width: 32px; height: 30px; padding: 0; border: none; border-radius: 6px; background: var(--toggle); color: var(--fg); font-size: 18px; cursor: pointer; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .result { text-align: center; margin-top: 12px; }
+  .bmi { font-size: 40px; font-weight: 700; }
+  .cat { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .scale { display: flex; height: 14px; border-radius: 7px; overflow: visible; margin-top: 14px; position: relative; }
+  .scale div { flex: 1; } .scale div:first-child { border-radius: 7px 0 0 7px; } .scale div:nth-child(4) { border-radius: 0 7px 7px 0; }
+  .marker { position: absolute; top: -6px; width: 4px; height: 26px; background: var(--fg); border-radius: 2px; transition: left .3s; margin-left: -2px; }
+  .labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<h2>⚖️ BMI Calculator</h2>
+<div class="toggle"><button class="on" data-u="metric" id="u-metric">Metric</button><button data-u="imperial" id="u-imperial">Imperial</button></div>
+<div id="metric">
+  <div class="two">
+    <div class="field"><span class="lbl">Height (cm)</span><div class="num" data-k="cm"><button data-d="-1">−</button><span id="cm"></span><button data-d="1">+</button></div></div>
+    <div class="field"><span class="lbl">Weight (kg)</span><div class="num" data-k="kg"><button data-d="-1">−</button><span id="kg"></span><button data-d="1">+</button></div></div>
+  </div>
+</div>
+<div id="imperial" hidden>
+  <div class="two">
+    <div class="field"><span class="lbl">Height (ft)</span><div class="num" data-k="ft"><button data-d="-1">−</button><span id="ft"></span><button data-d="1">+</button></div></div>
+    <div class="field"><span class="lbl">Height (in)</span><div class="num" data-k="in"><button data-d="-1">−</button><span id="in"></span><button data-d="1">+</button></div></div>
+  </div>
+  <div class="field"><span class="lbl">Weight (lb)</span><div class="num" data-k="lb"><button data-d="-1">−</button><span id="lb"></span><button data-d="1">+</button></div></div>
+</div>
+<div class="result">
+  <div class="bmi" id="bmi">—</div>
+  <div class="cat" id="cat"></div>
+</div>
+<div class="scale">
+  <div style="background:#60a5fa"></div><div style="background:#4ade80"></div><div style="background:#facc15"></div><div style="background:#f87171"></div>
+  <div class="marker" id="marker" style="left:0"></div>
+</div>
+<div class="labels"><span>Under</span><span>Normal</span><span>Over</span><span>Obese</span></div>
+<script>
+  var unit = 'metric';
+  // No number fields in a widget: each value has − / + steppers.
+  var v = { cm: 175, kg: 70, ft: 5, 'in': 9, lb: 154 };
+  var limits = { cm: [100, 230], kg: [30, 250], ft: [3, 7], 'in': [0, 11], lb: [66, 550] };
+  var $ = function (id) { return document.getElementById(id); };
+  Array.prototype.forEach.call(document.querySelectorAll('.toggle button'), function (b) {
+    b.onclick = function () {
+      unit = b.getAttribute('data-u');
+      Array.prototype.forEach.call(document.querySelectorAll('.toggle button'), function (x) { x.classList.toggle('on', x === b); });
+      $('metric').hidden = unit !== 'metric';
+      $('imperial').hidden = unit !== 'imperial';
+      calc();
+    };
+  });
+  function calc() {
+    var h, w;
+    for (var k in v) $(k).textContent = v[k];
+    if (unit === 'metric') { h = v.cm / 100; w = v.kg; }
+    else { h = (v.ft * 12 + v['in']) * 0.0254; w = v.lb * 0.4536; }
+    if (!h || !w) return;
+    var bmi = w / (h * h);
+    $('bmi').textContent = bmi.toFixed(1);
+    var cats = [[18.5, 'Underweight', '#3b82f6'], [25, 'Normal weight', '#16a34a'], [30, 'Overweight', '#ca8a04'], [Infinity, 'Obese', '#dc2626']];
+    var c = cats.filter(function (x) { return bmi < x[0]; })[0];
+    $('cat').textContent = c[1]; $('cat').style.color = c[2]; $('bmi').style.color = c[2];
+    $('marker').style.left = Math.max(0, Math.min(100, (bmi - 10) / 30 * 100)) + '%';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.num'), function (n) {
+    n.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var k = n.getAttribute('data-k');
+      v[k] = Math.max(limits[k][0], Math.min(limits[k][1], v[k] + +b.getAttribute('data-d')));
+      calc();
+    });
+  });
+  calc();
+</script>
+</body>
+</html>

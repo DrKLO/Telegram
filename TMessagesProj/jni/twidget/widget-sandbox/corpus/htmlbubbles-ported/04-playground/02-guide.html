@@ -1,0 +1,351 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 04-playground.chat, message 2
+  author: guide 12:01
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+
+  /* kit rules this file uses */
+  p { margin: 0 0 8px 0; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); } .t-orange { color: var(--orange); } .t-purple { color: var(--purple); }
+  [data-action] { cursor: pointer; }
+
+  /* original stylesheet */
+  .pg { width: 320px; max-width: 100%; }
+  .pg .ask { display: inline-block; position: relative; margin: 2px 4px 2px 0; padding: 3px 12px; border-radius: 14px; border: 1px solid #2cb67d; color: #2cb67d; }
+  .pg .ask:hover { background-color: rgba(44,182,125,0.14); }
+  .pg .ask.on { background-color: #2cb67d; color: #ffffff; }
+  .pg .ask.x { padding: 3px 9px; border-color: rgba(127,127,127,0.4); color: #8e8e93; }
+  .pg .stage { margin-top: 8px; }
+  .pg .tbl { overflow: hidden; border-radius: 10px; border: 1px solid rgba(127,127,127,0.25); }
+  .pg .thd { display: flex; align-items: center; height: 28px; padding: 0 10px; background-color: rgba(44,182,125,0.18); font-size: 12.5px; font-weight: 700; }
+  .pg .srt:hover { color: #2cb67d; }
+  .pg .rws { height: 182px; }
+  .pg .tr { display: flex; align-items: center; position: relative; height: 26px; padding: 0 10px; font-size: 13px; }
+  .pg .tr.alt { background-color: rgba(127,127,127,0.07); }
+  .pg .tr:hover { background-color: rgba(44,182,125,0.10); }
+  .pg .tr.sel { background-color: rgba(44,182,125,0.22); }
+  .pg .sup { width: 104px; text-align: center; }
+  .pg .tip { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background-color: rgba(127,127,127,0.10); font-size: 12px; }
+  .pg .fc { width: 298px; height: 238px; overflow: hidden; }
+  .pg .fav { position: absolute; left: 256px; top: 10px; width: 30px; height: 30px; border-radius: 15px; background-color: rgba(0,0,0,0.35); text-align: center; line-height: 30px; }
+  .pg .fav:hover { background-color: rgba(0,0,0,0.55); }
+  .pg .lnk { color: #2cb67d; font-weight: 600; }
+  .pg .lnk:hover { text-decoration: underline; }
+  .pg .stp { display: inline-block; width: 22px; line-height: 20px; border-radius: 6px; text-align: center; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .pg .stp:hover { background-color: rgba(127,127,127,0.28); }
+  .pg .undo { display: inline-block; padding: 1px 9px; border-radius: 8px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.14); }
+  .pg .undo:hover { background-color: rgba(127,127,127,0.28); }
+  .pg .book { padding: 6px 14px; border-radius: 16px; background: linear-gradient(135deg, #ff9500, #ff2d55); color: #ffffff; font-weight: 700; }
+  .pg .book:hover { background: linear-gradient(135deg, #e68600, #e0264b); }
+  .pg .rb { width: 210px; height: 6px; margin-top: 3px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pg .rb div { height: 6px; border-radius: 3px; background-color: #ff9500; }
+  .pg .seg { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .pg .seg:hover { background-color: rgba(127,127,127,0.24); }
+  .pg .seg.on { background-color: #2cb67d; color: #ffffff; }
+  .pg .bars { display: flex; align-items: flex-end; height: 116px; margin-top: 6px; }
+  .pg .days { display: flex; }
+  .pg .col { width: 40px; text-align: center; }
+  .pg .b { width: 24px; margin: 0 8px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #2cb67d, #1a7f57); }
+  .pg .b:hover { background: linear-gradient(180deg, #4fd99b, #2cb67d); }
+  .pg .b.pk { background: linear-gradient(180deg, #7f5af0, #5a3fc0); }
+  .pg .b.pk:hover { background: linear-gradient(180deg, #9d80ff, #7f5af0); }
+  .pg .b.sel { background: linear-gradient(180deg, #ffb340, #ff9500); }
+
+  /* port: app:dunes as a gradient block */
+  .pic.dunes { display: block; width: 298px; height: 120px; border-radius: 13px 13px 0 0; background: linear-gradient(180deg, #ffe3a3 0%, #f2a65a 50%, #b86a2e 100%); }
+
+  /* port: the prelude's animate/tween/transition as CSS */
+  .pg.intro .ask[data-action="tab"] { animation: chip-top 350ms cubic-bezier(.34,1.56,.64,1) both, chip-fade 350ms linear both; animation-delay: calc(250ms + var(--i) * 110ms); }
+  @keyframes chip-top { from { top: 12px; } to { top: 0; } }
+  @keyframes chip-fade { from { opacity: 0; } to { opacity: 1; } }
+  .pg .rws { position: relative; }
+  .pg .rws .tr { position: absolute; left: 0; right: 0; transition: top 520ms cubic-bezier(.33,1,.68,1); animation: row-in 437ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes row-in { from { transform: translateX(330px); } to { transform: none; } }
+  .pg .flipper { width: 300px; height: 240px; transform-origin: 50% 50%; transition: transform 220ms cubic-bezier(.33,1,.68,1); }
+  .pg .flipper.shut { transform: scaleX(0); transition: transform 160ms cubic-bezier(.11,0,.5,0); }
+  .pg .heart { display: inline-block; font-size: 16px; }
+  .pg .heart.pop { animation: heart-pop 450ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes heart-pop { from { transform: scale(0.3); } to { transform: scale(1); } }
+  .pg .rb div { animation: rb-grow 700ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes rb-grow { from { width: 0; } }
+  .pg.tr-fade { animation: tr-fade 220ms ease-out; }
+  .pg.tr-pop { animation: tr-pop 260ms cubic-bezier(.34,1.56,.64,1); }
+  .pg.tr-slide-left { animation: tr-slide-left 240ms cubic-bezier(.33,1,.68,1); }
+  .pg.tr-slide-right { animation: tr-slide-right 240ms cubic-bezier(.33,1,.68,1); }
+  .pg.tr-slide-down { animation: tr-slide-down 240ms cubic-bezier(.33,1,.68,1); }
+  .pg.tr-slide-up { animation: tr-slide-up 240ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0.3; } to { opacity: 1; } }
+  @keyframes tr-pop { from { transform: scale(0.96); } to { transform: none; } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes tr-slide-down { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+  @keyframes tr-slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+</style>
+<div class="pg intro" id="pg">
+  <p style="margin-bottom: 4px" id="title">Try one of these 👇</p>
+  <div id="chips">
+    <span class="ask" data-action="tab" data-value="table" style="--i: 0">Show a table</span>
+    <span class="ask" data-action="tab" data-value="card" style="--i: 1">Show a card</span>
+    <span class="ask" data-action="tab" data-value="chart" style="--i: 2">Draw a chart</span>
+    <span class="ask x" data-action="close" id="close" hidden>✕</span>
+  </div>
+  <div class="stage" id="stage" hidden>
+    <div id="s-table" hidden>
+      <div class="tbl"><div class="thd"><span class="grow srt" data-action="sort" data-value="name">Feature<span id="arrow-name"> ↕</span></span><span class="sup srt" data-action="sort" data-value="ok">Supported<span id="arrow-ok"> ↕</span></span></div>
+        <div class="rws" id="rows"></div></div>
+      <div class="tip" id="ftip"><span class="muted">Click a header to sort, a row for details</span></div>
+    </div>
+    <div id="s-card" hidden>
+      <div style="height: 240px"><div class="flipper" id="flipper">
+        <div class="card fc" id="front">
+          <div style="position: relative; height: 120px"><span class="pic dunes"></span>
+            <span class="fav" data-action="fav"><span class="heart" id="heart">🤍</span></span></div>
+          <div style="padding: 9px 14px 0 14px">
+            <div class="caps t-orange" id="travel">Travel · 3 nights</div>
+            <div style="font-size: 17px; font-weight: 700">Desert Retreat, Merzouga</div>
+            <div class="small muted" style="margin: 2px 0 9px 0">★★★★☆ 4.6 · 1,204 reviews · <span class="lnk" data-action="flip">Details ↻</span></div>
+            <div class="row between" id="buy">
+              <span><b style="font-size: 18px" id="price">$420</b> <s class="small muted" id="was">$510</s></span>
+              <span><span class="stp" data-action="nights" data-value="-1">−</span><span class="small" style="display: inline-block; width: 28px; text-align: center" id="nn">3 n</span><span class="stp" data-action="nights" data-value="1">+</span></span>
+              <span class="book" data-action="book">Book</span>
+            </div>
+            <div class="row between" id="booked" hidden>
+              <span class="t-green"><b>✓ Booked</b> · <span id="bookedText">3 nights · $420</span></span><span class="undo" data-action="unbook">Undo</span>
+            </div>
+          </div></div>
+        <div class="card fc" id="back" hidden><div style="padding: 12px 14px">
+          <div class="row between"><b>What's included</b><span class="lnk small" data-action="flip">↻ Photo</span></div>
+          <div class="small" style="margin-top: 4px; line-height: 1.6">🐪 Camel trek at sunset<br>⛺ Luxury tent with en-suite<br>🍲 Dinner &amp; breakfast<br>🌌 Stargazing with a guide</div>
+          <div class="caps" style="margin: 8px 0 2px 0">Reviews · 4.6 ★</div>
+          <div id="reviews"></div>
+        </div></div>
+      </div></div>
+    </div>
+    <div id="s-chart" hidden>
+      <div class="row between"><b>Weekly messages</b><span id="weeks"><span class="seg on" data-action="week" data-value="now">This week</span> <span class="seg" data-action="week" data-value="last">Last week</span></span></div>
+      <div class="bars" id="bars"></div><div class="days" id="days"></div>
+      <div class="small" style="margin-top: 6px" id="info"></div>
+      <div class="tiny muted">Total <b id="total">0</b> · pure HTML/CSS bars</div>
+    </div>
+  </div>
+</div>
+<script>
+const TABS = ['table', 'card', 'chart'];
+const FEATURES = [
+  { name: 'Block & inline layout', ok: 2, tip: 'Paragraphs, lists and inline formatting: what every bubble is made of.' },
+  { name: 'Tables, floats, positioning', ok: 2, tip: 'rowspan, colspan, float: left, position: relative and absolute.' },
+  { name: 'Flexbox', ok: 2, tip: 'justify-content, align-items, flex-wrap and flex-grow all work.' },
+  { name: 'Gradients (linear/radial/conic)', ok: 2, tip: 'All three. Rings and pie charts are conic gradients.' },
+  { name: 'JavaScript', ok: 1, tip: 'A sandboxed <script> per message with render() and onAction(). This card is one.' },
+  { name: 'CSS grid', ok: 0, tip: 'Not supported: use flex or a table instead.' },
+  { name: 'CSS transitions', ok: 0, tip: 'Not supported: animate from a script with tween() and transition().' },
+];
+const MARK = ['❌', '✅ sandboxed', '✅'];
+const ROW = 26;
+const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const WEEKS = { now: [124, 192, 158, 248, 217, 87, 56], last: [110, 150, 186, 170, 205, 120, 64] };
+const REVIEWS = [[5, 72], [4, 18], [3, 6], [2, 3], [1, 1]];
+
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const linear = t => t, outCubic = t => 1 - Math.pow(1 - t, 3);
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+// rAF driver for the animated numbers (same formula as the host prelude's animate/tween)
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const runs = new Map();
+const tween = (target, key, to, duration, easing, draw) => {
+  const from = Number(target[key]) || 0, me = (runs.get(target) || 0) + 1;
+  runs.set(target, me);
+  return animate(duration, p => { if (runs.get(target) === me) { target[key] = from + (to - from) * p; draw(); } }, easing);
+};
+const $ = id => document.getElementById(id);
+const root = $('pg');
+
+let cur = null;
+let order = FEATURES.map((_, i) => i), sortKey = null, sortDir = 1, sel = null;
+let nights = 3, fav = false, booked = false, face = 'front', flipping = false;
+let week = 'now', bar = null, hs = Array(7).fill(0), barRun = 0;
+const price = { v: 420 };
+
+// transition(kind): a short animation on the widget root, restarted via a reflow
+function bubble(kind) {
+  root.classList.remove('tr-fade', 'tr-pop', 'tr-slide-left', 'tr-slide-right', 'tr-slide-down', 'tr-slide-up');
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+function pop(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+// intro: the chips drop in (CSS, staggered); after the original's 250 + 700 ms the class goes away
+setTimeout(() => root.classList.remove('intro'), 1000);
+
+// --- table ---
+$('rows').innerHTML = FEATURES.map((f, id) => `<div class="tr" data-action="row" data-value="${id}"><span class="grow">${esc(f.name)}</span><span class="sup">${MARK[f.ok]}</span></div>`).join('');
+function layoutRows() {
+  const rows = $('rows').children;
+  order.forEach((id, idx) => {
+    const r = rows[id];
+    r.style.top = idx * ROW + 'px';
+    r.style.animationDelay = Math.round(idx * 0.09 / 1.6 * 700) + 'ms';
+    r.classList.toggle('alt', idx % 2 === 1);
+    r.classList.toggle('sel', sel === id);
+  });
+  const arrow = k => sortKey === k ? (sortDir > 0 ? ' ▲' : ' ▼') : ' ↕';
+  $('arrow-name').textContent = arrow('name');
+  $('arrow-ok').textContent = arrow('ok');
+  const f = sel !== null ? FEATURES[sel] : null;
+  $('ftip').innerHTML = f ? `💡 <b>${esc(f.name)}</b> · ${esc(f.tip)}` : '<span class="muted">Click a header to sort, a row for details</span>';
+}
+function resort(key) {
+  if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; }
+  order = FEATURES.map((_, i) => i).sort((a, b) => {
+    const A = FEATURES[a], B = FEATURES[b];
+    const c = key === 'name' ? A.name.localeCompare(B.name) : B.ok - A.ok;
+    return c * sortDir || a - b;
+  });
+  layoutRows(); // rows glide to their new top (CSS transition, 520 ms)
+}
+layoutRows();
+
+// --- card ---
+$('reviews').innerHTML = REVIEWS.map(([s, p]) => `<div class="row tiny"><span style="width: 22px">${s}★</span><div class="rb"><div style="width: ${p}%"></div></div><span class="muted" style="width: 34px; text-align: right">${p}%</span></div>`).join('');
+function drawPrice() { $('price').textContent = '$' + Math.round(price.v); }
+function updateCard() {
+  const n = nights, plural = n > 1 ? 's' : '';
+  $('travel').textContent = `Travel · ${n} night${plural}`;
+  $('was').textContent = '$' + n * 170;
+  $('nn').textContent = `${n} n`;
+  $('bookedText').textContent = `${n} night${plural} · $${n * 140}`;
+  $('buy').hidden = booked;
+  $('booked').hidden = !booked;
+  $('heart').textContent = fav ? '❤️' : '🤍';
+}
+async function flipCard() {
+  if (flipping) return;
+  flipping = true;
+  const flipper = $('flipper');
+  flipper.classList.add('shut');          // 160 ms ease-in squeeze
+  await sleep(160);
+  face = face === 'front' ? 'back' : 'front';
+  $('front').hidden = face !== 'front';
+  $('back').hidden = face !== 'back';     // the review bars grow as the back face appears (CSS, 700 ms)
+  flipper.classList.remove('shut');       // 220 ms ease-out expand
+  await sleep(220);
+  flipping = false;
+}
+updateCard();
+
+// --- chart ---
+$('bars').innerHTML = DAYS.map((_, i) => `<div class="col" data-action="bar" data-value="${i}"><div class="tiny" style="height: 16px; font-weight: 700">&nbsp;</div><div class="b" style="height: 2px"></div></div>`).join('');
+$('days').innerHTML = DAYS.map(d => `<span class="col tiny muted">${d}</span>`).join('');
+function drawBars() {
+  const data = WEEKS[week], peak = data.indexOf(Math.max(...data));
+  const cols = $('bars').children;
+  hs.forEach((v, i) => {
+    const col = cols[i], lbl = col.children[0], b = col.children[1];
+    lbl.textContent = i === bar ? String(Math.round(v)) : ' ';
+    b.className = 'b ' + (i === bar ? 'sel' : i === peak ? 'pk' : '');
+    b.style.height = Math.max(2, Math.round(v / 260 * 96)) + 'px';
+  });
+  $('total').textContent = String(Math.round(hs.reduce((s, v) => s + v, 0)));
+}
+function drawChart() {
+  const data = WEEKS[week], peak = data.indexOf(Math.max(...data));
+  for (const s of $('weeks').children) s.classList.toggle('on', s.dataset.value === week);
+  const days = $('days').children;
+  DAYS.forEach((d, i) => {
+    days[i].className = 'col tiny ' + (i === peak ? 't-purple' : 'muted');
+    days[i].innerHTML = i === peak ? `<b>${d}</b>` : d;
+  });
+  let info = `<span class="muted">Click a bar · busiest day is ${LONG[peak]}</span>`;
+  if (bar !== null) {
+    const v = data[bar], other = WEEKS[week === 'now' ? 'last' : 'now'][bar], d = Math.round((v - other) / other * 100);
+    info = `<b>${LONG[bar]}</b> · ${v} messages · <span class="${d >= 0 ? 't-green' : 't-red'}">${d >= 0 ? '+' : ''}${d}%</span> <span class="muted">vs ${week === 'now' ? 'last' : 'this'} week</span>`;
+  }
+  $('info').innerHTML = info;
+  drawBars();
+}
+function growBars() {
+  const from = hs.slice(), to = WEEKS[week], me = ++barRun;
+  animate(800, (_, t) => {
+    if (me !== barRun) return;
+    hs = to.map((v, i) => lerp(from[i], v, outCubic(clamp((t * 800 - i * 50) / 500, 0, 1))));
+    drawBars();
+  }, linear);
+}
+drawChart();
+
+// --- tabs ---
+function showStage() {
+  $('title').textContent = cur ? 'Here you go, all live 👇' : 'Try one of these 👇';
+  for (const c of $('chips').children) c.classList.toggle('on', c.dataset.value === cur);
+  $('close').hidden = !cur;
+  $('stage').hidden = !cur;
+  for (const id of TABS) $('s-' + id).hidden = id !== cur; // showing #s-table replays the rows' slide-in (CSS)
+}
+function openTab(value) {
+  if (value === cur || !TABS.includes(value)) return;
+  bubble(cur === null ? 'slide-down' : TABS.indexOf(value) > TABS.indexOf(cur) ? 'slide-left' : 'slide-right');
+  cur = value;
+  showStage();
+  if (value === 'chart') { hs = hs.map(() => 0); growBars(); }
+}
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || !root.contains(el)) return;
+  const name = el.dataset.action, value = el.dataset.value;
+  if (name === 'tab') openTab(value);
+  else if (name === 'close') { bubble('slide-up'); cur = null; showStage(); }
+  else if (name === 'sort') resort(value === 'ok' ? 'ok' : 'name');
+  else if (name === 'row') {
+    bubble('fade');
+    const id = Number(value);
+    sel = sel === id ? null : id;
+    layoutRows();
+  } else if (name === 'fav') {
+    fav = !fav;
+    updateCard();
+    pop($('heart'), 'pop');
+  } else if (name === 'nights' && !booked) {
+    nights = clamp(nights + Number(value), 1, 7);
+    updateCard();
+    tween(price, 'v', nights * 140, 450, outCubic, drawPrice);
+  } else if (name === 'book' && !booked) { bubble('pop'); booked = true; updateCard(); }
+  else if (name === 'unbook' && booked) { bubble('fade'); booked = false; updateCard(); }
+  else if (name === 'flip') flipCard();
+  else if (name === 'week') {
+    if (value === week || !WEEKS[value]) return;
+    week = value;
+    drawChart();
+    growBars();
+  } else if (name === 'bar') {
+    const i = Number(value);
+    bar = bar === i ? null : i;
+    drawChart();
+  }
+});
+</script>

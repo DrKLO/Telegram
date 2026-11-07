@@ -227,6 +227,7 @@ public sealed class TlGen_Chat : TlGen_Object {
     public val monoforum: Boolean,
     public val forum_tabs: Boolean,
     public val in_news: Boolean,
+    public val forum_sidebar: Boolean,
     public val id: Long,
     public val access_hash: Long?,
     public val title: String,
@@ -309,6 +310,7 @@ public sealed class TlGen_Chat : TlGen_Object {
         if (linked_community_id != null) result = result or 1048576U
         if (in_news) result = result or 2097152U
         if (pinned_msg_id != null) result = result or 4194304U
+        if (forum_sidebar) result = result or 8388608U
         return result
       }
 

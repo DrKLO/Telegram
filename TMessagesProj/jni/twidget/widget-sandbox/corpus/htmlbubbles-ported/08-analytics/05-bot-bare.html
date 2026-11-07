@@ -1,0 +1,52 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 08-analytics.chat, message 5
+  author: bot 09:03 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14)); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; }
+  .center { text-align: center; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+
+  .mix { width: 520px; max-width: 100%; box-sizing: border-box; }
+  .stk { display: flex; height: 22px; border-radius: 6px; overflow: hidden; margin: 4px 0 2px 0; }
+  .stk div { height: 22px; color: #ffffff; font-size: 10px; font-weight: 700; line-height: 22px; text-align: center; }
+  .lg span { display: inline-block; font-size: 11px; margin-right: 10px; }
+  .lg i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; }
+  .dv { font-size: 12px; font-weight: 700; margin-top: 8px; }
+  .two { display: flex; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(127,127,127,0.2); }
+  .two > div { flex-grow: 1; flex-basis: 0; }
+  .donut { width: 96px; height: 96px; border-radius: 48px; position: relative; flex-shrink: 0; background: conic-gradient(#5856d6 0% 52%, #30b0c7 52% 79%, #ff9500 79% 93%, #c7c7cc 93% 100%); }
+  .donut .hole { position: absolute; left: 18px; top: 18px; width: 60px; height: 60px; border-radius: 30px; text-align: center; }
+  .gauge { width: 150px; height: 75px; overflow: hidden; position: relative; }
+  .gauge .ring { width: 150px; height: 150px; border-radius: 75px; background: conic-gradient(from 270deg, #34c759 0% 36%, rgba(127,127,127,0.2) 36% 50%, transparent 50% 100%); }
+  .gauge .hole2 { position: absolute; left: 22px; top: 22px; width: 106px; height: 106px; border-radius: 53px; }
+  .gauge .num { position: absolute; left: 0; top: 40px; width: 150px; text-align: center; font-size: 22px; font-weight: 800; }
+</style>
+<div class="card pad mix">
+  <b style="font-size: 16px">Traffic mix by device</b>
+  <div class="dv">Desktop</div>
+  <div class="stk"><div style="width: 46%; background-color: #5856d6">Search 46%</div><div style="width: 24%; background-color: #30b0c7">Direct 24%</div><div style="width: 18%; background-color: #ff9500">Social 18%</div><div style="width: 12%; background-color: #8e8e93">12%</div></div>
+  <div class="dv">Mobile</div>
+  <div class="stk"><div style="width: 28%; background-color: #5856d6">28%</div><div style="width: 17%; background-color: #30b0c7">17%</div><div style="width: 41%; background-color: #ff9500">Social 41%</div><div style="width: 14%; background-color: #8e8e93">14%</div></div>
+  <div class="dv">Tablet</div>
+  <div class="stk"><div style="width: 38%; background-color: #5856d6">38%</div><div style="width: 33%; background-color: #30b0c7">Direct 33%</div><div style="width: 19%; background-color: #ff9500">19%</div><div style="width: 10%; background-color: #8e8e93"></div></div>
+  <div class="lg" style="margin-top: 6px"><span><i style="background-color: #5856d6"></i>Search</span><span><i style="background-color: #30b0c7"></i>Direct</span><span><i style="background-color: #ff9500"></i>Social</span><span><i style="background-color: #8e8e93"></i>Other</span></div>
+  <div class="two">
+    <div class="row">
+      <div class="donut"><div class="hole card" style="border: 0"><div style="font-size: 16px; font-weight: 800; margin-top: 12px">12.4k</div><div class="tiny muted">paying</div></div></div>
+      <div class="small" style="margin-left: 12px; line-height: 1.7"><div><span style="color: #5856d6">●</span> Pro 52%</div><div><span style="color: #30b0c7">●</span> Team 27%</div><div><span style="color: #ff9500">●</span> Business 14%</div><div><span style="color: #c7c7cc">●</span> Legacy 7%</div></div>
+    </div>
+    <div class="center">
+      <div class="gauge" style="margin: 0 auto"><div class="ring"></div><div class="hole2 card" style="border: 0"></div><div class="num">72%</div></div>
+      <div class="small"><b>Goal progress</b> · Q4 revenue</div><div class="tiny muted">semicircle = conic-gradient + overflow: hidden</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; } #readout { font-size: 13px; color: #444; min-height: 18px; font-variant-numeric: tabular-nums; }</style>
+</head><body>
+<div id="chart"></div><div id="readout">Move the pointer over the chart</div>
+<script>
+  var data = d3.range(24).map(function (i) { return { h: i, t: 12 + 8 * Math.sin(i / 24 * Math.PI * 2 - 1.5) + (i % 3) }; });
+  var W = 380, H = 200, m = { t: 10, r: 12, b: 28, l: 34 };
+  var svg = d3.select('#chart').append('svg').attr('viewBox', [0, 0, W, H]).attr('width', '100%').attr('id', 'svg');
+  var x = d3.scaleLinear().domain([0, 23]).range([m.l, W - m.r]);
+  var y = d3.scaleLinear().domain([0, 25]).nice().range([H - m.b, m.t]);
+  svg.append('g').attr('transform', 'translate(0,' + (H - m.b) + ')').call(d3.axisBottom(x).ticks(8).tickFormat(function (d) { return d + 'h'; }));
+  svg.append('g').attr('transform', 'translate(' + m.l + ',0)').call(d3.axisLeft(y).ticks(5).tickFormat(function (d) { return d + '°'; }));
+  svg.append('path').datum(data).attr('fill', 'none').attr('stroke', '#2481cc').attr('stroke-width', 2)
+    .attr('d', d3.line().x(function (d) { return x(d.h); }).y(function (d) { return y(d.t); }).curve(d3.curveMonotoneX));
+  var dot = svg.append('circle').attr('r', 4).attr('fill', '#f59e0b').style('display', 'none');
+  var rule = svg.append('line').attr('stroke', '#999').attr('stroke-dasharray', '3,3').attr('y1', m.t).attr('y2', H - m.b).style('display', 'none');
+  var bisect = d3.bisector(function (d) { return d.h; }).center;
+  svg.on('pointermove', function (event) {
+    var p = d3.pointer(event); var i = bisect(data, x.invert(p[0])); var d = data[i];
+    dot.style('display', null).attr('cx', x(d.h)).attr('cy', y(d.t));
+    rule.style('display', null).attr('x1', x(d.h)).attr('x2', x(d.h));
+    d3.select('#readout').text(d.h + ':00 — ' + d.t.toFixed(1) + '°C');
+  }).on('pointerleave', function () { dot.style('display', 'none'); rule.style('display', 'none'); });
+  var yl = svg.append('text').attr('font-size', 11).attr('fill', '#666').text('temperature');
+  var bb = yl.node().getBBox();
+  yl.attr('transform', 'translate(' + (12) + ',' + (m.t + bb.width + 4) + ') rotate(-90)');
+</script>
+</body></html>

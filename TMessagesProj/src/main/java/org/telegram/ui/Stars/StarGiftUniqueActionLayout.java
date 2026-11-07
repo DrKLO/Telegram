@@ -25,6 +25,7 @@ import android.view.View;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -39,6 +40,7 @@ import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.BulletinFactory;
@@ -103,6 +105,7 @@ public class StarGiftUniqueActionLayout {
     private final RectF messageRect = new RectF();
 
     private boolean burned;
+    private int ribbonColorGeneration;
     private boolean widthExpanded;
 
     private static final class Row {
@@ -189,6 +192,7 @@ public class StarGiftUniqueActionLayout {
         }
         if (burned = gift.burned) {
             ribbon.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ribbonColorGeneration = ThemeBind.generation();
             ribbon.setText(11, getString(R.string.Gift2UniqueRibbonBurned), true);
         } else {
             ribbon.setBackdrop(backdrop, true, false);
@@ -377,6 +381,7 @@ public class StarGiftUniqueActionLayout {
         }
         if (burned = gift.burned) {
             ribbon.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ribbonColorGeneration = ThemeBind.generation();
             ribbon.setText(11, getString(R.string.Gift2UniqueRibbonBurned), true);
         } else {
             ribbon.setBackdrop(backdrop, true, false);
@@ -495,6 +500,14 @@ public class StarGiftUniqueActionLayout {
     }
 
     public void draw(Canvas canvas) {
+        if (burned && ribbon != null && ribbonColorGeneration != ThemeBind.generation()) {
+            ribbonColorGeneration = ThemeBind.generation();
+            try {
+                ribbon.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
         final float cx = getWidth() / 2.0f;
 
         backgroundRect.set(0, 0, getWidth(), getHeight());

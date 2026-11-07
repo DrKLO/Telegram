@@ -521,6 +521,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (TelephonyManager.EXTRA_STATE_OFFHOOK.equals(state)) {
 					hangUp();
 				}
+			} else if (AudioManager.RINGER_MODE_CHANGED_ACTION.equals(intent.getAction())) {
+				// the ringer mode is read once when the ringing starts: follow its changes while the call rings
+				if (currentState == STATE_WAITING_INCOMING && user != null) {
+					AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+					if (am.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+						stopRinging();
+					} else if (ringtonePlayer == null) {
+						startRingtoneAndVibration(user.id);
+					}
+				}
 			} else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
 				for (int i = 0; i< stateListeners.size(); i++) {
 					stateListeners.get(i).onScreenOnChange(true);
@@ -4063,14 +4073,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 				});
 				ringtonePlayer.setLooping(true);
-				if (isHeadsetPlugged) {
-					ringtonePlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
-				} else {
-					ringtonePlayer.setAudioStreamType(AudioManager.STREAM_RING);
-					if (!USE_CONNECTION_SERVICE) {
-						int focusResult = am.requestAudioFocus(this, AudioManager.STREAM_RING, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-						hasAudioFocus = focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
-					}
+				final int ringStream = isHeadsetPlugged ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_RING;
+				ringtonePlayer.setAudioStreamType(ringStream);
+				if (!USE_CONNECTION_SERVICE) {
+					// with a headset too, or the music keeps playing over the ringtone
+					int focusResult = am.requestAudioFocus(this, ringStream, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+					hasAudioFocus = focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
 				}
 				try {
 					String notificationUri;
@@ -4654,6 +4662,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				filter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
 				filter.addAction(Intent.ACTION_SCREEN_ON);
 				filter.addAction(Intent.ACTION_SCREEN_OFF);
+				filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
 			}
 			registerReceiver(receiver, filter);
 			fetchBluetoothDeviceName();

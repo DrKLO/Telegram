@@ -17,6 +17,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 
@@ -33,13 +34,13 @@ public class SponsoredMessageInfoView extends FrameLayout {
         TextView textView = new TextView(context);
         textView.setText(LocaleController.getString(R.string.SponsoredMessageInfo));
         textView.setTypeface(AndroidUtilities.bold());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
 
         LinkSpanDrawable.LinksTextView description1 = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
         description1.setText(AndroidUtilities.replaceLinks(LocaleController.getString("SponsoredMessageInfo2Description1"), resourcesProvider));
-        description1.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        description1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.linkTextColor(description1, Theme.key_chat_messageLinkIn, resourcesProvider);
+        ThemeBind.textColor(description1, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         description1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description1.setLineSpacing(AndroidUtilities.dp(2), 1f);
         description1.setOnLinkPressListener(link -> {
@@ -49,7 +50,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
 
         LinkSpanDrawable.LinksTextView description2 = new LinkSpanDrawable.LinksTextView(context);
         description2.setText(AndroidUtilities.replaceLinks(LocaleController.getString("SponsoredMessageInfo2Description2"), resourcesProvider));
-        description2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(description2, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         description2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description2.setLineSpacing(AndroidUtilities.dp(2), 1f);
         description2.setOnLinkPressListener(link -> {
@@ -59,7 +60,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
 
         LinkSpanDrawable.LinksTextView description3 = new LinkSpanDrawable.LinksTextView(context);
         description3.setText(AndroidUtilities.replaceLinks(LocaleController.getString("SponsoredMessageInfo2Description3"), resourcesProvider));
-        description3.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(description3, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         description3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         description3.setLineSpacing(AndroidUtilities.dp(2), 1f);
         description3.setOnLinkPressListener(link -> {
@@ -76,6 +77,8 @@ public class SponsoredMessageInfoView extends FrameLayout {
             @Override
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
+                // same key as the (bound) text color: follows theme changes
+                buttonPaint.setColor(getCurrentTextColor());
                 AndroidUtilities.rectTmp.set(AndroidUtilities.dp(1), AndroidUtilities.dp(1), getMeasuredWidth() - AndroidUtilities.dp(1), getMeasuredHeight() - AndroidUtilities.dp(1));
                 canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(4), AndroidUtilities.dp(4), buttonPaint);
             }
@@ -90,8 +93,8 @@ public class SponsoredMessageInfoView extends FrameLayout {
 
         button.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12), 0);
         button.setText(LocaleController.getString(R.string.SponsoredMessageAlertLearnMoreUrl));
-        button.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        button.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 4));
+        ThemeBind.textColor(button, Theme.key_featuredStickers_addButton, resourcesProvider);
+        ThemeBind.selectorBackground(button, Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 4), ThemeBind.of(Theme.key_dialogBackground), ThemeBind.adaptiveRipple(Theme.key_dialogBackground), resourcesProvider);
         button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         button.setGravity(Gravity.CENTER_VERTICAL);
 
@@ -99,7 +102,7 @@ public class SponsoredMessageInfoView extends FrameLayout {
         LinkSpanDrawable.LinksTextView description4 = new LinkSpanDrawable.LinksTextView(context);
         description4.setText(AndroidUtilities.replaceLinks(LocaleController.getString("SponsoredMessageInfo2Description4"), resourcesProvider));
         description4.setLineSpacing(AndroidUtilities.dp(2), 1f);
-        description4.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(description4, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         description4.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
 
         textView.setPadding(AndroidUtilities.dp(22), 0, AndroidUtilities.dp(22), 0);

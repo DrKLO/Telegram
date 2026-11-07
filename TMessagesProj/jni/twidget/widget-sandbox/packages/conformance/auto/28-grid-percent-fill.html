@@ -1,0 +1,92 @@
+<!doctype html>
+<html data-test="auto/28-grid-percent-fill">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: a grid row with a percentage fill</title>
+<!-- conformance {"title":"A grid row with a percentage fill (a poll's options): a <button> grid 52px 1fr auto, a bar across columns 2–3 whose fill a width transition takes to 100 %"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var u=document,m=u.documentElement,w=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(w?"sandbox":"native"),a=[],y={},l=[];var j,c,p,f,k,d,b,g,C=e=>typeof e=="string"?u.querySelector(e):e;var M=()=>{g=g||setTimeout(A,0)};function i(e,t,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),h=y[e+"|"+t]||(y[e+"|"+t]=a[a.length]=[e,t]);return h[2]=s,h[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function D(e,t,o,n){if(n&&n.sandboxOnly&&!w)return i(e,t,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(e,t,!1,"threw "+s,n)}return r==null?i(e,t,null,"not applicable",n):i(e,t,r instanceof Array?!!r[0]:!!r,r[1],n)}var O=(e,t,o,n,r)=>D(e,t,[o,n],r);function R(e){let t=C(e).getBoundingClientRect();return{x:t.left,y:t.top,w:t.width,h:t.height,r:t.right,b:t.bottom}}var B=e=>{l.push(e)};var E=()=>{},I=e=>{let t=e.getBoundingClientRect();return[t.left,t.top,t.width,t.height].map(o=>Math.round(o*10)/10)};function A(){g=0,p&&!f&&E();let e={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)e[n[2]]++;let t=p&&!l.length,o=f||t&&!e.pending?"done":t&&k?"awaiting":"running";f=o=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:S,status:o,n:e,checks:a,targets:j,stages:c})),x&&x(o,e)}var x;function T(){x=(e,t)=>{let o=[e];for(let n in t)t[n]&&o.push(n+" "+t[n]);u.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),t=>{c[t.getAttribute("data-stage")]=I(t)})),!l.length)return p=1,d&&b&&setTimeout(b,d),M();let e;try{e=l.shift()()}catch(t){i("harness","step",!1,t)}setTimeout(q,e||0)}function F(e){e=e||{},k=e.awaitInput,d=e.awaitInput||e.deadline,A();let t=()=>{t=()=>{},setTimeout(q,e.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>t()))}catch(o){}setTimeout(()=>t(),400)}T();return{ok:O,rect:R,run:F,step:B}}();</script><!-- /conformance:harness -->
+<style>
+#os button{display:grid;grid-template-columns:52px 1fr auto;align-items:center;row-gap:6px;width:100%;margin:0;padding:8px 8px 10px 0;background:none;border-radius:12px;color:inherit;font:inherit;text-align:left;transition:opacity .3s,background .2s}
+.p{font-size:14px;font-weight:600;text-align:right;padding-right:10px;white-space:nowrap}
+.p,.c{font-variant-numeric:tabular-nums}
+.l{display:flex;align-items:center;gap:6px;min-width:0}
+.n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c{font-size:13px;color:var(--tg-theme-hint-color);padding-left:8px}
+.b{grid-column:2/4;height:6px;border-radius:3px;background:var(--tg-theme-secondary-bg-color)}
+.b i{display:block;height:100%;width:0;border-radius:3px;background:var(--tg-theme-button-color);transition:width .6s cubic-bezier(.3,.7,.2,1),opacity .3s}
+.v .b i{opacity:.35}
+.v .m .b i{opacity:1}
+.k{display:none;width:16px;height:16px;box-sizing:border-box;border-radius:50%;background:var(--tg-theme-button-color);place-items:center;flex:none}
+.m .k{display:grid;animation:pp .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pp{from{transform:scale(0)}}
+.k svg{width:10px;height:10px;fill:none;stroke:var(--tg-theme-button-text-color);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div class="conf-head">28 · Grid row with a percentage fill</div>
+<div class="conf-probes"><div id="os"></div></div>
+<div id="conf-list"></div>
+<script>
+// A poll's options (corpus/bot-demos/02-poll), built as it builds them. Seen on clients in a 100 % row: the button
+// wider than its container, the auto column ~200 px (the count mid-row). Per option: label, % and count at load, after.
+var O = [['Friday', 0, 0, 100, 7], ['Saturday after lunch, if it does not rain', 60, 803, 100, 1204], ['Sunday', 20, 1, 35, 3], ['Never', 0, 0, 0, 0]];
+var R = T.rect, os = document.getElementById('os'), rows, at = 1, tok = 0;
+os.innerHTML = O.map(function (o) { return '<button><span class="p"></span><span class="l"><span class="n">' + o[0] + '</span><span class="k"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></span><span class="c"><span></span></span><i class="b"><i></i></i></button>'; }).join('');
+rows = [].slice.call(os.children);
+// k: the column of O to show (1 at load, 3 after the vote), tweened from the one shown before.
+function draw(k) {
+  rows.forEach(function (b, i) { b.children[3].firstChild.style.width = O[i][k] + '%'; });
+  var a = at, t0 = Date.now(), id = ++tok;
+  at = k;
+  (function s() {
+    if (id != tok) return;
+    var e = Math.min(1, (Date.now() - t0) / 600), f = 1 - Math.pow(1 - e, 3);
+    rows.forEach(function (b, i) {
+      b.children[0].textContent = Math.round(O[i][a] + (O[i][k] - O[i][a]) * f) + '%';
+      b.children[2].firstChild.textContent = Math.round(O[i][a + 1] + (O[i][k + 1] - O[i][a + 1]) * f);
+    });
+    if (e < 1) requestAnimationFrame(s);
+  })();
+}
+var px = function (v) { return Math.round(v * 10) / 10; };
+function each(id, name, f) {
+  var bad = [];
+  rows.forEach(function (b, i) { var r = R(b), d = f(r, b.children[2].firstChild, R(b.children[3]), R(b.children[3].firstChild), i); if (d) bad.push('row ' + (i + 1) + ': ' + d); });
+  T.ok(id, name, !bad.length, bad.join('; '));
+}
+function rowsFit(when) {
+  var o = R(os);
+  each('css.box.size', when + 'every row is as wide as its container (width: 100%)', function (r) {
+    return Math.abs(r.x - o.x) > 0.5 || Math.abs(r.w - o.w) > 0.5 ? px(r.w) + ' px at ' + px(r.x - o.x) + ' in ' + px(o.w) : '';
+  });
+  each('css.display.grid', when + 'each count ends at the row\'s end (the auto column fits the count)', function (r, c) {
+    c = R(c);
+    return Math.abs(r.r - 8 - c.r) > 1 ? 'count ' + px(c.x - r.x) + '–' + px(c.r - r.x) + ', want its end at ' + px(r.w - 8) : '';
+  });
+}
+draw(1);
+T.step(function () {
+  rowsFit('at load: ');
+  os.className = 'v';
+  rows[0].className = 'm';
+  draw(3);
+  return 1000;
+});
+T.step(function () {
+  rowsFit('at 100 %: ');
+  each('css.display.grid', 'the bar spans columns 2–3, from 52 px to the row\'s end (grid-column: 2/4)', function (r, c, t) {
+    return Math.abs(t.x - r.x - 52) > 0.5 || Math.abs(r.r - 8 - t.r) > 0.5 ? 'bar ' + px(t.x - r.x) + '–' + px(t.r - r.x) + ' in ' + px(r.w) : '';
+  });
+  each('css.box.size', 'no fill runs past its bar\'s right edge', function (r, c, t, f) {
+    return f.r > t.r + 0.5 ? 'fill ends ' + px(f.r - t.r) + ' px past its bar' : '';
+  });
+  each('anim.transition', 'after the width transition each fill is its percentage of the bar', function (r, c, t, f, i) {
+    return Math.abs(f.x - t.x) > 0.5 || Math.abs(f.w - t.w * O[i][3] / 100) > 1 ? 'fill ' + px(f.w) + ' of ' + px(t.w) + ', want ' + O[i][3] + ' %' : '';
+  });
+});
+T.run();
+</script>
+</body>
+</html>

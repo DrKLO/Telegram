@@ -1,0 +1,47 @@
+<!doctype html>
+<html data-test="visual/sdk/07-storage-recreate">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- conformance {"title":"Storage survives the widget being dropped and re-created","hint":"Tap +1 three times. Scroll far up the chat until the bubble is rebuilt (Started goes up), scroll back: both counters are still 3.","expect":"localStorage and sessionStorage come back with the re-created widget (the client passes its copy at creation).","contract":"docs/sdk-v1.md §2.8, §5.4","covers":["behaviour.storage-persist","js.storage.local","js.storage.session"]} -->
+<!-- conformance:mini --><style>html,body{margin:0;padding:0}body{font:14px/1.4 system-ui,sans-serif;color:var(--tg-theme-text-color,#111)}@media (prefers-color-scheme:dark){body{color:var(--tg-theme-text-color,#eee)}}.h{font-weight:600;font-size:15px;margin:10px 12px 2px}.i{margin:0 12px 8px;font-size:13px;color:var(--tg-theme-hint-color,#888)}.r{display:flex;flex-wrap:wrap;gap:6px;margin:6px 12px}.big{font-size:22px;font-weight:600;margin:4px 12px}#log{margin:8px 12px 10px;font:12px/1.45 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><script>var S = (function () {
+  var r = document.documentElement, c = [], tg = {}, st = 'running';
+  function rc(e) { var b = e.getBoundingClientRect(); return [b.left, b.top, b.width, b.height].map(function (v) { return Math.round(v * 10) / 10; }); }
+  function pub() {
+    var t = {};
+    for (var k in tg) { var e = document.getElementById(tg[k]); if (e) t[k] = rc(e); }
+    r.setAttribute('data-conformance', JSON.stringify({ v: 1, id: r.getAttribute('data-test'), status: st, checks: c, targets: t }));
+  }
+  function log(m, ok) {
+    var l = document.getElementById('log');
+    if (!l) return;
+    var d = document.createElement('div');
+    d.textContent = (ok === true ? '✓ ' : ok === false ? '✗ ' : '· ') + m;
+    l.appendChild(d);
+  }
+  return {
+    TW: typeof TelegramWidget !== 'undefined' ? TelegramWidget : null,
+    check: function (id, name, ok, d) { c.push([id, name, ok ? 'pass' : 'fail', d || '']); log(name + (d ? ' (' + d + ')' : ''), !!ok); pub(); },
+    log: log,
+    target: function (n, id) { tg[n] = id; },
+    start: function () { st = 'awaiting'; pub(); },
+    done: function () { st = 'done'; pub(); },
+  };
+})();</script><!-- /conformance:mini -->
+</head>
+<body>
+<div class="h">SDK 07 · Storage after re-creation</div>
+<div class="i">+1 three times, scroll far away and back: both stay 3.</div>
+<div class="big" id="v"></div>
+<div class="r"><button id="p">+1</button><button id="z">Reset</button></div>
+<div id="log"></div>
+<script>
+var L = localStorage, Q = sessionStorage;
+L.setItem('starts', String(+(L.getItem('starts') || 0) + 1));
+function show() { document.getElementById('v').textContent = 'local ' + (L.getItem('n') || 0) + ' · session ' + (Q.getItem('n') || 0) + ' · started ' + L.getItem('starts'); }
+document.getElementById('p').onclick = function () { L.setItem('n', String(+(L.getItem('n') || 0) + 1)); Q.setItem('n', String(+(Q.getItem('n') || 0) + 1)); show(); };
+document.getElementById('z').onclick = function () { L.clear(); Q.clear(); L.setItem('starts', '1'); show(); };
+S.target('p', 'p'); show(); S.start();
+</script>
+</body>
+</html>

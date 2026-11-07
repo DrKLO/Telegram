@@ -1,0 +1,18 @@
+<!--
+  defaults: one CSS rule (numbers to the right); the table itself is the renderer's UA layer (corpus/defaults/README.md)
+  idea: a table: a timetable with a caption, a header row and a footnote
+-->
+<title>Timetable</title>
+<style>td:last-child, th:last-child { text-align: right }</style>
+<h3>Trains to the airport</h3>
+<table>
+  <caption>Today, from Central station</caption>
+  <thead><tr><th>Departs</th><th>Platform</th><th>Minutes</th></tr></thead>
+  <tbody>
+    <tr><td>14:05</td><td>3</td><td>24</td></tr>
+    <tr><td>14:20</td><td>5</td><td>31</td></tr>
+    <tr><td>14:35</td><td>3</td><td>24</td></tr>
+    <tr><td>14:50</td><td>4</td><td>27</td></tr>
+  </tbody>
+</table>
+<p><small>The 14:20 stops everywhere.</small></p>

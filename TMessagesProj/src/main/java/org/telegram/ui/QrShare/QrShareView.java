@@ -21,7 +21,6 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SweepGradient;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -2431,8 +2430,6 @@ public class QrShareView extends View {
 
     // --- pattern field
 
-    private final java.util.ArrayList<android.graphics.Rect> exclusion = new java.util.ArrayList<>();
-
     /** The system bars over this view: none where the screen is not under them (a tablet shows it as a floating layer). */
     private int insetTop = AndroidUtilities.statusBarHeight, insetBottom = AndroidUtilities.navigationBarHeight;
 
@@ -2465,15 +2462,6 @@ public class QrShareView extends View {
         // at inset + bar / 2 − 20dp; the share button 22dp from the side, its bottom at inset + 20dp
         insetTop = Math.max(insetTop(this), dp(9) + dp(20) - ActionBar.getCurrentActionBarHeight() / 2);
         insetBottom = Math.max(insetBottom(this), dp(22) - dp(20));
-        if (Build.VERSION.SDK_INT >= 29 && changed) {
-            // the system back gesture must not steal backdrop drags: exclude 200dp (the system cap) on both edges,
-            // centred on the QR card where the backdrop is usually dragged
-            final int w = r - l, cy = (int) (cardTop() + cardH() / 2f), half = dp(100), edge = dp(24);
-            exclusion.clear();
-            exclusion.add(new android.graphics.Rect(0, cy - half, edge, cy + half));
-            exclusion.add(new android.graphics.Rect(w - edge, cy - half, w, cy + half));
-            setSystemGestureExclusionRects(exclusion);
-        }
     }
 
     @Override
@@ -4887,7 +4875,7 @@ public class QrShareView extends View {
         super.onAttachedToWindow();
         prepareCardShadow(); // ready before the open's first frame
         prewarmIslandColors(); // the packs island colours for all the backdrops, ahead of any open
-        org.telegram.messenger.NotificationCenter.getInstance(currentAccount).addObserver(giftsObserver, org.telegram.messenger.NotificationCenter.starUserGiftsLoaded);
+        org.telegram.messenger.NotificationCenter.getInstance(currentAccount).addWeakObserver(giftsObserver, org.telegram.messenger.NotificationCenter.starUserGiftsLoaded);
         loadGifts(); // pages that came while detached
         sensors = (android.hardware.SensorManager) getContext().getSystemService(Context.SENSOR_SERVICE);
         final android.hardware.Sensor g = sensors != null ? sensors.getDefaultSensor(android.hardware.Sensor.TYPE_GRAVITY) : null;

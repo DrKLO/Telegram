@@ -1,0 +1,8 @@
+<!-- Paint limit (docs/decisions.md, "Heavy boxes"): 17 boxes with a blurred shadow and transparency, one past the 16 a
+     widget may have. Stopped before the first frame with them ("Paint limit exceeded: 17 boxes …"), drawn without the
+     effects. compat counts nothing: the same widget runs. -->
+<style>
+.b{display:inline-block;width:40px;height:40px;margin:6px;border-radius:10px;background:#4a90e2;box-shadow:0 4px 14px rgba(0,0,0,.45);opacity:.9}
+</style>
+<div id="r"><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div></div>
+<p id="p">drawn</p>

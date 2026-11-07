@@ -9,6 +9,7 @@ import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.messenger.Utilities.clamp01;
 import static org.telegram.ui.Stars.StarsController.findAttributes;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
@@ -56,6 +57,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -82,7 +84,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.telegram.utils.glass.source.GlassSourceColor;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
@@ -144,7 +146,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
 
     @Override
     public View createView(Context context) {
-        iBlur3SourceColor = new BlurredBackgroundSourceColor();
+        iBlur3SourceColor = new GlassSourceColor();
         iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
         iBlur3Factory = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
 
@@ -162,12 +164,12 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             }
         });
         actionBar.setTitle(gift_name);
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), true);
-        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setSubtitleColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundWhite, getResourceProvider());
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), true);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, getResourceProvider(), false);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
+        ThemeBind.actionBarSubtitleColor(actionBar, Theme.key_windowBackgroundWhiteGrayText2, getResourceProvider());
 
         SizeNotifierFrameLayout fragmentView = new SizeNotifierFrameLayout(context) {
             @Override
@@ -192,6 +194,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), 0.04f)
         );
         fragmentView.setBackgroundColor(backgroundColor);
+        themedBackgroundColor = backgroundColor;
         this.fragmentView = fragmentView;
 
         StarsIntroActivity.StarsBalanceView balanceView = new StarsIntroActivity.StarsBalanceView(context, currentAccount, resourceProvider);
@@ -254,7 +257,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         fragmentView.addView(filterScrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 47, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         filtersDivider = new View(context);
-        filtersDivider.setBackgroundColor(getThemedColor(Theme.key_divider));
+        ThemeBind.backgroundColor(filtersDivider, Theme.key_divider, getResourceProvider());
         filtersDivider.setAlpha(0.0f);
         fragmentView.addView(filtersDivider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 2.0f / AndroidUtilities.density, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
@@ -274,11 +277,12 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         checkboxLayout.addView(checkbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL));
 
         final TextView checkboxTextView = new TextView(context);
-        checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourceProvider));
+        ThemeBind.textColor(checkboxTextView, Theme.key_dialogTextBlack, resourceProvider);
         checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkboxTextView.setText(LocaleController.getString(R.string.GiftResaleStarsOnly));
         checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
         checkboxLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(18), 0, Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f))));
+        onlyStarsCheckboxLayout = checkboxLayout;
 
 
         onlyStarsContainer = new FrameLayout(context);
@@ -317,7 +321,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         sb.setSpan(new ColoredImageSpan(R.drawable.msg_clearcache), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         sb.append(" ").append(getString(R.string.Gift2ResaleFiltersClear));
         clearFiltersButton.setText(sb);
-        clearFiltersButton.setTextColor(getThemedColor(Theme.key_featuredStickers_addButton));
+        ThemeBind.textColor(clearFiltersButton, Theme.key_featuredStickers_addButton, getResourceProvider());
         clearFiltersButton.setTypeface(AndroidUtilities.bold());
         clearFiltersButton.setPadding(dp(20), 0, dp(20), 0);
         clearFiltersButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(22), 0, Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f))));
@@ -442,18 +446,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             ImageView searchIcon = new ImageView(context);
             searchIcon.setScaleType(ImageView.ScaleType.CENTER);
             searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-            searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, getResourceProvider(), PorterDuff.Mode.SRC_IN);
             searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
             EditTextCaption editText = new EditTextCaption(context, resourceProvider);
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourceProvider));
-            editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourceProvider);
+            ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
             editText.setCursorSize(dp(19));
             editText.setCursorWidth(1.5f);
             editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-            editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourceProvider));
+            ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourceProvider);
             editText.setBackground(null);
             searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
             editText.addTextChangedListener(new TextWatcher() {
@@ -555,18 +559,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             ImageView searchIcon = new ImageView(context);
             searchIcon.setScaleType(ImageView.ScaleType.CENTER);
             searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-            searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, getResourceProvider(), PorterDuff.Mode.SRC_IN);
             searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
             EditTextCaption editText = new EditTextCaption(context, resourceProvider);
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourceProvider));
-            editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourceProvider);
+            ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
             editText.setCursorSize(dp(19));
             editText.setCursorWidth(1.5f);
             editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-            editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourceProvider));
+            ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourceProvider);
             editText.setBackground(null);
             searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
             editText.addTextChangedListener(new TextWatcher() {
@@ -668,18 +672,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             ImageView searchIcon = new ImageView(context);
             searchIcon.setScaleType(ImageView.ScaleType.CENTER);
             searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-            searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, getResourceProvider(), PorterDuff.Mode.SRC_IN);
             searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
             EditTextCaption editText = new EditTextCaption(context, resourceProvider);
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourceProvider));
-            editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+            ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourceProvider);
+            ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
             editText.setCursorSize(dp(19));
             editText.setCursorWidth(1.5f);
             editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-            editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourceProvider));
+            ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourceProvider);
             editText.setBackground(null);
             searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
             editText.addTextChangedListener(new TextWatcher() {
@@ -1170,14 +1174,50 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         return ColorUtils.calculateLuminance(color) > 0.7f;
     }
 
+    private int themedBackgroundColor;
+    private int lastPressedColor;
+    private View onlyStarsCheckboxLayout;
+
+    private static void setSelectorRippleColor(View view, int color) {
+        if (view != null) {
+            Theme.setSelectorDrawableColor(view.getBackground(), color, true);
+        }
+    }
+
+    private static boolean hasColorBackground(View view, int color) {
+        return view != null && view.getBackground() instanceof android.graphics.drawable.ColorDrawable
+            && ((android.graphics.drawable.ColorDrawable) view.getBackground()).getColor() == color;
+    }
+
+    private void updateFragmentBackground() {
+        try {
+            final int color = Theme.blendOver(
+                Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider),
+                Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), 0.04f)
+            );
+            if (color != themedBackgroundColor) {
+                // only views still showing the themed background color set in createView
+                if (hasColorBackground(filterScrollView, themedBackgroundColor)) {
+                    filterScrollView.setBackgroundColor(color);
+                }
+                if (hasColorBackground(fragmentView, themedBackgroundColor)) {
+                    fragmentView.setBackgroundColor(color);
+                }
+                themedBackgroundColor = color;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public static class Filter extends TextView {
         private ColoredImageSpan span;
         public Filter(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
 
             final int color = Theme.getColor(Theme.key_actionBarActionModeDefaultIcon, resourcesProvider);
-            setTextColor(color);
-            setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, 0.08f), Theme.multAlpha(color, 0.15f), dp(13), dp(13)));
+            ThemeBind.textColor(this, Theme.key_actionBarActionModeDefaultIcon, resourcesProvider);
+            ThemeBind.selectorBackground(this, Theme.createRadSelectorDrawable(Theme.multAlpha(color, 0.08f), Theme.multAlpha(color, 0.15f), dp(13), dp(13)), ThemeBind.multAlpha(Theme.key_actionBarActionModeDefaultIcon, 0.08f), ThemeBind.multAlpha(Theme.key_actionBarActionModeDefaultIcon, 0.15f), resourcesProvider);
             setPadding(dp(11), 0, dp(11), 0);
             setGravity(Gravity.CENTER);
             setTypeface(AndroidUtilities.bold());
@@ -1231,7 +1271,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             addView(imageView, LayoutHelper.createLinear(64, 64, Gravity.CENTER, 0, 32, 0, 0));
 
             textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setGravity(Gravity.CENTER);
             addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.FILL_HORIZONTAL, 12, 12, 12, 24));
@@ -1292,7 +1332,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             layout.addView(imageView, LayoutHelper.createLinear(130, 130, Gravity.CENTER));
 
             titleView = new TextView(context);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
             titleView.setGravity(Gravity.CENTER);
             titleView.setTypeface(AndroidUtilities.bold());
@@ -1300,7 +1340,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             layout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 12, 32, 9));
 
             subtitleView = new LinkSpanDrawable.LinksTextView(context);
-            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+            ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
             subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitleView.setGravity(Gravity.CENTER);
             subtitleView.setText(getString(R.string.Gift2ResaleFiltersEmptySubtitle));
@@ -1308,8 +1348,8 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             layout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 0, 32, 12));
 
             buttonView = new TextView(context);
-            buttonView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-            buttonView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 6, 6));
+            ThemeBind.textColor(buttonView, Theme.key_featuredStickers_addButton, resourcesProvider);
+            ThemeBind.selectorBackground(buttonView, Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), 6, 6), null, ThemeBind.multAlpha(Theme.key_featuredStickers_addButton, .10f), resourcesProvider);
             buttonView.setGravity(Gravity.CENTER);
             buttonView.setText(getString(R.string.Gift2ResaleFiltersEmptyClear));
             buttonView.setPadding(dp(13), 0, dp(13), 0);
@@ -1326,7 +1366,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             this.currentAccount = currentAccount;
 
             setPadding(dp(18), 0, dp(18), 0);
-            setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+            setColorKeys(Theme.key_actionBarDefaultSubmenuItem, Theme.key_actionBarDefaultSubmenuItemIcon);
             setIconColor(0xFFFFFFFF);
             imageView.setTranslationX(dp(2));
             imageView.setScaleX(1.2f);
@@ -1430,7 +1470,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             this.currentAccount = currentAccount;
 
             setPadding(dp(18), 0, dp(18), 0);
-            setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+            setColorKeys(Theme.key_actionBarDefaultSubmenuItem, Theme.key_actionBarDefaultSubmenuItemIcon);
             setIconColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             imageView.setTranslationX(dp(2));
             makeCheckView(2);
@@ -1469,7 +1509,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
                         return dp(24);
                     }
                 };
-                emojiDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                ThemeBind.drawableColorFilter(this, emojiDrawable, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider, PorterDuff.Mode.SRC_IN);
             }
             if (imageView.isAttachedToWindow()) {
                 emojiDrawable.addView(imageView);
@@ -1530,7 +1570,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         public BackdropItem(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context, false, false, resourcesProvider);
             setPadding(dp(18), 0, dp(18), 0);
-            setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
+            setColorKeys(Theme.key_actionBarDefaultSubmenuItem, Theme.key_actionBarDefaultSubmenuItemIcon);
             setIconColor(0xFFFFFFFF, PorterDuff.Mode.MULTIPLY);
             imageView.setTranslationX(dp(2));
             makeCheckView(2);
@@ -1626,7 +1666,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             private boolean attached;
             public void attach() {
                 if (attached) return;
-                NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+                NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starUserGiftsLoaded);
                 list.load();
                 resaleList.load();
                 attached = true;
@@ -1766,18 +1806,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
                 ImageView searchIcon = new ImageView(context);
                 searchIcon.setScaleType(ImageView.ScaleType.CENTER);
                 searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
                 EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
                 editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
-                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
+                ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 editText.setCursorSize(dp(19));
                 editText.setCursorWidth(1.5f);
                 editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 editText.setBackground(null);
                 searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
                 editText.addTextChangedListener(new TextWatcher() {
@@ -1878,18 +1918,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
                 ImageView searchIcon = new ImageView(context);
                 searchIcon.setScaleType(ImageView.ScaleType.CENTER);
                 searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
                 EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
                 editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
-                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
+                ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 editText.setCursorSize(dp(19));
                 editText.setCursorWidth(1.5f);
                 editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 editText.setBackground(null);
                 searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
                 editText.addTextChangedListener(new TextWatcher() {
@@ -1990,18 +2030,18 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
                 ImageView searchIcon = new ImageView(context);
                 searchIcon.setScaleType(ImageView.ScaleType.CENTER);
                 searchIcon.setImageResource(R.drawable.smiles_inputsearch);
-                searchIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.SRC_IN));
+                ThemeBind.colorFilter(searchIcon, Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 searchLayout.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.LEFT, 10, 0, 0, 0));
                 EditTextCaption editText = new EditTextCaption(context, resourcesProvider);
                 editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
                 editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
-                editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
+                ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 editText.setCursorSize(dp(19));
                 editText.setCursorWidth(1.5f);
                 editText.setHint(getString(R.string.Gift2ResaleFiltersSearch));
-                editText.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                ThemeBind.textColor(editText, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 editText.setBackground(null);
                 searchLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.LEFT, 43, 0, 8, 0));
                 editText.addTextChangedListener(new TextWatcher() {
@@ -2282,12 +2322,31 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         }
     }
 
-    private BlurredBackgroundSourceColor iBlur3SourceColor;
+    private GlassSourceColor iBlur3SourceColor;
     private BlurredBackgroundDrawableViewFactory iBlur3Factory;
 
 
     @Override
     public boolean isSupportEdgeToEdge() {
         return true;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            // createSimpleSelectorRoundRectDrawable(r, 0, pressed): the content layer stays transparent, only the ripple is themed
+            final int pressedColor = Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), 0.10f));
+            if (pressedColor != lastPressedColor) {
+                lastPressedColor = pressedColor;
+                setSelectorRippleColor(clearFiltersButton, pressedColor);
+                setSelectorRippleColor(onlyStarsCheckboxLayout, pressedColor);
+            }
+
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        updateFragmentBackground();
     }
 }

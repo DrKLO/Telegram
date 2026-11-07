@@ -1,0 +1,78 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: filter chips over a task list — toggling chips hides rows with the hidden attribute, a counter and an empty state
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .chips { display: flex; flex-wrap: wrap; margin-top: 8px; }
+  .chip { padding: 4px 10px; margin: 0 6px 6px 0; border-radius: 9px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); cursor: pointer; }
+  .chip.on { background-color: var(--blue); border-color: var(--blue); color: #fff; }
+  .t { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .t .box { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--fill2); margin-right: 10px; flex-shrink: 0; box-sizing: border-box; cursor: pointer; }
+  .t.done .box { background-color: var(--green); border-color: var(--green); }
+  .t.done .nm { text-decoration: line-through; color: var(--muted); }
+  .tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 8px; }
+  .tag.design { background-color: rgba(175,82,222,0.16); color: var(--purple); }
+  .tag.bug { background-color: rgba(255,59,48,0.14); color: var(--red); }
+  .tag.docs { background-color: rgba(48,176,199,0.16); color: var(--teal); }
+  .tag.infra { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  .pri { width: 6px; height: 6px; border-radius: 3px; margin-left: auto; }
+  .pri.high { background-color: var(--red); } .pri.med { background-color: var(--orange); } .pri.low { background-color: var(--fill2); }
+  .empty { text-align: center; padding: 18px 0 8px 0; color: var(--muted); }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Sprint 41</span><span class="tiny muted" id="count"></span></div>
+  <div class="chips" id="chips"><span class="chip on" data-f="all" role="button">All</span><span class="chip" data-f="design" role="button">Design</span><span class="chip" data-f="bug" role="button">Bugs</span><span class="chip" data-f="docs" role="button">Docs</span><span class="chip" data-f="infra" role="button">Infra</span><span class="chip" data-f="open" role="button">Open only</span></div>
+  <div id="tasks">
+    <div class="t" data-tag="design"><span class="box" role="button"></span><span class="nm">Chip corner radius to 9px</span><span class="tag design">design</span><span class="pri low"></span></div>
+    <div class="t done" data-tag="bug"><span class="box" role="button"></span><span class="nm">Dark theme flashes on first paint</span><span class="tag bug">bug</span><span class="pri high"></span></div>
+    <div class="t" data-tag="bug"><span class="box" role="button"></span><span class="nm">Poll bar overflows at 100%</span><span class="tag bug">bug</span><span class="pri med"></span></div>
+    <div class="t" data-tag="docs"><span class="box" role="button"></span><span class="nm">Write the common-profile README</span><span class="tag docs">docs</span><span class="pri med"></span></div>
+    <div class="t" data-tag="infra"><span class="box" role="button"></span><span class="nm">Bench on the Pixel, not the emulator</span><span class="tag infra">infra</span><span class="pri high"></span></div>
+    <div class="t done" data-tag="design"><span class="box" role="button"></span><span class="nm">Pricing tiers: highlight Pro</span><span class="tag design">design</span><span class="pri low"></span></div>
+    <div class="t" data-tag="docs"><span class="box" role="button"></span><span class="nm">Protocol doc: touch events</span><span class="tag docs">docs</span><span class="pri low"></span></div>
+    <div class="t" data-tag="infra"><span class="box" role="button"></span><span class="nm">Cache CoreText fonts per description</span><span class="tag infra">infra</span><span class="pri med"></span></div>
+    <div class="t done" data-tag="bug"><span class="box" role="button"></span><span class="nm">Receipt columns collide in litehtml</span><span class="tag bug">bug</span><span class="pri med"></span></div>
+    <div class="t" data-tag="design"><span class="box" role="button"></span><span class="nm">Calendar: range endpoints</span><span class="tag design">design</span><span class="pri high"></span></div>
+    <div class="t" data-tag="infra"><span class="box" role="button"></span><span class="nm">Validator pool on Android</span><span class="tag infra">infra</span><span class="pri high"></span></div>
+    <div class="t" data-tag="docs"><span class="box" role="button"></span><span class="nm">Blitz: note the emoji gap</span><span class="tag docs">docs</span><span class="pri low"></span></div>
+  </div>
+  <div class="empty" id="empty" hidden>Nothing matches. Clear a filter.</div>
+</div>
+<script>
+let tag = 'all', openOnly = false;
+const chips = document.getElementById('chips'), tasks = [...document.querySelectorAll('.t')];
+function apply() {
+  let shown = 0, open = 0;
+  for (const t of tasks) {
+    const ok = (tag === 'all' || t.dataset.tag === tag) && !(openOnly && t.classList.contains('done'));
+    t.hidden = !ok;
+    if (ok) { shown++; if (!t.classList.contains('done')) open++; }
+  }
+  document.getElementById('count').textContent = shown + ' shown · ' + open + ' open';
+  document.getElementById('empty').hidden = shown > 0;
+  for (const c of chips.children) c.classList.toggle('on', c.dataset.f === 'open' ? openOnly : c.dataset.f === tag);
+}
+chips.addEventListener('click', e => {
+  const c = e.target.closest('[data-f]');
+  if (!c) return;
+  if (c.dataset.f === 'open') openOnly = !openOnly; else tag = c.dataset.f;
+  apply();
+});
+document.getElementById('tasks').addEventListener('click', e => {
+  const b = e.target.closest('.box');
+  if (b) { b.parentNode.classList.toggle('done'); apply(); }
+});
+apply();
+</script>

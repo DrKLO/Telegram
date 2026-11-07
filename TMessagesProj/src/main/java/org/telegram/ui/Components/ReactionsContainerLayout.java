@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
@@ -71,6 +72,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumLockIconView;
@@ -91,7 +93,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ReactionsContainerLayout extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
 
     public boolean forceAttachToParent = false;
     public final static Property<ReactionsContainerLayout, Float> TRANSITION_PROGRESS_VALUE = new Property<ReactionsContainerLayout, Float>(Float.class, "transitionProgress") {
@@ -257,7 +259,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
         shadow = ContextCompat.getDrawable(context, R.drawable.reactions_bubble_shadow).mutate();
         shadowPad.left = shadowPad.top = shadowPad.right = shadowPad.bottom = dp(7);
-        shadow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelShadow), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, shadow, Theme.key_chat_messagePanelShadow, PorterDuff.Mode.MULTIPLY);
 
         recyclerListView = new RecyclerListView(context) {
 
@@ -1086,13 +1088,46 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         invalidateShaders();
     }
 
+    @Override
+    public void updateColors() {
+        try {
+            if (bgPaint != null && type != TYPE_STORY_LIKES && type != TYPE_STICKER_SET_EMOJI) {
+                final int color = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
+                if (bgPaint.getColor() != color) {
+                    final int alpha = bgPaint.getAlpha();
+                    bgPaint.setColor(color);
+                    bgPaint.setAlpha(alpha);
+                    invalidate();
+                }
+            }
+            if (premiumLockIconView != null) {
+                premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
+            }
+            if (getWidth() > 0 && getHeight() > 0 && shadowShaderColor != Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground)) {
+                invalidateShaders();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_actionBarDefaultSubmenuBackground);
+        colors.add(Theme.key_actionBarDefaultSubmenuItemIcon);
+        colors.add(Theme.key_dialogBackground);
+    }
+
     /**
      * Invalidates shaders
      */
+    private int shadowShaderColor;
+
     private void invalidateShaders() {
         int dp = dp(24);
         float cy = getHeight() / 2f;
         int clr = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground);
+        shadowShaderColor = clr;
         leftShadowPaint.setShader(new LinearGradient(0, cy, dp, cy, clr, Color.TRANSPARENT, Shader.TileMode.CLAMP));
         rightShadowPaint.setShader(new LinearGradient(getWidth(), cy, getWidth() - dp, cy, clr, Color.TRANSPARENT, Shader.TileMode.CLAMP));
         invalidate();
@@ -1564,7 +1599,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
 
     public void setCustomEmojiReactionsBackground(boolean isNeed) {
         if (isNeed) {
-            customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
+            ThemeBind.selectorBackground(customEmojiReactionsIconView, Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)), null, ThemeBind.alpha(Theme.key_listSelector, 40));
         } else {
             customEmojiReactionsIconView.setBackground(null);
         }
@@ -1634,7 +1669,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            ThemeBind.textColor(button, Theme.key_text_RedBold);
         }
     }
 
@@ -1693,10 +1728,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
             hintView.setClickable(true);
             hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
-                hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.textColor(hintView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 hintView.setAlpha(0.5f);
             } else {
-                hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+                ThemeBind.textColor(hintView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             }
             hintView.setGravity(Gravity.CENTER_HORIZONTAL);
             addView(hintView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0, 0));
@@ -2058,8 +2093,8 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     pressedDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                     loopDrawable.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 } else {
-                    pressedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
-                    loopDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                    ThemeBind.drawableColorFilter(this, pressedDrawable, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
+                    ThemeBind.drawableColorFilter(this, loopDrawable, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 }
                 pressedBackupImageView.setAnimatedEmojiDrawable(pressedDrawable);
                 loopImageView.setAnimatedEmojiDrawable(loopDrawable);
@@ -2380,10 +2415,10 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
         if (type == TYPE_MESSAGE_EFFECTS) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.availableEffectsUpdate);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.availableEffectsUpdate);
         }
     }
 
@@ -2559,7 +2594,7 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     premiumLockContainer = new FrameLayout(getContext());
                     premiumLockIconView = new PremiumLockIconView(getContext(), PremiumLockIconView.TYPE_REACTIONS);
                     premiumLockIconView.setColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), Theme.getColor(Theme.key_dialogBackground), 0.7f));
-                    premiumLockIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(premiumLockIconView, Theme.key_dialogBackground, PorterDuff.Mode.MULTIPLY);
                     premiumLockIconView.setScaleX(0f);
                     premiumLockIconView.setScaleY(0f);
                     premiumLockIconView.setPadding(dp(1), dp(1), dp(1), dp(1));
@@ -2579,9 +2614,9 @@ public class ReactionsContainerLayout extends FrameLayout implements Notificatio
                     if (type == TYPE_STORY || type == TYPE_STORY_LIKES || type == TYPE_STICKER_SET_EMOJI) {
                         customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY));
                     } else {
-                        customEmojiReactionsIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+                        ThemeBind.colorFilter(customEmojiReactionsIconView, Theme.key_dialogBackground, PorterDuff.Mode.MULTIPLY);
                     }
-                    customEmojiReactionsIconView.setBackground(Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)));
+                    ThemeBind.selectorBackground(customEmojiReactionsIconView, Theme.createSimpleSelectorCircleDrawable(dp(28), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), 40)), null, ThemeBind.alpha(Theme.key_listSelector, 40));
                     customEmojiReactionsIconView.setPadding(dp(2), dp(2), dp(2), dp(2));
                     customEmojiReactionsIconView.setContentDescription(LocaleController.getString(R.string.AccDescrExpandPanel));
                     customReactionsContainer.addView(customEmojiReactionsIconView, LayoutHelper.createFrame(30, 30, Gravity.CENTER));

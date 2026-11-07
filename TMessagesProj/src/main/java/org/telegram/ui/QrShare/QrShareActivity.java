@@ -425,7 +425,7 @@ public class QrShareActivity extends BaseFragment {
                     }
                 })
                 .setNegativeButton(getString(R.string.ContactsPermissionAlertNotNow), null)
-                .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
                 .show();
         }
     }

@@ -1,0 +1,4833 @@
+{
+ "$comment": "Widget profile, the contract every client enforces (docs/decisions.md, \"Profile v1\"). The single source: packages/core/scripts/profile-build.ts generates src/shared/profile-tables.ts (the validator, the shim, the renderer) and docs/profile-v1.md from it. Seeded 2026-10-17 from packages/conformance/catalogue.json with the decisions of that day; a widget detects it at runtime (TelegramWidget.profile, isProfileAtLeast, CSS.supports, @supports).",
+ "profile": 1,
+ "frozen": "2026-10-17",
+ "decisions": {
+  "D3": "A feature is in when every client draws it; :hover and user-select: text are the exceptions (progressive enhancement: where a client lacks them, the widget still works)",
+  "D3a": "v1: canvas 2D; Web Animations, filter, backdrop-filter if clients draw them; out: forms, inner scroll, 3D transforms, magic move; CSS animations and transitions in",
+  "D3b": "Fonts: system generic families only, other names dropped",
+  "D4": "Input: taps in the PoC, drag in v1; no keyboard at all, not even Enter or Space (it conflicts with the chat input field; Artem, 2026-10-16)",
+  "D5": "strict policy everywhere; webAnimations and morphUpdates from the profile",
+  "D6": "3D (__tw3d) cut from the release",
+  "D8": "SDK outward: openLink (confirmed with the full URL) and openTelegramLink (no confirmation of its own, 2026-10-29) on a tap, haptics; no sendMessage",
+  "D11": "One widget model: classic DOM in the sandbox",
+  "D12a": "Above the cap: hard clip, no fullscreen",
+  "D14": "Theme: themeParams + --tg-theme-*, theme change event",
+  "D17": "State: localStorage per (account, chat, message id): the chat the message is in, as message ids are unique only within a chat (supergroups); 4 KB, QuotaExceededError; sessionStorage in memory",
+  "D18": "Text is not selectable by default; a widget enables selection with user-select: text (2026-10-20, replaces \"Text selection forbidden\")",
+  "D20": "Mini-HTML (2026-10-17): a widget is one HTML document of at most 4 KB compressed and 32 KB uncompressed, delivered in the message; the server compresses the HTML from the bot (zlib at level 9 since 2026-10-24) and enforces both limits",
+  "D21": "No accessibility in v1",
+  "D23": "Runtime profile detection: TelegramWidget.profile / isProfileAtLeast, CSS.supports and @supports from the profile",
+  "inv1": "Invariant 1: widget JS only in QuickJS",
+  "inv2": "Invariant 2: the host validates everything against the allowlists",
+  "inv4": "Invariant 4: only data: images, host blob: and #fragment URLs reach the renderer",
+  "inv5": "Invariant 5: no network in QuickJS",
+  "inv6": "Invariant 6: navigation cancelled, shadow scope",
+  "P1": "Profile v1 freeze (2026-10-17): a candidate is in when the corpus uses it and the web renderers draw it; the rest are out until the native renderers are measured (profile 2)",
+  "P1-grid": "Grid is in on condition that the Swift renderer and TwidgetCore implement it before their releases (2026-10-17)",
+  "P1-libs": "No bundled libraries in v1 (2026-10-17)",
+  "P1-ua": "Clarified in v0.1.1 (2026-10-20): the renderer's user-agent layer (tables.uaStylesheet) also fixes the root and the text elements: the bubble's text colour (the bubble's own fill is the canvas behind a transparent renderer), the client's text tokens (--tg-text-font-size, --tg-text-line-height, --tg-text-padding as the body's margin) and explicit sizes and margins for headings, paragraphs, lists, tables, quotes and code, so a UA default in this profile means that layer, not an engine's own stylesheet",
+  "SDK": "SDK v1 (docs/sdk-v1.md), with Artem's answers of 2026-10-17: haptics without a gesture (bucket 5, 10 per second), any t.me path, URLs of at most 256 characters, 16 handlers per event type, stopped after 2 crashes in a row, double tap and long press stay with the bubble (replaced by G1 in v0.1.2)",
+  "G1": "Gestures, v0.1.2 (Artem, 2026-10-22): one shared policy with the same thresholds on every client and in the sandbox. A double tap over the widget is always the widget's (both clicks and dblclick, on every element; the reaction stays with the bubble outside the widget). For the rest touch-action is the claim, decided per element at pointerdown over the target and its ancestors (a container covers its children, as in CSS): auto: holds and swipes are the bubble's (the widget gets pointercancel); pan-y / pan-x: drags on the other axis are the widget's; none: everything is the widget's, holds (contextmenu) included. The leading 20 px of the widget and the bubble outside it never take a claim. Replaces \"double tap and long press stay with the bubble\" (SDK)",
+  "G2": "Vertical drags are the chat's, v0.1.3 (Artem, 2026-10-24): a widget claims only horizontal drags; a vertical drag over a widget always scrolls the chat, whatever touch-action says, and the widget gets pointercancel. auto: holds and drags are the bubble's; pan-y: horizontal drags are the widget's; pan-x claims nothing; none: horizontal drags and holds (contextmenu) are the widget's. The axis lock (the first move past the 10 px slop decides for the whole press), double taps and the leading 20 px are unchanged. The engine under the renderer always allows vertical panning. Replaces G1's pan-x and the vertical half of none",
+  "R1": "Resize anchor, v0.1.3 (Artem, 2026-10-24): TelegramWidget.setResizeAnchor('top' | 'bottom') says which edge of the bubble stays put on screen when the widget's height changes (top by default: it grows downward; bottom: it grows upward and the content above moves). An SDK v1 addition inside profile 1: TelegramWidget.profile stays 1 and widgets detect the method with typeof. It goes through the bridge as a checked call (sdk-policy, four copies and the fixture), needs no gesture, and the host keeps the latest value and reports it with the height; the client's list compensates its scroll",
+  "I1": "The bot's data and requests (Artem, 2026-10-25; the server's spec): a widget is fixed code plus changeable state: the HTML never changes after sending; the state changes, and only the bot writes it. TelegramWidget.chatData, the chat state (one original message, seen only in its chat: in a group every member sees it; never forwarded), and publicData, the shared state (wherever the widget is shown: a forward gets a copy, or shares a shared widget's one state with the original): each a text of up to 1024 bytes (UTF-8), read-only in the widget; chatDataChanged / publicDataChanged when they change (no restart). isForward, chatType and viewer (Mini Apps' WebAppUser: id, first_name, last_name, username, is_premium; a field that breaks its rule is left out); a forward is told nothing about the chat it is in (no chatType: the bot must not learn where its widget was forwarded), and the widget knows its viewer only where it may ask the bot (can_query), originals included. request(data of 1-64 bytes): a callback button inside the widget; where it may ask is the server's per message (can_query: originals of a widget sent with allow_queries, forwards of one sent with fwd_allow_queries; background_query: the original in the private chat with the bot); the client marks a widget with can_query as one whose tap may send data to the bot's server; on a tap, one per tap (shared with openLink, openTelegramLink and copyText); in the background while visible: one when the widget appears on screen, then one per 5 s; one in flight; resolves { result } (text of at most 1024 bytes), rejects with error.code; the answer does not change the state. copyText(text of 1-256 characters) on a tap; the client's toast shows what it copied. Part of SDK v1 and layer 233 from the launch, inside profile 1. TelegramWidget.isPreview: an inline result in the list before it is sent gets its state but no input, no bridge call but ready and setResizeAnchor, no chat type or viewer, and Web Storage that is never committed. The checks are sdk-policy (four copies and the fixture)",
+  "L1": "Strict limits from the start (2026-10-29): about twice what real widgets use; past a counted cap the widget stops (docs/decisions.md)",
+  "L2": "Heavy boxes (Artem, 2026-11-02, after the client teams' stress-kit runs on five devices): at most 16 heavy boxes at once (a blurred box-shadow layer, a filter, a backdrop-filter, opacity below 1 but a disabled or pressed <button>'s, or a running animation of filter, backdrop-filter or opacity, or of box-shadow through a blurred layer), of them at most 2 with backdrop-filter; every renderer counts on the computed style (packages/core/src/shared/paint-policy.ts and its fixture) and past either the widget stops. A tightening of profile 1 (widgets were not launched yet), not profile 2",
+  "P1-safe-area": "Clarified on 2026-10-29 (Artem; widgets were not launched yet), not profile 2: a client draws the message time and its status over the bottom corner of a widget with no caption below it, as on a photo (with a caption below the time is in the caption's line and nothing is drawn over the widget; a caption shown above the widget, invert_media, is as none: Artem's decision of 2026-10-30). env(safe-area-inset-top|right|bottom|left[, fallback]) is in: the validator rewrites it to var(--tg-content-safe-area-inset-…[, fallback]), root variables the renderer sets like the theme's (bottom = the height of the time's band, the others 0), with --tg-content-safe-area-corner-left|right for the width of the client's corner in that band (a physical side: right in a left-to-right interface, left in a right-to-left one); 0 with a caption below. Another env() name resolves to its fallback or drops the declaration. The UA layer adds the band to the body's bottom padding, and TelegramWidget.contentSafeAreaInset with the contentSafeAreaChanged event gives the same numbers to script"
+ },
+ "tables": {
+  "html": {
+   "elements": {
+    "html": "keep",
+    "head": "keep",
+    "body": "keep",
+    "div": "keep",
+    "span": "keep",
+    "p": "keep",
+    "a": "keep",
+    "b": "keep",
+    "i": "keep",
+    "u": "keep",
+    "s": "keep",
+    "em": "keep",
+    "strong": "keep",
+    "small": "keep",
+    "sub": "keep",
+    "sup": "keep",
+    "mark": "keep",
+    "code": "keep",
+    "pre": "keep",
+    "kbd": "keep",
+    "samp": "keep",
+    "var": "keep",
+    "abbr": "keep",
+    "cite": "keep",
+    "q": "keep",
+    "blockquote": "keep",
+    "del": "keep",
+    "ins": "keep",
+    "dfn": "keep",
+    "time": "keep",
+    "data": "keep",
+    "address": "keep",
+    "br": "keep",
+    "hr": "keep",
+    "wbr": "keep",
+    "h1": "keep",
+    "h2": "keep",
+    "h3": "keep",
+    "h4": "keep",
+    "h5": "keep",
+    "h6": "keep",
+    "header": "keep",
+    "footer": "keep",
+    "main": "keep",
+    "nav": "keep",
+    "section": "keep",
+    "article": "keep",
+    "aside": "keep",
+    "hgroup": "keep",
+    "search": "keep",
+    "ul": "keep",
+    "ol": "keep",
+    "li": "keep",
+    "dl": "keep",
+    "dt": "keep",
+    "dd": "keep",
+    "menu": "keep",
+    "table": "keep",
+    "thead": "keep",
+    "tbody": "keep",
+    "tfoot": "keep",
+    "tr": "keep",
+    "td": "keep",
+    "th": "keep",
+    "caption": "keep",
+    "colgroup": "keep",
+    "col": "keep",
+    "button": "keep",
+    "details": "keep",
+    "summary": "keep",
+    "figure": "keep",
+    "figcaption": "keep",
+    "picture": "keep",
+    "img": "keep",
+    "canvas": "keep",
+    "ruby": "span",
+    "rt": "span",
+    "rp": "span",
+    "bdi": "span",
+    "bdo": "span",
+    "font": "span",
+    "big": "span",
+    "tt": "span",
+    "strike": "span",
+    "nobr": "span",
+    "label": "span",
+    "legend": "span",
+    "output": "span",
+    "center": "div",
+    "form": "div",
+    "dialog": "div",
+    "input": "drop",
+    "select": "drop",
+    "option": "drop",
+    "optgroup": "drop",
+    "textarea": "drop",
+    "datalist": "drop",
+    "fieldset": "drop",
+    "progress": "drop",
+    "meter": "drop",
+    "script": "drop",
+    "iframe": "drop",
+    "frame": "drop",
+    "frameset": "drop",
+    "object": "drop",
+    "embed": "drop",
+    "link": "drop",
+    "meta": "drop",
+    "base": "drop",
+    "portal": "drop",
+    "noscript": "drop",
+    "set": "drop",
+    "title": "drop",
+    "template": "drop",
+    "applet": "drop",
+    "param": "drop",
+    "noembed": "drop",
+    "noframes": "drop",
+    "plaintext": "drop",
+    "xmp": "drop",
+    "listing": "drop",
+    "slot": "drop",
+    "track": "drop",
+    "area": "drop",
+    "map": "drop",
+    "math": "drop",
+    "metadata": "drop",
+    "fencedframe": "drop",
+    "audio": "drop",
+    "video": "drop",
+    "source": "drop"
+   },
+   "unknown": "span",
+   "attributes": [
+    "class",
+    "id",
+    "title",
+    "lang",
+    "dir",
+    "hidden",
+    "role",
+    "colspan",
+    "rowspan",
+    "span",
+    "width",
+    "height",
+    "alt",
+    "open",
+    "start",
+    "reversed",
+    "datetime",
+    "value",
+    "type",
+    "disabled"
+   ],
+   "attributePrefixes": [
+    "data-",
+    "aria-"
+   ]
+  },
+  "svg": {
+   "elements": [
+    "svg",
+    "g",
+    "path",
+    "rect",
+    "circle",
+    "ellipse",
+    "line",
+    "polyline",
+    "polygon",
+    "text",
+    "tspan",
+    "defs",
+    "symbol",
+    "use",
+    "linearGradient",
+    "radialGradient",
+    "stop",
+    "title",
+    "desc",
+    "a"
+   ],
+   "attributes": [
+    "class",
+    "id",
+    "lang",
+    "role",
+    "viewBox",
+    "preserveAspectRatio",
+    "x",
+    "y",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "cx",
+    "cy",
+    "r",
+    "rx",
+    "ry",
+    "d",
+    "points",
+    "dx",
+    "dy",
+    "rotate",
+    "transform",
+    "width",
+    "height",
+    "fill",
+    "fill-opacity",
+    "fill-rule",
+    "stroke",
+    "stroke-width",
+    "stroke-opacity",
+    "stroke-linecap",
+    "stroke-linejoin",
+    "stroke-dasharray",
+    "stroke-dashoffset",
+    "stroke-miterlimit",
+    "opacity",
+    "color",
+    "display",
+    "visibility",
+    "overflow",
+    "text-anchor",
+    "dominant-baseline",
+    "alignment-baseline",
+    "baseline-shift",
+    "font-family",
+    "font-size",
+    "font-weight",
+    "font-style",
+    "letter-spacing",
+    "word-spacing",
+    "text-decoration",
+    "gradientUnits",
+    "gradientTransform",
+    "spreadMethod",
+    "fx",
+    "fy",
+    "fr",
+    "offset",
+    "stop-color",
+    "stop-opacity",
+    "pointer-events",
+    "shape-rendering",
+    "text-rendering",
+    "vector-effect",
+    "paint-order",
+    "cursor",
+    "pathLength",
+    "version",
+    "xml:space",
+    "xml:lang"
+   ]
+  },
+  "images": [
+   "image/png",
+   "image/jpeg",
+   "image/jpg",
+   "image/gif",
+   "image/webp"
+  ],
+  "events": [
+   "click",
+   "pointerdown",
+   "pointerup",
+   "pointermove",
+   "pointerenter",
+   "pointerleave",
+   "pointerover",
+   "pointerout",
+   "pointercancel",
+   "dblclick",
+   "contextmenu",
+   "mousedown",
+   "mouseup",
+   "mousemove",
+   "mouseenter",
+   "mouseleave",
+   "mouseover",
+   "mouseout",
+   "load",
+   "error",
+   "toggle",
+   "animationstart",
+   "animationend",
+   "animationiteration",
+   "transitionend"
+  ],
+  "methods": [
+   "setPointerCapture",
+   "releasePointerCapture",
+   "scrollTo",
+   "scrollBy",
+   "observeResize",
+   "unobserveResize"
+  ],
+  "properties": [
+   "scrollTop",
+   "scrollLeft"
+  ],
+  "canvas": {
+   "methods": [
+    "save",
+    "restore",
+    "scale",
+    "rotate",
+    "translate",
+    "transform",
+    "setTransform",
+    "resetTransform",
+    "clearRect",
+    "fillRect",
+    "strokeRect",
+    "beginPath",
+    "closePath",
+    "moveTo",
+    "lineTo",
+    "bezierCurveTo",
+    "quadraticCurveTo",
+    "arc",
+    "arcTo",
+    "ellipse",
+    "rect",
+    "roundRect",
+    "fill",
+    "stroke",
+    "clip",
+    "fillText",
+    "strokeText",
+    "setLineDash",
+    "drawImage",
+    "reset"
+   ],
+   "properties": [
+    "fillStyle",
+    "strokeStyle",
+    "lineWidth",
+    "lineCap",
+    "lineJoin",
+    "miterLimit",
+    "lineDashOffset",
+    "font",
+    "textAlign",
+    "textBaseline",
+    "direction",
+    "globalAlpha",
+    "imageSmoothingEnabled",
+    "imageSmoothingQuality"
+   ],
+   "gradients": [
+    "linear",
+    "radial"
+   ],
+   "queries": [
+    "isPointInPath",
+    "isPointInStroke",
+    "getTransform",
+    "getLineDash",
+    "measureText"
+   ]
+  },
+  "css": {
+   "properties": [
+    "display",
+    "flex",
+    "flex-direction",
+    "flex-wrap",
+    "flex-flow",
+    "flex-grow",
+    "flex-shrink",
+    "flex-basis",
+    "justify-content",
+    "align-items",
+    "align-self",
+    "align-content",
+    "order",
+    "place-items",
+    "place-content",
+    "place-self",
+    "justify-items",
+    "justify-self",
+    "gap",
+    "row-gap",
+    "column-gap",
+    "grid-gap",
+    "grid-row-gap",
+    "grid-column-gap",
+    "grid",
+    "grid-template",
+    "grid-template-columns",
+    "grid-template-rows",
+    "grid-template-areas",
+    "grid-column",
+    "grid-column-start",
+    "grid-column-end",
+    "grid-row",
+    "grid-row-start",
+    "grid-row-end",
+    "grid-area",
+    "grid-auto-flow",
+    "grid-auto-columns",
+    "grid-auto-rows",
+    "width",
+    "height",
+    "min-width",
+    "min-height",
+    "max-width",
+    "max-height",
+    "margin",
+    "margin-top",
+    "margin-right",
+    "margin-bottom",
+    "margin-left",
+    "padding",
+    "padding-top",
+    "padding-right",
+    "padding-bottom",
+    "padding-left",
+    "border",
+    "border-width",
+    "border-style",
+    "border-color",
+    "border-top",
+    "border-right",
+    "border-bottom",
+    "border-left",
+    "border-top-width",
+    "border-right-width",
+    "border-bottom-width",
+    "border-left-width",
+    "border-top-style",
+    "border-right-style",
+    "border-bottom-style",
+    "border-left-style",
+    "border-top-color",
+    "border-right-color",
+    "border-bottom-color",
+    "border-left-color",
+    "border-radius",
+    "border-top-left-radius",
+    "border-top-right-radius",
+    "border-bottom-right-radius",
+    "border-bottom-left-radius",
+    "border-collapse",
+    "border-spacing",
+    "table-layout",
+    "caption-side",
+    "empty-cells",
+    "box-sizing",
+    "aspect-ratio",
+    "outline",
+    "outline-width",
+    "outline-style",
+    "outline-color",
+    "outline-offset",
+    "box-shadow",
+    "float",
+    "clear",
+    "object-fit",
+    "object-position",
+    "position",
+    "top",
+    "right",
+    "bottom",
+    "left",
+    "inset",
+    "z-index",
+    "overflow",
+    "overflow-x",
+    "overflow-y",
+    "visibility",
+    "opacity",
+    "color",
+    "background",
+    "background-color",
+    "background-image",
+    "background-size",
+    "background-position",
+    "background-position-x",
+    "background-position-y",
+    "background-repeat",
+    "background-origin",
+    "background-clip",
+    "color-scheme",
+    "font",
+    "font-family",
+    "font-size",
+    "font-weight",
+    "font-style",
+    "line-height",
+    "font-variant-numeric",
+    "font-feature-settings",
+    "text-align",
+    "text-indent",
+    "text-decoration",
+    "text-decoration-line",
+    "text-decoration-color",
+    "text-decoration-style",
+    "text-decoration-thickness",
+    "text-underline-offset",
+    "text-transform",
+    "letter-spacing",
+    "word-spacing",
+    "white-space",
+    "white-space-collapse",
+    "text-wrap-mode",
+    "overflow-wrap",
+    "word-wrap",
+    "word-break",
+    "text-overflow",
+    "vertical-align",
+    "list-style",
+    "list-style-type",
+    "list-style-position",
+    "direction",
+    "unicode-bidi",
+    "transform",
+    "transform-origin",
+    "transform-box",
+    "translate",
+    "rotate",
+    "scale",
+    "filter",
+    "backdrop-filter",
+    "-webkit-backdrop-filter",
+    "pointer-events",
+    "touch-action",
+    "cursor",
+    "content",
+    "counter-reset",
+    "counter-increment",
+    "quotes",
+    "transition",
+    "transition-property",
+    "transition-duration",
+    "transition-timing-function",
+    "transition-delay",
+    "animation",
+    "animation-name",
+    "animation-duration",
+    "animation-timing-function",
+    "animation-delay",
+    "animation-iteration-count",
+    "animation-direction",
+    "animation-fill-mode",
+    "animation-play-state",
+    "fill",
+    "fill-opacity",
+    "fill-rule",
+    "stroke",
+    "stroke-width",
+    "stroke-opacity",
+    "stroke-linecap",
+    "stroke-linejoin",
+    "stroke-dasharray",
+    "stroke-dashoffset",
+    "stroke-miterlimit",
+    "stop-color",
+    "stop-opacity",
+    "text-anchor",
+    "dominant-baseline",
+    "paint-order",
+    "vector-effect",
+    "shape-rendering",
+    "cx",
+    "cy",
+    "r",
+    "rx",
+    "ry",
+    "all",
+    "appearance",
+    "-webkit-appearance",
+    "will-change",
+    "text-rendering",
+    "-webkit-font-smoothing",
+    "-moz-osx-font-smoothing",
+    "-webkit-tap-highlight-color",
+    "user-select",
+    "-webkit-user-select"
+   ],
+   "functions": [
+    "var",
+    "calc",
+    "min",
+    "max",
+    "clamp",
+    "rgb",
+    "rgba",
+    "hsl",
+    "hsla",
+    "light-dark",
+    "linear-gradient",
+    "repeating-linear-gradient",
+    "radial-gradient",
+    "repeating-radial-gradient",
+    "conic-gradient",
+    "repeating-conic-gradient",
+    "translate",
+    "translatex",
+    "translatey",
+    "rotate",
+    "scale",
+    "scalex",
+    "scaley",
+    "skew",
+    "skewx",
+    "skewy",
+    "matrix",
+    "blur",
+    "brightness",
+    "drop-shadow",
+    "cubic-bezier",
+    "steps",
+    "linear",
+    "attr",
+    "counter",
+    "counters",
+    "minmax",
+    "repeat",
+    "fit-content",
+    "env",
+    "url"
+   ],
+   "units": [
+    "px",
+    "em",
+    "rem",
+    "ch",
+    "ex",
+    "pt",
+    "pc",
+    "cm",
+    "mm",
+    "in",
+    "q",
+    "vw",
+    "svw",
+    "lvw",
+    "dvw",
+    "vi",
+    "svi",
+    "lvi",
+    "dvi",
+    "vmin",
+    "svmin",
+    "lvmin",
+    "dvmin",
+    "vmax",
+    "svmax",
+    "lvmax",
+    "dvmax",
+    "deg",
+    "rad",
+    "grad",
+    "turn",
+    "s",
+    "ms",
+    "fr"
+   ],
+   "values": {
+    "display": [
+     "block",
+     "inline",
+     "inline-block",
+     "none",
+     "flex",
+     "inline-flex",
+     "grid",
+     "inline-grid",
+     "table",
+     "inline-table",
+     "table-row",
+     "table-cell",
+     "table-caption",
+     "table-row-group",
+     "table-header-group",
+     "table-footer-group",
+     "table-column",
+     "table-column-group"
+    ],
+    "position": [
+     "static",
+     "relative",
+     "absolute",
+     "fixed"
+    ],
+    "user-select": [
+     "none",
+     "text",
+     "auto"
+    ],
+    "-webkit-user-select": [
+     "none",
+     "text",
+     "auto"
+    ]
+   },
+   "rewrite": {
+    "position": {
+     "sticky": "relative",
+     "-webkit-sticky": "relative"
+    },
+    "overflow": {
+     "auto": "hidden",
+     "scroll": "hidden",
+     "overlay": "hidden"
+    }
+   },
+   "filterFunctions": [
+    "blur",
+    "brightness",
+    "drop-shadow"
+   ],
+   "transform3d": [
+    "matrix3d",
+    "translate3d",
+    "translatez",
+    "scale3d",
+    "scalez",
+    "rotate3d",
+    "rotatex",
+    "rotatey",
+    "rotatez",
+    "perspective"
+   ],
+   "fonts": {
+    "generic": [
+     "system-ui",
+     "sans-serif",
+     "serif",
+     "monospace",
+     "ui-sans-serif",
+     "ui-serif",
+     "ui-monospace",
+     "ui-rounded"
+    ],
+    "fallback": {
+     "ui-sans-serif": "sans-serif",
+     "ui-serif": "serif",
+     "ui-monospace": "monospace",
+     "ui-rounded": "sans-serif"
+    },
+    "aliases": {
+     "-apple-system": "system-ui",
+     "blinkmacsystemfont": "system-ui"
+    },
+    "default": "system-ui"
+   },
+   "pseudoClasses": [
+    "hover",
+    "active",
+    "root",
+    "lang",
+    "first-child",
+    "last-child",
+    "only-child",
+    "nth-child",
+    "nth-last-child",
+    "nth-of-type",
+    "nth-last-of-type",
+    "first-of-type",
+    "last-of-type",
+    "only-of-type",
+    "empty",
+    "is",
+    "where",
+    "not",
+    "before",
+    "after"
+   ],
+   "pseudoElements": [
+    "before",
+    "after"
+   ],
+   "pseudoRewrite": {
+    "disabled": "[disabled]",
+    "enabled": ":not([disabled])"
+   },
+   "atRules": [
+    "media",
+    "supports",
+    "keyframes",
+    "-webkit-keyframes"
+   ],
+   "mediaTypes": [
+    "all",
+    "screen"
+   ],
+   "mediaFeatures": [
+    "width",
+    "min-width",
+    "max-width",
+    "aspect-ratio",
+    "min-aspect-ratio",
+    "max-aspect-ratio",
+    "orientation",
+    "prefers-color-scheme",
+    "prefers-reduced-motion"
+   ]
+  },
+  "uaStylesheet": "@layer tw-ua{:where(html){color:var(--tg-theme-text-color);font:var(--tg-text-font-size,15px)/var(--tg-text-line-height,1.35) system-ui,sans-serif;-webkit-text-size-adjust:none;text-size-adjust:none;overflow-wrap:break-word;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}:where(body){margin:var(--tg-text-padding,8px 12px);padding:0;padding-bottom:var(--tg-content-safe-area-inset-bottom,0px)}:where(h1,h2,h3,h4,h5,h6){margin:.75em 0 .35em;font-weight:600;line-height:1.25}:where(h1){font-size:1.6em}:where(h2){font-size:1.35em}:where(h3){font-size:1.2em}:where(h4){font-size:1.07em}:where(h5){font-size:1em}:where(h6){font-size:.87em}:where(p,ul,ol,menu,dl,pre,blockquote,figure,table){margin:.6em 0}:where(ul,ol,menu){padding:0 0 0 1.5em;padding-inline-start:1.5em;padding-inline-end:0}:where(ul,menu){list-style-type:disc}:where(ol){list-style-type:decimal}:where(li ul,li menu){list-style-type:circle}:where(li ul,li ol,li menu,li dl){margin:0}:where(dt){font-weight:600}:where(dd){margin:0 0 0 1.5em;margin-inline-start:1.5em;margin-inline-end:0}:where(table){border-collapse:collapse;border-spacing:0}:where(caption){padding:0 0 .3em;color:var(--tg-theme-hint-color);font-size:.87em;text-align:left;text-align:start}:where(th,td){padding:.3em .6em;border-bottom:1px solid var(--tg-theme-section-separator-color);text-align:left;text-align:start;vertical-align:top}:where(th){font-weight:600}:where(th:last-child,td:last-child){padding-right:0;padding-inline-end:0;padding-inline-start:.6em}:where(th:first-child,td:first-child){padding-left:0;padding-inline-start:0;padding-inline-end:.6em}:where(hr){height:0;margin:.6em 0;border:0;border-top:1px solid var(--tg-theme-section-separator-color)}:where(pre,code,kbd,samp){font-family:ui-monospace,monospace;font-size:.9em}:where(pre code,pre kbd,pre samp){font-size:1em}:where(pre){padding:.5em .7em;border-radius:6px;background:rgba(128,128,128,.12);white-space:pre-wrap}:where(blockquote){padding:0 0 0 .75em;padding-inline-start:.75em;padding-inline-end:0;border-left:3px solid var(--tg-theme-accent-text-color);border-inline-start:3px solid var(--tg-theme-accent-text-color);border-inline-end:0}:where(figcaption){margin:.3em 0 0;color:var(--tg-theme-hint-color);font-size:.87em}:where(img){max-width:100%}:where(a[href]){color:var(--tg-theme-link-color);text-decoration:none}:where(b,strong){font-weight:600}:where(i,em,cite,dfn,var){font-style:italic}:where(small){font-size:.85em}:where(sub,sup){position:relative;font-size:.75em;line-height:0;vertical-align:baseline}:where(sup){top:-.5em}:where(sub){bottom:-.25em}:where(mark){background:rgba(255,204,0,.4);color:inherit}:where(body>:first-child){margin-top:0}:where(body>:last-child){margin-bottom:0}:where(button){appearance:none;-webkit-appearance:none;margin:0;border:0;border-radius:var(--tg-button-radius,8px);padding:var(--tg-button-padding,8px 14px);min-height:var(--tg-button-height,auto);font:var(--tg-button-font,500 14px/1.2 system-ui,sans-serif);background:var(--tg-button-bg,rgba(51,144,236,.12));color:var(--tg-button-text,inherit);cursor:pointer;-webkit-tap-highlight-color:transparent}:where(button:not([disabled])):active{opacity:var(--tg-button-pressed-opacity,.7)}:where(button[disabled]){opacity:var(--tg-button-disabled-opacity,.5);cursor:default}}"
+ },
+ "features": [
+  {
+   "id": "html.el.structure",
+   "area": "html",
+   "title": "div, span, p, br, hr, wbr",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "div",
+     "span",
+     "p",
+     "br",
+     "hr",
+     "wbr"
+    ]
+   }
+  },
+  {
+   "id": "html.el.headings",
+   "area": "html",
+   "title": "h1–h6 with UA default sizes and margins",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "h1",
+     "h2",
+     "h3",
+     "h4",
+     "h5",
+     "h6"
+    ]
+   }
+  },
+  {
+   "id": "html.el.sections",
+   "area": "html",
+   "title": "header, footer, main, nav, section, article, aside, hgroup, search, address",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "header",
+     "footer",
+     "main",
+     "nav",
+     "section",
+     "article",
+     "aside",
+     "hgroup",
+     "search",
+     "address"
+    ]
+   }
+  },
+  {
+   "id": "html.el.inline-text",
+   "area": "html",
+   "title": "Inline text semantics with UA styles: b, i, u, s, em, strong, small, mark, code, kbd, samp, var, abbr, cite, q, del, ins, dfn, time, data",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "b",
+     "i",
+     "u",
+     "s",
+     "em",
+     "strong",
+     "small",
+     "mark",
+     "code",
+     "kbd",
+     "samp",
+     "var",
+     "abbr",
+     "cite",
+     "q",
+     "del",
+     "ins",
+     "dfn",
+     "time",
+     "data"
+    ]
+   }
+  },
+  {
+   "id": "html.el.sub-sup",
+   "area": "html",
+   "title": "sub, sup (baseline shift, smaller size)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "sub",
+     "sup"
+    ]
+   }
+  },
+  {
+   "id": "html.el.pre",
+   "area": "html",
+   "title": "pre (monospace, preserved white space and line breaks)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "pre"
+    ]
+   }
+  },
+  {
+   "id": "html.el.blockquote",
+   "area": "html",
+   "title": "blockquote, figure, figcaption (UA indents)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "blockquote",
+     "figure",
+     "figcaption"
+    ]
+   }
+  },
+  {
+   "id": "html.el.lists",
+   "area": "html",
+   "title": "ul, ol, li, dl, dt, dd, menu with markers",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "ul",
+     "ol",
+     "li",
+     "dl",
+     "dt",
+     "dd",
+     "menu"
+    ]
+   }
+  },
+  {
+   "id": "html.el.table",
+   "area": "html",
+   "title": "table, thead, tbody, tfoot, tr, td, th, caption, colgroup, col; colspan/rowspan",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "table",
+     "thead",
+     "tbody",
+     "tfoot",
+     "tr",
+     "td",
+     "th",
+     "caption",
+     "colgroup",
+     "col"
+    ],
+    "attrs": [
+     "colspan",
+     "rowspan"
+    ]
+   }
+  },
+  {
+   "id": "html.el.ruby",
+   "area": "html",
+   "title": "ruby, rt, rp, bdi, bdo",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "rendered as <span> (the annotation shows inline)",
+   "note": "Annotation layout is rarely implemented by small engines; measure before keeping.",
+   "match": {
+    "tags": [
+     "ruby",
+     "rt",
+     "rp",
+     "bdi",
+     "bdo"
+    ]
+   }
+  },
+  {
+   "id": "html.el.legacy",
+   "area": "html",
+   "title": "Legacy presentational elements: center, font, big, tt, strike, nobr",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "<center> becomes a <div>, the others a <span>; the presentational attributes are dropped",
+   "note": "Allowed today; a profile could drop them (render as span) to keep the table small.",
+   "match": {
+    "tags": [
+     "center",
+     "font",
+     "big",
+     "tt",
+     "strike",
+     "nobr"
+    ]
+   }
+  },
+  {
+   "id": "html.el.img",
+   "area": "html",
+   "title": "<img> with a data: PNG, JPEG, GIF or WebP; width/height attributes",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "img",
+     "picture"
+    ],
+    "attrs": [
+     "src",
+     "width",
+     "height",
+     "alt"
+    ]
+   }
+  },
+  {
+   "id": "html.el.img-svg",
+   "area": "html",
+   "title": "<img src=\"data:image/svg+xml\">",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "url-policy refuses the MIME: placeholder image",
+   "note": "Release plan, security stream: restrict image formats to PNG, JPEG, GIF, WebP (the decoder runs in the app process).",
+   "match": {
+    "tags": [
+     "img"
+    ],
+    "values": [
+     "data:image/svg+xml"
+    ]
+   }
+  },
+  {
+   "id": "html.el.img-other-formats",
+   "area": "html",
+   "title": "<img> with data: AVIF, BMP, ICO",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "url-policy refuses the MIME: placeholder image",
+   "note": "Release plan, security stream 7.",
+   "match": {
+    "values": [
+     "data:image/avif",
+     "data:image/bmp",
+     "data:image/x-icon",
+     "data:image/vnd.microsoft.icon"
+    ]
+   }
+  },
+  {
+   "id": "html.el.img-remote",
+   "area": "html",
+   "title": "<img src=\"https://…\"> (any non-data: URL)",
+   "status": "out",
+   "decision": "inv4",
+   "neutralise": "placeholder image; no request",
+   "match": {
+    "attrs": [
+     "src",
+     "srcset"
+    ]
+   }
+  },
+  {
+   "id": "html.el.canvas",
+   "area": "html",
+   "title": "<canvas> element (2D context through the command stream)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "tags": [
+     "canvas"
+    ]
+   }
+  },
+  {
+   "id": "html.el.button",
+   "area": "html",
+   "title": "<button> as a tappable box with UA look",
+   "status": "in",
+   "decision": "D4",
+   "match": {
+    "tags": [
+     "button"
+    ]
+   }
+  },
+  {
+   "id": "html.el.details",
+   "area": "html",
+   "title": "details/summary: open state and toggle on tap",
+   "status": "in",
+   "decision": "P1",
+   "note": "Probes: drawn by Blitz and litehtml; it is a disclosure, not a form.",
+   "match": {
+    "tags": [
+     "details",
+     "summary"
+    ],
+    "events": [
+     "toggle"
+    ]
+   }
+  },
+  {
+   "id": "html.el.a-fragment",
+   "area": "html",
+   "title": "<a href=\"#id\">: no navigation, :target-free",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "tags": [
+     "a"
+    ],
+    "attrs": [
+     "href"
+    ]
+   }
+  },
+  {
+   "id": "html.el.a-external",
+   "area": "html",
+   "title": "<a href=\"https://…\">: href becomes \"#\" + data-tg-link, the tap goes to openLink (with a gesture)",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "tags": [
+     "a"
+    ],
+    "attrs": [
+     "href"
+    ]
+   }
+  },
+  {
+   "id": "html.el.forms",
+   "area": "html",
+   "title": "Form controls: form, input (all types), select, option, optgroup, textarea, label, fieldset, legend, datalist, output",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": "controls are dropped with their subtree (input, select, option, optgroup, textarea, datalist, fieldset, progress, meter); <form> becomes a <div>, <label>, <legend> and <output> a <span>",
+   "note": "Kept and drawn natively today.",
+   "match": {
+    "tags": [
+     "form",
+     "input",
+     "select",
+     "option",
+     "optgroup",
+     "textarea",
+     "label",
+     "fieldset",
+     "legend",
+     "datalist",
+     "output"
+    ]
+   }
+  },
+  {
+   "id": "html.el.progress-meter",
+   "area": "html",
+   "title": "progress, meter (native gauges)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "dropped with the subtree, like the other controls",
+   "note": "Not input, but a native control look that differs per platform.",
+   "match": {
+    "tags": [
+     "progress",
+     "meter"
+    ]
+   }
+  },
+  {
+   "id": "html.el.dialog-popover",
+   "area": "html",
+   "title": "dialog (show/showModal), popover attribute",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "a dialog renders as a <div>; the popover attributes and the dialog and popover methods are dropped",
+   "note": "The top layer is the page: in the Shadow DOM renderer a modal dialog or popover is drawn over the whole chat, outside the bubble.",
+   "match": {
+    "tags": [
+     "dialog"
+    ],
+    "attrs": [
+     "popover",
+     "popovertarget",
+     "popovertargetaction"
+    ],
+    "apis": [
+     "showModal",
+     "show",
+     "showPopover",
+     "togglePopover"
+    ]
+   }
+  },
+  {
+   "id": "html.el.unknown",
+   "area": "html",
+   "title": "Unknown / custom elements render as an inert <span data-tg-tag>",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "tags": [
+     "*unknown*"
+    ]
+   }
+  },
+  {
+   "id": "html.el.media",
+   "area": "html",
+   "title": "audio, video, source, track",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "dropped with the subtree",
+   "match": {
+    "tags": [
+     "audio",
+     "video",
+     "source",
+     "track"
+    ]
+   }
+  },
+  {
+   "id": "html.el.embedding",
+   "area": "html",
+   "title": "script (as DOM), iframe, frame, object, embed, link, meta, base, portal, template, slot, math, fencedframe, …",
+   "status": "out",
+   "decision": "inv2",
+   "neutralise": "dropped with the subtree",
+   "match": {
+    "tags": [
+     "iframe",
+     "frame",
+     "frameset",
+     "object",
+     "embed",
+     "link",
+     "meta",
+     "base",
+     "portal",
+     "noscript",
+     "template",
+     "slot",
+     "math",
+     "fencedframe",
+     "applet",
+     "param",
+     "area",
+     "map"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.global",
+   "area": "html",
+   "title": "class, id, title, hidden, lang, style attribute",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "attrs": [
+     "class",
+     "id",
+     "title",
+     "hidden",
+     "lang",
+     "style"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.dir",
+   "area": "html",
+   "title": "dir=\"rtl\" / dir=\"auto\": bidi layout",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "attrs": [
+     "dir"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.data-aria",
+   "area": "html",
+   "title": "data-* and aria-* attributes (selectors, attr()); no a11y semantics in v1",
+   "status": "in",
+   "decision": "D21",
+   "note": "Counted against the strict text budget.",
+   "match": {
+    "attrs": [
+     "data-*",
+     "aria-*"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.legacy-presentational",
+   "area": "html",
+   "title": "align, valign, bgcolor, border, cellpadding, cellspacing, color, face, nowrap",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the attributes are dropped",
+   "match": {
+    "attrs": [
+     "align",
+     "valign",
+     "bgcolor",
+     "border",
+     "cellpadding",
+     "cellspacing",
+     "color",
+     "face",
+     "nowrap"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.event-handlers",
+   "area": "html",
+   "title": "Inline on* handler attributes (run inside QuickJS, never reach the renderer)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "attrs": [
+     "on*"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.contenteditable",
+   "area": "html",
+   "title": "contenteditable, spellcheck, inputmode, enterkeyhint, autocapitalize",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "drop the attribute",
+   "note": "Editing is form input. Text is not selectable by default (D18); user-select: text enables selection, never editing.",
+   "match": {
+    "attrs": [
+     "contenteditable",
+     "spellcheck",
+     "inputmode",
+     "enterkeyhint",
+     "autocapitalize"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.draggable",
+   "area": "html",
+   "title": "draggable (HTML drag and drop)",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "drop the attribute; drag in v1 is pointer events",
+   "match": {
+    "attrs": [
+     "draggable"
+    ]
+   }
+  },
+  {
+   "id": "html.attr.tabindex",
+   "area": "html",
+   "title": "tabindex, autofocus, accesskey (keyboard focus and shortcuts)",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "drop the attributes (no keyboard: D4)",
+   "note": "Today tabindex is kept, autofocus is dropped silently, accesskey is not on the allowlist.",
+   "match": {
+    "attrs": [
+     "tabindex",
+     "autofocus",
+     "accesskey"
+    ]
+   }
+  },
+  {
+   "id": "svg.shapes",
+   "area": "svg",
+   "title": "Inline <svg>: rect, circle, ellipse, line, polyline, polygon, path with presentation attributes",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "svgTags": [
+     "svg",
+     "rect",
+     "circle",
+     "ellipse",
+     "line",
+     "polyline",
+     "polygon",
+     "path"
+    ],
+    "attrs": [
+     "fill",
+     "stroke",
+     "stroke-width",
+     "d",
+     "viewBox"
+    ]
+   }
+  },
+  {
+   "id": "svg.structure",
+   "area": "svg",
+   "title": "g, defs, symbol, use (fragment href), transform attribute, viewBox/preserveAspectRatio",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "svgTags": [
+     "g",
+     "defs",
+     "symbol",
+     "use"
+    ],
+    "attrs": [
+     "transform",
+     "viewBox",
+     "preserveAspectRatio"
+    ]
+   }
+  },
+  {
+   "id": "svg.text",
+   "area": "svg",
+   "title": "SVG text, tspan",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "svgTags": [
+     "text",
+     "tspan"
+    ]
+   }
+  },
+  {
+   "id": "svg.gradients",
+   "area": "svg",
+   "title": "linearGradient, radialGradient, stop; fill=\"url(#id)\"",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "svgTags": [
+     "linearGradient",
+     "radialGradient",
+     "stop"
+    ]
+   }
+  },
+  {
+   "id": "svg.css",
+   "area": "svg",
+   "title": "CSS on inline SVG: fill/stroke from a stylesheet rule, :hover, CSS animation of SVG properties",
+   "status": "in",
+   "decision": "P1",
+   "note": "Blitz and the litehtml prototype ignore SVG CSS (probe svg-css).",
+   "match": {
+    "properties": [
+     "fill",
+     "stroke",
+     "stroke-width",
+     "stroke-dasharray",
+     "stroke-dashoffset"
+    ]
+   }
+  },
+  {
+   "id": "svg.clip-mask",
+   "area": "svg",
+   "title": "clipPath, mask, pattern, marker",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the elements are dropped with their subtree; clip-path, mask and marker attributes are dropped",
+   "match": {
+    "svgTags": [
+     "clipPath",
+     "mask",
+     "pattern",
+     "marker"
+    ]
+   }
+  },
+  {
+   "id": "svg.filters",
+   "area": "svg",
+   "title": "SVG filter primitives (fe*)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "filter and the fe* elements are dropped with their subtree; the filter attribute is dropped",
+   "match": {
+    "svgTags": [
+     "filter",
+     "feGaussianBlur",
+     "feColorMatrix",
+     "feOffset",
+     "feMerge",
+     "feDropShadow",
+     "…"
+    ]
+   }
+  },
+  {
+   "id": "svg.smil",
+   "area": "svg",
+   "title": "SMIL animation: animate, animateTransform, animateMotion",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "animate, animateTransform, animateMotion and mpath are dropped",
+   "note": "Animation driven by the renderer, outside CSS animations and WAAPI.",
+   "match": {
+    "svgTags": [
+     "animate",
+     "animateTransform",
+     "animateMotion",
+     "mpath"
+    ]
+   }
+  },
+  {
+   "id": "svg.foreign-object",
+   "area": "svg",
+   "title": "foreignObject (HTML inside SVG)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "drop the subtree",
+   "match": {
+    "svgTags": [
+     "foreignObject"
+    ]
+   }
+  },
+  {
+   "id": "svg.image",
+   "area": "svg",
+   "title": "<image href=\"data:…\"> inside SVG",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "dropped",
+   "match": {
+    "svgTags": [
+     "image"
+    ]
+   }
+  },
+  {
+   "id": "css.display.basic",
+   "area": "css",
+   "title": "display: block, inline, inline-block, none",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "display"
+    ],
+    "values": [
+     "block",
+     "inline",
+     "inline-block",
+     "none"
+    ]
+   }
+  },
+  {
+   "id": "css.display.flex",
+   "area": "css",
+   "title": "Flexbox: display flex/inline-flex, direction, wrap, justify-content, align-items/self/content, flex grow/shrink/basis, order",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "display",
+     "flex",
+     "flex-direction",
+     "flex-wrap",
+     "flex-flow",
+     "justify-content",
+     "align-items",
+     "align-self",
+     "align-content",
+     "flex-grow",
+     "flex-shrink",
+     "flex-basis",
+     "order"
+    ],
+    "values": [
+     "flex",
+     "inline-flex"
+    ]
+   }
+  },
+  {
+   "id": "css.gap.flex",
+   "area": "css",
+   "title": "gap / row-gap / column-gap in flex containers",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Missing in the litehtml prototype (probe flex-gap).",
+   "match": {
+    "properties": [
+     "gap",
+     "row-gap",
+     "column-gap"
+    ]
+   }
+  },
+  {
+   "id": "css.display.grid",
+   "area": "css",
+   "title": "CSS grid: display grid, grid-template-*, grid-area/column/row, auto-flow, place-*",
+   "status": "in",
+   "decision": "P1-grid",
+   "match": {
+    "properties": [
+     "grid-template-columns",
+     "grid-template-rows",
+     "grid-template-areas",
+     "grid-column",
+     "grid-row",
+     "grid-area",
+     "grid-auto-flow",
+     "grid-auto-rows",
+     "grid-auto-columns",
+     "place-items",
+     "place-content",
+     "place-self",
+     "justify-items"
+    ],
+    "values": [
+     "grid",
+     "inline-grid"
+    ]
+   }
+  },
+  {
+   "id": "css.display.table",
+   "area": "css",
+   "title": "display: table / table-row / table-cell",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "display"
+    ],
+    "values": [
+     "table",
+     "table-row",
+     "table-cell",
+     "table-caption"
+    ]
+   }
+  },
+  {
+   "id": "css.display.other",
+   "area": "css",
+   "title": "display: flow-root, contents, list-item",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "values": [
+     "flow-root",
+     "contents",
+     "list-item"
+    ]
+   }
+  },
+  {
+   "id": "css.box.size",
+   "area": "css",
+   "title": "width, height, min-/max-width/height (px, %, auto, fit-content, min/max-content)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "width",
+     "height",
+     "min-width",
+     "min-height",
+     "max-width",
+     "max-height"
+    ]
+   }
+  },
+  {
+   "id": "css.box.spacing",
+   "area": "css",
+   "title": "margin, padding (incl. auto margins and negative margins)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "margin",
+     "margin-*",
+     "padding",
+     "padding-*"
+    ]
+   }
+  },
+  {
+   "id": "css.box.border",
+   "area": "css",
+   "title": "border width/style/colour (solid, dashed, dotted, double)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "border",
+     "border-*"
+    ]
+   }
+  },
+  {
+   "id": "css.box.radius",
+   "area": "css",
+   "title": "border-radius, including clipping of the background",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "border-radius",
+     "border-*-radius"
+    ]
+   }
+  },
+  {
+   "id": "css.box.sizing",
+   "area": "css",
+   "title": "box-sizing: border-box / content-box",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "box-sizing"
+    ]
+   }
+  },
+  {
+   "id": "css.box.aspect-ratio",
+   "area": "css",
+   "title": "aspect-ratio",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Missing in the litehtml prototype.",
+   "match": {
+    "properties": [
+     "aspect-ratio"
+    ]
+   }
+  },
+  {
+   "id": "css.box.logical",
+   "area": "css",
+   "title": "Logical properties: margin-inline, padding-block, inset-inline, inline-size, …",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "note": "Used by LLM widgets (15 % of generated); missing in the litehtml prototype.",
+   "match": {
+    "properties": [
+     "margin-inline*",
+     "margin-block*",
+     "padding-inline*",
+     "padding-block*",
+     "inset-inline*",
+     "inset-block*",
+     "inline-size",
+     "block-size"
+    ]
+   }
+  },
+  {
+   "id": "css.box.outline",
+   "area": "css",
+   "title": "outline (width, style, colour, offset)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "outline",
+     "outline-*"
+    ]
+   }
+  },
+  {
+   "id": "css.box.shadow",
+   "area": "css",
+   "title": "box-shadow (outer, inset, spread, several layers)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "box-shadow"
+    ]
+   }
+  },
+  {
+   "id": "css.box.float",
+   "area": "css",
+   "title": "float, clear",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "float",
+     "clear"
+    ]
+   }
+  },
+  {
+   "id": "css.box.columns",
+   "area": "css",
+   "title": "Multi-column layout (columns, column-count, column-gap)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "columns",
+     "column-count",
+     "column-width",
+     "column-rule"
+    ]
+   }
+  },
+  {
+   "id": "css.box.object-fit",
+   "area": "css",
+   "title": "object-fit, object-position on <img>",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "properties": [
+     "object-fit",
+     "object-position"
+    ]
+   }
+  },
+  {
+   "id": "css.position.relative-absolute",
+   "area": "css",
+   "title": "position: relative / absolute with inset, top/right/bottom/left",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "position",
+     "top",
+     "right",
+     "bottom",
+     "left",
+     "inset"
+    ],
+    "values": [
+     "relative",
+     "absolute"
+    ]
+   }
+  },
+  {
+   "id": "css.position.fixed",
+   "area": "css",
+   "title": "position: fixed (relative to the bubble, never the chat)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "values": [
+     "fixed"
+    ]
+   }
+  },
+  {
+   "id": "css.position.sticky",
+   "area": "css",
+   "title": "position: sticky",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "becomes relative (no scrolling inside a widget)",
+   "match": {
+    "values": [
+     "sticky"
+    ]
+   }
+  },
+  {
+   "id": "css.position.z-index",
+   "area": "css",
+   "title": "z-index and stacking order",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "z-index"
+    ]
+   }
+  },
+  {
+   "id": "css.overflow.clip",
+   "area": "css",
+   "title": "overflow: hidden / clip clips the content (with border-radius)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "overflow",
+     "overflow-x",
+     "overflow-y"
+    ],
+    "values": [
+     "hidden",
+     "clip"
+    ]
+   }
+  },
+  {
+   "id": "css.overflow.scroll",
+   "area": "css",
+   "title": "overflow: auto / scroll (scrolling inside the widget)",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": "becomes hidden: the box clips, no scrollbar, no scroll gesture",
+   "match": {
+    "properties": [
+     "overflow",
+     "overflow-x",
+     "overflow-y"
+    ],
+    "values": [
+     "auto",
+     "scroll",
+     "overlay"
+    ]
+   }
+  },
+  {
+   "id": "css.visibility",
+   "area": "css",
+   "title": "visibility: hidden / visible",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "visibility"
+    ]
+   }
+  },
+  {
+   "id": "css.opacity",
+   "area": "css",
+   "title": "opacity",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Missing in the litehtml prototype.",
+   "match": {
+    "properties": [
+     "opacity"
+    ]
+   }
+  },
+  {
+   "id": "css.color.basic",
+   "area": "css",
+   "title": "Colours: named, #hex (3/4/6/8), rgb()/rgba(), hsl()/hsla(), transparent, currentColor",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "color",
+     "background-color",
+     "border-color"
+    ],
+    "functions": [
+     "rgb",
+     "rgba",
+     "hsl",
+     "hsla"
+    ]
+   }
+  },
+  {
+   "id": "css.color.modern",
+   "area": "css",
+   "title": "Colour functions: hwb(), lab(), lch(), oklab(), oklch(), color()",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped (an earlier fallback declaration applies)",
+   "match": {
+    "functions": [
+     "hwb",
+     "lab",
+     "lch",
+     "oklab",
+     "oklch",
+     "color"
+    ]
+   }
+  },
+  {
+   "id": "css.color.mix",
+   "area": "css",
+   "title": "color-mix()",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "note": "Missing in the litehtml prototype.",
+   "match": {
+    "functions": [
+     "color-mix"
+    ]
+   }
+  },
+  {
+   "id": "css.color.light-dark",
+   "area": "css",
+   "title": "light-dark() and color-scheme: light dark, resolved to the chat theme",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "functions": [
+     "light-dark"
+    ],
+    "properties": [
+     "color-scheme"
+    ]
+   }
+  },
+  {
+   "id": "css.background.basic",
+   "area": "css",
+   "title": "background-color, background-image: url(data:…), background-size/position/repeat, several layers",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "background",
+     "background-color",
+     "background-image",
+     "background-size",
+     "background-position",
+     "background-repeat",
+     "background-origin"
+    ]
+   }
+  },
+  {
+   "id": "css.background.clip-text",
+   "area": "css",
+   "title": "background-clip: text (gradient text)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "background-clip",
+     "-webkit-background-clip"
+    ],
+    "values": [
+     "text"
+    ]
+   }
+  },
+  {
+   "id": "css.gradient.linear",
+   "area": "css",
+   "title": "linear-gradient(), repeating-linear-gradient()",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "functions": [
+     "linear-gradient",
+     "repeating-linear-gradient"
+    ]
+   }
+  },
+  {
+   "id": "css.gradient.radial",
+   "area": "css",
+   "title": "radial-gradient(), repeating-radial-gradient()",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "functions": [
+     "radial-gradient",
+     "repeating-radial-gradient"
+    ]
+   }
+  },
+  {
+   "id": "css.gradient.conic",
+   "area": "css",
+   "title": "conic-gradient()",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "functions": [
+     "conic-gradient",
+     "repeating-conic-gradient"
+    ]
+   }
+  },
+  {
+   "id": "css.url.remote",
+   "area": "css",
+   "title": "url() / image-set() with anything but a data: image or #fragment",
+   "status": "out",
+   "decision": "inv4",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "functions": [
+     "url",
+     "image-set",
+     "image",
+     "cross-fade"
+    ]
+   }
+  },
+  {
+   "id": "css.font.generic",
+   "area": "css",
+   "title": "font-family with system generic families: system-ui, sans-serif, serif, monospace",
+   "status": "in",
+   "decision": "D3b",
+   "match": {
+    "properties": [
+     "font-family",
+     "font"
+    ],
+    "values": [
+     "system-ui",
+     "sans-serif",
+     "serif",
+     "monospace"
+    ]
+   }
+  },
+  {
+   "id": "css.font.ui-families",
+   "area": "css",
+   "title": "font-family: ui-sans-serif, ui-serif, ui-monospace, ui-rounded",
+   "status": "in",
+   "decision": "P1",
+   "note": "Generic per CSS Fonts 4, but only WebKit resolves them; Chromium falls back to the default face.",
+   "match": {
+    "properties": [
+     "font-family",
+     "font"
+    ],
+    "values": [
+     "ui-sans-serif",
+     "ui-serif",
+     "ui-monospace",
+     "ui-rounded"
+    ]
+   }
+  },
+  {
+   "id": "css.font.named",
+   "area": "css",
+   "title": "font-family naming a font (\"Helvetica\", \"Courier New\", \"Comic Sans MS\", …)",
+   "status": "out",
+   "decision": "D3b",
+   "neutralise": "the validator drops non-generic names from the list; -apple-system and BlinkMacSystemFont, the vendor names of the system UI font, become system-ui; an empty list falls back to the default (system-ui)",
+   "match": {
+    "properties": [
+     "font-family",
+     "font"
+    ]
+   }
+  },
+  {
+   "id": "css.font.face",
+   "area": "css",
+   "title": "@font-face (web fonts)",
+   "status": "out",
+   "decision": "D3b",
+   "neutralise": "the at-rule is dropped",
+   "match": {
+    "atrules": [
+     "font-face"
+    ]
+   }
+  },
+  {
+   "id": "css.font.basic",
+   "area": "css",
+   "title": "font-size, font-weight (100–900, bold), font-style italic, line-height, font shorthand",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "font-size",
+     "font-weight",
+     "font-style",
+     "line-height",
+     "font"
+    ]
+   }
+  },
+  {
+   "id": "css.font.variant-numeric",
+   "area": "css",
+   "title": "font-variant-numeric: tabular-nums (and font-feature-settings \"tnum\")",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "properties": [
+     "font-variant-numeric",
+     "font-feature-settings"
+    ]
+   }
+  },
+  {
+   "id": "css.text.align",
+   "area": "css",
+   "title": "text-align (left, right, center, justify, start, end), text-indent",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "text-align",
+     "text-indent"
+    ]
+   }
+  },
+  {
+   "id": "css.text.decoration",
+   "area": "css",
+   "title": "text-decoration (underline, line-through, overline; colour, style, thickness)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "text-decoration",
+     "text-decoration-*"
+    ]
+   }
+  },
+  {
+   "id": "css.text.transform",
+   "area": "css",
+   "title": "text-transform, letter-spacing, word-spacing",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "text-transform",
+     "letter-spacing",
+     "word-spacing"
+    ]
+   }
+  },
+  {
+   "id": "css.text.white-space",
+   "area": "css",
+   "title": "white-space: normal, nowrap, pre, pre-wrap, pre-line",
+   "status": "in",
+   "decision": "D3a",
+   "note": "pre missing in the litehtml prototype.",
+   "match": {
+    "properties": [
+     "white-space"
+    ]
+   }
+  },
+  {
+   "id": "css.text.wrap",
+   "area": "css",
+   "title": "overflow-wrap / word-break (breaking long words)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "overflow-wrap",
+     "word-wrap",
+     "word-break"
+    ]
+   }
+  },
+  {
+   "id": "css.text.overflow",
+   "area": "css",
+   "title": "text-overflow: ellipsis (single line)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "properties": [
+     "text-overflow"
+    ]
+   }
+  },
+  {
+   "id": "css.text.line-clamp",
+   "area": "css",
+   "title": "-webkit-line-clamp / line-clamp (multi-line ellipsis)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "-webkit-line-clamp",
+     "line-clamp",
+     "-webkit-box-orient"
+    ]
+   }
+  },
+  {
+   "id": "css.text.shadow",
+   "area": "css",
+   "title": "text-shadow",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "note": "Not drawn by Blitz or the litehtml prototype (probe text-shadow).",
+   "match": {
+    "properties": [
+     "text-shadow"
+    ]
+   }
+  },
+  {
+   "id": "css.text.vertical-align",
+   "area": "css",
+   "title": "vertical-align (baseline, middle, top, sub, super, lengths)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "vertical-align"
+    ]
+   }
+  },
+  {
+   "id": "css.text.list-style",
+   "area": "css",
+   "title": "list-style-type / position (disc, decimal, none, …)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "list-style",
+     "list-style-type",
+     "list-style-position"
+    ]
+   }
+  },
+  {
+   "id": "css.text.writing-mode",
+   "area": "css",
+   "title": "writing-mode, text-orientation (vertical text)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "writing-mode",
+     "text-orientation"
+    ]
+   }
+  },
+  {
+   "id": "css.text.rtl",
+   "area": "css",
+   "title": "Right-to-left and bidi text (direction, unicode-bidi, Hebrew/Arabic shaping)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "direction",
+     "unicode-bidi"
+    ]
+   }
+  },
+  {
+   "id": "css.text.emoji",
+   "area": "css",
+   "title": "Colour emoji glyphs (system emoji font)",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Blitz on iOS had blank emoji on the vello backend."
+  },
+  {
+   "id": "css.text.selection",
+   "area": "css",
+   "title": "Text selection: not selectable by default; user-select: text (or -webkit-user-select) enables it (none | text | auto)",
+   "status": "in",
+   "decision": "D18",
+   "match": {
+    "properties": [
+     "user-select",
+     "-webkit-user-select"
+    ]
+   },
+   "note": "user-select: all and contain, and ::selection, stay out. A native renderer that cannot select text yet keeps it unselectable: the widget still works (an accepted exception to 'every client draws it', like :hover)."
+  },
+  {
+   "id": "css.transform.2d",
+   "area": "css",
+   "title": "2D transforms: translate, rotate, scale, skew, matrix; transform-origin; the translate/rotate/scale properties",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Missing in the litehtml prototype.",
+   "match": {
+    "properties": [
+     "transform",
+     "transform-origin",
+     "translate",
+     "rotate",
+     "scale"
+    ],
+    "functions": [
+     "translate",
+     "translateX",
+     "translateY",
+     "rotate",
+     "scale",
+     "scaleX",
+     "scaleY",
+     "skew",
+     "skewX",
+     "skewY",
+     "matrix"
+    ]
+   }
+  },
+  {
+   "id": "css.transform.3d",
+   "area": "css",
+   "title": "3D transforms: rotateX/Y/3d, translateZ/3d, scaleZ/3d, matrix3d, perspective, transform-style, backface-visibility",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": "a transform with a 3D function is dropped; perspective, transform-style and backface-visibility are dropped",
+   "match": {
+    "properties": [
+     "perspective",
+     "perspective-origin",
+     "transform-style",
+     "backface-visibility"
+    ],
+    "functions": [
+     "rotateX",
+     "rotateY",
+     "rotateZ",
+     "rotate3d",
+     "translateZ",
+     "translate3d",
+     "scaleZ",
+     "scale3d",
+     "matrix3d",
+     "perspective"
+    ]
+   }
+  },
+  {
+   "id": "css.filter.blur-brightness-drop-shadow",
+   "area": "css",
+   "title": "filter: blur(), brightness(), drop-shadow()",
+   "status": "in",
+   "decision": "D3a",
+   "conditional": true,
+   "note": "Not drawn by Blitz or the litehtml prototype today (probe filter).",
+   "match": {
+    "properties": [
+     "filter"
+    ],
+    "functions": [
+     "blur",
+     "brightness",
+     "drop-shadow"
+    ]
+   }
+  },
+  {
+   "id": "css.filter.other",
+   "area": "css",
+   "title": "filter: grayscale(), sepia(), saturate(), contrast(), hue-rotate(), invert(), opacity()",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the function is removed from the filter list; an empty list drops the declaration",
+   "match": {
+    "properties": [
+     "filter"
+    ],
+    "functions": [
+     "grayscale",
+     "sepia",
+     "saturate",
+     "contrast",
+     "hue-rotate",
+     "invert",
+     "opacity"
+    ]
+   }
+  },
+  {
+   "id": "css.filter.url",
+   "area": "css",
+   "title": "filter: url(#svg-filter)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "filter"
+    ],
+    "functions": [
+     "url"
+    ]
+   }
+  },
+  {
+   "id": "css.backdrop-filter",
+   "area": "css",
+   "title": "backdrop-filter: blur(), brightness()",
+   "status": "in",
+   "decision": "D3a",
+   "conditional": true,
+   "match": {
+    "properties": [
+     "backdrop-filter",
+     "-webkit-backdrop-filter"
+    ]
+   }
+  },
+  {
+   "id": "css.blend",
+   "area": "css",
+   "title": "mix-blend-mode, isolation, background-blend-mode",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "mix-blend-mode",
+     "isolation",
+     "background-blend-mode"
+    ]
+   }
+  },
+  {
+   "id": "css.clip-path",
+   "area": "css",
+   "title": "clip-path: inset(), circle(), ellipse(), polygon()",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "note": "Blitz draws it, the litehtml prototype does not.",
+   "match": {
+    "properties": [
+     "clip-path"
+    ]
+   }
+  },
+  {
+   "id": "css.mask",
+   "area": "css",
+   "title": "mask / -webkit-mask with gradients or data: images",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "match": {
+    "properties": [
+     "mask",
+     "mask-*",
+     "-webkit-mask",
+     "-webkit-mask-*"
+    ]
+   }
+  },
+  {
+   "id": "css.pointer-events",
+   "area": "css",
+   "title": "pointer-events: none / auto (hit testing passes through)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "properties": [
+     "pointer-events"
+    ]
+   }
+  },
+  {
+   "id": "css.touch-action",
+   "area": "css",
+   "title": "touch-action: none / pan-y (the widget claims horizontal drags from the chat; vertical drags are always the chat's)",
+   "status": "in",
+   "decision": "P1",
+   "note": "D4: drag in v1 needs gesture arbitration; the renderer reports the claim (`gesture` message). v0.1.3 (G2): pan-x claims nothing, and the engine under the renderer gets the value widened to allow vertical panning (none → pan-y), while the claim and getComputedStyle keep the widget's own.",
+   "match": {
+    "properties": [
+     "touch-action"
+    ]
+   }
+  },
+  {
+   "id": "css.cursor",
+   "area": "css",
+   "title": "cursor (desktop only)",
+   "status": "in",
+   "decision": "D3",
+   "note": "Progressive enhancement like :hover; no-op on touch clients.",
+   "match": {
+    "properties": [
+     "cursor"
+    ]
+   }
+  },
+  {
+   "id": "css.value.units",
+   "area": "css",
+   "title": "Units px, em, rem, %, ch, ex; pt/cm/mm/in",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "units": [
+     "px",
+     "em",
+     "rem",
+     "%",
+     "ch",
+     "ex",
+     "pt",
+     "cm",
+     "mm",
+     "in"
+    ]
+   }
+  },
+  {
+   "id": "css.value.vw",
+   "area": "css",
+   "title": "vw / vmin / vmax / vi: the bubble width",
+   "status": "in",
+   "decision": "P1",
+   "note": "Container units (cqw) on the Shadow DOM renderer.",
+   "match": {
+    "units": [
+     "vw",
+     "svw",
+     "lvw",
+     "dvw",
+     "vi",
+     "vmin",
+     "vmax"
+    ]
+   }
+  },
+  {
+   "id": "css.value.vh",
+   "area": "css",
+   "title": "vh / dvh / svh / vb: height-relative units",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the declaration is dropped",
+   "note": "The bubble height comes from the content, so vh is circular: the iframe uses its own height, the shadow renderer the container height.",
+   "match": {
+    "units": [
+     "vh",
+     "svh",
+     "lvh",
+     "dvh",
+     "vb"
+    ]
+   }
+  },
+  {
+   "id": "css.value.math",
+   "area": "css",
+   "title": "calc(), min(), max(), clamp()",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Missing in the litehtml prototype.",
+   "match": {
+    "functions": [
+     "calc",
+     "min",
+     "max",
+     "clamp"
+    ]
+   }
+  },
+  {
+   "id": "css.value.custom-properties",
+   "area": "css",
+   "title": "Custom properties and var() with fallbacks; inheritance",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "functions": [
+     "var"
+    ],
+    "properties": [
+     "--*"
+    ]
+   }
+  },
+  {
+   "id": "css.value.keywords",
+   "area": "css",
+   "title": "inherit, initial, unset, revert; !important",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "values": [
+     "inherit",
+     "initial",
+     "unset",
+     "revert",
+     "!important"
+    ]
+   }
+  },
+  {
+   "id": "css.value.content",
+   "area": "css",
+   "title": "content in ::before/::after: strings, attr(data-*), counters",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Strict: attr() reads only budgeted attributes.",
+   "match": {
+    "properties": [
+     "content",
+     "counter-reset",
+     "counter-increment",
+     "quotes"
+    ],
+    "functions": [
+     "attr",
+     "counter",
+     "counters"
+    ]
+   }
+  },
+  {
+   "id": "css.value.env",
+   "area": "css",
+   "title": "env() (safe-area-inset-*, …)",
+   "status": "in",
+   "decision": "P1-safe-area",
+   "note": "env(safe-area-inset-top|right|bottom|left[, fallback]) is the client's chrome over the widget (the message time over the bottom corner of a widget with no caption below it): the validator rewrites it to var(--tg-content-safe-area-inset-…[, fallback]), a root variable the renderer sets; another name resolves to its fallback, or the declaration is dropped without one; never inside url().",
+   "match": {
+    "functions": [
+     "env"
+    ]
+   }
+  },
+  {
+   "id": "sel.basic",
+   "area": "selector",
+   "title": "Type, class, id, universal and attribute selectors; descendant, child, + and ~ combinators; selector lists",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "selectors": [
+     "E",
+     ".c",
+     "#i",
+     "*",
+     "[a]",
+     "[a=v]",
+     "[a^=v]",
+     "[a$=v]",
+     "[a*=v]",
+     "[a~=v]",
+     "A B",
+     "A > B",
+     "A + B",
+     "A ~ B"
+    ]
+   }
+  },
+  {
+   "id": "sel.structural",
+   "area": "selector",
+   "title": ":first-child, :last-child, :nth-child(), :nth-last-child(), :nth-of-type(), :only-child, :empty, :not()",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "selectors": [
+     ":first-child",
+     ":last-child",
+     ":nth-child",
+     ":nth-last-child",
+     ":nth-of-type",
+     ":first-of-type",
+     ":last-of-type",
+     ":only-child",
+     ":empty",
+     ":not"
+    ]
+   }
+  },
+  {
+   "id": "sel.is-where",
+   "area": "selector",
+   "title": ":is(), :where()",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "selectors": [
+     ":is",
+     ":where"
+    ]
+   }
+  },
+  {
+   "id": "sel.has",
+   "area": "selector",
+   "title": ":has()",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the selector never matches (dropped from its list)",
+   "note": "Not matched by Blitz or the litehtml prototype (probe has-selector).",
+   "match": {
+    "selectors": [
+     ":has"
+    ]
+   }
+  },
+  {
+   "id": "sel.root",
+   "area": "selector",
+   "title": ":root (custom properties on the widget root)",
+   "status": "in",
+   "decision": "D3a",
+   "note": "[data-tw-root] on the Shadow DOM renderer.",
+   "match": {
+    "selectors": [
+     ":root"
+    ]
+   }
+  },
+  {
+   "id": "sel.before-after",
+   "area": "selector",
+   "title": "::before, ::after",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "selectors": [
+     "::before",
+     "::after"
+    ]
+   }
+  },
+  {
+   "id": "sel.first-letter-line",
+   "area": "selector",
+   "title": "::first-letter, ::first-line, ::marker",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the selector never matches (dropped from its list)",
+   "match": {
+    "selectors": [
+     "::first-letter",
+     "::first-line",
+     "::marker"
+    ]
+   }
+  },
+  {
+   "id": "sel.hover",
+   "area": "selector",
+   "title": ":hover (progressive enhancement: desktop with a pointer; no-op on touch)",
+   "status": "in",
+   "decision": "D3",
+   "match": {
+    "selectors": [
+     ":hover"
+    ]
+   }
+  },
+  {
+   "id": "sel.active",
+   "area": "selector",
+   "title": ":active (pressed feedback while a tap is down)",
+   "status": "in",
+   "decision": "P1",
+   "note": "Used by 32 % of the HTMLBubbles demos for tap feedback.",
+   "match": {
+    "selectors": [
+     ":active"
+    ]
+   }
+  },
+  {
+   "id": "sel.focus",
+   "area": "selector",
+   "title": ":focus, :focus-visible, :focus-within",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "the selector never matches (dropped from its list); the widget never owns keyboard focus",
+   "match": {
+    "selectors": [
+     ":focus",
+     ":focus-visible",
+     ":focus-within"
+    ]
+   }
+  },
+  {
+   "id": "sel.form-state",
+   "area": "selector",
+   "title": ":checked, :disabled, :enabled, :valid, :invalid, :placeholder-shown, ::placeholder",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": ":disabled and :enabled become [disabled] and :not([disabled]) (the <button> state); the other form states never match",
+   "match": {
+    "selectors": [
+     ":checked",
+     ":disabled",
+     ":enabled",
+     ":valid",
+     ":invalid",
+     ":placeholder-shown",
+     "::placeholder"
+    ]
+   }
+  },
+  {
+   "id": "sel.host-scoped",
+   "area": "selector",
+   "title": ":host, :host-context(), ::slotted(), ::part(), :scope",
+   "status": "out",
+   "decision": "inv6",
+   "neutralise": "the selector never matches (dropped from its list) on every renderer",
+   "match": {
+    "selectors": [
+     ":host",
+     ":host-context",
+     "::slotted",
+     "::part",
+     ":scope"
+    ]
+   }
+  },
+  {
+   "id": "sel.target",
+   "area": "selector",
+   "title": ":target",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the selector never matches (dropped from its list)",
+   "match": {
+    "selectors": [
+     ":target"
+    ]
+   }
+  },
+  {
+   "id": "at.media.width",
+   "area": "at-rule",
+   "title": "@media (min-width/max-width/orientation): the bubble width",
+   "status": "in",
+   "decision": "D3a",
+   "note": "@container on the Shadow DOM renderer.",
+   "match": {
+    "atrules": [
+     "media"
+    ],
+    "media": [
+     "width",
+     "min-width",
+     "max-width",
+     "orientation",
+     "aspect-ratio"
+    ]
+   }
+  },
+  {
+   "id": "at.media.color-scheme",
+   "area": "at-rule",
+   "title": "@media (prefers-color-scheme): the chat theme, live on theme change",
+   "status": "in",
+   "decision": "D14",
+   "match": {
+    "atrules": [
+     "media"
+    ],
+    "media": [
+     "prefers-color-scheme"
+    ]
+   }
+  },
+  {
+   "id": "at.media.reduced-motion",
+   "area": "at-rule",
+   "title": "@media (prefers-reduced-motion)",
+   "status": "in",
+   "decision": "P1",
+   "note": "Today the renderer engine answers from the OS; the profile could make the client answer.",
+   "match": {
+    "media": [
+     "prefers-reduced-motion"
+    ]
+   }
+  },
+  {
+   "id": "at.media.hover-pointer",
+   "area": "at-rule",
+   "title": "@media (hover: hover), (pointer: fine|coarse)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the @media rule is dropped; matchMedia answers false",
+   "note": "Lets a widget gate :hover styles; the answer must come from the client, not the engine.",
+   "match": {
+    "media": [
+     "hover",
+     "any-hover",
+     "pointer",
+     "any-pointer"
+    ]
+   }
+  },
+  {
+   "id": "at.media.other",
+   "area": "at-rule",
+   "title": "@media print, resolution, other media features",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the @media rule is dropped; matchMedia answers false",
+   "match": {
+    "media": [
+     "print",
+     "resolution",
+     "display-mode",
+     "forced-colors",
+     "prefers-contrast"
+    ]
+   }
+  },
+  {
+   "id": "at.supports",
+   "area": "at-rule",
+   "title": "@supports evaluated from the profile tables (not the renderer engine)",
+   "status": "in",
+   "decision": "D23",
+   "note": "Today the engine evaluates the condition: \"yes\" for features the validator strips.",
+   "match": {
+    "atrules": [
+     "supports"
+    ]
+   }
+  },
+  {
+   "id": "at.keyframes",
+   "area": "at-rule",
+   "title": "@keyframes (and -webkit-keyframes)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "atrules": [
+     "keyframes",
+     "-webkit-keyframes"
+    ]
+   }
+  },
+  {
+   "id": "at.import-namespace",
+   "area": "at-rule",
+   "title": "@import, @namespace",
+   "status": "out",
+   "decision": "inv4",
+   "neutralise": "dropped",
+   "match": {
+    "atrules": [
+     "import",
+     "namespace"
+    ]
+   }
+  },
+  {
+   "id": "at.container",
+   "area": "at-rule",
+   "title": "@container queries (container-type in the widget)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the at-rule is dropped; container properties are dropped",
+   "match": {
+    "atrules": [
+     "container"
+    ],
+    "properties": [
+     "container",
+     "container-type",
+     "container-name"
+    ]
+   }
+  },
+  {
+   "id": "at.layer",
+   "area": "at-rule",
+   "title": "@layer cascade layers",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the at-rule is dropped with its rules",
+   "match": {
+    "atrules": [
+     "layer"
+    ]
+   }
+  },
+  {
+   "id": "at.property",
+   "area": "at-rule",
+   "title": "@property (typed custom properties)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the at-rule is dropped",
+   "match": {
+    "atrules": [
+     "property"
+    ]
+   }
+  },
+  {
+   "id": "at.exotic",
+   "area": "at-rule",
+   "title": "@counter-style, @starting-style, @scope, @page, @font-feature-values, @font-palette-values, @position-try",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "dropped like unknown at-rules",
+   "match": {
+    "atrules": [
+     "counter-style",
+     "starting-style",
+     "scope",
+     "page",
+     "font-feature-values",
+     "font-palette-values",
+     "position-try"
+    ]
+   }
+  },
+  {
+   "id": "at.nesting",
+   "area": "at-rule",
+   "title": "CSS nesting (.a { .b { } }, &)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "nested rules are dropped with a css-dropped diagnostic",
+   "note": "Validator hole today: css-tree regenerates .a{} and loses the nested rules (probe nesting).",
+   "match": {
+    "selectors": [
+     "&"
+    ]
+   }
+  },
+  {
+   "id": "anim.transition",
+   "area": "animation",
+   "title": "CSS transitions (property, duration, delay incl. negative, timing functions)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "transition",
+     "transition-*"
+    ]
+   }
+  },
+  {
+   "id": "anim.keyframes",
+   "area": "animation",
+   "title": "CSS animations: animation-name/duration/delay/iteration-count/direction/fill-mode/timing-function",
+   "status": "in",
+   "decision": "D3a",
+   "note": "Not driven by Blitz or the litehtml prototype.",
+   "match": {
+    "properties": [
+     "animation",
+     "animation-*"
+    ]
+   }
+  },
+  {
+   "id": "anim.play-state",
+   "area": "animation",
+   "title": "animation-play-state: paused (and negative delays) freeze a frame",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "properties": [
+     "animation-play-state"
+    ]
+   }
+  },
+  {
+   "id": "anim.easing",
+   "area": "animation",
+   "title": "Timing functions: ease*, linear, cubic-bezier(), steps(), linear() stops",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "functions": [
+     "cubic-bezier",
+     "steps",
+     "linear"
+    ]
+   }
+  },
+  {
+   "id": "anim.events",
+   "area": "animation",
+   "title": "animationstart/end/iteration and transitionend events reach the widget",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "events": [
+     "animationstart",
+     "animationend",
+     "animationiteration",
+     "transitionend"
+    ]
+   }
+  },
+  {
+   "id": "anim.waapi",
+   "area": "animation",
+   "title": "Web Animations: Element.animate, getAnimations, Animation play/pause/currentTime/finished, document.timeline",
+   "status": "in",
+   "decision": "D3a",
+   "conditional": true,
+   "note": "Behind the webAnimations feature (D5: profile flag, the same on every client); without it animate() is a finished stub.",
+   "match": {
+    "apis": [
+     "Element.animate",
+     "Element.getAnimations",
+     "document.getAnimations",
+     "document.timeline",
+     "Animation",
+     "KeyframeEffect"
+    ]
+   }
+  },
+  {
+   "id": "anim.waapi-css-control",
+   "area": "animation",
+   "title": "Web Animations control of CSS animations/transitions (pause, seek, cancel via getAnimations)",
+   "status": "in",
+   "decision": "D3a",
+   "conditional": true,
+   "match": {
+    "apis": [
+     "CSSAnimation",
+     "CSSTransition"
+    ]
+   }
+  },
+  {
+   "id": "anim.magic-move",
+   "area": "animation",
+   "title": "Magic move (shared-element morph between renders)",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": "not offered (it belonged to the render() model)"
+  },
+  {
+   "id": "canvas.rect",
+   "area": "canvas",
+   "title": "fillRect, strokeRect, clearRect",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "fillRect",
+     "strokeRect",
+     "clearRect"
+    ]
+   }
+  },
+  {
+   "id": "canvas.path",
+   "area": "canvas",
+   "title": "Paths: beginPath, moveTo, lineTo, arc, arcTo, bezierCurveTo, quadraticCurveTo, ellipse, rect, roundRect, closePath, fill (nonzero/evenodd), stroke",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "beginPath",
+     "moveTo",
+     "lineTo",
+     "arc",
+     "arcTo",
+     "bezierCurveTo",
+     "quadraticCurveTo",
+     "ellipse",
+     "rect",
+     "roundRect",
+     "closePath",
+     "fill",
+     "stroke"
+    ]
+   }
+  },
+  {
+   "id": "canvas.line-style",
+   "area": "canvas",
+   "title": "lineWidth, lineCap, lineJoin, miterLimit, setLineDash, lineDashOffset",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "lineWidth",
+     "lineCap",
+     "lineJoin",
+     "miterLimit",
+     "setLineDash",
+     "lineDashOffset"
+    ]
+   }
+  },
+  {
+   "id": "canvas.colors",
+   "area": "canvas",
+   "title": "fillStyle / strokeStyle with CSS colours",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "fillStyle",
+     "strokeStyle"
+    ]
+   }
+  },
+  {
+   "id": "canvas.gradients",
+   "area": "canvas",
+   "title": "createLinearGradient, createRadialGradient, addColorStop",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "createLinearGradient",
+     "createRadialGradient",
+     "addColorStop"
+    ]
+   }
+  },
+  {
+   "id": "canvas.conic-gradient",
+   "area": "canvas",
+   "title": "createConicGradient",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "createConicGradient returns a gradient that draws nothing",
+   "match": {
+    "canvas": [
+     "createConicGradient"
+    ]
+   }
+  },
+  {
+   "id": "canvas.pattern",
+   "area": "canvas",
+   "title": "createPattern from a canvas or image",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "createPattern returns a pattern that draws nothing",
+   "match": {
+    "canvas": [
+     "createPattern"
+    ]
+   }
+  },
+  {
+   "id": "canvas.transform",
+   "area": "canvas",
+   "title": "save, restore, translate, rotate, scale, transform, setTransform, resetTransform",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "save",
+     "restore",
+     "translate",
+     "rotate",
+     "scale",
+     "transform",
+     "setTransform",
+     "resetTransform"
+    ]
+   }
+  },
+  {
+   "id": "canvas.clip",
+   "area": "canvas",
+   "title": "clip() with a path",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "clip"
+    ]
+   }
+  },
+  {
+   "id": "canvas.text",
+   "area": "canvas",
+   "title": "fillText, strokeText, font, textAlign, textBaseline, measureText",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "fillText",
+     "strokeText",
+     "font",
+     "textAlign",
+     "textBaseline",
+     "measureText"
+    ]
+   }
+  },
+  {
+   "id": "canvas.alpha",
+   "area": "canvas",
+   "title": "globalAlpha",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "globalAlpha"
+    ]
+   }
+  },
+  {
+   "id": "canvas.composite",
+   "area": "canvas",
+   "title": "globalCompositeOperation (source-over, destination-out, multiply, …)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the property is not applied (source-over)",
+   "match": {
+    "canvas": [
+     "globalCompositeOperation"
+    ]
+   }
+  },
+  {
+   "id": "canvas.shadow",
+   "area": "canvas",
+   "title": "shadowBlur, shadowColor, shadowOffsetX/Y",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the properties are not applied",
+   "match": {
+    "canvas": [
+     "shadowBlur",
+     "shadowColor",
+     "shadowOffsetX",
+     "shadowOffsetY"
+    ]
+   }
+  },
+  {
+   "id": "canvas.filter",
+   "area": "canvas",
+   "title": "ctx.filter (CSS filter on canvas drawing)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "the property is not applied",
+   "match": {
+    "canvas": [
+     "filter"
+    ]
+   }
+  },
+  {
+   "id": "canvas.path2d",
+   "area": "canvas",
+   "title": "Path2D objects (from SVG path data or built), fill/stroke/clip with them",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "Path2D"
+    ]
+   }
+  },
+  {
+   "id": "canvas.draw-image",
+   "area": "canvas",
+   "title": "drawImage from an <img> (data:) or another canvas",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "canvas": [
+     "drawImage"
+    ]
+   }
+  },
+  {
+   "id": "canvas.image-data",
+   "area": "canvas",
+   "title": "getImageData / putImageData / createImageData (pixel read-back)",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "getImageData returns transparent pixels, putImageData draws nothing",
+   "note": "getImageData is a sync query answered by the renderer: a native renderer must rasterize to answer.",
+   "match": {
+    "canvas": [
+     "getImageData",
+     "putImageData",
+     "createImageData"
+    ]
+   }
+  },
+  {
+   "id": "canvas.hit-test",
+   "area": "canvas",
+   "title": "isPointInPath / isPointInStroke",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "canvas": [
+     "isPointInPath",
+     "isPointInStroke"
+    ]
+   }
+  },
+  {
+   "id": "canvas.hidpi",
+   "area": "canvas",
+   "title": "Backing store sized by width/height attributes, CSS size independent (devicePixelRatio scaling)",
+   "status": "in",
+   "decision": "D3a",
+   "match": {
+    "attrs": [
+     "width",
+     "height"
+    ],
+    "apis": [
+     "devicePixelRatio"
+    ]
+   }
+  },
+  {
+   "id": "canvas.readback",
+   "area": "canvas",
+   "title": "toDataURL, toBlob, captureStream",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "toBlob/captureStream are stubs; toDataURL returns an empty image (data:,)",
+   "match": {
+    "canvas": [
+     "toDataURL",
+     "toBlob",
+     "captureStream"
+    ]
+   }
+  },
+  {
+   "id": "canvas.webgl",
+   "area": "canvas",
+   "title": "WebGL, OffscreenCanvas, bitmaprenderer contexts",
+   "status": "out",
+   "decision": "D6",
+   "neutralise": "getContext returns null; OffscreenCanvas throws",
+   "match": {
+    "apis": [
+     "getContext(\"webgl\")",
+     "getContext(\"webgl2\")",
+     "OffscreenCanvas"
+    ]
+   }
+  },
+  {
+   "id": "js.dom.core",
+   "area": "js",
+   "title": "DOM building: createElement(NS), append/insertBefore/remove, textContent, innerHTML (parsed in the sandbox), attributes, classList, dataset",
+   "status": "in",
+   "decision": "D11",
+   "match": {
+    "apis": [
+     "document.createElement",
+     "Node.appendChild",
+     "Element.innerHTML",
+     "Element.classList",
+     "HTMLElement.dataset"
+    ]
+   }
+  },
+  {
+   "id": "js.dom.query",
+   "area": "js",
+   "title": "querySelector(All), getElementById, getElementsBy*, closest, matches",
+   "status": "in",
+   "decision": "D11",
+   "match": {
+    "apis": [
+     "querySelector",
+     "querySelectorAll",
+     "getElementById",
+     "closest",
+     "matches"
+    ]
+   }
+  },
+  {
+   "id": "js.dom.style",
+   "area": "js",
+   "title": "element.style (CSSOM properties, setProperty, cssText), className",
+   "status": "in",
+   "decision": "D11",
+   "match": {
+    "apis": [
+     "CSSStyleDeclaration.setProperty",
+     "element.style"
+    ]
+   }
+  },
+  {
+   "id": "js.dom.events",
+   "area": "js",
+   "title": "addEventListener (capture and bubble), dispatchEvent of CustomEvent, preventDefault, stopPropagation",
+   "status": "in",
+   "decision": "D11",
+   "match": {
+    "apis": [
+     "EventTarget.addEventListener",
+     "CustomEvent",
+     "Event.stopPropagation"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.rect",
+   "area": "js",
+   "title": "getBoundingClientRect, getClientRects (answered by the renderer)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "Element.getBoundingClientRect",
+     "Element.getClientRects"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.box",
+   "area": "js",
+   "title": "offsetWidth/Height/Top/Left, clientWidth/Height, scrollWidth/Height",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "offsetWidth",
+     "offsetHeight",
+     "clientWidth",
+     "scrollHeight"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.computed-style",
+   "area": "js",
+   "title": "getComputedStyle (incl. pseudo-elements and custom properties)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "getComputedStyle"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.match-media",
+   "area": "js",
+   "title": "matchMedia (prefers-color-scheme answered from the chat theme)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "matchMedia"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.resize-observer",
+   "area": "js",
+   "title": "ResizeObserver",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "ResizeObserver"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.intersection-observer",
+   "area": "js",
+   "title": "IntersectionObserver (emulated: always visible)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "IntersectionObserver"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.element-from-point",
+   "area": "js",
+   "title": "document.elementFromPoint",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "document.elementFromPoint"
+    ]
+   }
+  },
+  {
+   "id": "js.layout.measure-text",
+   "area": "js",
+   "title": "Text measurement through canvas measureText (fonts of the client)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "CanvasRenderingContext2D.measureText"
+    ]
+   }
+  },
+  {
+   "id": "js.focus",
+   "area": "js",
+   "title": "element.focus() / blur() / select(), document.activeElement: the widget takes keyboard focus",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "focus(), blur(), select() and setSelectionRange() do nothing; no call op reaches the renderer",
+   "note": "Today focus() reaches the renderer as a call op and moves the page focus into the bubble.",
+   "match": {
+    "apis": [
+     "HTMLElement.focus",
+     "HTMLElement.blur",
+     "HTMLInputElement.select",
+     "setSelectionRange"
+    ]
+   }
+  },
+  {
+   "id": "js.timers",
+   "area": "js",
+   "title": "setTimeout / setInterval / clear*, ordering, clamped delays",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "setTimeout",
+     "setInterval",
+     "clearTimeout",
+     "clearInterval"
+    ]
+   }
+  },
+  {
+   "id": "js.raf",
+   "area": "js",
+   "title": "requestAnimationFrame / cancelAnimationFrame (frames from the renderer)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "requestAnimationFrame",
+     "cancelAnimationFrame"
+    ]
+   }
+  },
+  {
+   "id": "js.microtasks",
+   "area": "js",
+   "title": "Promise, async/await, queueMicrotask",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "Promise",
+     "queueMicrotask"
+    ]
+   }
+  },
+  {
+   "id": "js.storage.local",
+   "area": "js",
+   "title": "localStorage: per (account, chat, message), preloaded, 4 KB, QuotaExceededError past it",
+   "status": "in",
+   "decision": "D17",
+   "note": "Today an in-memory map per widget instance with no quota.",
+   "match": {
+    "apis": [
+     "localStorage"
+    ]
+   }
+  },
+  {
+   "id": "js.storage.session",
+   "area": "js",
+   "title": "sessionStorage: same key, in memory until app restart",
+   "status": "in",
+   "decision": "D17",
+   "match": {
+    "apis": [
+     "sessionStorage"
+    ]
+   }
+  },
+  {
+   "id": "js.intl",
+   "area": "js",
+   "title": "Intl.NumberFormat, DateTimeFormat, PluralRules, RelativeTimeFormat, ListFormat, Collator (host ICU)",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "Intl.NumberFormat",
+     "Intl.DateTimeFormat",
+     "Intl.PluralRules",
+     "Intl.RelativeTimeFormat",
+     "Intl.ListFormat",
+     "Intl.Collator"
+    ]
+   }
+  },
+  {
+   "id": "js.intl.format-to-parts",
+   "area": "js",
+   "title": "Intl.NumberFormat/DateTimeFormat formatToParts",
+   "status": "in",
+   "decision": "P1",
+   "note": "Open item: missing on iOS and Android glue.",
+   "match": {
+    "apis": [
+     "formatToParts"
+    ]
+   }
+  },
+  {
+   "id": "js.locale",
+   "area": "js",
+   "title": "navigator.language reflects the client locale",
+   "status": "in",
+   "decision": "P1",
+   "note": "Hard-coded en-US today; the release plan wants the real locale.",
+   "match": {
+    "apis": [
+     "navigator.language"
+    ]
+   }
+  },
+  {
+   "id": "js.crypto-random",
+   "area": "js",
+   "title": "crypto.getRandomValues, crypto.randomUUID, Math.random",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "crypto.getRandomValues",
+     "crypto.randomUUID"
+    ]
+   }
+  },
+  {
+   "id": "js.builtins",
+   "area": "js",
+   "title": "TextEncoder/TextDecoder, URL, URLSearchParams, structuredClone, AbortController, atob/btoa",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "TextEncoder",
+     "TextDecoder",
+     "URL",
+     "URLSearchParams",
+     "structuredClone",
+     "AbortController",
+     "atob",
+     "btoa"
+    ]
+   }
+  },
+  {
+   "id": "js.eval",
+   "area": "js",
+   "title": "eval / new Function inside QuickJS (never in a browser context)",
+   "status": "in",
+   "decision": "inv1",
+   "match": {
+    "apis": [
+     "eval",
+     "Function"
+    ]
+   }
+  },
+  {
+   "id": "js.css-supports",
+   "area": "js",
+   "title": "CSS.supports() answered from the profile tables",
+   "status": "in",
+   "decision": "D23",
+   "note": "Today always true.",
+   "match": {
+    "apis": [
+     "CSS.supports"
+    ]
+   }
+  },
+  {
+   "id": "js.visibility",
+   "area": "js",
+   "title": "document.hidden / visibilityState / visibilitychange when the bubble leaves the screen",
+   "status": "in",
+   "decision": "P1",
+   "match": {
+    "apis": [
+     "document.hidden",
+     "document.visibilityState"
+    ],
+    "events": [
+     "visibilitychange"
+    ]
+   }
+  },
+  {
+   "id": "js.libraries",
+   "area": "js",
+   "title": "Bundled libraries by CDN name: Chart.js 4, D3 7 (nothing is fetched)",
+   "status": "out",
+   "decision": "P1-libs",
+   "neutralise": "nothing is bundled: a <script src> to a CDN is an external script like any other and is not run",
+   "note": "The release plan asks for the v1 list.",
+   "match": {
+    "apis": [
+     "<script src=cdn chart.js>",
+     "<script src=cdn d3>"
+    ]
+   }
+  },
+  {
+   "id": "js.network",
+   "area": "js",
+   "title": "fetch, XMLHttpRequest, WebSocket, EventSource, RTCPeerConnection, sendBeacon, importScripts, Worker, BroadcastChannel",
+   "status": "out",
+   "decision": "inv5",
+   "neutralise": "NetworkDisabledError (fetch rejects with it)",
+   "match": {
+    "apis": [
+     "fetch",
+     "XMLHttpRequest",
+     "WebSocket",
+     "EventSource",
+     "RTCPeerConnection",
+     "navigator.sendBeacon",
+     "importScripts",
+     "Worker",
+     "SharedWorker",
+     "BroadcastChannel",
+     "WebTransport"
+    ]
+   }
+  },
+  {
+   "id": "js.navigation",
+   "area": "js",
+   "title": "location assignment, history, window.open (→ openLink), form submission",
+   "status": "out",
+   "decision": "inv6",
+   "neutralise": "navigation never happens; window.open goes through openLink",
+   "match": {
+    "apis": [
+     "location",
+     "history.pushState",
+     "window.open"
+    ]
+   }
+  },
+  {
+   "id": "js.dialogs",
+   "area": "js",
+   "title": "alert, confirm, prompt, print",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "non-blocking stubs: confirm → false, prompt → null",
+   "match": {
+    "apis": [
+     "alert",
+     "confirm",
+     "prompt",
+     "print"
+    ]
+   }
+  },
+  {
+   "id": "js.device",
+   "area": "js",
+   "title": "clipboard, share, vibrate, geolocation, mediaDevices, Notification",
+   "status": "out",
+   "decision": "D8",
+   "neutralise": "rejected promises / undefined; haptics come from the SDK",
+   "match": {
+    "apis": [
+     "navigator.clipboard",
+     "navigator.share",
+     "navigator.vibrate",
+     "navigator.geolocation",
+     "navigator.mediaDevices"
+    ]
+   }
+  },
+  {
+   "id": "js.shadow-dom",
+   "area": "js",
+   "title": "attachShadow, customElements.define",
+   "status": "out",
+   "decision": "P1",
+   "neutralise": "attachShadow throws NotSupportedError, customElements.define is a no-op",
+   "match": {
+    "apis": [
+     "Element.attachShadow",
+     "customElements.define"
+    ]
+   }
+  },
+  {
+   "id": "js.blob-file",
+   "area": "js",
+   "title": "Blob, FileReader, URL.createObjectURL",
+   "status": "out",
+   "decision": "inv4",
+   "neutralise": "inert stubs",
+   "match": {
+    "apis": [
+     "Blob",
+     "FileReader",
+     "URL.createObjectURL"
+    ]
+   }
+  },
+  {
+   "id": "js.fullscreen",
+   "area": "js",
+   "title": "requestFullscreen",
+   "status": "out",
+   "decision": "D12a",
+   "neutralise": "rejects",
+   "match": {
+    "apis": [
+     "Element.requestFullscreen"
+    ]
+   }
+  },
+  {
+   "id": "tw.ready",
+   "area": "sdk",
+   "title": "TelegramWidget.ready()",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "apis": [
+     "TelegramWidget.ready"
+    ]
+   }
+  },
+  {
+   "id": "tw.theme",
+   "area": "sdk",
+   "title": "TelegramWidget.theme and onTheme(cb): \"light\" | \"dark\", called on change",
+   "status": "in",
+   "decision": "D14",
+   "match": {
+    "apis": [
+     "TelegramWidget.theme",
+     "TelegramWidget.onTheme"
+    ]
+   }
+  },
+  {
+   "id": "tw.theme-params",
+   "area": "sdk",
+   "title": "themeParams palette and --tg-theme-* CSS variables, theme change event",
+   "status": "in",
+   "decision": "D14",
+   "match": {
+    "apis": [
+     "TelegramWidget.themeParams"
+    ],
+    "properties": [
+     "--tg-theme-*"
+    ]
+   }
+  },
+  {
+   "id": "tw.open-link",
+   "area": "sdk",
+   "title": "openLink(url): https only, in the task of a real tap, confirmed by the client with the full URL",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "apis": [
+     "TelegramWidget.openLink"
+    ]
+   }
+  },
+  {
+   "id": "tw.open-telegram-link",
+   "area": "sdk",
+   "title": "openTelegramLink(url) for t.me links",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "apis": [
+     "TelegramWidget.openTelegramLink"
+    ]
+   }
+  },
+  {
+   "id": "tw.haptic",
+   "area": "sdk",
+   "title": "Haptic feedback, rate-limited",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "apis": [
+     "TelegramWidget.HapticFeedback"
+    ]
+   }
+  },
+  {
+   "id": "tw.profile",
+   "area": "sdk",
+   "title": "TelegramWidget.profile (integer) and isProfileAtLeast(n)",
+   "status": "in",
+   "decision": "D23",
+   "match": {
+    "apis": [
+     "TelegramWidget.profile",
+     "TelegramWidget.isProfileAtLeast"
+    ]
+   }
+  },
+  {
+   "id": "tw.send-message",
+   "area": "sdk",
+   "title": "TelegramWidget.sendMessage",
+   "status": "out",
+   "decision": "D8",
+   "neutralise": "removed from the SDK",
+   "match": {
+    "apis": [
+     "TelegramWidget.sendMessage"
+    ]
+   }
+  },
+  {
+   "id": "tw.events",
+   "area": "sdk",
+   "title": "onEvent / offEvent for themeChanged, activated, deactivated; at most 16 handlers per event type",
+   "status": "in",
+   "decision": "SDK",
+   "match": {
+    "apis": [
+     "TelegramWidget.onEvent",
+     "TelegramWidget.offEvent"
+    ]
+   }
+  },
+  {
+   "id": "tw.is-active",
+   "area": "sdk",
+   "title": "TelegramWidget.isActive mirrors visibility (activated / deactivated)",
+   "status": "in",
+   "decision": "SDK",
+   "match": {
+    "apis": [
+     "TelegramWidget.isActive"
+    ]
+   }
+  },
+  {
+   "id": "tw.content-safe-area",
+   "area": "sdk",
+   "title": "TelegramWidget.contentSafeAreaInset { top, right, bottom, left, cornerLeft, cornerRight } (logical px, frozen, a fresh object per change) and contentSafeAreaChanged, with the --tg-content-safe-area-inset-* / -corner-left|right variables on the root, updated in one task",
+   "status": "in",
+   "decision": "P1-safe-area",
+   "note": "bottom is the height of the band the client draws the message time in over a widget with no caption below it; cornerRight (left-to-right interface) or cornerLeft (right-to-left) the width of its corner in that band; 0 with a caption below. Detect it with TelegramWidget.contentSafeAreaInset !== undefined (the profile stays 1).",
+   "match": {
+    "apis": [
+     "TelegramWidget.contentSafeAreaInset"
+    ],
+    "properties": [
+     "--tg-content-safe-area-*"
+    ]
+   }
+  },
+  {
+   "id": "tw.resize-anchor",
+   "area": "sdk",
+   "title": "TelegramWidget.setResizeAnchor('top' | 'bottom'): the edge of the bubble that stays put when the widget's height changes",
+   "status": "in",
+   "decision": "R1",
+   "note": "v0.1.3: detect it with typeof TelegramWidget.setResizeAnchor === 'function' (the profile stays 1); anything but exactly 'top' or 'bottom' throws TypeError; no tap needed; only a change reaches the host, which reports it with the height.",
+   "match": {
+    "apis": [
+     "TelegramWidget.setResizeAnchor"
+    ]
+   }
+  },
+  {
+   "id": "tw.bot-data",
+   "area": "sdk",
+   "title": "TelegramWidget.chatData and publicData: the widget's chat state and shared state, which only the bot writes (read-only, null for none, each a text of up to 1024 bytes in UTF-8); chatDataChanged / publicDataChanged when they change",
+   "status": "in",
+   "decision": "I1",
+   "note": "The chat state (chatData) is tied to one original message and seen only in its chat (in a group every member sees it), and is null in a forward; the shared state (publicData) is seen wherever the widget is shown: a static widget's forward gets a copy as of the forward, a shared widget (widget_id) has one for all its messages and forwards; the widget cannot change either, only ask the bot (request); one change of both fires both, chat first; an unchanged value fires nothing.",
+   "match": {
+    "apis": [
+     "TelegramWidget.chatData",
+     "TelegramWidget.publicData"
+    ]
+   }
+  },
+  {
+   "id": "tw.context",
+   "area": "sdk",
+   "title": "TelegramWidget.isForward, chatType and viewer (a WebAppUser): a forwarded copy, the kind of chat, who looks; no chatType in a forward, no viewer where the widget may not ask the bot",
+   "status": "in",
+   "decision": "I1",
+   "note": "viewer is shaped like Mini Apps' WebAppUser (id, first_name, last_name, username, is_premium only when true; names 1-64 UTF-16 code units, a username 5-32 of [A-Za-z0-9_]; a field that breaks its rule is left out); chatType is private, group, supergroup or channel and null in every forward (a copy is told nothing about its chat); viewer only where the message has can_query (an original sent with allow_queries, a forward of one sent with fwd_allow_queries), else null.",
+   "match": {
+    "apis": [
+     "TelegramWidget.isForward",
+     "TelegramWidget.chatType",
+     "TelegramWidget.viewer"
+    ]
+   }
+  },
+  {
+   "id": "tw.request",
+   "area": "sdk",
+   "title": "TelegramWidget.request(data): a callback button inside the widget; data of 1-64 bytes, resolves { result } (text of at most 1024 bytes), rejects with error.code; where it may ask is the server's flag per message",
+   "status": "in",
+   "decision": "I1",
+   "note": "On a tap where can_query (originals of a widget sent with allow_queries, forwards of one sent with fwd_allow_queries; the client shows a network marker there), in the background only where background_query (the original in the private chat with the bot) while visible: one when the widget appears on screen, then one per 5 s; one in flight; the answer does not change the state.",
+   "match": {
+    "apis": [
+     "TelegramWidget.request"
+    ]
+   }
+  },
+  {
+   "id": "tw.copy-text",
+   "area": "sdk",
+   "title": "TelegramWidget.copyText(text): copies 1-256 characters on a tap; the client's toast shows the copied text",
+   "status": "in",
+   "decision": "I1",
+   "note": "One call per tap, shared with the links and request; outside a tap dropped with activation-blocked; navigator.clipboard stays a stub.",
+   "match": {
+    "apis": [
+     "TelegramWidget.copyText"
+    ]
+   }
+  },
+  {
+   "id": "tw.watch-public-data",
+   "area": "sdk",
+   "title": "TelegramWidget.watchPublicData() / unwatchPublicData(): the widget asks to follow its shared state live; the client polls a shared widget's shared state (public_data) only while it watches and is on screen",
+   "status": "in",
+   "decision": "I1",
+   "note": "No tap needed, idempotent; the shim sends only changes and the host keeps the latest (web onWatchPublicData and watchesPublicData, the native diagnostics); a widget that does not watch gets its shared state with the message and the bot's pushed edits only; a preview never watches.",
+   "match": {
+    "apis": [
+     "TelegramWidget.watchPublicData",
+     "TelegramWidget.unwatchPublicData"
+    ]
+   }
+  },
+  {
+   "id": "tw.preview",
+   "area": "sdk",
+   "title": "TelegramWidget.isPreview: an inline result shown in the list before it is sent",
+   "status": "in",
+   "decision": "I1",
+   "note": "A preview has its state but no input, no request, link, copy or haptic (only ready and setResizeAnchor), no chatType or viewer, and Web Storage that is never committed.",
+   "match": {
+    "apis": [
+     "TelegramWidget.isPreview"
+    ]
+   }
+  },
+  {
+   "id": "input.tap",
+   "area": "input",
+   "title": "Tap: click on the element under the finger, with clientX/Y and target",
+   "status": "in",
+   "decision": "D4",
+   "match": {
+    "events": [
+     "click"
+    ]
+   }
+  },
+  {
+   "id": "input.pointer",
+   "area": "input",
+   "title": "pointerdown / pointerup / pointercancel with coordinates, pointerId, pointerType, isPrimary",
+   "status": "in",
+   "decision": "D4",
+   "match": {
+    "events": [
+     "pointerdown",
+     "pointerup",
+     "pointercancel"
+    ]
+   }
+  },
+  {
+   "id": "input.mouse-compat",
+   "area": "input",
+   "title": "mousedown / mouseup compatibility events of a tap",
+   "status": "in",
+   "decision": "D4",
+   "match": {
+    "events": [
+     "mousedown",
+     "mouseup"
+    ]
+   }
+  },
+  {
+   "id": "input.touch-events",
+   "area": "input",
+   "title": "touchstart / touchmove / touchend (touch clients only)",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "the renderer never forwards touch events; use pointer events",
+   "note": "Desktop clients have none; widgets should use pointer events.",
+   "match": {
+    "events": [
+     "touchstart",
+     "touchmove",
+     "touchend",
+     "touchcancel"
+    ]
+   }
+  },
+  {
+   "id": "input.drag",
+   "area": "input",
+   "title": "Drag: pointermove with buttons while pressed, setPointerCapture, movementX/Y",
+   "status": "in",
+   "decision": "D4",
+   "note": "v1 (not the PoC): drag with gesture arbitration.",
+   "match": {
+    "events": [
+     "pointermove"
+    ],
+    "apis": [
+     "setPointerCapture",
+     "releasePointerCapture"
+    ]
+   }
+  },
+  {
+   "id": "input.hover-events",
+   "area": "input",
+   "title": "pointerover/enter/leave/out, mouseover/enter/leave (desktop pointer only)",
+   "status": "in",
+   "decision": "D3",
+   "match": {
+    "events": [
+     "pointerover",
+     "pointerenter",
+     "pointerleave",
+     "pointerout",
+     "mouseover",
+     "mouseenter",
+     "mouseleave",
+     "mouseout",
+     "mousemove"
+    ]
+   }
+  },
+  {
+   "id": "input.dblclick",
+   "area": "input",
+   "title": "dblclick: a double tap over the widget is always the widget's, on every element",
+   "status": "in",
+   "decision": "G1",
+   "note": "v0.1.2: the widget gets both clicks, then the renderer's own dblclick, decided by the shared gesture policy (the second pointerdown at most 300 ms after the first pointerup and 40 px from the first pointerdown), whatever touch-action says. The bubble's double-tap reaction stays outside the widget. The engine's own dblclick never reaches the widget.",
+   "match": {
+    "events": [
+     "dblclick"
+    ]
+   }
+  },
+  {
+   "id": "input.long-press",
+   "area": "input",
+   "title": "contextmenu / long press (a right click with a mouse) claimed by touch-action: none on the element or an ancestor",
+   "status": "in",
+   "decision": "G1",
+   "note": "v0.1.2: the renderer sends its own contextmenu after a 500 ms hold within 10 px (a right click with a mouse), decided by the shared gesture policy; over any other touch-action the hold is the bubble's message menu and ends for the widget with pointercancel. The platform's own menu stays cancelled and its contextmenu never reaches the widget. touch-action on a container covers its children, as in CSS. v0.1.3 (G2): a press whose first move past the slop is vertical is the chat's scroll, also on none and also after the widget won the hold (it then gets pointercancel after its contextmenu).",
+   "match": {
+    "events": [
+     "contextmenu"
+    ]
+   }
+  },
+  {
+   "id": "input.keyboard",
+   "area": "input",
+   "title": "Key events: keydown / keyup / keypress, beforeinput / input from keys, focus / blur / focusin / focusout from keys",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "the renderer never forwards key events; the widget never owns keyboard focus",
+   "match": {
+    "events": [
+     "keydown",
+     "keyup",
+     "keypress",
+     "beforeinput",
+     "input",
+     "focus",
+     "blur",
+     "focusin",
+     "focusout"
+    ]
+   }
+  },
+  {
+   "id": "input.key-activation",
+   "area": "input",
+   "title": "Enter / Space activate a focused button or link (a click from the keyboard)",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "keys do nothing in a widget: no synthetic click from Enter or Space",
+   "match": {
+    "events": [
+     "click"
+    ]
+   }
+  },
+  {
+   "id": "input.key-gesture",
+   "area": "input",
+   "title": "A key press counts as a user gesture for privileged bridge calls",
+   "status": "out",
+   "decision": "D4",
+   "neutralise": "only taps (pointer presses) grant a gesture",
+   "note": "Today a keydown (not Escape, not a repeat or a Command shortcut) unlocks one privileged call (protocol.md, User activation).",
+   "match": {
+    "apis": [
+     "TelegramWidget.openLink"
+    ]
+   }
+  },
+  {
+   "id": "input.wheel-scroll",
+   "area": "input",
+   "title": "wheel and scroll events",
+   "status": "out",
+   "decision": "D3a",
+   "neutralise": "the renderer never forwards wheel or scroll; no scrolling inside a widget",
+   "match": {
+    "events": [
+     "wheel",
+     "scroll"
+    ]
+   }
+  },
+  {
+   "id": "input.user-activation",
+   "area": "input",
+   "title": "Privileged calls (openLink) only in the task of a real tap; not from timers or synthetic clicks",
+   "status": "in",
+   "decision": "D8",
+   "match": {
+    "apis": [
+     "TelegramWidget.openLink"
+    ]
+   }
+  },
+  {
+   "id": "input.prevent-default",
+   "area": "input",
+   "title": "preventDefault on pointer events keeps the gesture in the widget (learned by the renderer)",
+   "status": "in",
+   "decision": "D4",
+   "match": {
+    "apis": [
+     "Event.preventDefault"
+    ]
+   }
+  },
+  {
+   "id": "limit.text-node",
+   "area": "limit",
+   "title": "Text values (text node, canvas string, Path2D data) up to 32 K UTF-16 units; past it the widget stops (strict)",
+   "status": "in",
+   "decision": "D5"
+  },
+  {
+   "id": "limit.text-budget",
+   "area": "limit",
+   "title": "Document text 48 K units, past it the widget stops; complex-script text 8192 units, past it the text is refused (strict)",
+   "status": "in",
+   "decision": "D5"
+  },
+  {
+   "id": "limit.nodes",
+   "area": "limit",
+   "title": "At most 2000 nodes (elements, text, comments) in the document once a batch is applied; past it the widget stops (strict)",
+   "status": "in",
+   "decision": "P1"
+  },
+  {
+   "id": "limit.timers",
+   "area": "limit",
+   "title": "At most 64 live timers (RangeError past it)",
+   "status": "in",
+   "decision": "P1"
+  },
+  {
+   "id": "limit.cpu",
+   "area": "limit",
+   "title": "CPU quota 300 ms of JS per second (timers deferred, not killed; a task that runs past it makes the next ones wait longer); one task may run 500 ms; at most 128 layout queries in one task, and their time at most 1000 ms; past these the widget stops",
+   "status": "in",
+   "decision": "P1"
+  },
+  {
+   "id": "limit.memory",
+   "area": "limit",
+   "title": "QuickJS heap 8 MB",
+   "status": "in",
+   "decision": "P1"
+  },
+  {
+   "id": "limit.storage",
+   "area": "limit",
+   "title": "localStorage 4 KB per message (QuotaExceededError)",
+   "status": "in",
+   "decision": "D17"
+  },
+  {
+   "id": "limit.attribute",
+   "area": "limit",
+   "title": "Attribute and inline-style values up to 8 K UTF-16 units; past it the widget stops (strict)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.batch",
+   "area": "limit",
+   "title": "At most 10 000 operations in one batch (the shim hands a task's DOM changes over in batches of about 1000, its element method calls in one); past it the widget stops (strict)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.css-rules",
+   "area": "limit",
+   "title": "At most 400 CSS rules and 32 @keyframes in the document's stylesheets; past them the widget stops (strict)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.canvas-commands",
+   "area": "limit",
+   "title": "At most 4000 canvas commands per canvas in one task (RangeError past it; strict)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.animations",
+   "area": "limit",
+   "title": "At most 64 running script animations (further ones are not rendered; strict)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.main-thread",
+   "area": "limit",
+   "title": "The host's main-thread work for a widget, its layout queries plus 25 µs per operation and 2 µs per canvas command, at most 100 ms per second (timers and frames deferred past it)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.canvas-pixels",
+   "area": "limit",
+   "title": "A widget's canvases hold at most 2048 × 2048 pixels together; past it the widget stops (strict; the renderer itself never applies a size past 4096 × 4096)",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.paint-heavy",
+   "area": "limit",
+   "title": "At most 16 heavy boxes at once: a blurred box-shadow, a filter, a backdrop-filter, opacity below 1, or a running animation of one of them (shadows animated without blur do not count, nor the opacity of a disabled or pressed <button>: its own dimming); elements under display: none and a ::before / ::after without content are no boxes; past it the widget stops (strict; every renderer counts on the computed style)",
+   "status": "in",
+   "decision": "L2"
+  },
+  {
+   "id": "limit.paint-backdrop",
+   "area": "limit",
+   "title": "Of the heavy boxes at most 2 with backdrop-filter; past it the widget stops (strict)",
+   "status": "in",
+   "decision": "L2"
+  },
+  {
+   "id": "limit.image-pixels",
+   "area": "limit",
+   "title": "A data: image of at most 1024 × 1024 pixels, as its bytes say (larger: the placeholder); bytes of none of the profile's image formats are a broken image",
+   "status": "in",
+   "decision": "L1"
+  },
+  {
+   "id": "limit.html-size",
+   "area": "limit",
+   "title": "HTML up to 32 KB uncompressed and 4 KB after zlib compression (server-side)",
+   "status": "in",
+   "decision": "D20",
+   "note": "Checked by the server, not the client. Every conformance widget stays under it (build.ts keeps each one under 3800 bytes after zlib at level 9, as the server compresses) and reaches a client from a test bot."
+  },
+  {
+   "id": "limit.url-length",
+   "area": "limit",
+   "title": "openLink / openTelegramLink URLs of at most 256 characters (TypeError past it)",
+   "status": "in",
+   "decision": "SDK"
+  },
+  {
+   "id": "limit.event-handlers",
+   "area": "limit",
+   "title": "At most 16 handlers per event type in onEvent (more are ignored)",
+   "status": "in",
+   "decision": "SDK"
+  },
+  {
+   "id": "limit.haptic-rate",
+   "area": "limit",
+   "title": "Haptics: a bucket of 5 calls refilled at 10 per second, and a touch: free while a finger is down on the widget and 5 s after it is lifted, otherwise one 1 s series (the next after a touch or 10 s later); the rest dropped (haptic-limit)",
+   "status": "in",
+   "decision": "SDK"
+  },
+  {
+   "id": "behaviour.theme-switch",
+   "area": "behaviour",
+   "title": "Live theme switch: prefers-color-scheme, light-dark() and onTheme follow the chat theme without a reload",
+   "status": "in",
+   "decision": "D14"
+  },
+  {
+   "id": "behaviour.offscreen-pause",
+   "area": "behaviour",
+   "title": "Off-screen: frames stop, timers at most 1 Hz, visibilitychange fires",
+   "status": "in",
+   "decision": "P1"
+  },
+  {
+   "id": "behaviour.auto-height",
+   "area": "behaviour",
+   "title": "The bubble takes the widget height; above the cap it is clipped hard",
+   "status": "in",
+   "decision": "D12a"
+  },
+  {
+   "id": "behaviour.no-selection",
+   "area": "behaviour",
+   "title": "Text is not selectable by default (a drag over text selects nothing); user-select: text enables it",
+   "status": "in",
+   "decision": "D18"
+  },
+  {
+   "id": "behaviour.policy-strict",
+   "area": "behaviour",
+   "title": "strict policy on every client (gesture gate, text caps, budgets)",
+   "status": "in",
+   "decision": "D5"
+  },
+  {
+   "id": "behaviour.restart",
+   "area": "behaviour",
+   "title": "After 2 consecutive crashes the widget stays stopped on its last frame with the \"Widget stopped\" badge; before that the client rebuilds it when shown again",
+   "status": "in",
+   "decision": "SDK",
+   "note": "The frozen frame and badge are the framework's (today); the restart count is the client's."
+  },
+  {
+   "id": "behaviour.gesture-claim",
+   "area": "behaviour",
+   "title": "touch-action is the claim: taps and double taps over the widget are always its own, vertical drags always the chat's; auto leaves holds and horizontal swipes to the bubble (the widget gets pointercancel); pan-y gives the widget horizontal drags; none gives it horizontal drags and holds; pan-x claims nothing; the leading 20 px and the bubble outside the widget never take a claim",
+   "status": "in",
+   "decision": "G2",
+   "note": "onGestureClaim(x, y, hold) per primary pointerdown (y always false since v0.1.3); the shared gesture policy (gesture-policy.ts and its three twins, tests/fixtures/gesture-policy.json) decides with the same thresholds on every client and in the sandbox (v0.1.2; vertical drags the chat's since v0.1.3, G2)."
+  },
+  {
+   "id": "behaviour.storage-persist",
+   "area": "behaviour",
+   "title": "localStorage survives the widget being dropped and re-created, and an app restart; sessionStorage survives re-creation but not a restart; both are deleted with the message",
+   "status": "in",
+   "decision": "SDK"
+  },
+  {
+   "id": "behaviour.storage-forward",
+   "area": "behaviour",
+   "title": "A forwarded copy has its own storage, keyed by its own chat and message, so it starts empty",
+   "status": "in",
+   "decision": "SDK",
+   "note": "Testable with a test bot: forward its message into another chat; the copy starts with empty storage."
+  },
+  {
+   "id": "behaviour.message-edit",
+   "area": "behaviour",
+   "title": "The HTML of a sent widget never changes (an edit may change only the caption): a bot changes only the widget's state, chatData and publicData (behaviour.data-edit)",
+   "status": "in",
+   "decision": "I1",
+   "note": "visual/sdk/16-bot-edit still tests an HTML edit, which the server does not allow, and is to be replaced by a data-edit case once the server ships editMessageWidgetData."
+  },
+  {
+   "id": "behaviour.size-hint",
+   "area": "behaviour",
+   "title": "Before load the bubble takes the bot's size anchors (width 0 = the bubble's width, W = a fixed width in [200, max]; height 0 = the placeholder, then the content height in [50, 600]; H = a fixed clamp(H, 50, 600)), cached per message",
+   "status": "in",
+   "decision": "D12a",
+   "note": "Testable with a test bot sending inputMediaWidget with the anchors set; 200 / 50 / 600 are the shared v0.1.0 constants."
+  },
+  {
+   "id": "behaviour.time-corner",
+   "area": "behaviour",
+   "title": "A widget with no caption below it (none, or one shown above it) gets the message time and status over its bottom corner, on a backing as on a photo, and taps on it are the client's; the client passes the band (contentSafeArea bottom) and its corner (cornerRight, or cornerLeft in a right-to-left interface) before the first render and changes them only with the bubble's layout (a caption added, removed or moved above or below by an edit, \"edited\"); with a caption below the time is in the caption's line and the safe area is 0",
+   "status": "in",
+   "decision": "P1-safe-area",
+   "note": "WidgetHost contentSafeArea / setContentSafeArea on every host; never per frame; the floating day pill has no contract and is drawn over the widget like over a photo."
+  },
+  {
+   "id": "behaviour.resize-anchor",
+   "area": "behaviour",
+   "title": "When an auto height changes, the client keeps the widget's anchored edge in place on screen: top (default), the content below moves; bottom, the content above moves; also from a cached height and after a re-creation",
+   "status": "in",
+   "decision": "R1",
+   "note": "v0.1.3: the host reports the anchor with the height (WidgetDiagnostics.resizeAnchor, web onResize(height, anchor)); during a height animation the old pixels stay aligned to the anchored edge (docs/sdk-v1.md §5.6)."
+  },
+  {
+   "id": "behaviour.data-edit",
+   "area": "behaviour",
+   "title": "A change of the widget's state reaches the running widget as chatDataChanged / publicDataChanged (the client's setData with the full state: the server's update, or the polled shared state): no new host, no restart",
+   "status": "in",
+   "decision": "I1",
+   "note": "The client keeps the state with the message; a shared widget's shared state (public_data, widget_id) is polled for one visible carrier per id, one message per call, at the object's period and applied to every widget with that id, forwards included; an answer does not change the state; testable with a test bot once the server ships."
+  },
+  {
+   "id": "behaviour.forward-copy",
+   "area": "behaviour",
+   "title": "A forwarded copy never has a chat state (chatData); its shared state (publicData) is a copy as of the forward or a shared widget's one shared state; it is told nothing about the chat it is in (no chatType); it asks the bot only on a tap and only if the widget was sent with fwd_allow_queries, and otherwise has no viewer either",
+   "status": "in",
+   "decision": "I1",
+   "note": "The client passes the server's flags (is_copy, can_query); the framework drops chatData and chatType of a copy, and viewer of any message without can_query."
+  },
+  {
+   "id": "behaviour.preview",
+   "area": "behaviour",
+   "title": "A widget in a list of inline results is a preview: the client creates it with context.preview and the result's state, routes no touches to it (a tap selects the result) and creates a new host for the sent message",
+   "status": "in",
+   "decision": "I1",
+   "note": "The host drops the preview's input, every bridge call but ready and setResizeAnchor, and its storage commits; chatType and viewer are null."
+  },
+  {
+   "id": "behaviour.network-marker",
+   "area": "behaviour",
+   "title": "The network marker: the client marks a widget whose tap may send data to the bot's server exactly where the message has can_query (a UI contract of the server's spec)",
+   "status": "in",
+   "decision": "I1",
+   "note": "Never without allow_queries, never on a forward of a widget without fwd_allow_queries, never on a preview; the client's own UI from context.canQuery (docs/integration.md)."
+  }
+ ]
+}

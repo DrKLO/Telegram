@@ -1,0 +1,412 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 10-game-night.chat, message 7
+  author: zoe 19:55 · bare (full width, no bubble) · shown when: sv-4, ing1, ing3
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --red: #ff3b30; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .panel { background-color: rgba(127,127,127,0.12); border-radius: 10px; padding: 8px 10px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .center { text-align: center; }
+  .t-red { color: var(--red); } .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  button { font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; font-family: inherit; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  button.muted { color: var(--muted); }
+
+  .rp { width: 392px; max-width: 100%; overflow: hidden; }
+  .rp .hero { position: relative; height: 140px; border-radius: 13px 13px 0 0; overflow: hidden; background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.6)), linear-gradient(180deg, #f9d976 0%, #e0a458 55%, #a8582a 100%); background-size: cover; }
+  .rp .ttl { position: absolute; left: 14px; width: 360px; top: 106px; color: rgba(255,255,255,0); animation: ttl-in 562ms cubic-bezier(.33,1,.68,1) 250ms both; }
+  @keyframes ttl-in { from { top: 106px; color: rgba(255,255,255,0); } to { top: 84px; color: rgba(255,255,255,1); } }
+  .rp .facts { display: flex; text-align: center; padding: 10px 6px; border-bottom: 1px solid rgba(127,127,127,0.18); }
+  .rp .facts div { flex-grow: 1; flex-basis: 0; font-size: 12px; }
+  .rp .facts b { display: block; font-size: 15px; }
+  .rp .seg { display: flex; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.13); }
+  .rp .seg span { flex-grow: 1; flex-basis: 0; text-align: center; padding: 4px 0; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .rp .seg span:hover { background-color: rgba(127,127,127,0.14); }
+  .rp .seg span.on { background-color: #ff9500; color: #ffffff; }
+  .rp .stp { display: inline-block; width: 26px; height: 26px; line-height: 25px; text-align: center; border-radius: 13px; font-size: 17px; font-weight: 700; color: #ff9500; background-color: rgba(255,149,0,0.13); cursor: pointer; }
+  .rp .stp:hover { background-color: rgba(255,149,0,0.26); }
+  .rp .cnt { display: inline-block; width: 34px; text-align: center; font-weight: 800; }
+  .rp .meter { height: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.2); margin: 6px 0 2px 0; }
+  .rp .meter div { height: 4px; border-radius: 2px; background-color: #ff9500; transition: width 380ms cubic-bezier(.33,1,.68,1); }
+  .rp .ing { display: flex; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(127,127,127,0.12); font-size: 14px; border-radius: 6px; cursor: pointer; animation: ing-in 500ms cubic-bezier(.33,1,.68,1) both; }
+  @keyframes ing-in { from { margin-left: 30px; margin-right: -30px; } to { margin-left: 0; margin-right: 0; } }
+  .rp .ing:hover { background-color: rgba(255,149,0,0.08); }
+  .rp .cb { width: 16px; height: 16px; line-height: 16px; border-radius: 5px; border: 2px solid rgba(127,127,127,0.5); margin-right: 10px; text-align: center; color: #ffffff; font-weight: 800; font-size: 12px; }
+  .rp .ing.on .cb { background-color: #ff9500; border-color: #ff9500; }
+  .rp .ing.on.pop .cb { animation: cb-pop 360ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes cb-pop { from { background-color: rgba(255,149,0,0); font-size: 1px; } to { background-color: #ff9500; font-size: 12px; } }
+  .rp .ing .n { color: var(--fg); } .rp .ing.on .n { color: var(--muted); text-decoration: line-through; }
+  .rp .qty { font-weight: 700; font-size: 13px; color: #ff9500; } .rp .ing.on .qty { color: var(--muted); }
+  .rp .mrow { display: flex; align-items: flex-start; padding: 6px 4px; border-radius: 8px; font-size: 13.5px; cursor: pointer; }
+  .rp .mrow:hover { background-color: rgba(255,149,0,0.08); }
+  .rp .num { width: 22px; height: 22px; line-height: 22px; border-radius: 11px; text-align: center; font-size: 12px; font-weight: 800; color: #ffffff; background-color: #ff9500; margin-right: 10px; flex-shrink: 0; }
+  .rp .dots { display: flex; justify-content: center; margin: 8px 0 12px 0; }
+  .rp .dots div { height: 6px; width: 6px; border-radius: 3px; margin: 0 2px; background-color: rgba(127,127,127,0.3); cursor: pointer; transition: width 420ms cubic-bezier(.33,1,.68,1), background-color 420ms cubic-bezier(.33,1,.68,1); }
+  .rp .dots div.done { background-color: #ff9500; }
+  .rp .dots div.cur { width: 22px; }
+  .rp .big { text-align: center; font-size: 40px; line-height: 48px; }
+  .rp .stxt { text-align: center; font-size: 16px; font-weight: 600; line-height: 1.35; margin: 6px 8px 10px 8px; }
+  .rp .need { text-align: center; margin-bottom: 8px; }
+  .rp .need span { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 10px; font-size: 12px; background-color: rgba(255,149,0,0.13); }
+  .rp .tmr { display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 12px; background-color: rgba(127,127,127,0.09); margin-bottom: 10px; }
+  .rp .tmr svg { margin-right: 12px; flex-shrink: 0; }
+  .rp .tmr .arc { stroke: #ff9500; transition: stroke-dasharray 250ms linear; }
+  .rp .tmr.hot .arc { animation: ring-hot 1400ms step-end both; }
+  @keyframes ring-hot { 0% { stroke: #ff9500; } 4.2% { stroke: #ff3b30; } 20.8% { stroke: #ff9500; } 29.2% { stroke: #ff3b30; } 45.8% { stroke: #ff9500; } 54.2% { stroke: #ff3b30; } 70.8% { stroke: #ff9500; } 79.2% { stroke: #ff3b30; } 95.8% { stroke: #ff9500; } 100% { stroke: #ff9500; } }
+  .rp .tmr b { font-family: ui-monospace, monospace; font-size: 22px; }
+  .rp .x { width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 12px; color: #8e8e93; cursor: pointer; }
+  .rp .x:hover { background-color: rgba(127,127,127,0.16); }
+  .rp .star { font-size: 28px; padding: 0 3px; color: rgba(127,127,127,0.4); cursor: pointer; display: inline-block; }
+  .rp .star:hover { color: #ffcc00; }
+  .rp .star.lit { color: #ffcc00; }
+  .rp .star.pop { animation: star-pop 420ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes star-pop { from { transform: scale(0.4); } to { transform: none; } }
+  .rp .nut { display: flex; align-items: center; padding: 5px 0; font-size: 13px; }
+  .rp .nut .k { width: 70px; color: #8e8e93; }
+  .rp .nut .b { flex-grow: 1; height: 6px; border-radius: 3px; background-color: rgba(127,127,127,0.15); margin-right: 10px; }
+  .rp .nut .b div { height: 6px; border-radius: 3px; background-color: #ff9500; width: 0; }
+  .rp .nut .v { width: 60px; text-align: right; font-weight: 700; }
+  .rp [hidden] { display: none !important; }
+  .fx-pop { animation: fx-pop 320ms cubic-bezier(.34,1.56,.64,1); }
+  .fx-slide-left { animation: fx-slide-left 260ms cubic-bezier(.33,1,.68,1); }
+  .fx-slide-right { animation: fx-slide-right 260ms cubic-bezier(.33,1,.68,1); }
+  .fx-slide-up { animation: fx-slide-up 260ms cubic-bezier(.33,1,.68,1); }
+  .fx-slide-down { animation: fx-slide-down 260ms cubic-bezier(.33,1,.68,1); }
+  @keyframes fx-pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-left { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-right { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  @keyframes fx-slide-down { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: none; } }
+</style>
+<div class="card rp" id="root">
+  <div id="tabsView">
+    <div class="hero"><div class="ttl">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase">Dessert · Portugal 🇵🇹</div>
+      <div style="font-size: 24px; font-weight: 800">Pastéis de nata</div></div></div>
+    <div class="facts"><div><b><span id="fPrep">0</span> min</b><span class="muted">prep</span></div><div><b><span id="fBake">0</span> min</b><span class="muted">bake</span></div>
+      <div><b>🌶🌶</b><span class="muted">medium</span></div><div><b>★ <span id="fStar">0.0</span></b><span class="muted"><span id="fCooks">0</span> cooks</span></div></div>
+    <div class="pad">
+      <div class="seg" id="seg"><span class="on" data-tab="0">Ingredients</span><span data-tab="1">Method</span><span data-tab="2">Nutrition</span></div>
+      <div id="tabIng">
+        <div class="row" style="margin: 10px 0 2px 0"><b class="grow" style="font-size: 15px">Makes <span id="makes">12</span> tarts</b>
+          <span class="stp" id="less">−</span><span class="cnt" id="cnt">12</span><span class="stp" id="more">+</span></div>
+        <div class="meter"><div id="meter"></div></div>
+        <div class="tiny muted" style="margin-bottom: 4px"><span id="readyN">2</span> of 8 ready · tap to tick off</div>
+        <div id="ingList"></div>
+        <div class="row" style="margin-top: 10px"><span class="small muted grow" id="ingNote">Quantities follow the batch size</span><button class="primary" data-cook="0">▶ Start cooking</button></div>
+      </div>
+      <div id="tabMethod" hidden>
+        <div style="margin-top: 8px" id="methodList"></div>
+        <div class="row" style="margin-top: 8px"><span class="small muted grow">Tap a step to jump in</span><button class="primary" data-cook="0">▶ Step by step</button></div>
+      </div>
+      <div id="tabNut" hidden>
+        <div class="caps" style="margin-top: 10px">Per tart</div>
+        <div id="nutRows"></div>
+        <div class="nut"><span class="k">Joy</span><div class="b"><div id="joyBar" style="background-color: #ff2d55"></div></div><span class="v">∞</span></div>
+        <div class="small muted" style="margin: 4px 0 10px 0">Whole batch of <span id="batchN">12</span>: <b class="fg" id="batchKcal">2,568 kcal</b></div>
+        <div class="panel" style="font-size: 13px">💡 <b>Tip:</b> the blisters are the point. If your oven tops out at 250 °C, use the grill for the last 2 minutes.</div>
+      </div>
+    </div>
+  </div>
+  <div id="cookView" class="pad" hidden>
+    <div class="row"><span class="caps grow" id="stepCaps"></span><span id="others"></span><span class="x" id="exit">✕</span></div>
+    <div class="dots" id="dots"></div>
+    <div class="big" id="stepEmoji"></div>
+    <div class="stxt" id="stepText"></div>
+    <div class="need" id="need" hidden></div>
+    <div class="tmr" id="tmr" hidden><svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(127,127,127,0.22)" stroke-width="6"/><circle class="arc" id="arc" cx="30" cy="30" r="24" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="150.8 200" transform="rotate(-90 30 30)"/></svg>
+      <div><b id="tmrLabel"></b><div style="margin-top: 4px"><button class="primary" id="tmrGo"></button> <button id="tmrReset" hidden>Reset</button></div></div></div>
+    <div class="small t-orange center" id="cookNote" style="margin-bottom: 8px" hidden></div>
+    <div class="row"><button id="back">← Back</button><span class="grow"></span><button class="primary" id="fwd">Next step →</button></div>
+  </div>
+  <div id="doneView" class="pad center" hidden>
+    <div style="font-size: 44px; line-height: 54px">🥧</div>
+    <div style="font-size: 20px; font-weight: 800">Bom apetite!</div>
+    <div class="small muted" style="margin: 2px 0 10px 0"><span id="doneN">12</span> pastéis de nata, warm from the oven</div>
+    <div style="height: 40px; line-height: 40px" id="stars"><span class="star" data-r="1">★</span><span class="star" data-r="2">★</span><span class="star" data-r="3">★</span><span class="star" data-r="4">★</span><span class="star" data-r="5">★</span></div>
+    <div class="small muted" style="margin-bottom: 12px" id="rateText">How did they turn out?</div>
+    <button class="primary" id="again">Back to the recipe</button>
+  </div>
+</div>
+<script>
+const ING = [
+  { n: 'Puff pastry', q: 2, u: ['sheet', 'sheets'] }, { n: 'Whole milk', q: 250, u: 'ml' }, { n: 'Sugar', q: 200, u: 'g' },
+  { n: 'Egg yolks', q: 6, u: null }, { n: 'Flour', q: 30, u: 'g' }, { n: 'Cinnamon stick', q: 1, u: null },
+  { n: 'Lemon peel', q: 2, u: ['strip', 'strips'] }, { n: 'Water', q: 140, u: 'ml' },
+];
+const SIZES = [6, 12, 18, 24, 36];
+const STEPS = [
+  { e: '🔥', t: 'Preheat the oven as hot as it goes, 290 °C if you can.', s: 'Preheat to 290 °C' },
+  { e: '🍯', t: 'Boil sugar, water, cinnamon and lemon peel to a syrup, about 3 minutes, 105 °C.', s: 'Make the syrup', timer: 180, use: [2, 7, 5, 6] },
+  { e: '🥛', t: 'Whisk flour into a little cold milk, then add the rest of the milk and cook until thick.', s: 'Cook the milk base', use: [4, 1] },
+  { e: '🥚', t: 'Pour the syrup into the milk while whisking. Let it cool for 10 minutes, then whisk in the yolks.', s: 'Combine, cool, add yolks', timer: 600, use: [3] },
+  { e: '🥐', t: 'Roll the pastry into a log, slice into 1.5 cm discs and press each into a muffin cup with wet thumbs.', s: 'Shape the shells', use: [0] },
+  { e: '♨️', t: 'Fill three-quarters full and bake 10 to 12 minutes, until the tops blister dark brown.', s: 'Fill and bake', timer: 720 },
+  { e: '✨', t: 'Dust with cinnamon and powdered sugar. Eat warm. Do not share.', s: 'Dust and serve' },
+];
+const NUT = [['Calories', 214, ' kcal', 300], ['Sugar', 18, ' g', 30], ['Fat', 11, ' g', 30], ['Protein', 4, ' g', 30]];
+
+let tab = 0, mode = 'tabs', step = 0, servings = 12, rating = 0, note = '', tickId = 0, noteId = 0;
+const ticked = new Set([0, 2]);
+const timers = {};
+const fx = { k: 1, n: 12, bars: 0, facts: 0 };
+
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const outCubic = t => 1 - Math.pow(1 - t, 3);
+const $ = id => document.getElementById(id);
+const root = $('root');
+function fxRoot(kind) {
+  root.classList.remove('fx-pop', 'fx-slide-left', 'fx-slide-right', 'fx-slide-up', 'fx-slide-down');
+  void root.offsetWidth;
+  root.classList.add('fx-' + kind);
+}
+function pulse(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+// Numeric tweens (counters, quantities, bar lengths) stay in JS with the prelude's easing; the
+// newest tween of a property wins, like the original's tween().
+const owners = new Map();
+function tween(props, ms, ease, onFrame) {
+  const token = {}, from = {}, t0 = performance.now();
+  for (const k of Object.keys(props)) { from[k] = fx[k]; owners.set(k, token); }
+  const frame = now => {
+    const t = Math.min(1, (now - t0) / Math.max(1, ms)), p = ease(t);
+    for (const k in props) if (owners.get(k) === token) fx[k] = from[k] + (props[k] - from[k]) * p;
+    onFrame();
+    if (t < 1) requestAnimationFrame(frame);
+  };
+  frame(t0);
+}
+
+function qty(i, k) {
+  const it = ING[i], v = it.q * k;
+  if (typeof it.u === 'string') return `${Math.round(v)} ${it.u}`;
+  const r = Math.round(v * 4) / 4, w = Math.floor(r), f = r - w;
+  const text = (w ? String(w) : '') + (f === 0.25 ? '¼' : f === 0.5 ? '½' : f === 0.75 ? '¾' : '') || '0';
+  return text + (it.u ? ' ' + (r > 1 ? it.u[1] : it.u[0]) : '');
+}
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+function flash(text) {
+  note = text;
+  clearTimeout(noteId);
+  noteId = setTimeout(() => { note = ''; syncNote(); }, 2600);
+  syncNote();
+}
+
+function tick() {
+  const now = performance.now();
+  let live = 0;
+  for (const i in timers) {
+    const t = timers[i];
+    if (!t.running) continue;
+    t.left = Math.max(0, (t.endsAt - now) / 1000);
+    if (t.left > 0) { live++; continue; }
+    t.running = false;
+    t.done = true;
+    flash(`⏰ Step ${Number(i) + 1} timer is done: ${STEPS[i].s.toLowerCase()}`);
+    if (mode === 'cook' && Number(i) === step) pulse($('tmr'), 'hot');
+  }
+  if (!live) { clearInterval(tickId); tickId = 0; }
+  if (mode === 'cook') syncTimer();
+}
+
+function timerAction(i, what) {
+  const t = timers[i] = timers[i] || { total: STEPS[i].timer, left: STEPS[i].timer, running: false, endsAt: 0, done: false };
+  if (what === 'go') {
+    if (t.running) { t.left = Math.max(0, (t.endsAt - performance.now()) / 1000); t.running = false; return; }
+    if (t.left <= 0) t.left = t.total;
+    t.running = true; t.done = false;
+    t.endsAt = performance.now() + t.left * 1000;
+    if (!tickId) tickId = setInterval(tick, 250);
+  } else {
+    t.running = false; t.done = false; t.left = t.total;
+  }
+}
+
+function goStep(i) {
+  if (i === step) return;
+  fxRoot(i > step ? 'slide-left' : 'slide-right');
+  step = i;
+  syncCook();
+}
+
+// ---- views ----
+function show(which) {
+  mode = which;
+  $('tabsView').hidden = which !== 'tabs';
+  $('cookView').hidden = which !== 'cook';
+  $('doneView').hidden = which !== 'done';
+}
+function syncTabs() {
+  for (const s of $('seg').children) s.classList.toggle('on', Number(s.dataset.tab) === tab);
+  $('tabIng').hidden = tab !== 0;
+  $('tabMethod').hidden = tab !== 1;
+  $('tabNut').hidden = tab !== 2;
+}
+function syncServings() {
+  $('makes').textContent = Math.round(fx.n);
+  $('cnt').textContent = Math.round(fx.n);
+  const rows = $('ingList').children;
+  for (let i = 0; i < ING.length; i++) rows[i].querySelector('.qty').textContent = qty(i, fx.k);
+  $('batchN').textContent = Math.round(fx.n);
+  $('batchKcal').textContent = `${Math.round(214 * fx.n).toLocaleString('en-US')} kcal`;
+  if (mode === 'cook') syncNeed();
+}
+function syncTicks() {
+  const rows = $('ingList').children;
+  for (let i = 0; i < ING.length; i++) {
+    const on = ticked.has(i);
+    rows[i].classList.toggle('on', on);
+    rows[i].querySelector('.cb').textContent = on ? '✓' : ' ';
+  }
+  $('meter').style.width = (ticked.size / ING.length * 100).toFixed(1) + '%';
+  $('readyN').textContent = ticked.size;
+}
+function syncNote() {
+  $('ingNote').textContent = note || 'Quantities follow the batch size';
+  const cn = $('cookNote');
+  cn.hidden = !note;
+  cn.textContent = note;
+}
+function syncFacts() {
+  const e = fx.facts;
+  $('fPrep').textContent = Math.round(25 * e);
+  $('fBake').textContent = Math.round(12 * e);
+  $('fStar').textContent = (4.9 * e).toFixed(1);
+  $('fCooks').textContent = Math.round(312 * e);
+}
+function syncNut() {
+  const rows = $('nutRows').children;
+  NUT.forEach(([k, v, u, max], i) => {
+    const e = outCubic(clamp(fx.bars * 1.5 - i * 0.15, 0, 1));
+    rows[i].querySelector('.b div').style.width = (v / max * 100 * e).toFixed(1) + '%';
+    rows[i].querySelector('.v').textContent = `${Math.round(v * e)}${u}`;
+  });
+  $('joyBar').style.width = (100 * fx.bars).toFixed(1) + '%';
+}
+function syncNeed() {
+  const s = STEPS[step], need = $('need');
+  need.hidden = !s.use;
+  if (s.use) need.innerHTML = s.use.map(i => `<span>${ING[i].n} · <b>${qty(i, fx.k)}</b></span>`).join('');
+}
+function syncTimer() {
+  const s = STEPS[step], tmr = $('tmr');
+  tmr.hidden = !s.timer;
+  if (s.timer) {
+    const t = timers[step] || { total: s.timer, left: s.timer, running: false, done: false };
+    $('arc').style.strokeDasharray = `${(t.left / t.total * 150.8).toFixed(1)} 200`;
+    const lbl = $('tmrLabel');
+    lbl.className = t.done ? 't-red' : '';
+    lbl.textContent = t.done ? 'Done!' : mmss(Math.ceil(t.left));
+    $('tmrGo').textContent = t.running ? '❚❚ Pause' : t.done ? '↻ Again' : t.left < t.total ? '▶ Resume' : `▶ Start ${s.timer / 60} min`;
+    $('tmrReset').hidden = !(t.left < t.total || t.done);
+  }
+  $('others').innerHTML = Object.keys(timers).filter(i => Number(i) !== step && timers[i].running)
+    .map(i => `<span class="badge orange" style="margin-right: 4px">⏱ ${Number(i) + 1} · ${mmss(Math.ceil(timers[i].left))}</span>`).join(' ');
+}
+function syncCook() {
+  const s = STEPS[step];
+  $('stepCaps').textContent = `Step ${step + 1} of ${STEPS.length} · ${s.s}`;
+  const dots = $('dots').children;
+  for (let i = 0; i < STEPS.length; i++) { dots[i].classList.toggle('cur', i === step); dots[i].classList.toggle('done', i <= step); }
+  $('stepEmoji').textContent = s.e;
+  $('stepText').textContent = s.t;
+  syncNeed();
+  syncTimer();
+  syncNote();
+  $('back').className = step ? '' : 'muted';
+  $('fwd').textContent = step + 1 < STEPS.length ? 'Next step →' : 'Done 🎉';
+}
+function syncDone() {
+  $('doneN').textContent = servings;
+  for (const st of $('stars').children) st.classList.toggle('lit', Number(st.dataset.r) <= rating);
+  $('rateText').textContent = rating ? `You rated it ${rating}/5${rating === 5 ? ' · new house favourite' : ''}` : 'How did they turn out?';
+}
+
+// ---- build the lists once ----
+$('ingList').innerHTML = ING.map((it, i) => `<div class="ing" data-i="${i}" style="animation-delay: ${Math.round(250 + (0.35 + i * 0.07) / 1.8 * 900)}ms"><div class="cb"></div><span class="grow n">${esc(it.n)}</span><span class="qty"></span></div>`).join('');
+$('methodList').innerHTML = STEPS.map((s, i) => `<div class="mrow" data-cook="${i}"><span class="num">${i + 1}</span><span class="grow">${esc(s.t)}</span>${s.timer ? `<span class="badge orange" style="margin-left: 6px">⏱ ${s.timer / 60}m</span>` : ''}</div>`).join('');
+$('nutRows').innerHTML = NUT.map(([k]) => `<div class="nut"><span class="k">${k}</span><div class="b"><div></div></div><span class="v"></span></div>`).join('');
+$('dots').innerHTML = STEPS.map((_, i) => `<div data-jump="${i}"></div>`).join('');
+
+// ---- events ----
+$('seg').addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]');
+  if (!t) return;
+  const i = Number(t.dataset.tab);
+  if (i === tab) return;
+  fxRoot(i > tab ? 'slide-left' : 'slide-right');
+  tab = i;
+  syncTabs();
+  fx.bars = 0;
+  tween({ bars: 1 }, 700, outCubic, syncNut);
+});
+$('less').addEventListener('click', () => resize(-1));
+$('more').addEventListener('click', () => resize(1));
+function resize(dir) {
+  const i = SIZES.indexOf(servings) + dir;
+  if (i < 0 || i >= SIZES.length) return;
+  servings = SIZES[i];
+  tween({ k: servings / 12, n: servings }, 520, outCubic, syncServings);
+}
+$('ingList').addEventListener('click', e => {
+  const row = e.target.closest('.ing');
+  if (!row) return;
+  const i = Number(row.dataset.i);
+  if (ticked.has(i)) { ticked.delete(i); row.classList.remove('pop'); }
+  else { ticked.add(i); pulse(row, 'pop'); }
+  syncTicks();
+  if (ticked.size === ING.length) flash('All set, mise en place done 👩‍🍳');
+});
+$('tabsView').addEventListener('click', e => {
+  const t = e.target.closest('[data-cook]');
+  if (!t) return;
+  fxRoot('slide-up');
+  show('cook');
+  step = Number(t.dataset.cook) || 0;
+  syncCook();
+});
+$('exit').addEventListener('click', () => { fxRoot('slide-down'); show('tabs'); });
+$('fwd').addEventListener('click', () => {
+  if (step + 1 < STEPS.length) goStep(step + 1);
+  else { fxRoot('pop'); show('done'); rating = 0; syncDone(); }
+});
+$('back').addEventListener('click', () => { if (step > 0) goStep(step - 1); });
+$('dots').addEventListener('click', e => { const d = e.target.closest('[data-jump]'); if (d) goStep(Number(d.dataset.jump)); });
+$('tmrGo').addEventListener('click', () => { if (mode === 'cook' && STEPS[step].timer) { timerAction(step, 'go'); syncTimer(); } });
+$('tmrReset').addEventListener('click', () => { if (mode === 'cook' && STEPS[step].timer) { timerAction(step, 'reset'); syncTimer(); } });
+$('stars').addEventListener('click', e => {
+  const st = e.target.closest('.star');
+  if (!st) return;
+  rating = Number(st.dataset.r);
+  syncDone();
+  pulse(st, 'pop');
+});
+$('again').addEventListener('click', () => {
+  fxRoot('slide-down');
+  show('tabs'); tab = 0; step = 0;
+  syncTabs();
+});
+
+syncTabs(); syncServings(); syncTicks(); syncFacts(); syncNut(); syncNote();
+// enter: facts count up from 128 ms after the 250 ms start over 643 ms; nutrition bars take 900 ms
+setTimeout(() => {
+  setTimeout(() => tween({ facts: 1 }, 643, outCubic, syncFacts), 128);
+  tween({ bars: 1 }, 900, outCubic, syncNut);
+}, 250);
+</script>

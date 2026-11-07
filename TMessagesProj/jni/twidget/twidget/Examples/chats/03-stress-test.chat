@@ -1,0 +1,776 @@
+@chat Stress Test
+@subtitle Edge cases — what litehtml handles (and what it doesn't)
+@icon ladybug.fill
+@participant me | You | #007aff | me
+@participant fuzz | Fuzzer | #ff9500
+
+--- fuzz 11:00
+<style>[hidden]{display:none!important}
+  .ty { width: 360px; max-width: 100%; }
+  .ty .tabs { display: flex; margin: 8px 0 8px 0; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.12); }
+  .ty .tab { display: block; flex-grow: 1; text-align: center; padding: 3px 0; border-radius: 7px; font-size: 12px; font-weight: 600; color: #8e8e93; }
+  .ty .tab:hover { background-color: rgba(127,127,127,0.14); }
+  .ty .tab.on { background-color: #007aff; color: #ffffff; }
+  .ty .stage { display: flex; align-items: center; height: 120px; overflow: hidden; padding: 0 12px; border-radius: 12px; background-color: rgba(127,127,127,0.10); }
+  .ty .meta { font-family: ui-monospace; font-size: 11px; margin: 5px 2px 6px 2px; }
+  .ty .opts { display: flex; align-items: center; margin: 5px 0; }
+  .ty .lbl { display: block; width: 56px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #8e8e93; }
+  .ty .sl { position: relative; width: 288px; height: 30px; }
+  .ty .trk { height: 3px; margin-top: 6px; border-radius: 2px; background-color: rgba(127,127,127,0.25); }
+  .ty .trk div { height: 3px; border-radius: 2px; background-color: #007aff; }
+  .ty .th { position: absolute; top: 1px; width: 9px; height: 9px; border-radius: 7px; border: 2px solid #ffffff; background-color: #007aff; }
+  .ty .cells { display: flex; margin-top: 6px; }
+  .ty .cells span { display: block; text-align: center; font-size: 10px; border-radius: 5px; color: #8e8e93; }
+  .ty .cells span:hover { background-color: rgba(0,122,255,0.12); color: #007aff; }
+  .ty .cells span.on { color: #007aff; font-weight: 700; }
+  .ty .fams { display: flex; flex-wrap: wrap; width: 300px; }
+  .ty .chip2 { display: block; padding: 2px 8px; margin: 0 4px 4px 0; border-radius: 8px; font-size: 12px; background-color: rgba(127,127,127,0.12); }
+  .ty .chip2:hover { background-color: rgba(127,127,127,0.24); }
+  .ty .chip2.on { background-color: rgba(0,122,255,0.16); color: #007aff; }
+  .ty .row2 { display: flex; align-items: center; padding: 3px 6px; border-radius: 8px; }
+  .ty .row2:hover { background-color: rgba(127,127,127,0.12); }
+  .ty .row2.on { background-color: rgba(0,122,255,0.12); }
+  .ty .tag { display: block; width: 92px; font-family: ui-monospace; font-size: 10.5px; color: #8e8e93; }
+  .ty .clip { white-space: nowrap; overflow: hidden; width: 244px; }
+</style>
+<h1>Heading 1</h1>
+<h2>Heading 2</h2>
+<p><span style="font-size: 9px">9px</span> · <span style="font-size: 15px">15px</span> · <span style="font-size: 28px">28px</span> · <b>700</b> · <i>italic</i></p>
+<script>
+const FAMILIES = [
+  { name: 'System', css: '-apple-system' }, { name: 'Rounded', css: 'ui-rounded' }, { name: 'New York', css: 'serif' },
+  { name: 'Georgia', css: 'Georgia' }, { name: 'Avenir Next', css: "'Avenir Next'" }, { name: 'Helvetica Neue', css: "'Helvetica Neue'" },
+  { name: 'Menlo', css: 'Menlo' }, { name: 'SF Mono', css: 'ui-monospace' },
+];
+const SIZES = [9, 12, 15, 17, 20, 28, 36];
+const WEIGHTS = ['Thin', 'Ultralight', 'Light', 'Regular', 'Medium', 'Semibold', 'Bold', 'Heavy', 'Black'];
+const SAMPLES = ['The quick brown fox', 'Sphinx of black quartz', 'Hamburgefonstiv', 'Aa Gg Qq 0123', 'Heading 1'];
+const SCALE = [
+  { tag: 'h1', size: 22, weight: 700 }, { tag: 'h2', size: 19, weight: 700 }, { tag: 'h3', size: 17, weight: 700 },
+  { tag: 'h4', size: 15, weight: 700 }, { tag: 'body', size: 13, weight: 400 }, { tag: 'small', size: 12, weight: 400 },
+  { tag: 'caption', size: 9, weight: 600 },
+];
+const TABS = ['Specimen', 'Scale', 'Weights'];
+const TRACK = 288;
+
+let tab = 0, fam = 0, sample = 0, italic = false, upper = false, under = false;
+const v = { size: 9, weight: 100, wave: 1 };
+
+const weightOf = w => clamp(Math.round(w / 100) * 100, 100, 900);
+const px = s => Math.round(s * 2) / 2;
+function setSize(s) { tween(v, { size: s }, 520, ease.outBack); }
+function setWeight(w) { tween(v, { weight: w }, 480, ease.outCubic); }
+
+setTimeout(() => { tween(v, { size: 28 }, 850, ease.outBack); tween(v, { weight: 700 }, 850, ease.inOutSine); }, 250);
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    const next = Number(value);
+    if (next === tab) return;
+    transition(next > tab ? 'slide-left' : 'slide-right');
+    tab = next;
+    v.wave = 0;
+    tween(v, { wave: 1 }, 700, ease.outCubic);
+  } else if (name === 'fam') {
+    transition('fade');
+    fam = Number(value);
+  } else if (name === 'size') setSize(Number(value));
+  else if (name === 'weight') setWeight(Number(value));
+  else if (name === 'italic') italic = !italic;
+  else if (name === 'upper') upper = !upper;
+  else if (name === 'under') under = !under;
+  else if (name === 'sample') { transition('slide-up'); sample = (sample + 1) % SAMPLES.length; }
+  else if (name === 'pick') {
+    const s = SCALE[Number(value)];
+    transition('slide-right');
+    tab = 0;
+    setSize(s.size); setWeight(s.weight);
+  } else if (name === 'pickw') {
+    transition('slide-right');
+    tab = 0;
+    setWeight(Number(value));
+  }
+}
+
+function slider(stops, value, action, label) {
+  const cell = TRACK / stops.length;
+  let k = 0;
+  if (value <= stops[0]) k = 0;
+  else if (value >= stops[stops.length - 1]) k = stops.length - 1;
+  else for (let i = 0; i < stops.length - 1; i++)
+    if (value >= stops[i] && value <= stops[i + 1]) { k = i + (value - stops[i]) / (stops[i + 1] - stops[i]); break; }
+  const x = k * cell;
+  const near = stops.reduce((b, s, i) => Math.abs(s - value) < Math.abs(stops[b] - value) ? i : b, 0);
+  const cells = stops.map((s, i) => `<span class="${i === near ? 'on' : ''}" style="width: ${cell.toFixed(2)}px" data-action="${action}" data-value="${s}">${label(s)}</span>`).join('');
+  return `<div class="sl">
+    <div class="trk" style="margin-left: ${(cell / 2).toFixed(1)}px; width: ${(TRACK - cell).toFixed(1)}px"><div style="width: ${x.toFixed(1)}px"></div></div>
+    <div class="th" style="left: ${(cell / 2 + x - 6.5).toFixed(1)}px"></div>
+    <div class="cells">${cells}</div></div>`;
+}
+
+function specimen() {
+  const F = FAMILIES[fam], w = weightOf(v.weight);
+  const style = `font-family: ${F.css}; font-size: ${px(v.size)}px; font-weight: ${w}; line-height: 1.12;${italic ? ' font-style: italic;' : ''}${upper ? ' text-transform: uppercase;' : ''}${under ? ' text-decoration: underline;' : ''}`;
+  const fams = FAMILIES.map((f, i) => `<span class="chip2 ${i === fam ? 'on' : ''}" style="font-family: ${f.css}" data-action="fam" data-value="${i}">${f.name}</span>`).join('');
+  const tog = (key, on, text) => `<span class="chip2 ${on ? 'on' : ''}" data-action="${key}">${text}</span>`;
+  return `<div class="stage"><div style="${style}">${esc(SAMPLES[sample])}</div></div>
+    <div class="meta muted">${esc(F.name)} · ${Math.round(v.size)}px · ${w} ${WEIGHTS[w / 100 - 1]}${italic ? ' · italic' : ''}${upper ? ' · uppercase' : ''}</div>
+    <div class="opts"><span class="lbl">Size</span>${slider(SIZES, v.size, 'size', s => s)}</div>
+    <div class="opts"><span class="lbl">Weight</span>${slider([100, 200, 300, 400, 500, 600, 700, 800, 900], v.weight, 'weight', s => s)}</div>
+    <div class="opts"><span class="lbl">Style</span>${tog('italic', italic, '<i>Italic</i>')}${tog('upper', upper, 'UPPER')}${tog('under', under, '<u>Underline</u>')}${tog('sample', false, '↻ Sample')}</div>
+    <div class="opts" style="align-items: flex-start"><span class="lbl" style="padding-top: 3px">Family</span><div class="fams">${fams}</div></div>`;
+}
+
+function scale() {
+  const F = FAMILIES[fam];
+  return SCALE.map((s, i) => {
+    const k = ease.outBack(clamp(v.wave * 1.5 - i * 0.07, 0, 1));
+    const on = Math.round(v.size) === s.size && weightOf(v.weight) === s.weight;
+    return `<div class="row2 ${on ? 'on' : ''}" data-action="pick" data-value="${i}"><span class="tag">${s.tag} · ${s.size}</span>
+      <div class="clip" style="font-family: ${F.css}; font-size: ${Math.max(1, px(s.size * (0.4 + 0.6 * k)))}px; font-weight: ${s.weight}; line-height: ${Math.round(s.size * 1.3)}px">${esc(SAMPLES[sample])}</div></div>`;
+  }).join('');
+}
+
+function weights() {
+  const F = FAMILIES[fam];
+  return WEIGHTS.map((n, i) => {
+    const target = (i + 1) * 100;
+    const k = clamp(v.wave * 1.6 - i * 0.07, 0, 1);
+    const w = weightOf(100 + (target - 100) * k);
+    const on = weightOf(v.weight) === target;
+    return `<div class="row2 ${on ? 'on' : ''}" data-action="pickw" data-value="${target}"><span class="tag">${target} ${n}</span>
+      <div class="clip" style="font-family: ${F.css}; font-size: 15px; font-weight: ${w}">${esc(SAMPLES[sample])}</div></div>`;
+  }).join('');
+}
+
+function render() {
+  const tabs = TABS.map((t, i) => `<span class="tab ${i === tab ? 'on' : ''}" data-action="tab" data-value="${i}">${t}</span>`).join('');
+  return `<div class="ty">
+    <div class="row between"><b>Aa Type specimen</b><span class="small muted">${esc(FAMILIES[fam].name)}</span></div>
+    <div class="tabs">${tabs}</div>
+    ${tab === 0 ? specimen() : tab === 1 ? scale() : weights()}
+  </div>`;
+}
+</script>
+
+--- fuzz 11:01
+<div style="font-family: Georgia">Georgia — The quick brown fox jumps</div>
+<div style="font-family: 'Avenir Next'">Avenir Next — The quick brown fox jumps</div>
+<div style="font-family: 'Helvetica Neue'">Helvetica Neue — The quick brown fox jumps</div>
+<div style="font-family: Menlo">Menlo — The quick brown fox jumps</div>
+<div style="font-family: 'Courier New'">Courier New — The quick brown fox</div>
+<div style="font-family: serif">serif → New York — The quick brown fox</div>
+<div style="font-family: ui-rounded; font-weight: 600">ui-rounded — The quick brown fox</div>
+<div style="font-family: cursive; font-size: 19px">cursive → Snell Roundhand</div>
+<div style="font-family: fantasy">fantasy → Papyrus</div>
+<div style="font-family: 'No Such Font', Futura">'No Such Font', Futura → falls back to Futura</div>
+<div style="font-family: Georgia; font-weight: bold; font-style: italic">Georgia bold italic</div>
+
+--- fuzz 11:02
+<p><span style="text-decoration: underline dotted">dotted</span> · <span style="text-decoration: underline dashed">dashed</span> · <span style="text-decoration: underline wavy #ff3b30">wavy red</span> · <span style="text-decoration: underline double">double</span> · <span style="text-decoration: overline">overline</span> · <span style="text-decoration: line-through #ff3b30">struck</span> · <span style="text-decoration: underline overline line-through">all three</span> · <span style="text-decoration-line: underline; text-decoration-thickness: 3px; text-decoration-color: #007aff">thick blue</span></p>
+<p style="text-transform: uppercase">text-transform: uppercase · <span style="text-transform: lowercase">LOWERCASE</span> · <span style="text-transform: capitalize">capitalize every word</span></p>
+
+--- fuzz 11:03
+<div style="display: flex; flex-wrap: wrap; font-size: 12px">
+  <div style="border: 3px solid #007aff; padding: 5px 9px; margin: 3px">solid</div>
+  <div style="border: 3px dotted #ff2d55; padding: 5px 9px; margin: 3px">dotted</div>
+  <div style="border: 3px dashed #34c759; padding: 5px 9px; margin: 3px">dashed</div>
+  <div style="border: 6px double #5856d6; padding: 5px 9px; margin: 3px">double</div>
+  <div style="border: 5px groove #8e8e93; padding: 5px 9px; margin: 3px">groove</div>
+  <div style="border: 5px ridge #8e8e93; padding: 5px 9px; margin: 3px">ridge</div>
+  <div style="border: 5px inset #8e8e93; padding: 5px 9px; margin: 3px">inset</div>
+  <div style="border: 5px outset #8e8e93; padding: 5px 9px; margin: 3px">outset</div>
+  <div style="border-style: solid; border-color: #ff3b30 #34c759 #007aff #ff9500; border-width: 1px 3px 5px 7px; padding: 5px 9px; margin: 3px">4 colors, 4 widths</div>
+  <div style="border: 2px solid #af52de; border-radius: 16px; padding: 5px 12px; margin: 3px">pill</div>
+  <div style="border: 3px solid #ff9500; border-radius: 50% / 30%; padding: 8px 16px; margin: 3px">elliptical</div>
+  <div style="border-left: 4px solid #34c759; border-radius: 6px; background-color: rgba(52,199,89,0.12); padding: 5px 9px; margin: 3px">callout</div>
+</div>
+
+--- fuzz 11:04
+<ul>
+  <li>Level 1 (disc)
+    <ul>
+      <li>Level 2 (circle)
+        <ul>
+          <li>Level 3 (square)
+            <ol style="list-style-type: lower-roman"><li>lower-roman i</li><li>lower-roman ii</li><li>lower-roman iii</li></ol>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<ol style="list-style-type: upper-alpha"><li>upper-alpha</li><li>second</li></ol>
+<ol start="9"><li>starts at 9</li><li>ten</li><li>eleven — marker gets wider</li></ol>
+<ul style="list-style-type: none; padding-left: 0"><li>✅ list-style: none</li><li>✅ with emoji bullets</li></ul>
+
+--- fuzz 11:05
+<style>
+  .tb { width: 350px; max-width: 100%; }
+  .tb .grid { width: 100%; border-collapse: collapse; font-size: 12px; margin: 6px 0; }
+  .tb .grid td, .tb .grid th { border: 1px solid #b0b0b8; padding: 3px 6px; }
+  .lc-dark .tb .grid td, .lc-dark .tb .grid th { border-color: #4a4a50; }
+  .tb .grid th { background-color: #5856d6; color: #ffffff; font-weight: 600; white-space: nowrap; }
+  .tb .grid th.s:hover { background-color: #706ef0; }
+  .tb .grid th.on { background-color: #3f3db8; }
+  .tb .grid tr.odd td { background-color: rgba(88,86,214,0.10); }
+  .tb .grid tr.r:hover td { background-color: rgba(88,86,214,0.20); }
+  .tb .grid td.nm { white-space: nowrap; }
+  .tb .grid td.nm:hover { color: #5856d6; }
+  .tb .num { text-align: right; white-space: nowrap; }
+  .tb .up { color: #248a3d; } .tb .down { color: #d70015; }
+  .lc-dark .tb .up { color: #30d158; } .lc-dark .tb .down { color: #ff453a; }
+  .tb .grid tr.det td { padding: 6px 8px 4px 8px; background-color: rgba(127,127,127,0.08); }
+  .tb .pt { display: flex; align-items: center; height: 18px; font-size: 11.5px; }
+  .tb .pn { display: block; width: 66px; }
+  .tb .pb { width: 10px; flex-grow: 1; margin-right: 8px; }
+  .tb .pb div { height: 4px; border-radius: 2px; margin: 1px 0; }
+  .tb .b1 { background-color: rgba(127,127,127,0.45); } .tb .b2 { background-color: #5856d6; }
+  .tb .pv { display: block; width: 96px; text-align: right; font-family: ui-monospace; font-size: 10.5px; }
+  .tb .status { display: flex; align-items: center; height: 22px; font-size: 12px; }
+  .tb .share { width: 48px; height: 6px; border-radius: 3px; margin: 0 6px 0 8px; background-color: rgba(127,127,127,0.22); }
+  .tb .share div { height: 6px; border-radius: 3px; background-color: #007aff; }
+  .tb .x { display: block; padding: 0 6px; border-radius: 6px; color: #8e8e93; }
+  .tb .x:hover { background-color: rgba(127,127,127,0.16); }
+</style>
+<div class="tb"><p><b>Revenue by region</b> — rowspan, colspan</p>
+<table class="grid">
+  <tr><th rowspan="2">Region</th><th colspan="2">Q1</th><th colspan="2">Q2</th></tr>
+  <tr><th>Revenue</th><th>Δ</th><th>Revenue</th><th>Δ</th></tr>
+  <tr><td>EMEA</td><td>$1.20M</td><td>+4%</td><td>$1.31M</td><td>+9%</td></tr>
+  <tr><td><b>Total</b></td><td><b>$4.43M</b></td><td>&nbsp;</td><td><b>$4.68M</b></td><td><b>+5.6%</b></td></tr>
+</table></div>
+<script>
+const REGIONS = [
+  { name: 'EMEA', q1: 1.20, d1: 4, q2: 1.31, d2: 9, parts: [['UK', 0.42, 0.45], ['Germany', 0.38, 0.43], ['France', 0.24, 0.26], ['Other', 0.16, 0.17]] },
+  { name: 'Americas', q1: 2.04, d1: -2, q2: 2.10, d2: 3, parts: [['USA', 1.52, 1.58], ['Canada', 0.30, 0.29], ['Mexico', 0.22, 0.23]] },
+  { name: 'APAC', q1: 0.88, d1: 12, q2: 0.97, d2: 10, parts: [['Japan', 0.36, 0.39], ['Australia', 0.24, 0.27], ['Singapore', 0.16, 0.18], ['India', 0.12, 0.13]] },
+  { name: 'LATAM', q1: 0.31, d1: -8, q2: 0.30, d2: -3, parts: [['Brazil', 0.19, 0.18], ['Chile', 0.07, 0.07], ['Argentina', 0.05, 0.05]] },
+];
+const KEYS = ['name', 'q1', 'd1', 'q2', 'd2'];
+const LABELS = ['Region', 'Q1 revenue', 'Q1 Δ', 'Q2 revenue', 'Q2 Δ'];
+const T1 = REGIONS.reduce((s, r) => s + r.q1, 0), T2 = REGIONS.reduce((s, r) => s + r.q2, 0);
+const GROWTH = (T2 / T1 - 1) * 100;
+
+let order = REGIONS.map((_, i) => i), sortKey = null, sortDir = 1, sel = null, open = -1, moved = new Set();
+const fx = { intro: 0, flash: 0, hl: 0, grow: 0, share: 0 };
+
+const money = v => '$' + v.toFixed(2) + 'M';
+const pct = (d, digits = 0) => (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(digits) + '%';
+
+setTimeout(() => tween(fx, { intro: 1 }, 900, ease.linear), 250);
+
+function onAction(name, value) {
+  if (name === 'sort') {
+    const key = KEYS[Number(value)];
+    if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = key === 'name' ? 1 : -1; }
+    const prev = order.slice();
+    order.sort((a, b) => {
+      const A = REGIONS[a][key], B = REGIONS[b][key];
+      return (typeof A === 'string' ? A.localeCompare(B) : A - B) * sortDir;
+    });
+    moved = new Set(order.filter((r, i) => prev[i] !== r));
+    transition('fade');
+    fx.flash = 1;
+    tween(fx, { flash: 0 }, 1100, ease.inQuad);
+  } else if (name === 'cell') {
+    const [r, c] = value.split(':').map(Number);
+    if (sel && sel.r === r && sel.c === c) { sel = null; return; }
+    sel = { r, c };
+    fx.hl = 0;
+    tween(fx, { hl: 1 }, 320, ease.outCubic);
+    const R = REGIONS[r], v = R[KEYS[c]];
+    tween(fx, { share: c === 1 ? v / T1 : c === 3 ? v / T2 : Math.min(1, Math.abs(v) / 12) }, 600, ease.outBack);
+  } else if (name === 'expand') {
+    const r = Number(value);
+    transition(open === r ? 'slide-up' : 'slide-down');
+    open = open === r ? -1 : r;
+    fx.grow = 0;
+    if (open >= 0) tween(fx, { grow: 1 }, 750, ease.linear);
+  } else if (name === 'clear') {
+    sel = null;
+  } else if (name === 'reset') {
+    transition('slide-up');
+    order = REGIONS.map((_, i) => i); sortKey = null; sortDir = 1; sel = null; open = -1; moved = new Set();
+  }
+}
+
+function detail(R) {
+  const max = Math.max(...R.parts.map(p => Math.max(p[1], p[2])));
+  const lines = R.parts.map(([n, a, b], i) => {
+    const g = ease.outCubic(clamp(fx.grow * 1.5 - i * 0.12, 0, 1));
+    const d = Math.round((b / a - 1) * 100);
+    return `<div class="pt"><span class="pn">${n}</span>
+      <div class="pb"><div class="b1" style="width: ${(a / max * 100 * g).toFixed(1)}%"></div><div class="b2" style="width: ${(b / max * 100 * g).toFixed(1)}%"></div></div>
+      <span class="pv">${money(b)} <span class="${d >= 0 ? 'up' : 'down'}">${pct(d)}</span></span></div>`;
+  }).join('');
+  return `<tr class="det"><td colspan="5">${lines}<div class="tiny muted" style="margin-top: 2px">grey Q1 · purple Q2 · top markets in ${R.name}</div></td></tr>`;
+}
+
+function render() {
+  const k = pos => fx.intro >= 1 ? 1 : ease.outCubic(clamp(fx.intro * 1.4 - pos * 0.12, 0, 1));
+  const tint = (ri, ci) => {
+    if (!sel) return '';
+    const a = ri === sel.r && ci === sel.c ? 0.32 : ri === sel.r || ci === sel.c ? 0.12 : 0;
+    return a ? `background-color: rgba(0,122,255,${(a * fx.hl).toFixed(3)});` : '';
+  };
+  const arrow = i => sortKey === KEYS[i] ? (sortDir > 0 ? ' ▲' : ' ▼') : '';
+  const th = (i, text, extra = '') => `<th class="s ${sortKey === KEYS[i] ? 'on' : ''}" ${extra} data-action="sort" data-value="${i}">${text}${arrow(i)}</th>`;
+  const rows = order.map((ri, pos) => {
+    const R = REGIONS[ri], kk = k(pos);
+    const flash = moved.has(ri) && fx.flash > 0.01 ? `background-color: rgba(255,204,0,${(0.42 * fx.flash).toFixed(3)});` : '';
+    const td = (ci, html, cls) => `<td class="${cls}" style="${tint(ri, ci) || flash}" data-action="cell" data-value="${ri}:${ci}">${html}</td>`;
+    let out = `<tr class="r ${pos % 2 ? 'odd' : ''}">
+      <td class="nm" style="${tint(ri, 0) || flash}" data-action="expand" data-value="${ri}">${open === ri ? '▾' : '▸'} ${R.name}</td>
+      ${td(1, money(R.q1 * kk), 'num')}${td(2, pct(Math.round(R.d1 * kk)), 'num ' + (R.d1 >= 0 ? 'up' : 'down'))}
+      ${td(3, money(R.q2 * kk), 'num')}${td(4, pct(Math.round(R.d2 * kk)), 'num ' + (R.d2 >= 0 ? 'up' : 'down'))}</tr>`;
+    if (open === ri) out += detail(R);
+    return out;
+  }).join('');
+  const kt = k(order.length);
+  const tsel = c => sel && sel.c === c ? `style="background-color: rgba(0,122,255,${(0.12 * fx.hl).toFixed(3)})"` : '';
+  let status = '<span class="muted">Sort by any header · click a cell · ▸ opens a region</span>';
+  if (sel) {
+    const R = REGIONS[sel.r], key = KEYS[sel.c], v = R[key];
+    const isRev = sel.c === 1 || sel.c === 3;
+    status = `<span><b>${R.name}</b> · ${LABELS[sel.c]} <b>${isRev ? money(v) : pct(v)}</b></span>
+      <div class="share"><div style="width: ${(clamp(fx.share, 0, 1) * 100).toFixed(1)}%"></div></div>
+      <span class="grow muted">${isRev ? (fx.share * 100).toFixed(1) + '% of total' : 'total ' + pct(GROWTH, 1)}</span>
+      <span class="x" data-action="clear">✕</span>`;
+  }
+  return `<div class="tb">
+    <div class="row between"><b>Revenue by region</b><span><span class="badge purple">rowspan</span> <span class="badge blue">colspan</span></span></div>
+    <table class="grid">
+      <tr>${th(0, 'Region', 'rowspan="2"')}<th colspan="2">Q1</th><th colspan="2">Q2</th></tr>
+      <tr>${th(1, 'Revenue')}${th(2, 'Δ')}${th(3, 'Revenue')}${th(4, 'Δ')}</tr>
+      ${rows}
+      <tr><td><b>Total</b></td><td class="num" ${tsel(1)}><b>${money(T1 * kt)}</b></td><td ${tsel(2)}>&nbsp;</td>
+        <td class="num" ${tsel(3)}><b>${money(T2 * kt)}</b></td><td class="num up" ${tsel(4)}><b>${pct(GROWTH * kt, 1)}</b></td></tr>
+    </table>
+    <div class="status">${status}</div>
+    <div class="row between" style="margin-top: 2px"><span class="tiny muted">${sortKey ? 'Sorted by ' + LABELS[KEYS.indexOf(sortKey)] + (sortDir > 0 ? ', ascending' : ', descending') : 'Original order'}</span>
+      <a class="small" href="#" data-action="reset">↺ Reset</a></div>
+  </div>`;
+}
+</script>
+
+--- fuzz 11:06
+<style>p { color: #ff3b30; font-weight: 700; } .note { font-family: ui-rounded; color: #af52de; }</style>
+<p>This bubble contains &lt;style&gt;p { color: red }&lt;/style&gt; …</p>
+<div class="note">…but every bubble is a separate litehtml document, so it can't leak.</div>
+
+--- fuzz
+<p>…see? This &lt;p&gt; in the next bubble is unaffected ✅</p>
+
+--- fuzz 11:08
+<b>Malformed:</b> <b>bold <i>bold-italic</b> italic?</i> <p>unclosed p <div>div inside p <span>unclosed span &amp; stray &amp;amp; &copy; &hearts; &#x1F600; &unknown; <a href="https://example.com">unclosed link
+
+--- fuzz 11:09
+<p>Long words: Supercalifragilisticexpialidocious-Pneumonoultramicroscopicsilicovolcanoconiosis-Hippopotomonstrosesquippedaliophobia</p>
+<p>Long URL: https://example.com/a/really/long/url/that/has/no/spaces/at/all?and=keeps&amp;going=forever</p>
+<p style="font-size: 12px; color: #8e8e93">↑ litehtml has no <code>overflow-wrap</code>, so unbreakable runs overflow; the bubble clips them.</p>
+
+--- fuzz 11:10
+<p>Emoji ZWJ: 👨‍👩‍👧‍👦 👩🏽‍💻 🏳️‍🌈 🧑‍🚀 · Flags: 🇺🇦 🇯🇵 🇧🇷 🇰🇪 🇨🇦 · Skin tones: 👍🏻 👍🏽 👍🏿</p>
+<p>Combining marks: e&#769; n&#771; a&#778; · Math: ∑ ∫ √ ≠ ≤ ∞ π · Arrows: ← ↑ → ↓ ⇄ · Box: ┌─┐└─┘</p>
+<p>Кириллица · Ελληνικά · ქართული · हिन्दी · ภาษาไทย</p>
+<p lang="ja">日本語のテキストにはスペースがありませんが、ちゃんと折り返されるでしょうか。これは行の折り返しをテストするための長い文章です。</p>
+<p dir="rtl" style="text-align: right">مرحبا بالعالم — שלום עולם</p>
+<p style="font-size: 12px; color: #8e8e93">Each word is shaped by CoreText (Arabic joins correctly), but litehtml lays words out left-to-right — no bidi reordering.</p>
+
+--- fuzz 11:11
+<style>
+  .fx { width: 340px; max-width: 100%; }
+  .fx .stage { padding: 4px; margin: 8px 0 6px 0; border-radius: 10px; background-color: rgba(127,127,127,0.14); }
+  .fx .in { width: 320px; height: 104px; overflow: hidden; }
+  .fx .bx { min-width: 0; border-radius: 6px; color: #ffffff; font-size: 11px; font-weight: 700; text-align: center; overflow: hidden; }
+  .fx .code { font-family: ui-monospace; font-size: 10.5px; line-height: 1.45; padding: 5px 8px; margin-bottom: 6px; border-radius: 8px; background-color: rgba(127,127,127,0.10); }
+  .fx .code .k { color: #af52de; } .fx .code .v { color: #007aff; }
+  .lc-dark .fx .code .k { color: #da8fff; } .lc-dark .fx .code .v { color: #64d2ff; }
+  .fx .opts { display: flex; align-items: center; margin: 3px 0; }
+  .fx .lbl { width: 50px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #8e8e93; }
+  .fx .o { padding: 2px 6px; margin-right: 3px; border-radius: 7px; font-size: 11px; background-color: rgba(127,127,127,0.12); }
+  .fx .o:hover { background-color: rgba(127,127,127,0.26); }
+  .fx .o.on { background-color: #007aff; color: #ffffff; }
+  .fx .cnt { display: flex; align-items: center; }
+  .fx .cnt span.b { width: 22px; line-height: 20px; text-align: center; border-radius: 7px; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .fx .cnt span.b:hover { background-color: rgba(127,127,127,0.28); }
+  .fx .cnt span.n { width: 26px; height: 20px; line-height: 20px; text-align: center; font-weight: 700; }
+</style>
+<div style="display: flex; justify-content: space-between; background-color: rgba(127,127,127,0.14); border-radius: 8px; padding: 4px; font-size: 11px; color: #ffffff">
+  <div style="background-color: #ff2d55; padding: 4px 10px; border-radius: 5px">space-</div><div style="background-color: #ff9500; padding: 4px 10px; border-radius: 5px">between</div><div style="background-color: #34c759; padding: 4px 10px; border-radius: 5px">→</div>
+</div>
+<script>
+const W = 320, H = 104, M = 3, LH = 18;
+const COLORS = ['#ff2d55', '#ff9500', '#34c759', '#007aff', '#5856d6', '#af52de', '#30b0c7', '#ffb300', '#ff3b30'];
+const WID = [56, 40, 68, 46, 52, 62, 44, 58, 50];
+const HEI = [30, 46, 22, 38, 28, 42, 24, 34, 40];
+const JUSTIFY = [['flex-start', 'start'], ['center', 'center'], ['flex-end', 'end'], ['space-between', 'between'], ['space-around', 'around'], ['space-evenly', 'evenly']];
+const ALIGN = [['flex-start', 'start'], ['center', 'center'], ['flex-end', 'end'], ['stretch', 'stretch']];
+
+let n = 5, s = { justify: 'space-between', align: 'center', wrap: false, grow: 0 };
+let from = {}, to = {}, raw = 0, animating = true, easing = ease.outBounce, delay = 0.09, run = 0, changed = '';
+const fx = { hl: 0, pop: 1 };
+
+const growOf = (mode, i) => mode === 0 ? 0 : mode === 1 ? 1 : (i % 3 === 1 ? 2 : 1);
+
+function layout(count, st) {
+  const items = [];
+  for (let i = 0; i < count; i++) items.push({ i, base: WID[i] + 2 * M, oh: st.align === 'stretch' ? null : HEI[i] + 2 * M, grow: growOf(st.grow, i) });
+  const lines = [];
+  let line = [], sum = 0;
+  for (const it of items) {
+    if (line.length && st.wrap && sum + it.base > W) { lines.push(line); line = []; sum = 0; }
+    line.push(it); sum += it.base;
+  }
+  if (line.length) lines.push(line);
+  for (const ln of lines) {
+    const total = ln.reduce((a, it) => a + it.base, 0);
+    ln.forEach(it => { it.main = it.base; });
+    if (total < W) {
+      const g = ln.reduce((a, it) => a + it.grow, 0);
+      if (g > 0) ln.forEach(it => { if (it.grow) it.main = it.base + (W - total) * it.grow / g; });
+    } else if (total > W) {
+      const inner = ln.reduce((a, it) => a + it.base - 2 * M, 0);
+      ln.forEach(it => { it.main = it.base + (W - total) * (it.base - 2 * M) / inner; });
+    }
+    ln.cross = Math.max(...ln.map(it => it.oh === null ? LH + 2 * M : it.oh));
+  }
+  const free = H - lines.reduce((a, ln) => a + ln.cross, 0);
+  if (free > 0) lines.forEach(ln => { ln.cross += free / lines.length; });
+  const rects = {};
+  let y = 0;
+  for (const ln of lines) {
+    const freeMain = W - ln.reduce((a, it) => a + it.main, 0);
+    let j = st.justify, pos = 0, before = 0, after = 0;
+    if (j === 'space-between' && (ln.length === 1 || freeMain < 0)) j = 'flex-start';
+    if ((j === 'space-around' || j === 'space-evenly') && (ln.length === 1 || freeMain < 0)) j = 'center';
+    if (j === 'flex-end') pos = freeMain;
+    else if (j === 'center') pos = freeMain / 2;
+    else if (j === 'space-between') after = freeMain / (ln.length - 1);
+    else if (j === 'space-around') before = after = freeMain / (ln.length * 2);
+    else if (j === 'space-evenly') before = freeMain / (ln.length + 1);
+    for (const it of ln) {
+      pos += before;
+      const oh = it.oh === null ? ln.cross : it.oh;
+      const top = st.align === 'center' ? y + ln.cross / 2 - oh / 2 : st.align === 'flex-end' ? y + ln.cross - oh : y;
+      rects[it.i] = { x: pos + M, y: top + M, w: it.main - 2 * M, h: oh - 2 * M, lh: st.align === 'stretch' ? LH : oh - 2 * M };
+      pos += it.main + after;
+    }
+    y += ln.cross;
+  }
+  return rects;
+}
+
+const progress = i => {
+  const ids = Object.keys(to).map(Number);
+  const span = 1 - delay * Math.max(0, ids.length - 1);
+  return easing(clamp((raw - delay * i) / Math.max(0.2, span), 0, 1));
+};
+function frame() {
+  const out = {};
+  for (const id of new Set([...Object.keys(from), ...Object.keys(to)].map(Number))) {
+    const a = from[id], b = to[id], e = progress(id);
+    out[id] = { x: lerp(a.x, b.x, e), y: lerp(a.y, b.y, e), w: Math.max(0, lerp(a.w, b.w, e)), h: Math.max(0, lerp(a.h, b.h, e)), lh: lerp(a.lh, b.lh, e) };
+  }
+  return out;
+}
+
+function play(ms) {
+  const me = ++run;
+  raw = 0; animating = true;
+  animate(ms, (_, t) => {
+    if (me !== run) return;
+    raw = t;
+    if (t >= 1) { animating = false; from = {}; to = {}; }
+  }, ease.linear);
+}
+
+function morph(apply, curve = ease.outBack, stagger = 0.03) {
+  const before = animating ? frame() : layout(n, s);
+  apply();
+  const after = layout(n, s);
+  const dot = r => ({ x: r.x + r.w / 2, y: r.y + r.h / 2, w: 0, h: 0, lh: r.lh });
+  from = {}; to = {};
+  for (const id of new Set([...Object.keys(before), ...Object.keys(after)].map(Number))) {
+    from[id] = before[id] || dot(after[id]);
+    to[id] = after[id] || dot(before[id]);
+  }
+  easing = curve; delay = stagger;
+  play(560);
+}
+
+(function intro() {
+  to = layout(n, s);
+  for (const id in to) from[id] = Object.assign({}, to[id], { y: to[id].y - 120 });
+})();
+setTimeout(() => play(900), 250);
+
+function flash(key) { changed = key; fx.hl = 1; tween(fx, { hl: 0 }, 900, ease.inQuad); }
+
+function onAction(name, value) {
+  if (name === 'justify') { morph(() => { s.justify = value; }); flash('justify'); }
+  else if (name === 'align') { morph(() => { s.align = value; }); flash('align'); }
+  else if (name === 'wrap') { morph(() => { s.wrap = value === '1'; }); flash('wrap'); }
+  else if (name === 'grow') { morph(() => { s.grow = Number(value); }); flash('grow'); }
+  else if (name === 'count') {
+    const next = clamp(n + Number(value), 1, WID.length);
+    if (next === n) return;
+    morph(() => { n = next; }, ease.outBack, 0.02);
+    fx.pop = 1.5; tween(fx, { pop: 1 }, 380, ease.outBack);
+  }
+}
+
+function render() {
+  let boxes = '', stage;
+  if (animating) {
+    const r = frame();
+    for (const id in r) {
+      const b = r[id];
+      if (b.w < 0.5 || b.h < 0.5) continue;
+      boxes += `<div class="bx" style="position: absolute; left: ${b.x.toFixed(1)}px; top: ${b.y.toFixed(1)}px; width: ${b.w.toFixed(1)}px; height: ${b.h.toFixed(1)}px; line-height: ${Math.min(b.lh, b.h).toFixed(1)}px; background-color: ${COLORS[id]}">${Number(id) + 1}</div>`;
+    }
+    stage = `<div class="in" style="position: relative">${boxes}</div>`;
+  } else {
+    for (let i = 0; i < n; i++) {
+      const g = growOf(s.grow, i);
+      const size = s.align === 'stretch' ? `line-height: ${LH}px` : `height: ${HEI[i]}px; line-height: ${HEI[i]}px`;
+      boxes += `<div class="bx" style="width: ${WID[i]}px; ${size}; margin: ${M}px;${g ? ` flex-grow: ${g};` : ''} background-color: ${COLORS[i]}">${i + 1}</div>`;
+    }
+    stage = `<div class="in" style="display: flex; justify-content: ${s.justify}; align-items: ${s.align}; flex-wrap: ${s.wrap ? 'wrap' : 'nowrap'}">${boxes}</div>`;
+  }
+  const hl = key => key === changed && fx.hl > 0.01 ? ` style="background-color: rgba(255,204,0,${(0.45 * fx.hl).toFixed(3)}); border-radius: 3px"` : '';
+  const decl = (key, prop, val) => `<span${hl(key)}><span class="k">${prop}</span>: <span class="v">${val}</span>;</span>`;
+  const growText = s.grow === 0 ? '0' : s.grow === 1 ? '1' : '1 | 2 | 1';
+  const opts = (action, list, current) => list.map(([v, label]) => `<span class="o ${String(current) === v ? 'on' : ''}" data-action="${action}" data-value="${v}">${label}</span>`).join('');
+  return `<div class="fx">
+    <div class="row between"><b>Flexbox playground</b>
+      <div class="cnt"><span class="b" data-action="count" data-value="-1">−</span><span class="n" style="font-size: ${Math.round(13 * fx.pop)}px">${n}</span><span class="b" data-action="count" data-value="1">+</span></div></div>
+    <div class="stage">${stage}</div>
+    <div class="code"><span class="k">display</span>: <span class="v">flex</span>; ${decl('justify', 'justify-content', s.justify)} ${decl('align', 'align-items', s.align)} ${decl('wrap', 'flex-wrap', s.wrap ? 'wrap' : 'nowrap')} ${decl('grow', 'flex-grow', growText)}</div>
+    <div class="opts"><span class="lbl">Justify</span>${opts('justify', JUSTIFY, s.justify)}</div>
+    <div class="opts"><span class="lbl">Align</span>${opts('align', ALIGN, s.align)}</div>
+    <div class="opts"><span class="lbl">Wrap</span>${opts('wrap', [['0', 'nowrap'], ['1', 'wrap']], s.wrap ? '1' : '0')}<span class="lbl" style="width: auto; margin: 0 6px 0 10px">Grow</span>${opts('grow', [['0', '0'], ['1', 'all 1'], ['2', '1 · 2 · 1']], String(s.grow))}</div>
+  </div>`;
+}
+</script>
+
+--- fuzz 11:12
+<div style="height: 36px; border-radius: 8px; margin-bottom: 6px; background-image: linear-gradient(45deg, #ff9500 25%, #ffcc00 25%, #ffcc00 50%, #ff9500 50%, #ff9500 75%, #ffcc00 75%); background-size: 20px 20px"></div>
+<div style="height: 56px; border-radius: 8px; margin-bottom: 6px; background: radial-gradient(circle at 30% 40%, #ffffff, #5ac8fa 40%, #007aff)"></div>
+<div style="display: flex; align-items: center; margin-bottom: 6px">
+  <div style="width: 70px; height: 70px; border-radius: 35px; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); margin-right: 10px"></div>
+  <div style="width: 70px; height: 70px; border-radius: 12px; background: conic-gradient(from 45deg, #1c1c1e 0% 25%, #ffffff 25% 50%, #1c1c1e 50% 75%, #ffffff 75% 100%); background-size: 35px 35px; margin-right: 10px; border: 1px solid #c7c7cc"></div>
+  <div style="width: 70px; height: 70px; border-radius: 12px; background: radial-gradient(ellipse at center, #ff2d55 0%, #ff2d55 30%, transparent 31%), linear-gradient(135deg, #ffd60a, #ff9f0a)"></div>
+</div>
+<div style="height: 90px; border-radius: 12px; background-image: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%230b1d3a%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2310294d%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%230d3b4f%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%2050C60%200%20140%20110%20210%2070%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.55%27%20stroke-width=%2718%27/%3E%3Cpath%20d=%27M-10%2078C60%2028%20140%20138%20210%2098%27%20fill=%27none%27%20stroke=%27%235ef2c4%27%20stroke-opacity=%270.43%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M-10%20106C60%2056%20140%20166%20210%20126%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.31%27%20stroke-width=%2710%27/%3E%3Cpath%20d=%27M0.8%200a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M53.8%2029a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M106.8%2058a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M159.8%2087a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M12.8%206a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M65.8%2035a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M118.8%2064a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M171.8%2093a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M24.8%2012a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M77.8%2041a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M130.8%2070a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M183.8%2099a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M36.8%2018a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M89.8%2047a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M142.8%2076a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M195.8%20105a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M48.8%2024a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M101.8%2053a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M154.8%2082a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M7.8%201a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M60.8%2030a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M113.8%2059a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M166.8%2088a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M19.8%207a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M72.8%2036a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M125.8%2065a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M178.8%2094a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M31.8%2013a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M84.8%2042a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M137.8%2071a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M190.8%20100a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M43.8%2019a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M96.8%2048a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M149.8%2077a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M2.8%20106a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M55.8%2025a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M108.8%2054a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M161.8%2083a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M14.8%202a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M67.8%2031a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6%27%20fill=%27%23ffffff%27%20fill-opacity=%270.8%27/%3E%3Cpath%20d=%27M0%20200V165C70%20140%20130%20185%20200%20160V200Z%27%20fill=%27%23081322%27/%3E%3C/svg%3E); background-size: cover; background-position: center; padding: 12px; color: #ffffff">
+  <div style="font-size: 18px; font-weight: 800">background-image: url(data:…)</div>
+  <div style="font-size: 12px">background-size: cover · text drawn on top</div>
+</div>
+<div style="height: 16px; margin-top: 6px; background-image: url(icon:star-fill?size=14&color=ffcc00); background-repeat: repeat-x"></div>
+
+--- fuzz 11:13
+<div style="display: flex; align-items: center; margin-bottom: 8px">
+  <div style="position: relative; margin-right: 22px"><img src="icon:bell-fill?size=29&color=8e8e93"><span style="position: absolute; top: -6px; right: -10px; background-color: #ff3b30; color: #ffffff; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 8px; line-height: 16px">12</span></div>
+  <div style="position: relative; margin-right: 22px"><img src="icon:envelope-simple-fill?size=29&color=8e8e93"><span style="position: absolute; top: -6px; right: -8px; background-color: #007aff; color: #ffffff; font-size: 10px; font-weight: 700; padding: 0 5px; border-radius: 8px; line-height: 16px">3</span></div>
+  <div style="font-size: 12px; color: #8e8e93">← position: absolute badges</div>
+</div>
+<div style="position: relative; height: 64px; background-color: rgba(127,127,127,0.14); border-radius: 8px; font-size: 12px">
+  <span style="position: absolute; left: 8px; top: 6px">top-left</span>
+  <span style="position: absolute; right: 8px; top: 6px">top-right</span>
+  <span style="position: absolute; left: 40%; top: 24px; color: #ff2d55">left: 40%</span>
+  <span style="position: absolute; left: 8px; bottom: 6px">bottom-left</span>
+  <span style="position: absolute; right: 8px; bottom: 6px">bottom-right</span>
+</div>
+<div style="margin-top: 8px"><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E" width="56" height="56" style="float: right; margin-left: 8px; border-radius: 28px">float: right — the ocean image sits on the right while this text wraps on its left side for a couple of lines, then continues underneath.</div>
+
+--- fuzz 11:14
+<p style="text-align: center; border-bottom: 1px solid rgba(127,127,127,0.3); padding-bottom: 4px">text-align: center</p>
+<p style="text-align: right">text-align: right</p>
+<p style="text-align: justify">text-align: justify — Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+<p style="white-space: nowrap">white-space: nowrap — this line will not wrap no matter how narrow the bubble gets…</p>
+<div style="white-space: pre; font-family: monospace; font-size: 12px">white-space: pre   keeps    the     spaces
+  and  newlines</div>
+<p style="line-height: 2">line-height: 2 — airy lines of text that wrap so you can see the spacing between them clearly.</p>
+<p style="text-indent: 28px">text-indent: 28px — the first line of this paragraph is indented, like a printed book.</p>
+<p>vertical-align: x<sup>sup</sup> x<sub>sub</sub> · <img src="icon:star-fill?size=24&color=ffcc00" style="vertical-align: middle"> middle · <img src="icon:star-fill?size=24&color=ffcc00" style="vertical-align: top"> top</p>
+
+--- fuzz 11:15
+<style>
+  .im { width: 340px; max-width: 100%; }
+  .im .seg { display: flex; margin: 8px 0; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.12); }
+  .im .seg span { flex-grow: 1; text-align: center; padding: 3px 0; border-radius: 7px; font-size: 12px; font-weight: 600; color: #8e8e93; }
+  .im .seg span:hover { background-color: rgba(127,127,127,0.14); }
+  .im .seg span.on { background-color: #007aff; color: #ffffff; }
+  .im .frame { width: 340px; height: 180px; overflow: hidden; border-radius: 12px; background-color: rgba(127,127,127,0.10); }
+  .im .strip { display: flex; width: 2380px; }
+  .im .slot { width: 340px; height: 180px; }
+  .im .pic { background-size: cover; background-position: center; margin-left: auto; margin-right: auto; }
+  .im .cap { display: flex; align-items: center; margin: 6px 0 4px 0; font-size: 12px; }
+  .im .nav { display: block; width: 26px; line-height: 22px; text-align: center; border-radius: 7px; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .im .nav:hover { background-color: rgba(127,127,127,0.28); }
+  .im .thumbs { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+  .im .thumb { border-radius: 9px; background-size: cover; background-position: center; border: 2px solid rgba(0,0,0,0); }
+  .im .thumb:hover { border-color: rgba(127,127,127,0.55); }
+  .im .thumb.on { border-color: #007aff; }
+  .im .ss { height: 3px; border-radius: 2px; margin-top: 3px; background-color: rgba(127,127,127,0.18); }
+  .im .ss div { height: 3px; border-radius: 2px; background-color: #007aff; }
+  .im .opts { display: flex; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+  .im .lbl { width: 54px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #8e8e93; }
+  .im .o { padding: 2px 8px; margin-right: 4px; border-radius: 7px; font-size: 12px; background-color: rgba(127,127,127,0.12); }
+  .im .o:hover { background-color: rgba(127,127,127,0.26); }
+  .im .o.on { background-color: #007aff; color: #ffffff; }
+  .im .big { height: 128px; text-align: center; border-radius: 12px; background-color: rgba(127,127,127,0.10); }
+  .im .syms { display: flex; flex-wrap: wrap; margin: 8px 0 4px 0; }
+  .im .sym { width: 30px; height: 30px; line-height: 30px; text-align: center; margin: 0 4px 4px 0; border-radius: 8px; border: 1px solid rgba(127,127,127,0.25); }
+  .im .sym:hover { background-color: rgba(127,127,127,0.14); }
+  .im .sym.on { background-color: rgba(0,122,255,0.16); border-color: #007aff; }
+  .im .sw { width: 16px; height: 16px; margin-right: 7px; border-radius: 10px; border: 2px solid rgba(0,0,0,0); }
+  .im .sw:hover { border-color: rgba(127,127,127,0.45); }
+  .im .sw.on { border-color: rgba(127,127,127,0.95); }
+  .im .url { font-family: ui-monospace; font-size: 10.5px; margin-top: 4px; }
+</style>
+<p>Images: <img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23d4fc79%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2396e6a1%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%233a7d44%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%20200L10%20130L30%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M16%20200L36%2093L56%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M42%20200L62%20106L82%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M68%20200L88%20119L108%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M94%20200L114%2082L134%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M120%20200L140%2095L160%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M146%20200L166%20108L186%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M172%20200L192%20121L212%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M198%20200L218%2084L238%20200Z%27%20fill=%27%232d6a4f%27/%3E%3C/svg%3E" width="60"> <img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E" style="width: 56px; height: 28px; border-radius: 14px"> and icons <img src="icon:heart-fill?size=26&color=ff2d55"> <img src="icon:lightning-fill?size=26&color=ffcc00"> <img src="icon:trophy-fill?size=26&color=ffcc00"></p>
+<script>
+const ART = { sunset: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27180%27%20viewBox=%270%200%20360%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%232b1055%27/%3E%3Cstop%20offset=%270.33%27%20stop-color=%27%237597de%27/%3E%3Cstop%20offset=%270.67%27%20stop-color=%27%23ff9a8b%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ffd194%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27360%27%20height=%27180%27%20fill=%27url%28%23g%29%27/%3E%3Ccircle%20cx=%27252%27%20cy=%27110%27%20r=%2732%27%20fill=%27%23fff3c4%27/%3E%3Cpolygon%20points=%270,180%200,130%200,112%2030,110%2060,107%2090,105%20120,102%20150,123%20180,97%20210,118%20240,92%20270,113%20300,110%20330,108%20360,105%20360,180%27%20fill=%27%236a3d7c%27%20fill-opacity=%270.9%27/%3E%3Cpolygon%20points=%270,180%200,150%200,132%2030,130%2060,127%2090,125%20120,122%20150,143%20180,117%20210,138%20240,112%20270,133%20300,130%20330,128%20360,125%20360,180%27%20fill=%27%233f2a5c%27/%3E%3C/svg%3E', aurora: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%230b1d3a%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2310294d%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%230d3b4f%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%2050C60%200%20140%20110%20210%2070%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.55%27%20stroke-width=%2718%27/%3E%3Cpath%20d=%27M-10%2078C60%2028%20140%20138%20210%2098%27%20fill=%27none%27%20stroke=%27%235ef2c4%27%20stroke-opacity=%270.43%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M-10%20106C60%2056%20140%20166%20210%20126%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.31%27%20stroke-width=%2710%27/%3E%3Cpath%20d=%27M0.8%200a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M53.8%2029a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M106.8%2058a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M159.8%2087a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M12.8%206a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M65.8%2035a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M118.8%2064a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M171.8%2093a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M24.8%2012a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M77.8%2041a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M130.8%2070a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M183.8%2099a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M36.8%2018a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M89.8%2047a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M142.8%2076a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M195.8%20105a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M48.8%2024a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M101.8%2053a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M154.8%2082a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M7.8%201a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M60.8%2030a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M113.8%2059a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M166.8%2088a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M19.8%207a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M72.8%2036a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M125.8%2065a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M178.8%2094a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M31.8%2013a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M84.8%2042a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M137.8%2071a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M190.8%20100a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M43.8%2019a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M96.8%2048a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M149.8%2077a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M2.8%20106a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M55.8%2025a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M108.8%2054a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M161.8%2083a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M14.8%202a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M67.8%2031a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6%27%20fill=%27%23ffffff%27%20fill-opacity=%270.8%27/%3E%3Cpath%20d=%27M0%20200V165C70%20140%20130%20185%20200%20160V200Z%27%20fill=%27%23081322%27/%3E%3C/svg%3E', ocean: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E', dunes: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E', forest: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23d4fc79%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2396e6a1%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%233a7d44%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%20200L10%20130L30%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M16%20200L36%2093L56%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M42%20200L62%20106L82%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M68%20200L88%20119L108%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M94%20200L114%2082L134%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M120%20200L140%2095L160%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M146%20200L166%20108L186%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M172%20200L192%20121L212%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M198%20200L218%2084L238%20200Z%27%20fill=%27%232d6a4f%27/%3E%3C/svg%3E', map: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27150%27%20viewBox=%270%200%20360%20150%27%3E%3Crect%20width=%27360%27%20height=%27150%27%20fill=%27%23f2efe9%27/%3E%3Crect%20x=%2730%27%20y=%2720%27%20width=%2790%27%20height=%2760%27%20rx=%2718%27%20fill=%27%23c8e6c9%27/%3E%3Cpath%20d=%27M0%20120C120%2080%20240%20150%20360%20100%27%20fill=%27none%27%20stroke=%27%23aad3df%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M0%2060L360%2050M200%200L230%20150M90%200L140%20150M0%20140L360%2030%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%276%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%2711%27%20fill=%27%23ff3b30%27/%3E%3Cpath%20d=%27M199%2056L207%2072L215%2056Z%27%20fill=%27%23ff3b30%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%274%27%20fill=%27%23ffffff%27/%3E%3C/svg%3E', logo: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E' };
+const PICS = [
+  { id: 'sunset', name: 'Sunset', size: '360×180' }, { id: 'aurora', name: 'Aurora', size: '200×200' },
+  { id: 'ocean', name: 'Ocean', size: '200×200' }, { id: 'dunes', name: 'Dunes', size: '200×200' },
+  { id: 'forest', name: 'Forest', size: '200×200' }, { id: 'map', name: 'Map', size: '360×150' },
+  { id: 'logo', name: 'Logo', size: '64×64' },
+];
+const SHAPES = [['Cover', 340, 180, 12], ['Square', 180, 180, 16], ['Circle', 180, 180, 90], ['Pill', 340, 96, 48]];
+const SYMBOLS = [
+  ['cloud-sun', '5ac8fa'], ['flame', 'ff9500'], ['heart', 'ff2d55'], ['lightning', 'ffcc00'], ['leaf', '34c759'],
+  ['drop', '007aff'], ['moon-stars', '5856d6'], ['rabbit', '8e8e93'], ['paper-plane-tilt', '30b0c7'], ['trophy', 'ffcc00'],
+];
+const SWATCHES = ['ff2d55', 'ff9500', 'ffcc00', '34c759', '30b0c7', '007aff', '5856d6', 'af52de', '8e8e93', '1c1c1e'];
+const WEIGHTS = ['light', 'regular', 'bold', 'fill'];
+const SLOT = 340, SLIDE_MS = 2200;
+
+let tab = 0, idx = 1, shape = 0, sym = 2, color = 'ff2d55', weight = 'fill';
+let show = false, showRun = 0, shown = 0;
+const fx = { off: SLOT, w: 340, h: 180, r: 12, reveal: 0, pop: 1, ss: 0 };
+const th = {};
+PICS.forEach((_, i) => { th[i] = 0; });
+
+setTimeout(() => {
+  tween(fx, { reveal: 1 }, 700, ease.outCubic);
+  PICS.forEach((_, i) => setTimeout(() => tween(th, { [i]: i === idx ? 46 : 38 }, 420, ease.outBack), 60 + i * 50));
+}, 250);
+
+function go(next) {
+  idx = (next + PICS.length) % PICS.length;
+  tween(fx, { off: idx * SLOT }, 520, ease.outCubic);
+  PICS.forEach((_, i) => tween(th, { [i]: i === idx ? 46 : 38 }, 360, ease.outBack));
+}
+
+function stopShow() { show = false; showRun++; fx.ss = 0; }
+function slide(me) {
+  animate(SLIDE_MS, (p, t) => {
+    if (me !== showRun) return;
+    fx.ss = p;
+    if (t < 1) return;
+    go(idx + 1);
+    if (++shown >= PICS.length) stopShow(); else slide(me);
+  }, ease.linear);
+}
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    const next = Number(value);
+    if (next === tab) return;
+    transition(next > tab ? 'slide-left' : 'slide-right');
+    tab = next;
+    stopShow();
+    if (tab === 1) { fx.pop = 0.4; tween(fx, { pop: 1 }, 520, ease.outBack); }
+    return;
+  }
+  if (name === 'show') {
+    if (show) { stopShow(); return; }
+    show = true; shown = 0;
+    slide(++showRun);
+    return;
+  }
+  if (name === 'go' || name === 'step' || name === 'shape') stopShow();
+  if (name === 'go') go(Number(value));
+  else if (name === 'step') go(idx + Number(value));
+  else if (name === 'shape') {
+    shape = Number(value);
+    const [, w, h, r] = SHAPES[shape];
+    tween(fx, { w, h, r }, 560, ease.outBack);
+  } else {
+    if (name === 'sym') sym = Number(value);
+    else if (name === 'color') color = value;
+    else if (name === 'weight') weight = value;
+    else if (name === 'random') {
+      sym = Math.floor(Math.random() * SYMBOLS.length);
+      color = SWATCHES[Math.floor(Math.random() * SWATCHES.length)];
+      weight = WEIGHTS[Math.floor(Math.random() * WEIGHTS.length)];
+    }
+    fx.pop = 0.55;
+    tween(fx, { pop: 1 }, 480, ease.outBack);
+  }
+}
+
+function photos() {
+  const w = Math.max(1, fx.w), h = Math.max(1, fx.h), r = clamp(fx.r, 0, Math.min(w, h) / 2);
+  const drop = (1 - fx.reveal) * 180;
+  const slots = PICS.map(p => `<div class="slot"><div class="pic" style="width: ${w.toFixed(1)}px; height: ${h.toFixed(1)}px; border-radius: ${r.toFixed(1)}px; margin-top: ${((180 - h) / 2 + drop).toFixed(1)}px; background-image: url(${ART[p.id]})"></div></div>`).join('');
+  const thumbs = PICS.map((p, i) => {
+    const s = Math.max(0, th[i]);
+    return s < 1 ? '<div style="width: 38px">&nbsp;</div>' : `<div class="thumb ${i === idx ? 'on' : ''}" style="width: ${s.toFixed(1)}px; height: ${s.toFixed(1)}px; background-image: url(${ART[p.id]})" data-action="go" data-value="${i}"></div>`;
+  }).join('');
+  const P = PICS[idx];
+  return `<div class="frame"><div class="strip" style="margin-left: ${(-fx.off).toFixed(1)}px">${slots}</div></div>
+    ${show ? `<div class="ss"><div style="width: ${(fx.ss * 100).toFixed(1)}%"></div></div>` : ''}
+    <div class="cap"><span class="nav" data-action="step" data-value="-1">‹</span>
+      <div class="grow center"><b>${P.name}</b> <span class="muted">· ${P.id}.svg · ${P.size}</span></div>
+      <span class="nav" data-action="step" data-value="1">›</span></div>
+    <div class="thumbs">${thumbs}</div>
+    <div class="opts"><span class="lbl">Shape</span>${SHAPES.map((s, i) => `<span class="o ${i === shape ? 'on' : ''}" data-action="shape" data-value="${i}">${s[0]}</span>`).join('')}
+      <span class="o ${show ? 'on' : ''}" style="margin-left: auto" data-action="show">${show ? '■ Stop' : '▶ Slideshow'}</span></div>`;
+}
+
+function symbols() {
+  const [name] = SYMBOLS[sym];
+  const query = `size=77&color=${color}&weight=${weight}`;
+  const H = Math.max(4, 68 * fx.pop);
+  const grid = SYMBOLS.map(([n, c], i) => `<div class="sym ${i === sym ? 'on' : ''}" data-action="sym" data-value="${i}"><img src="icon:${n}-fill?size=22&color=${c}" style="vertical-align: middle"></div>`).join('');
+  const sw = SWATCHES.map(c => `<div class="sw ${c === color ? 'on' : ''}" style="background: #${c}" data-action="color" data-value="${c}"></div>`).join('');
+  return `<div class="big"><img src="icon:${name}?${query}" style="height: ${H.toFixed(1)}px; margin-top: ${((128 - H) / 2).toFixed(1)}px"></div>
+    <div class="url muted center">${esc(`icon:${name}?${query}`)}</div>
+    <div class="syms">${grid}</div>
+    <div class="opts"><span class="lbl">Colour</span>${sw}</div>
+    <div class="opts"><span class="lbl">Weight</span>${WEIGHTS.map(w => `<span class="o ${w === weight ? 'on' : ''}" data-action="weight" data-value="${w}">${w}</span>`).join('')}
+      <span class="o" style="margin-left: auto" data-action="random">🎲</span></div>`;
+}
+
+function render() {
+  return `<div class="im">
+    <div class="row between"><b>${tab === 0 ? '🖼 Gallery' : '✦ Icons'}</b><span class="small muted">${tab === 0 ? `${idx + 1} / ${PICS.length}` : `${SYMBOLS.length} icons`}</span></div>
+    <div class="seg"><span class="${tab === 0 ? 'on' : ''}" data-action="tab" data-value="0">Images</span><span class="${tab === 1 ? 'on' : ''}" data-action="tab" data-value="1">Icons</span></div>
+    ${tab === 0 ? photos() : symbols()}
+  </div>`;
+}
+</script>
+
+--- me 11:16
+<script>alert('xss')</script>
+<p>Scripts are ignored — litehtml never runs JavaScript 🔒</p>
+
+--- me 11:16
+<h3 style="margin-top: 0">Outgoing bubbles render HTML too</h3>
+<ul><li><b>Lists</b>, <i>emphasis</i>, <code>code</code></li><li><a href="https://github.com/litehtml/litehtml">links</a> turn white</li></ul>
+<table style="border-collapse: collapse; font-size: 12px"><tr><td style="border: 1px solid rgba(255,255,255,0.5); padding: 2px 8px">tables</td><td style="border: 1px solid rgba(255,255,255,0.5); padding: 2px 8px">on blue</td></tr></table>
+
+--- me 11:17
+👍
+
+--- fuzz 11:18
+<h3>Lorem ipsum (long message)</h3>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla.</p>
+<p>Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem. Proin ut ligula vel nunc egestas porttitor.</p>
+<p>Morbi lectus risus, iaculis vel, suscipit quis, luctus non, massa. Fusce ac turpis quis ligula lacinia aliquet. Mauris ipsum. Nulla metus metus, ullamcorper vel, tincidunt sed, euismod in, nibh. Quisque volutpat condimentum velit. Class aptent taciti sociosqu ad litora torquent per conubia nostra.</p>
+<hr>
+<p style="font-size: 12px; color: #8e8e93; text-align: right">— end of stress test —</p>

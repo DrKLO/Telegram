@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Year Countdown</title>
+<style>
+  body { margin: 0; padding: 24px 16px; font-family: system-ui, sans-serif; background: radial-gradient(ellipse at top, #1e1b4b, #0f0a2e); color: #fff; text-align: center; min-height: 220px; box-sizing: border-box; }
+  h2 { font-size: 20px; margin: 0 0 6px; }
+  .sub { font-size: 13px; color: #a5b4fc; margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-width: 400px; margin: 0 auto; }
+  .box { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; padding: 14px 4px; }
+  .num { font-family: ui-monospace, monospace; font-size: 30px; font-weight: 700; color: #fbbf24; }
+  .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #c7d2fe; margin-top: 4px; }
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+  .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; animation: twinkle 2s infinite alternate; }
+  @keyframes twinkle { from { background: rgba(255,255,255,.2); } to { background: #fff; } }
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<h2>🎆 Countdown to New Year</h2>
+<div class="sub" id="target"></div>
+<div class="grid">
+  <div class="box"><div class="num" id="d">00</div><div class="lbl">Days</div></div>
+  <div class="box"><div class="num" id="h">00</div><div class="lbl">Hours</div></div>
+  <div class="box"><div class="num" id="m">00</div><div class="lbl">Minutes</div></div>
+  <div class="box"><div class="num" id="s">00</div><div class="lbl">Seconds</div></div>
+</div>
+<script>
+  const stars = document.getElementById('stars');
+  for (let i = 0; i < 40; i++) { const s = document.createElement('div'); s.className = 'star'; s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 100 + '%'; s.style.animationDelay = Math.random() * 2 + 's'; stars.appendChild(s); }
+  const now = new Date();
+  const target = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
+  document.getElementById('target').textContent = 'Until ' + target.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const pad = n => String(n).padStart(2, '0');
+  function tick() {
+    let diff = Math.max(0, target - Date.now());
+    const d = Math.floor(diff / 864e5); diff -= d * 864e5;
+    const h = Math.floor(diff / 36e5); diff -= h * 36e5;
+    const m = Math.floor(diff / 6e4); diff -= m * 6e4;
+    const s = Math.floor(diff / 1e3);
+    document.getElementById('d').textContent = d;
+    document.getElementById('h').textContent = pad(h);
+    document.getElementById('m').textContent = pad(m);
+    document.getElementById('s').textContent = pad(s);
+  }
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>

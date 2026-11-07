@@ -1,0 +1,64 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a segmented control with three panels (overview / specs / reviews); a class toggle swaps panels
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .tabs { display: flex; padding: 2px; border-radius: 9px; background-color: var(--fill); margin-top: 10px; }
+  .tab { flex-grow: 1; flex-basis: 0; text-align: center; padding: 5px 0; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .tab.on { background-color: var(--card); }
+  .panel { margin-top: 12px; }
+  .hero { height: 120px; border-radius: 12px; background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); }
+  .kv { display: flex; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .kv .k { width: 120px; flex-shrink: 0; color: var(--muted); }
+  .rv { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .rv .who { display: flex; align-items: center; font-size: 12px; }
+  .rv .av { width: 22px; height: 22px; border-radius: 11px; margin-right: 8px; color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .stars { display: flex; margin-left: auto; }
+  .stars i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-left: 2px; background-color: var(--orange); }
+  .stars i.off { background-color: var(--fill2); }
+  .price { font-size: 20px; font-weight: 800; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Ridge 2 Headphones</span><span class="price">€249</span></div>
+  <div class="tabs" id="tabs"><span class="tab on" role="button" data-tab="0">Overview</span><span class="tab" role="button" data-tab="1">Specs</span><span class="tab" role="button" data-tab="2">Reviews</span></div>
+  <div class="panel" data-panel="0">
+    <div class="hero"></div>
+    <p style="margin: 10px 0 0 0">Over-ear, 40 h of battery, adaptive noise cancelling and a fold-flat hinge. Pairs with two devices at once and switches between them on its own.</p>
+    <div class="tiny muted" style="margin-top: 8px">In stock · ships tomorrow · 30-day returns</div>
+  </div>
+  <div class="panel" data-panel="1" hidden>
+    <div class="kv"><span class="k">Driver</span><span>40 mm, titanium-coated</span></div>
+    <div class="kv"><span class="k">Battery</span><span>40 h ANC on, 60 h off</span></div>
+    <div class="kv"><span class="k">Charging</span><span>USB-C, 10 min = 5 h</span></div>
+    <div class="kv"><span class="k">Codecs</span><span>SBC, AAC, LDAC</span></div>
+    <div class="kv"><span class="k">Weight</span><span>254 g</span></div>
+    <div class="kv"><span class="k">Bluetooth</span><span>5.3, multipoint</span></div>
+    <div class="kv" style="border-bottom: none"><span class="k">Colours</span><span>Graphite, Sand, Moss</span></div>
+  </div>
+  <div class="panel" data-panel="2" hidden>
+    <div class="rv"><div class="who"><span class="av" style="background-color: #5856d6">AN</span><span class="bold">Ana</span><span class="muted">&nbsp;· 2 days ago</span><span class="stars"><i></i><i></i><i></i><i></i><i></i></span></div><div class="small" style="margin-top: 4px">Noise cancelling is the real thing: the tram disappears. Clamp is firm for the first week.</div></div>
+    <div class="rv"><div class="who"><span class="av" style="background-color: #ff9500">TM</span><span class="bold">Tom</span><span class="muted">&nbsp;· last week</span><span class="stars"><i></i><i></i><i></i><i></i><i class="off"></i></span></div><div class="small" style="margin-top: 4px">Great sound, slightly bass-heavy out of the box. The EQ in the app fixes it.</div></div>
+    <div class="rv" style="border-bottom: none"><div class="who"><span class="av" style="background-color: #34c759">LE</span><span class="bold">Leo</span><span class="muted">&nbsp;· 3 weeks ago</span><span class="stars"><i></i><i></i><i></i><i class="off"></i><i class="off"></i></span></div><div class="small" style="margin-top: 4px">Multipoint drops the laptop sometimes when a call comes in. Firmware 2.1 helped.</div></div>
+  </div>
+</div>
+<script>
+const tabs = document.getElementById('tabs'), panels = document.querySelectorAll('.panel');
+tabs.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]');
+  if (!t) return;
+  for (const c of tabs.children) c.classList.toggle('on', c === t);
+  panels.forEach(p => { p.hidden = p.dataset.panel !== t.dataset.tab; });
+});
+</script>

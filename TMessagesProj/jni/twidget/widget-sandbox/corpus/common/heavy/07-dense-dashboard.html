@@ -1,0 +1,81 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: everything at once — eight KPI tiles, three bar charts from divs, a 20-row table and a status list in one tall card; a Refresh re-rolls every number (one big innerHTML)
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .tiles { display: flex; flex-wrap: wrap; justify-content: space-between; margin-top: 8px; }
+  .kt { width: 86px; box-sizing: border-box; padding: 7px 8px; margin-bottom: 6px; border-radius: 10px; background-color: var(--fill); }
+  .kt .l { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .kt .v { font-size: 16px; font-weight: 800; font-family: ui-monospace, monospace; }
+  .kt .d { font-size: 10px; font-weight: 700; } .kt .d.up { color: var(--green); } .kt .d.down { color: var(--red); }
+  .caps { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  .charts { display: flex; }
+  .ch { flex-grow: 1; flex-basis: 0; margin-right: 8px; }
+  .ch:last-child { margin-right: 0; }
+  .bars { display: flex; align-items: flex-end; height: 50px; border-bottom: 1px solid var(--border); }
+  .bars i { flex-grow: 1; flex-basis: 0; margin: 0 1px; border-radius: 2px 2px 0 0; }
+  .ch .t { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 11px; }
+  th { text-align: left; font-size: 9px; text-transform: uppercase; color: var(--muted); padding: 3px 3px; border-bottom: 1px solid var(--border); }
+  td { padding: 3px 3px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th.r, td.r { text-align: right; font-family: ui-monospace, monospace; }
+  .pill { display: inline-block; padding: 0 6px; border-radius: 6px; font-size: 9px; font-weight: 700; }
+  .pill.ok { background-color: rgba(52,199,89,0.18); color: var(--green); } .pill.warn { background-color: rgba(255,149,0,0.2); color: var(--orange); } .pill.bad { background-color: rgba(255,59,48,0.14); color: var(--red); }
+  .sv { display: flex; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .sv i { width: 8px; height: 8px; border-radius: 4px; margin-right: 8px; }
+  .sv .tr { flex-grow: 1; height: 5px; border-radius: 3px; background-color: var(--fill); margin: 0 8px; overflow: hidden; }
+  .sv .fl { height: 5px; border-radius: 3px; }
+  .sv .v { width: 40px; text-align: right; font-family: ui-monospace, monospace; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Ops overview</span><span class="btn" role="button" id="refresh" style="padding: 4px 10px; font-size: 12px">Refresh</span></div>
+  <div class="tiny muted" id="note"></div>
+  <div id="body"></div>
+</div>
+<script>
+let seed = 2026;
+const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+const KPI = [['Requests', 'k', 1200, 1900], ['Errors', '%', 0.2, 1.8], ['p50', 'ms', 40, 90], ['p95', 'ms', 120, 320], ['CPU', '%', 30, 85], ['Memory', 'GB', 12, 30], ['Queue', '', 0, 400], ['Uptime', '%', 99.5, 100]];
+const COLORS = ['#007aff', '#34c759', '#ff9500', '#af52de', '#30b0c7', '#ff3b30'];
+const SERVICES = ['api', 'auth', 'feed', 'media', 'search', 'push', 'billing', 'export'];
+const REGIONS = ['eu-west-1', 'eu-central-1', 'us-east-1', 'us-west-2', 'ap-northeast-1'];
+let runs = 0;
+function render() {
+  runs++;
+  let h = '<div class="tiles">';
+  for (const [l, u, lo, hi] of KPI) {
+    const v = lo + rnd() * (hi - lo), d = (rnd() - 0.5) * 12, dec = hi - lo < 5 ? 2 : 0;
+    h += `<div class="kt"><div class="l">${l}</div><div class="v">${v.toFixed(dec)}${u}</div><div class="d ${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%</div></div>`;
+  }
+  h += '</div><div class="caps">Last 24 h · requests / errors / latency</div><div class="charts">';
+  for (let c = 0; c < 3; c++) {
+    h += '<div class="ch"><div class="bars">';
+    for (let i = 0; i < 24; i++) h += `<i style="height: ${Math.round(15 + rnd() * 85)}%; background-color: ${COLORS[c]}"></i>`;
+    h += `</div><div class="t">${['req/s', 'err %', 'p95 ms'][c]}</div></div>`;
+  }
+  h += '</div><div class="caps">Services</div>';
+  for (let i = 0; i < SERVICES.length; i++) { const p = Math.round(rnd() * 100); h += `<div class="sv"><i style="background-color: ${p > 85 ? '#ff3b30' : p > 65 ? '#ff9500' : '#34c759'}"></i>${SERVICES[i]}<div class="tr"><div class="fl" style="width: ${p}%; background-color: ${p > 85 ? '#ff3b30' : p > 65 ? '#ff9500' : '#34c759'}"></div></div><span class="v">${p}%</span></div>`; }
+  h += '<div class="caps">Deployments</div><table><tr><th>Service</th><th>Region</th><th>Ver</th><th class="r">p95</th><th>State</th></tr>';
+  for (let i = 0; i < 20; i++) {
+    const p = Math.round(60 + rnd() * 300), st = p > 280 ? 'bad' : p > 200 ? 'warn' : 'ok';
+    h += `<tr><td>${SERVICES[i % 8]}</td><td>${REGIONS[i % 5]}</td><td>2.${14 - (i % 3)}.${i % 9}</td><td class="r">${p}</td><td><span class="pill ${st}">${st === 'ok' ? 'healthy' : st === 'warn' ? 'slow' : 'degraded'}</span></td></tr>`;
+  }
+  h += '</table>';
+  document.getElementById('body').innerHTML = h;
+  document.getElementById('note').textContent = 'snapshot ' + runs + ' · 8 tiles, 72 bars, 8 services, 20 rows';
+}
+document.getElementById('refresh').addEventListener('click', render);
+render();
+</script>

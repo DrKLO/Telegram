@@ -532,11 +532,11 @@ public class VoIPFragment implements
         isOutgoing = state.isOutgoing();
         previousState = -1;
         currentState = state.getCallState();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.voipServiceCreated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeInCallActivity);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.nearEarEvent);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.webRtcSpeakerAmplitudeEvent);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.voipServiceCreated);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.closeInCallActivity);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.nearEarEvent);
     }
 
     private void destroy() {
@@ -3161,7 +3161,12 @@ public class VoIPFragment implements
         updateViewState();
 
         WindowManager wm = (WindowManager) activity.getSystemService(Context.WINDOW_SERVICE);
-        wm.removeView(windowView);
+        try {
+            wm.removeView(windowView);
+        } catch (IllegalArgumentException e) {
+            // the call screen window is already gone
+            FileLog.e(e);
+        }
         windowView.invalidate();
     }
 

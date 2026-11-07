@@ -1,0 +1,195 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 10-game-night.chat, message 8
+  author: kai 20:10
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  .muted { color: var(--muted); } .tiny { font-size: 11px; }
+  button { font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; font-family: inherit; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button:active { background-color: rgba(127,127,127,0.40); }
+
+  .pa { width: 300px; max-width: 100%; }
+  .pa .tabs span { display: inline-block; padding: 2px 10px; margin-right: 4px; border-radius: 12px; font-size: 12px; font-weight: 700; background-color: rgba(127,127,127,0.13); cursor: pointer; }
+  .pa .tabs span:hover { background-color: rgba(127,127,127,0.24); }
+  .pa .tabs span.on { background-color: #5e5ce6; color: #ffffff; }
+  .pa .wrap { display: flex; align-items: flex-start; margin-top: 8px; }
+  .pa .canvas { padding: 8px; border-radius: 10px; background-color: #1c1c1e; }
+  .pa .pr { display: flex; height: 18px; }
+  .pa .px { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.05); background-color: rgba(28,28,30,0); cursor: pointer; }
+  .pa .px:hover { border-color: rgba(255,255,255,0.75); }
+  @keyframes sparkle-a { 0% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0); } 50% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0.5); } 100% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0); } }
+  @keyframes sparkle-b { 0% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0); } 50% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0.5); } 100% { box-shadow: inset 0 0 0 9px rgba(255,255,255,0); } }
+  .pa .side { margin-left: 8px; }
+  .pa .tb { display: block; width: 36px; height: 30px; padding: 0; margin-bottom: 5px; font-size: 15px; line-height: 30px; }
+  .pa .tb.on { background-color: #5e5ce6; color: #ffffff; }
+  .pa .pal { display: flex; align-items: center; height: 30px; margin-top: 6px; }
+  .pa .sw { width: 18px; height: 18px; margin-right: 5px; border-radius: 6px; border: 2px solid rgba(127,127,127,0.25); text-align: center; font-size: 11px; line-height: 18px; cursor: pointer; box-sizing: content-box; }
+  .pa .sw:hover { border-color: rgba(94,92,230,0.6); }
+  .pa .sw.on { border-color: #5e5ce6; width: 22px; height: 22px; animation: sw-pop 380ms cubic-bezier(.34,1.56,.64,1) both; }
+  @keyframes sw-pop { from { width: 20px; height: 20px; } to { width: 22px; height: 22px; } }
+</style>
+<p style="margin-bottom: 8px">Made pixel art while you were baking 👾 Now it's yours: pick a colour and paint, every pixel is a div.</p>
+<div class="pa" id="root">
+  <div class="tabs" id="tabs"></div>
+  <div class="wrap">
+    <div><div class="canvas" id="canvas"></div><div class="pal" id="pal"></div></div>
+    <div class="side" id="side">
+      <button class="tb on" data-tool="pen">✏️</button><button class="tb" data-tool="fill">🪣</button><button class="tb" id="mirrorBtn">⇆</button>
+      <button class="tb" id="undoBtn">↶</button><button class="tb" id="clearBtn">🗑</button><button class="tb" id="replayBtn">✨</button></div>
+  </div>
+  <div class="tiny muted" id="status"></div>
+</div>
+<script>
+const COLS = 13, ROWS = 10;
+const PAL = ['#34c759', '#ff2d55', '#ff3b30', '#ff9500', '#ffcc00', '#30b0c7', '#007aff', '#af52de', '#ffffff'];
+const EMPTY = 'rgba(28,28,30,0)';
+const CODE = { G: 0, P: 1, R: 2, O: 3, Y: 4, T: 5, B: 6, V: 7 };
+const ART = {
+  invader: { name: '👾 Invader', ox: 1, oy: 1, rows: ['..G.....G..', '...G...G...', '..GGGGGGG..', '.GG.GGG.GG.', 'GGGGGGGGGGG', 'G.GGGGGGG.G', 'G.G.....G.G', '...GG.GG...'] },
+  heart: { name: '🌈 Heart', ox: 2, oy: 1, rows: ['.PP...PP.', 'RRRR.RRRR', 'OOOOOOOOO', 'YYYYYYYYY', '.GGGGGGG.', '..TTTTT..', '...BBB...', '....V....'] },
+};
+const TOOLS = { pen: '✏️ Pen', fill: '🪣 Fill' };
+let grid = Array(COLS * ROWS).fill(-1), color = 0, tool = 'pen', mirror = false, art = 'invader', history = [], edited = false;
+
+const colorOf = v => v < 0 ? EMPTY : PAL[v];
+const $ = id => document.getElementById(id);
+
+// ---- build once ----
+const pxEls = [];
+for (let r = 0; r < ROWS; r++) {
+  const row = document.createElement('div'); row.className = 'pr';
+  for (let c = 0; c < COLS; c++) {
+    const px = document.createElement('div'); px.className = 'px'; px.dataset.i = r * COLS + c;
+    row.appendChild(px); pxEls.push(px);
+  }
+  $('canvas').appendChild(row);
+}
+$('pal').innerHTML = PAL.map((p, k) => `<div class="sw" data-c="${k}" style="background-color: ${p}"></div>`).join('') + '<div class="sw" data-c="-1" style="background-color: rgba(127,127,127,0.12)">⌫</div>';
+$('tabs').innerHTML = Object.keys(ART).map(k => `<span data-art="${k}">${ART[k].name}</span>`).join('');
+
+function artGrid(key) {
+  const a = ART[key], g = Array(COLS * ROWS).fill(-1);
+  a.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch !== '.') g[(r + a.oy) * COLS + c + a.ox] = CODE[ch]; }));
+  return g;
+}
+
+// A pixel's colour change is a CSS transition (outCubic, with the original's delay); a painted
+// colour also sparkles white halfway through, as a keyframe animation restarted by alternating names.
+function paint(i, v, delay = 0, ms = 220) {
+  if (grid[i] === v) return false;
+  const el = pxEls[i];
+  el.style.transition = `background-color ${ms}ms cubic-bezier(.33,1,.68,1) ${delay}ms`;
+  el.style.backgroundColor = colorOf(v);
+  if (v >= 0) {
+    const alt = el.dataset.alt === 'a' ? 'b' : 'a';
+    el.dataset.alt = alt;
+    el.style.animation = `sparkle-${alt} ${ms}ms linear ${delay}ms`;
+  } else el.style.animation = '';
+  grid[i] = v;
+  return true;
+}
+
+function snapshot() {
+  history.push(grid.slice());
+  if (history.length > 40) history.shift();
+}
+
+function reveal(key) {
+  const target = artGrid(key);
+  target.forEach((v, i) => paint(i, v, (Math.floor(i / COLS) + i % COLS) * 26, 240));
+  art = key;
+  edited = false;
+  sync();
+}
+
+function flood(i) {
+  const from = grid[i];
+  if (from === color) return;
+  snapshot();
+  const dist = new Map([[i, 0]]), queue = [i];
+  while (queue.length) {
+    const j = queue.shift(), r = Math.floor(j / COLS), c = j % COLS;
+    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const r2 = r + dr, c2 = c + dc, k = r2 * COLS + c2;
+      if (r2 < 0 || r2 >= ROWS || c2 < 0 || c2 >= COLS || dist.has(k) || grid[k] !== from) continue;
+      dist.set(k, dist.get(j) + 1);
+      queue.push(k);
+    }
+  }
+  for (const [k, d] of dist) paint(k, color, d * 32, 240);
+  edited = true;
+  sync();
+}
+
+setTimeout(() => reveal('invader'), 250);
+
+// ---- events ----
+$('canvas').addEventListener('click', e => {
+  const px = e.target.closest('.px');
+  if (!px) return;
+  const i = Number(px.dataset.i);
+  if (tool === 'fill') return flood(i);
+  const twin = Math.floor(i / COLS) * COLS + (COLS - 1 - i % COLS);
+  if (grid[i] === color && (!mirror || grid[twin] === color)) return;
+  snapshot();
+  paint(i, color, 0, 260);
+  if (mirror) paint(twin, color, 70, 260);
+  edited = true;
+  sync();
+});
+$('pal').addEventListener('click', e => {
+  const sw = e.target.closest('.sw');
+  if (!sw) return;
+  color = Number(sw.dataset.c);
+  sync();
+});
+$('side').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.tool) { if (TOOLS[b.dataset.tool]) tool = b.dataset.tool; }
+  else if (b.id === 'mirrorBtn') mirror = !mirror;
+  else if (b.id === 'undoBtn') {
+    const prev = history.pop();
+    if (!prev) return;
+    prev.forEach((v, i) => paint(i, v, 0, 180));
+    edited = true;
+  } else if (b.id === 'clearBtn') {
+    if (grid.every(v => v < 0)) return;
+    snapshot();
+    grid.forEach((v, i) => { if (v >= 0) paint(i, -1, (ROWS - 1 - Math.floor(i / COLS)) * 40, 220); });
+    edited = true;
+  } else if (b.id === 'replayBtn') {
+    snapshot();
+    for (const px of pxEls) { px.style.transition = 'none'; px.style.animation = ''; px.style.backgroundColor = EMPTY; }
+    grid.fill(-1);
+    void $('canvas').offsetWidth;
+    reveal(art);
+    return;
+  }
+  sync();
+});
+$('tabs').addEventListener('click', e => {
+  const t = e.target.closest('[data-art]');
+  if (!t || !ART[t.dataset.art]) return;
+  if (artGrid(t.dataset.art).some((v, i) => v !== grid[i])) snapshot();
+  reveal(t.dataset.art);
+});
+
+// ---- targeted DOM updates ----
+function sync() {
+  for (const t of $('tabs').children) t.classList.toggle('on', t.dataset.art === art && !edited);
+  for (const sw of $('pal').children) sw.classList.toggle('on', Number(sw.dataset.c) === color);
+  for (const b of $('side').querySelectorAll('[data-tool]')) b.classList.toggle('on', b.dataset.tool === tool);
+  $('mirrorBtn').classList.toggle('on', mirror);
+  const used = grid.filter(v => v >= 0);
+  const colours = new Set(used).size;
+  $('status').textContent = `${TOOLS[tool]}${mirror ? ' · mirror' : ''} · ${used.length} px · ${colours} colour${colours === 1 ? '' : 's'}${history.length ? ` · ${history.length} undo` : ''}${edited ? ' · tap a preset to restore' : ''}`;
+}
+sync();
+</script>

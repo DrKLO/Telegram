@@ -1,0 +1,186 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 2
+  author: pixel 10:01 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; --purple: #af52de; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  a { color: var(--blue); text-decoration: none; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .panel { background-color: rgba(127,127,127,0.12); border-radius: 10px; padding: 8px 10px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #fff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+
+  .ctr { width: 320px; max-width: 100%; }
+  .ctr .seg { position: relative; width: 150px; height: 26px; border-radius: 8px; background-color: rgba(127,127,127,0.14); }
+  .ctr .pill { position: absolute; top: 2px; left: 2px; width: 46px; height: 22px; border-radius: 6px; background-color: light-dark(#ffffff, #5a5a5f);
+               transition: left 320ms cubic-bezier(.34,1.56,.64,1); }
+  .ctr .opt { position: absolute; top: 0; width: 50px; height: 26px; line-height: 26px; text-align: center; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .ctr .opt:hover { color: var(--purple); }
+  .ctr .num { text-align: center; height: 68px; line-height: 68px; font-weight: 800; font-size: 46px; transform-origin: 50% 50%; }
+  .ctr .num.pop { animation: ctr-pop 420ms cubic-bezier(.34,1.56,.64,1); }
+  .ctr .num.intro { animation: ctr-intro 650ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes ctr-pop { from { transform: scale(1.3); } to { transform: none; } }
+  @keyframes ctr-intro { from { transform: scale(0.2); } to { transform: none; } }
+  .ctr .btns { text-align: center; }
+  .ctr .btns button { width: 66px; margin: 0 4px; font-size: 16px; }
+  .ctr .spark { margin-top: 12px; padding: 6px 8px; }
+  .ctr .spark svg { display: block; }
+  .ctr .stats { display: flex; justify-content: space-between; font-size: 11px; margin-top: 3px; }
+  .ctr .undo:hover { text-decoration: underline; }
+</style>
+<div class="card pad ctr" id="root">
+  <div class="row between"><b>Counter</b>
+    <div class="seg" id="seg"><div class="pill" id="pill"></div>
+      <div class="opt fg" style="left: 0px" data-step="1">×1</div>
+      <div class="opt muted" style="left: 50px" data-step="5">×5</div>
+      <div class="opt muted" style="left: 100px" data-step="10">×10</div></div></div>
+  <div class="num fg" id="num">0</div>
+  <div class="btns">
+    <button id="minus">−1</button>
+    <button id="reset">↺</button>
+    <button class="primary" id="plus">+1</button>
+  </div>
+  <div class="panel spark">
+    <svg id="svg" width="276" height="44" viewBox="0 0 276 44" xmlns="http://www.w3.org/2000/svg">
+      <line id="zero" x1="0" y1="22" x2="276" y2="22" stroke="#8e8e93" stroke-opacity="0.55" stroke-dasharray="3 3"/>
+      <path id="area" d="" fill="#af52de" fill-opacity="0.14"/>
+      <path id="line" d="" fill="none" stroke="#af52de" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle id="dot" cx="272" cy="22" r="3.5" fill="#af52de"/>
+    </svg>
+    <div class="stats muted"><span id="stats">min 0 · max 0 · 0 changes</span>
+      <span id="undoSlot"><span>history</span></span></div>
+  </div>
+</div>
+<script>
+const STEPS = [1, 5, 10], SLOTS = 24, W = 276, H = 44;
+let count = 0, step = 1, history = [0];
+const shown = { v: 0 }, spark = { k: 1, u: 1, lo: -1.2, hi: 1.2, tail: null };
+const $ = id => document.getElementById(id);
+const numEl = $('num'), pill = $('pill'), minus = $('minus'), plus = $('plus'), area = $('area'), line = $('line'), dot = $('dot'), zero = $('zero'), stats = $('stats'), undoSlot = $('undoSlot');
+
+// Numeric tweens (the prelude's animate/tween, local and minimal).
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3), linear: t => t };
+const lerp = (a, b, t) => a + (b - a) * t;
+function animate(duration, onFrame, easing = ease.outCubic) {
+  return new Promise(resolve => {
+    const start = performance.now();
+    const stepFn = () => {
+      const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+      onFrame(easing(t), t);
+      if (t < 1) requestAnimationFrame(stepFn); else resolve();
+    };
+    stepFn();
+  });
+}
+const owners = new Map();
+function tween(target, props, duration, easing, onFrame) {
+  const token = {}, from = {}, to = {};
+  for (const key of Object.keys(props)) { from[key] = Number(target[key]) || 0; to[key] = Number(props[key]); owners.set(target === shown ? 's' + key : 'k' + key, token); }
+  return animate(duration, p => {
+    for (const key in to) if (owners.get((target === shown ? 's' : 'k') + key) === token) target[key] = from[key] + (to[key] - from[key]) * p;
+    onFrame();
+  }, easing);
+}
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+function bounds() {
+  const vals = history.slice(-SLOTS - 1);
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), pad = Math.max(1.2, (hi - lo) * 0.15);
+  return { lo: lo - pad, hi: hi + pad };
+}
+
+function paintNum() { numEl.textContent = String(Math.round(shown.v)); }
+function paintSpark() {
+  const series = spark.tail ? [...history, spark.tail.v] : history;
+  const pts = series.slice(-SLOTS - 1), n = pts.length, dx = (W - 8) / (SLOTS - 1), k = spark.tail ? spark.u : spark.k;
+  const y = v => H - 4 - (v - spark.lo) / (spark.hi - spark.lo) * (H - 8);
+  const P = pts.map((v, i) => [W - 4 - (n - 1 - i) * dx + (1 - k) * dx,
+                               i === n - 1 && n > 1 ? lerp(y(pts[n - 2]), y(v), k) : y(v)]);
+  const d = P.map(([a, b], i) => `${i ? 'L' : 'M'}${a.toFixed(1)} ${b.toFixed(1)}`).join(' ');
+  const [lx, ly] = P[n - 1], z = y(0).toFixed(1);
+  zero.setAttribute('y1', z); zero.setAttribute('y2', z);
+  if (n > 1) {
+    area.setAttribute('d', `${d} L${lx.toFixed(1)} ${H} L${P[0][0].toFixed(1)} ${H} Z`);
+    line.setAttribute('d', d);
+  } else { area.setAttribute('d', ''); line.setAttribute('d', ''); }
+  dot.setAttribute('cx', lx.toFixed(1)); dot.setAttribute('cy', ly.toFixed(1));
+}
+function paintStatic() {
+  const tone = count > 0 ? 't-green' : count < 0 ? 't-red' : 'fg';
+  numEl.className = 'num ' + tone + (numEl.classList.contains('pop') ? ' pop' : '') + (numEl.classList.contains('intro') ? ' intro' : '');
+  minus.textContent = `−${step}`; plus.textContent = `+${step}`;
+  for (const o of document.querySelectorAll('.opt')) o.className = 'opt ' + (Number(o.dataset.step) === step ? 'fg' : 'muted');
+  const lo = Math.min(...history), hi = Math.max(...history);
+  stats.textContent = `min ${lo} · max ${hi} · ${history.length - 1} changes`;
+  undoSlot.innerHTML = history.length > 1 ? '<a class="undo" href="#" id="undo">↶ Undo</a>' : '<span>history</span>';
+}
+
+function show(next) {
+  count = next;
+  console.log('count is now', count);
+  tween(shown, { v: count }, 320, ease.outCubic, paintNum);
+  replay(numEl, 'pop');
+  paintStatic();
+}
+
+function handleAction(name, value) {
+  if (name === 'step') {
+    step = Number(value);
+    pill.style.left = (2 + STEPS.indexOf(step) * 50) + 'px';
+    paintStatic();
+    return;
+  }
+  if (name === 'undo') {
+    if (history.length < 2) return;
+    const tail = { v: history.pop() };
+    show(history[history.length - 1]);
+    spark.tail = tail;
+    spark.u = 1;
+    tween(spark, bounds(), 320, ease.outCubic, paintSpark);
+    animate(320, (p, raw) => {
+      if (spark.tail !== tail) return;
+      spark.u = 1 - p;
+      if (raw >= 1) spark.tail = null;
+      paintSpark();
+    }, ease.outCubic);
+    return;
+  }
+  const next = name === 'add' ? count + Number(value) * step : 0;
+  if (next === count && name === 'reset') return;
+  history.push(next);
+  if (history.length > 400) history.shift();
+  show(next);
+  spark.tail = null;
+  spark.k = 0;
+  tween(spark, { k: 1, ...bounds() }, 360, ease.outCubic, paintSpark);
+}
+
+$('root').addEventListener('click', e => {
+  const t = e.target.closest('[data-step], #minus, #plus, #reset, #undo');
+  if (!t) return;
+  if (t.dataset.step) return handleAction('step', t.dataset.step);
+  if (t.id === 'undo') { e.preventDefault(); return handleAction('undo'); }
+  if (t.id === 'reset') return handleAction('reset');
+  handleAction('add', t.id === 'plus' ? 1 : -1);
+});
+
+paintSpark();
+setTimeout(() => {
+  replay(numEl, 'intro');
+  spark.k = 0;
+  tween(spark, { k: 1 }, 650, ease.outCubic, paintSpark);
+}, 250);
+</script>

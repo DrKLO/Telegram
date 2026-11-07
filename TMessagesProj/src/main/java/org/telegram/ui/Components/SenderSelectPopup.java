@@ -45,6 +45,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 
@@ -114,7 +115,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
         setBackgroundDrawable(null);
 
         Drawable shadowDrawable = ContextCompat.getDrawable(context, R.drawable.popup_fixed_alert4).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(scrimPopupContainerLayout, shadowDrawable, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         scrimPopupContainerLayout.setBackground(shadowDrawable);
 
         Rect padding = new Rect();
@@ -139,7 +140,7 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
         };
         recyclerContainer.setOrientation(LinearLayout.VERTICAL);
         headerText = new TextView(context);
-        headerText.setTextColor(Theme.getColor(Theme.key_dialogTextBlue, resourcesProvider));
+        ThemeBind.textColor(headerText, Theme.key_dialogTextBlue, resourcesProvider);
         headerText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         headerText.setText(LocaleController.getString(R.string.SendMessageAsTitle));
         headerText.setTypeface(AndroidUtilities.bold(), Typeface.BOLD);
@@ -530,14 +531,14 @@ public class SenderSelectPopup extends ActionBarPopupWindow {
             addView(textRow, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f, 12, 0, 0, 0));
 
             title = new TextView(context);
-            title.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+            ThemeBind.textColor(title, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             title.setTag(this.title);
             title.setMaxLines(1);
             textRow.addView(title);
 
             subtitle = new TextView(context);
-            subtitle.setTextColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0x66));
+            ThemeBind.textColor(subtitle, ThemeBind.alpha(Theme.key_actionBarDefaultSubmenuItem, 0x66), resourcesProvider);
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitle.setTag(this.subtitle);
             subtitle.setMaxLines(1);

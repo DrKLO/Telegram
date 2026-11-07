@@ -1,0 +1,14 @@
+<!-- Pointer capture of a press that began outside the widget (the Shadow DOM renderer shares the page with the chat):
+     the widget lies to the shim's own check (Set.prototype.has says pointer 1, the mouse, is pressed on it) and asks for
+     pointer 1 every frame, so that a press on a control of the page would be taken from it, and its release would give
+     the widget a trusted pointerup to spend on copyText. The renderer captures only a pointer whose press began on the
+     widget: the page's control keeps its click and nothing is copied. A press on the widget itself is its own. -->
+<div id="t" style="height:160px;background:#fc8">target</div>
+<script>
+TelegramWidget.ready();
+var t = document.getElementById('t');
+var has = Set.prototype.has;
+Set.prototype.has = function (v) { return v === 1 ? true : has.call(this, v); };
+(function loop() { try { t.setPointerCapture(1); } catch (e) {} requestAnimationFrame(loop); })();
+t.addEventListener('pointerup', function (e) { try { TelegramWidget.copyText('captured-' + e.pointerType); } catch (x) {} });
+</script>

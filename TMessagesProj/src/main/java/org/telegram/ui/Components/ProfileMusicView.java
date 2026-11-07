@@ -17,15 +17,14 @@ import android.graphics.RadialGradient;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
-import android.graphics.RenderNode;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.text.TextUtils;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
@@ -38,7 +37,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.ProfileActivity;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
 public class ProfileMusicView extends View {
 
@@ -74,7 +74,6 @@ public class ProfileMusicView extends View {
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path clipPath = new Path();
-    private final Path clipAvatarPath = new Path();
 
     private final ButtonBounce bounce = new ButtonBounce(this);
 
@@ -222,29 +221,16 @@ public class ProfileMusicView extends View {
         setContentDescription(getString(R.string.AccDescrProfileMusic) + " " + author + " — " + title);
     }
 
-    private ProfileActivity.AvatarImageView avatarView;
-    private boolean ignoreRect = false;
-    private RenderNode renderNode;
-    private float renderNodeScale;
-    private float renderNodeTranslateY;
+    /** The pill's glass, like the action buttons'; without it the pill is filled with their color. */
+    @Nullable
+    private BlurredBackgroundDrawable glass;
+    private float glassRadius;
 
-    public void drawingBlur(boolean drawing) {
-        if (trailingView != null) trailingView.drawingBlur(drawing);
-        if (ignoreRect != drawing || renderNode != null) {
-            ignoreRect = drawing;
-            renderNode = null;
-            avatarView = null;
-            invalidate();
-        }
-    }
-
-    public void drawingBlur(RenderNode renderNode, ProfileActivity.AvatarImageView avatarView, float scale, float dy) {
-        if (trailingView != null) trailingView.drawingBlur(renderNode, avatarView, scale, dy);
-        this.ignoreRect = false;
-        this.renderNode = renderNode;
-        this.avatarView = avatarView;
-        this.renderNodeScale = scale;
-        this.renderNodeTranslateY = dy;
+    /** The pill on glass, see {@link ProfileButtonsGlass#actionsFactory}. */
+    public void setGlassFactory(@Nullable BlurredBackgroundDrawableViewFactory factory) {
+        if (trailingView != null) trailingView.setGlassFactory(factory);
+        glass = factory != null ? factory.create(this, ProfileButtonsGlass.NO_COLORS) : null;
+        glassRadius = 0;
         invalidate();
     }
 
@@ -328,7 +314,12 @@ public class ProfileMusicView extends View {
 
         final float alpha = Utilities.clamp01((currentHeight) / dp(21));
         final float scale = bounce.getScale(0.02f);
-        if (alpha <= 0) return;
+        if (alpha <= 0) {
+            if (glass != null) {
+                glass.setAlpha(0);
+            }
+            return;
+        }
 
         final int padding = dp(12);
         final int maxWidth = getWidth() - padding * 2;
@@ -353,31 +344,37 @@ public class ProfileMusicView extends View {
         canvas.save();
         canvas.scale(scale, scale, rect.centerX(), getHeight() / 2f);
 
-        final boolean withShadows = SharedConfig.shadowsInSections && isButtonColorLight() && parentExpanded < 0.5f;
-        final float bgAlpha = hasColorById ? 0.1f : 1f;
-        if (withShadows) {
-            backgroundPaint.setShadowLayer(dpf2(1.5f), 0, 0, Theme.multAlpha(Color.BLACK & 0x20FFFFFF, alpha * bgAlpha));
-        } else {
-            backgroundPaint.setShadowLayer(0, 0, 0, 0);
-        }
-        int wasAlpha = backgroundPaint.getAlpha();
-        backgroundPaint.setAlpha((int) (wasAlpha * alpha * bgAlpha));
-        canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);
-        backgroundPaint.setAlpha(wasAlpha);
-        if (hasColorById && buttonColor != 0) {
-            if (radialGradient == null || radialGradientWidth != rect.width()) {
-                radialGradientWidth = rect.width();
-                radialGradient = new RadialGradient(
-                    rect.width() / 2f, dp(17) / 2f, rect.width() * 0.65f,
-                    Theme.multAlpha(buttonColor, 0.8f), buttonColor,
-                    Shader.TileMode.CLAMP
-                );
-                shaderPaint.setShader(radialGradient);
+        if (glass != null) {
+            final float radius = rect.height() / 2f;
+            if (glassRadius != radius) {
+                glassRadius = radius;
+                glass.setRadius(radius);
             }
-            matrix.setTranslate(rect.left, rect.top);
-            radialGradient.setLocalMatrix(matrix);
-            shaderPaint.setAlpha((int) (0xFF * alpha));
-            canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, shaderPaint);
+            glass.setBounds((int) rect.left, (int) rect.top, (int) Math.ceil(rect.right), (int) Math.ceil(rect.bottom));
+            glass.setAlpha((int) (0xFF * alpha));
+            glass.draw(canvas);
+        } else {
+            final float bgAlpha = hasColorById ? 0.1f : 1f;
+            backgroundPaint.setShadowLayer(0, 0, 0, 0);
+            int wasAlpha = backgroundPaint.getAlpha();
+            backgroundPaint.setAlpha((int) (wasAlpha * alpha * bgAlpha));
+            canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, backgroundPaint);
+            backgroundPaint.setAlpha(wasAlpha);
+            if (hasColorById && buttonColor != 0) {
+                if (radialGradient == null || radialGradientWidth != rect.width()) {
+                    radialGradientWidth = rect.width();
+                    radialGradient = new RadialGradient(
+                        rect.width() / 2f, dp(17) / 2f, rect.width() * 0.65f,
+                        Theme.multAlpha(buttonColor, 0.8f), buttonColor,
+                        Shader.TileMode.CLAMP
+                    );
+                    shaderPaint.setShader(radialGradient);
+                }
+                matrix.setTranslate(rect.left, rect.top);
+                radialGradient.setLocalMatrix(matrix);
+                shaderPaint.setAlpha((int) (0xFF * alpha));
+                canvas.drawRoundRect(rect, rect.height() / 2f, rect.height() / 2f, shaderPaint);
+            }
         }
 
         clipPath.rewind();
@@ -385,33 +382,6 @@ public class ProfileMusicView extends View {
 
         canvas.save();
         canvas.clipPath(clipPath);
-        if (!ignoreRect && renderNode != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && renderNode.hasDisplayList() && canvas.isHardwareAccelerated()) {
-            canvas.save();
-            if (avatarView != null) {
-                View v = (View) avatarView.getParent();
-                float vl = v.getX() - getX();
-                float vt = v.getY() - getTranslationY();
-                float vw = v.getWidth() * v.getScaleX();
-                float vh = v.getHeight() * v.getScaleY();
-
-                clipAvatarPath.rewind();
-                clipAvatarPath.addRoundRect(
-                    vl,
-                    vt,
-                    vl + vw,
-                    vt + vh,
-                    avatarView.getRoundRadiusForExpand() * v.getScaleX(),
-                    avatarView.getRoundRadiusForExpand() * v.getScaleY(),
-                    Path.Direction.CCW
-                );
-                canvas.clipPath(clipAvatarPath);
-            }
-            canvas.translate(0f, renderNodeTranslateY);
-            canvas.scale(renderNodeScale, renderNodeScale);
-            canvas.drawRenderNode(renderNode);
-            canvas.restore();
-        }
-
         canvas.translate(rect.left + dp(8), 0);
         drawContent(canvas, alpha);
 

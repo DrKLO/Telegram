@@ -1,0 +1,5 @@
+<p>dynamic script</p><script>
+var s = document.createElement('script'); s.src = 'http://127.0.0.1:9999/hit/api-script-dynamic.js'; s.onload = function () { console.log('LEAK: loaded'); }; s.onerror = function () { console.log('script error (expected)'); }; document.head.appendChild(s);
+var m = document.createElement('script'); m.type = 'module'; m.src = 'http://127.0.0.1:9999/hit/api-script-module.js'; document.body.appendChild(m);
+var n = document.createElement('script'); n.setAttribute('src', 'http://127.0.0.1:9999/hit/api-script-setattr.js'); document.body.appendChild(n);
+</script>

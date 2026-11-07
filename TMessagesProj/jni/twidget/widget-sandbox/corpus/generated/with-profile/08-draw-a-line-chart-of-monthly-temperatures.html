@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Berlin vs Madrid Temperatures</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111; --muted: #666; --grid: #e5e7eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --grid: #374151; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 2px; }
+  p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  svg { width: 100%; height: auto; display: block; }
+  .grid line { stroke: var(--grid); stroke-width: 1; }
+  .axis text { fill: var(--muted); font-size: 10px; }
+  .line { fill: none; stroke-width: 2.5; stroke-linejoin: round; }
+  .legend { display: flex; gap: 16px; justify-content: center; font-size: 13px; margin-top: 6px; }
+  .legend span::before { content: ''; display: inline-block; width: 12px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+  .legend .b::before { background: #2563eb; } .legend .m::before { background: #dc2626; }
+  .tip { font-size: 13px; text-align: center; margin-top: 6px; min-height: 18px; color: var(--muted); }
+</style>
+</head>
+<body>
+<h2>🌡️ Monthly Average Temperatures</h2>
+<p>Berlin vs Madrid (°C) · tap a month</p>
+<svg id="chart" viewBox="0 0 400 240" role="img" aria-label="Line chart of monthly temperatures"></svg>
+<div class="legend"><span class="b">Berlin</span><span class="m">Madrid</span></div>
+<div class="tip" id="tip"></div>
+<script>
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var berlin = [0.5, 1.5, 5, 10, 15, 18, 20, 19.5, 15, 10, 5, 2];
+  var madrid = [6, 8, 11, 13, 17, 23, 26, 25.5, 21, 15, 9.5, 6.5];
+  var W = 400, H = 240, L = 34, R = 10, T = 10, B = 28, minY = -5, maxY = 30;
+  var x = function (i) { return L + i * (W - L - R) / 11; };
+  var y = function (v) { return T + (maxY - v) * (H - T - B) / (maxY - minY); };
+  var svg = document.getElementById('chart'), NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+  var grid = el('g', { 'class': 'grid' }), axis = el('g', { 'class': 'axis' });
+  for (var v = minY; v <= maxY; v += 5) {
+    el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v) }, grid);
+    var t = el('text', { x: L - 6, y: y(v) + 3, 'text-anchor': 'end' }, axis); t.textContent = v + '°';
+  }
+  months.forEach(function (m, i) { var t = el('text', { x: x(i), y: H - 10, 'text-anchor': 'middle' }, axis); t.textContent = m; });
+  function path(data, color) {
+    el('path', { 'class': 'line', stroke: color, d: data.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ') });
+    data.forEach(function (v, i) { el('circle', { cx: x(i), cy: y(v), r: 3, fill: color }); });
+  }
+  path(berlin, '#2563eb'); path(madrid, '#dc2626');
+  var hit = el('g', {});
+  months.forEach(function (m, i) { el('rect', { x: x(i) - 15, y: T, width: 30, height: H - T - B, fill: 'transparent', 'data-i': i }, hit); });
+  var marker = el('line', { x1: 0, x2: 0, y1: T, y2: H - B, stroke: 'currentColor', 'stroke-dasharray': '3 3', opacity: 0 });
+  hit.addEventListener('click', function (e) {
+    var i = e.target.getAttribute('data-i'); if (i === null) return;
+    marker.setAttribute('x1', x(i)); marker.setAttribute('x2', x(i)); marker.setAttribute('opacity', '.6');
+    document.getElementById('tip').textContent = months[i] + ': Berlin ' + berlin[i] + '°C · Madrid ' + madrid[i] + '°C';
+  });
+</script>
+</body>
+</html>

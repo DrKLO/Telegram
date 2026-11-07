@@ -48,6 +48,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.PhotoViewer;
 
 import java.io.ByteArrayOutputStream;
@@ -388,13 +389,13 @@ public class PhotoViewerWebView extends FrameLayout {
 
         errorMessage = new TextView(context);
         errorMessage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        errorMessage.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(errorMessage, Theme.key_windowBackgroundWhiteGrayText);
         errorMessage.setGravity(Gravity.CENTER);
         errorLayout.addView(errorMessage, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         errorButton = new TextView(context);
         errorButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        errorButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        ThemeBind.textColor(errorButton, Theme.key_windowBackgroundWhiteBlueText);
         errorButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
         errorButton.setBackground(Theme.AdaptiveRipple.rectByKey(Theme.key_windowBackgroundWhiteBlueText, 12));
         errorButton.setVisibility(GONE);

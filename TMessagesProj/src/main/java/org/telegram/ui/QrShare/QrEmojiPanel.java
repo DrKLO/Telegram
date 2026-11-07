@@ -199,8 +199,8 @@ public class QrEmojiPanel extends FrameLayout implements NotificationCenter.Noti
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.stickersDidLoad);
-        NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.groupStickersDidLoad);
         reload();
     }
 

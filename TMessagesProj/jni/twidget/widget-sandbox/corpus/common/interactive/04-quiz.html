@@ -1,0 +1,96 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a five-question quiz — answer buttons colour right/wrong, a progress strip of dots, a score card at the end, restart
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .dots { display: flex; margin-top: 8px; }
+  .dots i { flex-grow: 1; flex-basis: 0; height: 5px; border-radius: 3px; margin-right: 4px; background-color: var(--fill2); }
+  .dots i:last-child { margin-right: 0; }
+  .dots i.ok { background-color: var(--green); } .dots i.bad { background-color: var(--red); } .dots i.now { background-color: var(--blue); }
+  .qt { font-size: 17px; font-weight: 700; margin-top: 12px; min-height: 44px; }
+  .ans { margin-top: 8px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; }
+  .ans .k { width: 22px; height: 22px; border-radius: 11px; background-color: var(--fill); text-align: center; line-height: 22px; font-size: 12px; font-weight: 800; margin-right: 10px; flex-shrink: 0; }
+  .ans.ok { border-color: var(--green); background-color: rgba(52,199,89,0.14); } .ans.ok .k { background-color: var(--green); color: #fff; }
+  .ans.bad { border-color: var(--red); background-color: rgba(255,59,48,0.12); } .ans.bad .k { background-color: var(--red); color: #fff; }
+  .ans.dim { color: var(--muted); }
+  .fb { margin-top: 10px; min-height: 18px; font-size: 13px; }
+  .score { text-align: center; padding: 16px 0 6px 0; }
+  .score .big { font-size: 44px; font-weight: 800; line-height: 1; }
+  .ring { width: 96px; height: 96px; border-radius: 48px; margin: 0 auto 10px auto; border: 8px solid var(--green); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Rendering quiz</span><span class="tiny muted" id="pos">1 of 5</span></div>
+  <div class="dots" id="dots"><i class="now"></i><i></i><i></i><i></i><i></i></div>
+  <div id="play">
+    <div class="qt" id="qt"></div>
+    <div id="answers"></div>
+    <div class="fb" id="fb"></div>
+    <div style="text-align: right; margin-top: 6px"><span class="btn primary" role="button" id="next" hidden>Next</span></div>
+  </div>
+  <div class="score" id="score" hidden>
+    <div class="ring"><span class="big" id="final"></span></div>
+    <div class="bold" id="verdict"></div>
+    <div class="small muted" id="detail" style="margin-top: 4px"></div>
+    <span class="btn primary" role="button" id="again" style="margin-top: 12px">Play again</span>
+  </div>
+</div>
+<script>
+const Q = [
+  { q: 'Which CSS layout do all three renderers share?', a: ['Grid', 'Flexbox', 'Multi-column', 'Subgrid'], ok: 1, why: 'Flexbox is in litehtml, Blitz and every WebView; grid is not in litehtml.' },
+  { q: 'What does litehtml do on every DOM update?', a: ['Patches the box tree', 'Re-parses the whole document', 'Nothing until paint', 'Asks the host'], ok: 1, why: 'litehtml has no DOM API: the host serialises HTML and rebuilds the document.' },
+  { q: 'Which element is NOT in the common profile?', a: ['<table>', '<ul>', '<svg>', '<b>'], ok: 2, why: 'Inline SVG renders only in the WebView; litehtml skips it, Blitz ignores its CSS.' },
+  { q: 'How are these answer buttons coloured?', a: ['A transition', 'An SVG mask', 'A class swap and plain colours', 'A box-shadow'], ok: 2, why: 'No transitions or shadows in the profile; a class toggles the colours.' },
+  { q: 'Dark mode in this profile comes from…', a: ['light-dark()', 'color-scheme only', 'a prefers-color-scheme media query', 'the host repainting'], ok: 2, why: 'light-dark() is unknown to litehtml; the media query is rewritten by the validator for every renderer.' },
+];
+let i = 0, score = 0, answered = false;
+const el = id => document.getElementById(id);
+const dots = el('dots').children;
+function ask() {
+  answered = false;
+  el('pos').textContent = (i + 1) + ' of 5';
+  el('qt').textContent = Q[i].q;
+  el('answers').innerHTML = Q[i].a.map((a, k) => `<div class="ans" role="button" data-k="${k}"><span class="k">${'ABCD'[k]}</span><span>${a}</span></div>`).join('');
+  el('fb').textContent = '';
+  el('next').hidden = true;
+  for (let d = 0; d < 5; d++) dots[d].classList.toggle('now', d === i);
+}
+el('answers').addEventListener('click', e => {
+  const a = e.target.closest('.ans');
+  if (!a || answered) return;
+  answered = true;
+  const k = Number(a.dataset.k), ok = k === Q[i].ok;
+  if (ok) score++;
+  [...el('answers').children].forEach((c, n) => { c.classList.toggle('ok', n === Q[i].ok); c.classList.toggle('bad', n === k && !ok); c.classList.toggle('dim', n !== k && n !== Q[i].ok); });
+  dots[i].classList.remove('now'); dots[i].classList.add(ok ? 'ok' : 'bad');
+  el('fb').textContent = (ok ? 'Right. ' : 'Not quite. ') + Q[i].why;
+  el('next').hidden = false;
+  el('next').textContent = i === 4 ? 'See score' : 'Next';
+});
+el('next').addEventListener('click', () => {
+  if (++i < 5) return ask();
+  el('play').hidden = true; el('score').hidden = false;
+  el('final').textContent = score + '/5';
+  el('verdict').textContent = score === 5 ? 'Flawless.' : score >= 3 ? 'Solid.' : 'Worth a re-read.';
+  el('detail').textContent = score + ' correct out of 5 · ' + (score * 20) + '%';
+  el('pos').textContent = 'done';
+});
+el('again').addEventListener('click', () => {
+  i = 0; score = 0;
+  for (const d of dots) d.className = '';
+  el('score').hidden = true; el('play').hidden = false;
+  ask();
+});
+ask();
+</script>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Programming Languages</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #fff; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  p { font-size: 12px; color: #6b7280; margin: 0 0 12px; }
+  .chart { position: relative; }
+  canvas { display: block; width: 100%; height: auto; }
+  .tip { position: absolute; pointer-events: none; background: rgba(0,0,0,.8); color: #fff; font-size: 12px; line-height: 1.4; padding: 6px 8px; border-radius: 6px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<h2>📊 Top 6 Programming Languages</h2>
+<p>Share of developers using each language (illustrative) · tap a bar</p>
+<div class="chart"><canvas id="c" width="736" height="560"></canvas><div class="tip" id="tip" hidden></div></div>
+<script>
+  // Drawn by hand on a 2D canvas: no chart library is available in a widget.
+  const labels = ['JavaScript', 'Python', 'Java', 'TypeScript', 'C#', 'Go'];
+  const data = [62, 51, 30, 38, 27, 14];
+  const colors = ['#f7df1e', '#3776ab', '#e76f00', '#3178c6', '#68217a', '#00add8'];
+  const notes = ['Web, Node.js', 'Data science, AI', 'Enterprise, Android', 'Typed JavaScript', '.NET, Unity', 'Cloud, backend'];
+  const W = 368, H = 280, L = 78, R = 12, T = 6, B = 24, MAX = 70;
+  const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+  const x = v => L + v / MAX * (W - L - R);
+  const row = (H - T - B) / labels.length, barH = row * 0.7;
+  const barY = i => T + i * row + (row - barH) / 2;
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillStyle = '#666';
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+  for (let v = 0; v <= MAX; v += 10) {
+    ctx.fillStyle = '#f3f4f6'; ctx.fillRect(Math.round(x(v)), T, 1, H - T - B);
+    ctx.fillStyle = '#666'; ctx.fillText(v + '%', x(v), H - B + 6);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  labels.forEach((l, i) => {
+    ctx.fillStyle = '#666'; ctx.fillText(l, L - 8, barY(i) + barH / 2);
+    ctx.fillStyle = colors[i];
+    ctx.beginPath(); ctx.roundRect(L, barY(i), x(data[i]) - L, barH, 6); ctx.fill();
+  });
+  canvas.addEventListener('click', e => {
+    const r = canvas.getBoundingClientRect();
+    const cx = (e.clientX - r.left) / r.width * W, cy = (e.clientY - r.top) / r.height * H;
+    const i = labels.findIndex((_, k) => cy >= barY(k) && cy <= barY(k) + barH && cx >= L && cx <= x(data[k]));
+    const tip = document.getElementById('tip');
+    if (i < 0) { tip.hidden = true; return; }
+    tip.innerHTML = `<b>${labels[i]}</b><br>${data[i]}% of developers<br>${notes[i]}`;
+    tip.style.left = (x(data[i]) / W * 100 > 60 ? 40 : x(data[i]) / W * 100 + 2) + '%';
+    tip.style.top = (barY(i) / H * 100) + '%';
+    tip.hidden = false;
+  });
+</script>
+</body>
+</html>

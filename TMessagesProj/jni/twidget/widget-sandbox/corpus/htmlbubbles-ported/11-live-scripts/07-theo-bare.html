@@ -1,0 +1,256 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 7
+  author: theo 10:09 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>[hidden]{display:none!important}
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .panel { background-color: rgba(127,127,127,0.12); border-radius: 10px; padding: 8px 10px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .center { text-align: center; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); } .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #fff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+
+  .wam { width: 330px; max-width: 100%; }
+  .wam .timer { height: 6px; border-radius: 3px; background-color: rgba(127,127,127,0.2); margin-top: 8px; }
+  .wam .timer div { height: 6px; border-radius: 3px; }
+  .wam .field { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; margin: 10px 0 0 0; }
+  .wam .hole { width: 96px; height: 70px; margin-bottom: 10px; overflow: hidden; text-align: center; border-radius: 12px;
+               background: radial-gradient(ellipse at 50% 100%, #5b3a1e 0%, #5b3a1e 34%, rgba(91,58,30,0.18) 36%, rgba(127,127,127,0.08) 70%); }
+  .wam .hole.live { cursor: pointer; }
+  .wam .hole.live:hover { background: radial-gradient(ellipse at 50% 100%, #6e4726 0%, #6e4726 34%, rgba(91,58,30,0.26) 36%, rgba(127,127,127,0.16) 70%); }
+  .wam .mole { font-size: 40px; line-height: 50px; height: 50px; }
+  .wam .fx { position: absolute; width: 96px; text-align: center; font-size: 15px; font-weight: 900; }
+  .wam .count { position: absolute; left: 0; top: 0; width: 302px; height: 240px; line-height: 240px; text-align: center; font-weight: 900; }
+  .wam .hud { display: flex; justify-content: space-between; font-size: 13px; }
+  .wam .seg span { display: inline-block; padding: 3px 10px; margin-right: 4px; border-radius: 8px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); cursor: pointer; }
+  .wam .seg span:hover { background-color: rgba(127,127,127,0.24); }
+  .wam .seg span.on { background-color: var(--orange); color: #ffffff; }
+  .wam .menu { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .wam .stats { display: flex; justify-content: space-between; text-align: center; margin: 6px 0 2px 0; }
+  .wam .stats div { width: 25%; }
+  .wam .stats b { display: block; font-size: 19px; }
+
+</style>
+<div class="card pad wam" id="root">
+  <div class="row between"><b>🔨 Whack-a-mole</b>
+    <span id="headIdle"><span class="badge" id="levelBadge">Normal</span></span>
+    <span id="headPlay" hidden><span class="badge orange" id="secs">20 s</span> <button id="stop">■</button></span></div>
+  <div class="timer" id="timer" hidden><div id="timerFill" style="width: 100%"></div></div>
+  <div class="field" id="field">
+    <div class="hole" data-i="0"><div class="mole"></div></div><div class="hole" data-i="1"><div class="mole"></div></div><div class="hole" data-i="2"><div class="mole"></div></div>
+    <div class="hole" data-i="3"><div class="mole"></div></div><div class="hole" data-i="4"><div class="mole"></div></div><div class="hole" data-i="5"><div class="mole"></div></div>
+    <div class="hole" data-i="6"><div class="mole"></div></div><div class="hole" data-i="7"><div class="mole"></div></div><div class="hole" data-i="8"><div class="mole"></div></div>
+    <div id="floats"></div>
+    <div class="count" id="count" hidden></div>
+  </div>
+  <div class="small muted center" id="idleNote">🐹 +1 · 🌟 +3 · 💣 −5 · every 5 hits in a row raises the multiplier</div>
+  <div class="panel" id="over" hidden>
+    <div class="row between"><b>Time's up!</b><span id="bestSlot"></span></div>
+    <div class="stats"><div><b id="stScore">0</b><span class="tiny muted">score</span></div><div><b id="stHits">0</b><span class="tiny muted">hits</span></div>
+      <div><b id="stAcc">0%</b><span class="tiny muted">accuracy</span></div><div><b id="stCombo">×0</b><span class="tiny muted">best combo</span></div></div>
+    <div class="tiny muted center" id="stAway"></div>
+  </div>
+  <div class="menu" id="menu"><span class="seg" id="chips"><span data-level="easy">Easy</span><span class="on" data-level="normal">Normal</span><span data-level="hard">Hard</span></span><button class="primary" id="start">Start</button></div>
+  <div class="hud" id="hud" hidden><span>Score <b id="hScore">0</b></span><span class="muted" id="hCombo">Combo 0</span><span>Best <b id="hBest">0</b></span></div>
+</div>
+<script>
+const LEVELS = {
+  easy:   { label: 'Easy',   stay: 1100, gap: [560, 950], gold: 0.10, bomb: 0 },
+  normal: { label: 'Normal', stay: 800,  gap: [380, 820], gold: 0.10, bomb: 0.10 },
+  hard:   { label: 'Hard',   stay: 560,  gap: [260, 560], gold: 0.12, bomb: 0.16 },
+};
+const RISE = 150, FALL = 160, GAME = 20000, COUNT = 2400, FACE = { mole: '🐹', gold: '🌟', bomb: '💣' };
+let mode = 'idle', level = 'normal', t = 0, looping = false, holes = [], fx = [], introMs = -1, newBest = false;
+let score = 0, hits = 0, escaped = 0, whiffs = 0, bombs = 0, combo = 0, bestCombo = 0, endsAt = 0, nextSpawn = 0, countFrom = 0;
+const best = { easy: 0, normal: 0, hard: 0 }, shown = { v: 0 };
+const clearHoles = () => { holes = Array.from({ length: 9 }, () => ({ live: false, t0: 0, hit: false, stay: 800, kind: 'mole' })); };
+clearHoles();
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const ease = {
+  linear: t => t, inQuad: t => t * t, outCubic: t => 1 - Math.pow(1 - t, 3),
+  outBack: t => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2),
+};
+const mix = (a, b, k) => { const c = (x, y) => Math.round(x + (y - x) * k); return `rgb(${c(a[0], b[0])},${c(a[1], b[1])},${c(a[2], b[2])})`; };
+const RED = [255, 59, 48], GREEN = [52, 199, 89];
+function animate(duration, onFrame, easing) {
+  const start = performance.now();
+  const step = () => { const k = Math.min(1, (performance.now() - start) / Math.max(1, duration)); onFrame(easing(k), k); if (k < 1) requestAnimationFrame(step); };
+  step();
+}
+const $ = id => document.getElementById(id);
+const root = $('root'), field = $('field'), floats = $('floats'), countEl = $('count'), timerEl = $('timer'), timerFill = $('timerFill');
+const holeEls = [...field.querySelectorAll('.hole')], moleEls = holeEls.map(h => h.firstElementChild);
+let panelAnimation = null;
+function transition(kind, target = field) {
+  if (panelAnimation) panelAnimation.cancel();
+  const from = kind === 'slide-left' ? 'translateX(6px)' : kind === 'slide-right' ? 'translateX(-6px)' : kind === 'slide-up' ? 'translateY(4px)' : kind === 'pop' ? 'scale(0.985)' : 'none';
+  if (from === 'none') return;
+  panelAnimation = target.animate([{ transform: from }, { transform: 'none' }], { duration: 140, easing: 'cubic-bezier(.2,.8,.2,1)' });
+}
+
+function height(h) {
+  if (!h.live) return 0;
+  const dt = t - h.t0;
+  if (dt < RISE) return ease.outBack(dt / RISE);
+  if (dt < RISE + h.stay) return 1;
+  return Math.max(0, 1 - ease.inQuad((dt - RISE - h.stay) / FALL));
+}
+
+function spawn() {
+  const L = LEVELS[level], idle = holes.filter(h => !h.live), h = idle[Math.floor(Math.random() * idle.length)];
+  if (h) {
+    const r = Math.random();
+    Object.assign(h, { live: true, t0: t, hit: false, stay: L.stay * (0.85 + Math.random() * 0.3),
+                       kind: r < L.bomb ? 'bomb' : r < L.bomb + L.gold ? 'gold' : 'mole' });
+  }
+  const speedup = 1 - 0.35 * clamp(1 - (endsAt - t) / GAME, 0, 1);
+  nextSpawn = t + (L.gap[0] + Math.random() * (L.gap[1] - L.gap[0])) * speedup;
+}
+
+function finish() {
+  transition('pop');
+  mode = 'over';
+  clearHoles();
+  newBest = score > best[level];
+  best[level] = Math.max(best[level], score);
+  shown.v = 0;
+  paintMode();
+  animate(800, p => { shown.v = score * p; $('stScore').textContent = String(Math.round(shown.v)); }, ease.outCubic);
+}
+
+function tick(now) {
+  t = now;
+  if (mode === 'count' && t >= countFrom + COUNT) { mode = 'play'; endsAt = t + GAME; nextSpawn = t + 120; paintMode(); }
+  if (mode === 'play') {
+    for (const h of holes) if (h.live && t - h.t0 > RISE + h.stay + FALL) {
+      if (!h.hit && h.kind !== 'bomb') { escaped++; combo = 0; }
+      h.live = false;
+    }
+    if (t >= nextSpawn) spawn();
+    if (t >= endsAt) finish();
+  }
+  fx = fx.filter(f => t - f.born < 750);
+  paintFrame();
+  if (mode === 'play' || mode === 'count' || fx.length) requestAnimationFrame(tick); else looping = false;
+}
+function loop() { if (!looping) { looping = true; requestAnimationFrame(tick); } }
+
+function pop(i, text, color) {
+  const el = document.createElement('div');
+  el.className = 'fx'; el.textContent = text; el.style.left = ((i % 3) * 103) + 'px';
+  floats.appendChild(el);
+  fx.push({ i, text, color, born: t, el });
+  if (fx.length > 12) fx.shift();
+  loop();
+}
+
+function whack(i) {
+  const h = holes[i];
+  if (!(h.live && !h.hit && height(h) > 0.3)) { whiffs++; combo = 0; return pop(i, 'miss', [142, 142, 147]); }
+  h.hit = true;
+  h.t0 = t - RISE - h.stay + 140;
+  if (h.kind === 'bomb') { bombs++; combo = 0; score = Math.max(0, score - 5); return pop(i, '−5', [255, 59, 48]); }
+  hits++; combo++;
+  bestCombo = Math.max(bestCombo, combo);
+  const pts = (h.kind === 'gold' ? 3 : 1) * (1 + Math.floor(combo / 5));
+  score += pts;
+  pop(i, `+${pts}`, h.kind === 'gold' ? [255, 149, 0] : [52, 199, 89]);
+}
+
+// Per frame: moles, floating scores, countdown, timer bar and HUD numbers.
+function paintFrame() {
+  holes.forEach((h, i) => {
+    let up = height(h), face = h.hit ? '💥' : FACE[h.kind];
+    if (introMs >= 0) { const k = (introMs - i * 70) / 520; up = k > 0 && k < 1 ? 0.85 * Math.sin(k * Math.PI) : 0; face = '🐹'; }
+    moleEls[i].style.marginTop = Math.round(70 - 56 * up) + 'px';
+    moleEls[i].textContent = up > 0 ? face : '';
+  });
+  for (const el of [...floats.children]) if (!fx.some(f => f.el === el)) el.remove();
+  for (const f of fx) {
+    const k = (t - f.born) / 750;
+    f.el.style.top = Math.round(Math.floor(f.i / 3) * 80 + 6 - 30 * ease.outCubic(k)) + 'px';
+    f.el.style.color = `rgba(${f.color[0]},${f.color[1]},${f.color[2]},${clamp(1 - k * k, 0, 1).toFixed(3)})`;
+  }
+  if (mode === 'count') {
+    const phase = (t - countFrom) / 600, n = 3 - Math.floor(phase), f = phase % 1;
+    countEl.style.fontSize = Math.round(28 + 44 * ease.outBack(Math.min(1, f * 3))) + 'px';
+    countEl.style.color = `rgba(255,149,0,${(1 - 0.7 * f).toFixed(3)})`;
+    countEl.textContent = n > 0 ? String(n) : 'Go!';
+  }
+  const left = mode === 'play' ? Math.max(0, endsAt - t) : mode === 'count' ? GAME : 0;
+  if (mode === 'play' || mode === 'count') {
+    timerFill.style.width = (left / GAME * 100).toFixed(1) + '%';
+    timerFill.style.backgroundColor = mix(RED, GREEN, left / GAME);
+  }
+  if (mode === 'play') {
+    $('secs').textContent = `${Math.ceil(left / 1000)} s`;
+    const mult = 1 + Math.floor(combo / 5);
+    $('hScore').textContent = String(score);
+    $('hCombo').className = mult > 1 ? 't-orange' : 'muted';
+    $('hCombo').textContent = `Combo ${combo}${mult > 1 ? ` · ×${mult}` : ''}`;
+    $('hBest').textContent = String(best[level]);
+  }
+}
+// On mode or level change: which blocks are visible, chips, labels, the final stats.
+function paintMode() {
+  for (const c of $('chips').querySelectorAll('span')) c.classList.toggle('on', c.dataset.level === level);
+  $('levelBadge').textContent = LEVELS[level].label;
+  $('headIdle').hidden = mode === 'play'; $('headPlay').hidden = mode !== 'play';
+  timerEl.hidden = !(mode === 'play' || mode === 'count');
+  countEl.hidden = mode !== 'count';
+  for (const h of holeEls) h.classList.toggle('live', mode === 'play');
+  $('idleNote').hidden = mode !== 'idle';
+  $('over').hidden = mode !== 'over';
+  $('menu').hidden = !(mode === 'idle' || mode === 'over');
+  $('hud').hidden = !(mode === 'play' || mode === 'count');
+  $('start').textContent = mode === 'over' ? 'Play again' : 'Start';
+  if (mode === 'over') {
+    const shots = hits + whiffs + bombs;
+    $('bestSlot').innerHTML = newBest ? '<span class="badge green">New best 🏆</span>' : `<span class="small muted">Best ${best[level]}</span>`;
+    $('stScore').textContent = String(Math.round(shown.v)); $('stHits').textContent = String(hits);
+    $('stAcc').textContent = `${shots ? Math.round(hits / shots * 100) : 0}%`; $('stCombo').textContent = `×${bestCombo}`;
+    $('stAway').textContent = `${escaped} got away${bombs ? ` · ${bombs} 💣 hit` : ''}`;
+  }
+  paintFrame();
+}
+
+function handleAction(name, value) {
+  t = performance.now();
+  if (name === 'level') { level = value; return paintMode(); }
+  if (name === 'start') {
+    transition('fade');
+    mode = 'count'; countFrom = t; introMs = -1;
+    score = hits = escaped = whiffs = bombs = combo = bestCombo = 0;
+    clearHoles(); fx = []; floats.innerHTML = '';
+    paintMode();
+    return loop();
+  }
+  if (name === 'stop' && mode === 'play') return finish();
+  if (name === 'whack' && mode === 'play') whack(Number(value));
+}
+root.addEventListener('click', e => {
+  const c = e.target.closest('[data-level], #start, #stop, .hole');
+  if (!c) return;
+  if (c.dataset.level) return handleAction('level', c.dataset.level);
+  if (c.id === 'start') return handleAction('start');
+  if (c.id === 'stop') return handleAction('stop');
+  if (c.classList.contains('hole')) handleAction('whack', c.dataset.i);
+});
+
+paintMode();
+// Intro: the moles peek out one after another while the game is idle (250 ms after load, 1150 ms).
+setTimeout(() => animate(1150, (_, k) => { introMs = mode === 'idle' && k < 1 ? k * 1150 : -1; paintFrame(); }, ease.linear), 250);
+</script>

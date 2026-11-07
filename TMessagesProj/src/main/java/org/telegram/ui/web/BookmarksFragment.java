@@ -4,6 +4,7 @@ import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.web.AddressBarList.getLink;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
@@ -30,6 +31,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
@@ -161,13 +163,13 @@ public class BookmarksFragment extends UniversalFragment {
     public View createView(Context context) {
         fragmentView = super.createView(context);
 
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundWhite, getResourceProvider());
         actionBar.setActionModeColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), true);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, getResourceProvider(), false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), true);
         actionBar.setCastShadows(true);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -257,9 +259,9 @@ public class BookmarksFragment extends UniversalFragment {
         searchItem.setSearchFieldHint(getString(R.string.Search));
         searchItem.setContentDescription(getString(R.string.Search));
         EditTextBoldCursor editText = searchItem.getSearchField();
-        editText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        editText.setHintTextColor(getThemedColor(Theme.key_player_time));
-        editText.setCursorColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
+        ThemeBind.hintTextColor(editText, Theme.key_player_time, getResourceProvider());
+        ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
 
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -433,4 +435,22 @@ public class BookmarksFragment extends UniversalFragment {
         }
     }
 
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (actionBar != null) {
+                actionBar.setActionModeColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            }
+            if (selectedCount != null) {
+                selectedCount.setTextColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon));
+            }
+            if (searchItem != null && searchItem.getSearchField() != null) {
+                searchItem.getSearchField().setCursorColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 }

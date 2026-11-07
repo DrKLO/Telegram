@@ -36,11 +36,32 @@ import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 
-public class StarParticlesView extends View {
+public class StarParticlesView extends View implements Theme.Colorable {
 
 
     public boolean doNotFling;
     public Drawable drawable;
+
+    // star bitmaps are regenerated when the color changes: on theme switches do it once, after the animation settles
+    private final Runnable updateColorsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (drawable != null) {
+                    drawable.updateColors();
+                    invalidate();
+                }
+            } catch (Exception e) {
+                org.telegram.messenger.FileLog.e(e);
+            }
+        }
+    };
+
+    @Override
+    public void updateColors() {
+        removeCallbacks(updateColorsRunnable);
+        postDelayed(updateColorsRunnable, 150);
+    }
     int size;
     public final static int TYPE_APP_ICON_REACT = 1001;
     public static final int TYPE_APP_ICON_STAR_PREMIUM = 1002;

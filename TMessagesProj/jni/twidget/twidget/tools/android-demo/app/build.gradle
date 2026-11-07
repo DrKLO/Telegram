@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.application'
+}
+
+// widget-sandbox sits next to twidget, or at TWIDGET_WIDGET_SANDBOX: its corpus and WidgetJS bundles become assets.
+def widgetSandbox = file(System.getenv('TWIDGET_WIDGET_SANDBOX') ?: "${rootDir}/../../../widget-sandbox")
+def widgetAssets = file("${buildDir}/generated/widgetAssets")
+
+android {
+    namespace 'org.telegram.widgets.demo'
+    compileSdk 35
+    ndkVersion '27.2.12479018'
+
+    defaultConfig {
+        applicationId 'org.telegram.widgets.demo'
+        minSdk 21
+        targetSdk 35
+        versionCode 1
+        versionName '0.1'
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += [widgetAssets]
+        }
+    }
+}
+
+tasks.register('widgetAssets', Sync) {
+    from("${widgetSandbox}/corpus") {
+        into 'corpus'
+        include '**/*.html'
+    }
+    from("${widgetSandbox}/packages/desktop/WidgetJS") {
+        into 'WidgetJS'
+    }
+    into widgetAssets
+}
+
+tasks.named('preBuild') {
+    dependsOn 'widgetAssets'
+}

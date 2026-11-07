@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- Memory exhaustion without a try/catch: the same 1 MB typed-array growth as
+     mem-steady-growth.html, but the "out of memory" the engine throws at the
+     cap is uncaught, so the worker must turn it into a clean kill
+     ("Memory limit exceeded (64 MB)") and keep the last good render on screen
+     as the frozen fallback. -->
+<html><head><meta charset="utf-8"></head><body>
+<p>reached: <span id="mb">0</span> MB</p>
+<script>
+  var kept = [];
+  var mb = document.getElementById('mb');
+  function grow() {
+    for (var i = 0; i < 8; i++) {             // 8 MB per tick
+      var chunk = new Uint8Array(1024 * 1024);
+      chunk[0] = chunk[chunk.length - 1] = 1; // touch pages so they're real
+      kept.push(chunk);
+    }
+    mb.textContent = kept.length;
+    setTimeout(grow, 0);
+  }
+  grow();
+</script>
+</body></html>

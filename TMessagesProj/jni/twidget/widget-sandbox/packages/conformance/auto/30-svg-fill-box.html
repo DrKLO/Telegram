@@ -1,0 +1,87 @@
+<!doctype html>
+<html data-test="auto/30-svg-fill-box">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: transform-box: fill-box on an SVG circle</title>
+<!-- conformance {"title":"transform-box: fill-box on an SVG circle (a chart's end dot): scale(3) and a running pulse about its centre, before and after cx/cy move, measured and drawn (stages)"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages{height:76px}</style><script>var T=function(){var u=document,y=u.documentElement,k=typeof TelegramWidget!="undefined",M=window.__conformanceMode||(k?"sandbox":"native"),a=[],b={},l=[];var C,c,p,f,A,d,w,g,x=t=>typeof t=="string"?u.querySelector(t):t;var T=()=>{g=g||setTimeout(q,0)};function s(t,e,n,o,r){r=r||{};let i=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),m=b[t+"|"+e]||(b[t+"|"+e]=a[a.length]=[t,e]);return m[2]=i,m[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&i[0]=="x"?" (expected to fail: "+r.xfail+")":""),T(),i}function D(t,e,n,o){if(o&&o.sandboxOnly&&!k)return s(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(i){return s(t,e,!1,"threw "+i,o)}return r==null?s(t,e,null,"not applicable",o):s(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var O=(t,e,n,o,r)=>D(t,e,[n,o],r);function R(t){let e=x(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var B=t=>{l.push(t)};function E(t,e){let n=x('[data-stage="'+t+'"]');if(n&&!(M=="ref"&&x('template[data-ref="'+t+'"]')))try{e(n)}catch(o){s("harness","stage "+t,!1,o)}}var I=()=>{},F=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function q(){g=0,p&&!f&&I();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&A?"awaiting":"running";f=n=="done",y.setAttribute("data-conformance",JSON.stringify({v:1,id:y.getAttribute("data-test"),mode:M,status:n,n:t,checks:a,targets:C,stages:c})),h&&h(n,t)}var h;function S(){h=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function j(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=F(e)})),!l.length)return p=1,d&&w&&setTimeout(w,d),T();let t;try{t=l.shift()()}catch(e){s("harness","step",!1,e)}setTimeout(j,t||0)}function J(t){t=t||{},A=t.awaitInput,d=t.awaitInput||t.deadline,q();let e=()=>{e=()=>{},setTimeout(j,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}S();return{ok:O,rect:R,run:J,stage:E,step:B}}();</script><!-- /conformance:harness -->
+<style>
+.cw{margin:8px 0 0}
+#sv{display:block;width:100%;height:96px}
+#ln{fill:none;stroke:#1f9d4a;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.dt{fill:#1f9d4a;stroke:var(--tg-theme-bg-color);stroke-width:2}
+.pu{transform-box:fill-box;transform-origin:center}
+#d2{transform:scale(3);opacity:.3}
+#d3{animation:pu 1.8s ease-out infinite}
+@keyframes pu{from{transform:scale(1);opacity:.55}to{transform:scale(3);opacity:0}}
+[data-stage] svg{display:block}
+.sr{fill:#36c}.sd{fill:#c33}
+#s1{transform:scale(3)}
+.sa{animation:pz 1000s linear infinite}
+@keyframes pz{from{transform:scale(3)}to{transform:scale(3.01)}}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="scale" data-covers="css.transform.2d"><svg width="80" height="60" viewBox="0 0 80 60" preserveAspectRatio="none"><circle class="sr pu" id="s1" cx="56" cy="22" r="4"/><circle class="sd" cx="56" cy="22" r="4"/></svg></div>
+  <div data-stage="animated" data-covers="css.transform.2d anim.keyframes"><svg width="80" height="60" viewBox="0 0 80 60" preserveAspectRatio="none"><circle class="sr pu sa" cx="56" cy="22" r="4"/><circle class="sd" cx="56" cy="22" r="4"/></svg></div>
+  <div data-stage="moved" data-covers="css.transform.2d anim.keyframes"><svg width="80" height="60" viewBox="0 0 80 60" preserveAspectRatio="none"><circle class="sr pu sa" cx="20" cy="40" r="4"/><circle class="sd" cx="20" cy="40" r="4"/></svg></div>
+</div>
+<div class="conf-head">30 · transform-box: fill-box on an SVG circle</div>
+<div class="cw"><svg id="sv" viewBox="0 0 300 96" preserveAspectRatio="none"><path id="ln"/><circle class="dt pu" id="d2" r="4"/><circle class="dt pu" id="d3" r="4"/><circle class="dt" id="d1" r="4"/></svg></div>
+<div id="conf-list"></div>
+<script>
+// A chart's end dot (corpus/bot-demos/05-ticker): viewBox = the SVG's width, cx/cy moved per update, the pulse scaled
+// about the dot (fill-box). d1 the dot, d2 at scale(3), d3 the pulse. Telegram's own renderers ignored fill-box and
+// scaled it about the view box; the stages draw scale(3) static, animated, and animated with cx/cy moved.
+var R = T.rect, sv = document.getElementById('sv'), D = ['d1', 'd2', 'd3'].map(function (k) { return document.getElementById(k); });
+var W, X, Y, pulse = [];
+var px = function (v) { return Math.round(v * 10) / 10; };
+var mid = function (r) { return [r.x + r.w / 2, r.y + r.h / 2]; };
+function put(x, y) {
+  X = x; Y = y;
+  document.getElementById('ln').setAttribute('d', 'M0 80Q' + (x / 2).toFixed(1) + ' 90 ' + x.toFixed(1) + ' ' + y.toFixed(1));
+  D.forEach(function (d) { d.setAttribute('cx', x.toFixed(1)); d.setAttribute('cy', y.toFixed(1)); });
+}
+// How far r's centre is from the dot's, and its size over the dot's.
+function off(r, d) { var a = mid(r), b = mid(d); return [px(a[0] - b[0]), px(a[1] - b[1]), Math.round(r.w / d.w * 100) / 100]; }
+function look(when) {
+  var s = R(sv), d = R(D[0]), q = off(R(D[1]), d), c = mid(d);
+  T.ok(when ? 'svg.shapes' : 'svg.structure', when + 'the dot sits at its cx/cy' + (when ? '' : ' (a viewBox the element\'s width, preserveAspectRatio none)'), Math.abs(c[0] - s.x - X) < 0.5 && Math.abs(c[1] - s.y - Y) < 0.5, 'centre ' + px(c[0] - s.x) + ',' + px(c[1] - s.y) + ', want ' + px(X) + ',' + px(Y));
+  T.ok('css.transform.2d', when + 'scale(3) with transform-box: fill-box, transform-origin: center: centred on the dot, 3× its size', Math.abs(q[0]) < 0.5 && Math.abs(q[1]) < 0.5 && Math.abs(q[2] - 3) < 0.1, 'off by ' + q[0] + ',' + q[1] + ', ' + q[2] + '× the dot');
+}
+// The running pulse at whatever scale it has now: centred on the dot, between 1× and 3× of it.
+function sample() { var q = off(R(D[2]), R(D[0])); if (Math.abs(q[0]) > 1 || Math.abs(q[1]) > 1 || q[2] < 0.9 || q[2] > 3.1) pulse.push('off by ' + q[0] + ',' + q[1] + ', ' + q[2] + '×'); }
+function pulsed(when) { T.ok('css.transform.2d', when + 'the running pulse (scale 1 → 3) stays centred on the dot', !pulse.length, pulse.slice(0, 3).join('; ')); pulse = []; }
+T.step(function () {
+  W = Math.round(R(sv).w);
+  sv.setAttribute('viewBox', '0 0 ' + W + ' 96');
+  put(W - 16, 20);
+  return 100;
+});
+T.step(function () { look(''); sample(); return 600; });
+T.step(function () { sample(); return 600; });
+T.step(function () {
+  sample();
+  pulsed('');
+  var x0 = X, y0 = Y, t0 = Date.now();
+  (function st() {
+    var k = Math.min(1, (Date.now() - t0) / 750), e = 1 - Math.pow(1 - k, 3);
+    put(x0 + (W - 66 - x0) * e, y0 + (70 - y0) * e);
+    T.stage('moved', function (s) { [].forEach.call(s.querySelectorAll('circle'), function (c) { c.setAttribute('cx', (20 + 36 * e).toFixed(1)); c.setAttribute('cy', (40 - 18 * e).toFixed(1)); }); });
+    if (k < 1) requestAnimationFrame(st);
+  })();
+  return 1000;
+});
+T.step(function () { look('after cx/cy move: '); sample(); return 600; });
+T.step(function () { sample(); return 600; });
+T.step(function () { sample(); pulsed('after cx/cy move: '); });
+T.run();
+</script>
+<template data-ref="scale"><svg width="80" height="60"><circle cx="56" cy="22" r="12" fill="#36c"/><circle cx="56" cy="22" r="4" fill="#c33"/></svg></template>
+<template data-ref="animated"><svg width="80" height="60"><circle cx="56" cy="22" r="12" fill="#36c"/><circle cx="56" cy="22" r="4" fill="#c33"/></svg></template>
+<template data-ref="moved"><svg width="80" height="60"><circle cx="56" cy="22" r="12" fill="#36c"/><circle cx="56" cy="22" r="4" fill="#c33"/></svg></template>
+</body>
+</html>

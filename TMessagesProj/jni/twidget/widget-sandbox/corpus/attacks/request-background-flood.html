@@ -1,0 +1,14 @@
+<!-- background requests as fast as the widget can: loops, timers, frames. Where background requests are
+     allowed (the private chat with the bot) at most one per 5 s may reach the client, and one at a time; where they
+     are not, none. The rest reject (RATE_LIMITED, BUSY, NOT_ALLOWED); nothing reaches the network. -->
+<div class="widget"><p id="n">0 sent</p></div>
+<script>
+var T = TelegramWidget, sent = 0, refused = {};
+function ask() {
+  T.request('flood').then(function () { sent++; show(); }, function (e) { refused[e.code] = (refused[e.code] || 0) + 1; show(); });
+}
+function show() { document.getElementById('n').textContent = sent + ' sent, refused ' + JSON.stringify(refused); }
+for (var i = 0; i < 1000; i++) ask();
+setInterval(function () { for (var i = 0; i < 20; i++) ask(); }, 10);
+(function frame() { ask(); requestAnimationFrame(frame); })();
+</script>

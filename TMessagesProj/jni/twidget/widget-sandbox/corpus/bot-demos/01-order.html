@@ -1,0 +1,168 @@
+<!-- bot-demos/01, order tracker (tw-bot order): the protocol is in README.md -->
+<meta name="tw-bot" content="order">
+<style>
+:root{--h:var(--tg-theme-hint-color);--a:var(--tg-theme-button-color);--at:var(--tg-theme-button-text-color);--s:var(--tg-theme-secondary-bg-color);--d:var(--tg-theme-destructive-text-color);--l:var(--tg-theme-section-separator-color)}
+body{margin:0;padding:12px 14px}
+[hidden]{display:none!important}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd,.mt p,.nt,.ac{display:flex;align-items:center;gap:10px}
+#em{width:42px;height:42px;border-radius:50%;background:var(--s);display:grid;place-items:center;font-size:22px;flex:none}
+.hd div{min-width:0;flex:1}
+#sh{font-size:16px;font-weight:600}
+#oi,#el,#es,#ms,.nt{font-size:13px;color:var(--h)}
+#sh,#it span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eta{margin:14px 0}
+#ev{font-size:34px;font-weight:700;line-height:1.15;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+#ev:empty:before{content:'';display:block;width:104px;height:30px;margin:5px 0 4px;border-radius:8px;background:var(--s)}
+.u{animation:u .4s}
+.v{animation:v .4s}
+@keyframes u{from{opacity:0;transform:translateY(6px)}}
+@keyframes v{from{opacity:0;transform:translateY(6px)}}
+.x #ev{color:var(--d)}
+#st{position:relative;display:grid;grid-template-columns:repeat(4,1fr);margin:0 -6px 14px}
+.tr{position:absolute;top:10px;left:12.5%;right:12.5%;height:3px;border-radius:2px;background:var(--l)}
+#fl{display:block;height:100%;width:0;border-radius:2px;background:var(--a);transition:width .7s cubic-bezier(.3,.7,.2,1)}
+.x #fl{width:100%!important;background:var(--d)}
+.s{text-align:center;font-size:12px;line-height:1.25;color:var(--h)}
+.s b{position:relative;display:grid;place-items:center;width:23px;height:23px;margin:0 auto 6px;box-sizing:border-box;border-radius:50%;border:2px solid var(--l);background:var(--tg-theme-bg-color);transition:.3s}
+.s svg{width:13px;height:13px;stroke:var(--at);stroke-width:3;stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .35s .25s}
+.d,.c{color:var(--tg-theme-text-color)}
+.c{font-weight:600}
+.d b{background:var(--a)}
+.d b,.c b{border-color:var(--a)}
+.d svg{stroke-dashoffset:0}
+.c b:after,.c b:before{content:'';position:absolute;top:5px;left:5px;width:9px;height:9px;border-radius:50%;background:var(--a)}
+.c b:before{animation:pu 1.8s ease-out infinite}
+.f .c b:before{display:none}
+@keyframes pu{to{transform:scale(3.2);opacity:0}}
+.x .s{text-decoration:line-through;color:var(--h)}
+.x .s b{border-color:var(--d)}
+#it{background:var(--s);border-radius:12px;padding:4px 12px}
+#it p,.mt p{display:flex;gap:8px;margin:0;padding:6px 0;font-size:14px}
+#it span{flex:1}
+#it i{font-style:normal;color:var(--h)}
+#it b{font-weight:500;font-variant-numeric:tabular-nums}
+#it .to{border-top:1px solid var(--l);font-weight:600}
+.mt{margin-top:6px}
+.mt p{padding:4px 2px}
+.mt svg,.nt svg{color:var(--h)}
+.ac{margin-top:12px}
+button{font:600 15px system-ui,sans-serif;padding:9px 16px;border-radius:12px;background:var(--s);transition:.2s}
+#cx{color:var(--d)}
+#cx.ar{background:var(--d);color:var(--at)}
+#ms{flex:1;text-align:right;min-height:18px}
+#ms.er{color:var(--d)}
+#rf{width:36px;height:36px;padding:0;border-radius:50%;color:var(--a);display:grid;place-items:center}
+.bz #rf svg{animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.nt{margin:2px 0 12px}
+#fs{display:flex;align-items:center;gap:8px;margin:14px 0 10px;font-size:13px;color:var(--h)}
+#fs b{padding:5px 11px;border-radius:10px;background:var(--s);font-size:15px;font-weight:600;color:var(--tg-theme-text-color)}
+.x #fs b{color:var(--d)}
+#ob{display:block;width:100%;padding:11px;background:var(--a);color:var(--at)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<div id="w">
+<div class="hd"><div id="em"></div><div><div id="sh"></div><div id="oi"></div></div><button id="rf"><svg viewBox="0 0 24 24"><path d="M21 4v5h-5M19.5 14.5A8 8 0 1 1 18 6.6L21 9"/></svg></button></div>
+<div class="eta" id="eta"><div id="el"></div><div id="ev"></div><div id="es"></div></div>
+<div id="st"></div>
+<div id="it"></div>
+<div class="mt" id="mt"></div>
+<div id="fw" hidden><div id="fs"><b id="fb"></b><span id="fu"></span></div><div class="nt"><svg viewBox="0 0 24 24"><path d="M6 11h12v9H6zm3 0V8a3 3 0 0 1 6 0v3"/></svg>Live status and details stay in the chat with the shop</div><button id="ob"></button></div>
+<div class="ac" id="ac"><button id="cx"></button><span id="ms"></span></div>
+</div>
+<script>
+const T=window.TelegramWidget,$=i=>document.getElementById(i),
+J=(s,d)=>{try{return s?JSON.parse(s):d}catch(e){return d}},
+H=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';'),
+fw=T&&T.isForward,can=T&&T.viewer&&!fw,
+ic=d=>'<svg viewBox="0 0 24 24"><path d="'+d+'"/></svg>',
+hap=k=>{try{const h=T.HapticFeedback;k?h.notificationOccurred(k):h.impactOccurred('light')}catch(e){}},
+L=[['Estimated delivery','The shop has your order'],['Estimated delivery','Your order is being prepared'],['Arriving at','The courier is on the way'],['Delivered at','Enjoy your order']],
+E={NOT_ALLOWED:'Not available here',BUSY:'Still waiting…',RATE_LIMITED:'Too many tries',TIMEOUT:'No answer, try again',FAILED:"Couldn't reach the shop",INVALID_ANSWER:'Unexpected answer'};
+let P,C,cs,busy=0,arm=0,at,msg='',bad=0,on=0;
+const N=['Placed','Cooking','On the way','Delivered'];
+$('st').innerHTML='<i class="tr"><i id="fl"></i></i>'+N.map(n=>'<div class="s"><b>'+ic('M6.5 12.5l3.5 3.5 7.5-8')+'</b>'+n+'</div>').join('');
+const steps=[...document.querySelectorAll('.s')],live=()=>can&&!(P.st<0||P.st>2);
+function load(){
+P=J(T&&T.publicData,{});
+C=J(T&&T.chatData,null);
+}
+function set(id,v){
+const e=$(id);
+if(e.textContent==v)return;
+if(on)e.className=e.className=='u'?'v':'u';
+e.textContent=v;
+}
+function draw(){
+const st=P.st,x=st<0,k=st>=0&&st<4,f=L[st],s=JSON.stringify(C),it=C&&C.items||[],m=c=>(C.cur||'')+(c/100).toFixed(2);
+$('w').className=(x?'x':'')+(busy?' bz':'')+(fw?' f':'');
+$('em').textContent=P.e||'🛍️';
+$('sh').textContent=P.shop||'Your order';
+$('oi').textContent=P.id?'Order '+P.id:'Waiting for the shop…';
+$('el').textContent=x?'Status':f?f[0]:L[0][0];
+set('ev',x?'Cancelled':k&&P.eta||'');
+set('es',f?f[1]:'');
+steps.forEach((e,i)=>e.className='s'+(!k?'':i<st||st==3?' d':i==st?' c':''));
+$('fl').style.width=k?st*100/3+'%':'0';
+if(s!=cs){
+cs=s;
+$('it').innerHTML=it.length?it.slice(0,it.length>5?4:5).map(r=>'<p><span><i>'+(+r[1])+'×</i> '+H(r[0])+'</span><b>'+m(r[1]*r[2])+'</b></p>').join('')+(it.length>5?'<p><i>+'+(it.length-4)+' more</i></p>':'')+'<p class="to"><span>Total</span><b>'+m(it.reduce((a,r)=>a+r[1]*r[2],0))+'</b></p>':'';
+$('mt').innerHTML=C?(C.addr?'<p>'+ic('M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zm0-11h.01')+H(C.addr)+'</p>':'')+(C.pay?'<p>'+ic('M3 6h18v12H3zm0 4h18')+'Paid with '+H(C.pay)+'</p>':''):'';
+}
+$('it').hidden=fw||!it.length;
+$('mt').hidden=fw;
+$('fw').hidden=!fw;
+$('st').hidden=$('eta').hidden=fw;
+$('fb').textContent=x?'Cancelled':k?N[st]:'Placed';
+$('fu').textContent=P.u?'as of '+P.u:'when shared';
+$('ob').hidden=!P.bot;
+$('ob').textContent='Open @'+P.bot;
+$('ac').hidden=$('rf').hidden=!live();
+$('cx').hidden=!(st>=0&&st<2);
+$('cx').textContent=busy=='order:cancel'?'Cancelling…':arm?'Tap again to cancel':'Cancel order';
+$('cx').className=arm||busy=='order:cancel'?'ar':'';
+$('ms').textContent=msg;
+$('ms').className=bad?'er':'';
+on=1;
+}
+const say=(t,e)=>{msg=t;bad=e};
+function ask(d,bg){
+if(!live()||busy)return;
+busy=d;
+if(!bg){hap();say('')}
+draw();
+T.request(d).then(a=>{
+const r=J(a.result,{});
+if(r.err){say(r.err,1);bg||hap('error')}
+else{
+if(r.st!=null)P.st=r.st;
+if(r.eta)P.eta=r.eta;
+say('Updated '+new Date().toLocaleTimeString([],{timeStyle:'short'}));
+bg||hap('success');
+}
+},e=>{
+if(!bg||!/^(NOT_ALLOWED|BUSY|RATE_LIMITED)$/.test(e.code)){say(E[e.code]||E.FAILED,1);bg||hap('error')}
+}).finally(()=>{busy=0;draw()});
+}
+$('rf').onclick=()=>ask('order:refresh');
+$('cx').onclick=()=>{
+if(busy)return;
+clearTimeout(at);
+if(arm){arm=0;return ask('order:cancel')}
+arm=1;say('');
+hap('warning');
+at=setTimeout(()=>{arm=0;draw()},3000);
+draw();
+};
+$('ob').onclick=()=>T.openTelegramLink('https://t.me/'+P.bot);
+load();
+draw();
+if(T){
+const up=()=>{load();draw()};
+T.onEvent('publicDataChanged',up);
+T.onEvent('chatDataChanged',up);
+T.onEvent('activated',()=>ask('order:poll',1));
+ask('order:poll',1);
+}
+</script>

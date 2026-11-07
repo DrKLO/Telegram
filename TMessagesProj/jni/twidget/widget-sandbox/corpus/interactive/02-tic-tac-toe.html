@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="tw-bot" content="tictactoe">
+<style>
+  body { text-align: center; }
+  #status { margin: 0 0 8px; font-weight: 600; }
+  #grid { display: inline-grid; grid-template-columns: repeat(3, 64px); gap: 6px; }
+  #grid button { width: 64px; height: 64px; padding: 0; font: 600 30px/1 system-ui, sans-serif; border-radius: 12px; }
+  .x { color: var(--tg-theme-button-color); }
+  .o { color: var(--tg-theme-destructive-text-color); }
+  .win { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); }
+  #new { margin-top: 10px; }
+  #note { margin-top: 6px; color: var(--tg-theme-hint-color); font-size: .87em; }
+</style></head>
+<body>
+<p id="status"></p>
+<div id="grid"></div>
+<div><button id="new">New game</button></div>
+<div id="note"></div>
+<script>
+var T = TelegramWidget, waiting = false;
+var LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+// The game is the bot's: chatData {b: 9 cells of x, o, -, s: play | x | o | draw}; a forward shows publicData, the last finished game.
+function game() {
+  try { return JSON.parse((T.isForward ? T.publicData : T.chatData) || 'null'); } catch (e) { return null; }
+}
+function render() {
+  var g = game() || { b: '---------', s: T.isForward ? 'none' : 'play' };
+  var line = LINES.filter(function (l) { return g.b[l[0]] !== '-' && g.b[l[0]] === g.b[l[1]] && g.b[l[0]] === g.b[l[2]]; })[0] || [];
+  var grid = document.getElementById('grid');
+  grid.textContent = '';
+  for (var i = 0; i < 9; i++) (function (i) {
+    var b = document.createElement('button'), c = g.b[i];
+    b.textContent = c === '-' ? '' : c === 'x' ? '✕' : '◯';
+    b.className = (c === '-' ? '' : c) + (line.indexOf(i) >= 0 ? ' win' : '');
+    b.addEventListener('click', function () { if (c === '-') send('move:' + i); });
+    grid.appendChild(b);
+  })(i);
+  document.getElementById('status').textContent = waiting ? 'The bot is thinking…' : g.s === 'play' ? 'Your move: ✕' : g.s === 'x' ? 'You win!' : g.s === 'o' ? 'The bot wins' : g.s === 'draw' ? 'Draw' : 'No finished game yet';
+  document.getElementById('new').style.display = T.isForward ? 'none' : '';
+  document.getElementById('note').textContent = T.isForward ? 'A forwarded copy: the game as it ended. Play in the chat with the bot.' : '';
+}
+function send(data) {
+  if (T.isForward || waiting) return;
+  waiting = true;
+  render();
+  T.request(data).then(function () { waiting = false; render(); }, function (e) { waiting = false; render(); document.getElementById('note').textContent = 'Not sent: ' + e.code; });
+}
+document.getElementById('new').addEventListener('click', function () { send('reset'); });
+T.onEvent('chatDataChanged', render);
+T.onEvent('publicDataChanged', render);
+render();
+</script>
+</body></html>

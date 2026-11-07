@@ -6,6 +6,7 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
+import android.graphics.PorterDuff;
 import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -46,6 +47,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.DialogCell;
 
 import java.util.ArrayList;
@@ -405,19 +407,38 @@ public class LinkActionView extends LinearLayout {
         }
     }
 
+    private boolean colorsBound;
+
     public void updateColors() {
-        copyView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        shareView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        removeView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        copyView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        shareView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-        removeView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_chat_attachAudioBackground), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
-        frameLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_graySection), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), (int) (255 * 0.3f))));
-        linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        optionsView.setColorFilter(Theme.getColor(Theme.key_dialogTextGray3));
+        if (colorsBound) {
+            // already bound (callers run this on every theme frame): recolor in place, no new drawables
+            ThemeBind.update(copyView);
+            ThemeBind.update(shareView);
+            ThemeBind.update(removeView);
+            ThemeBind.update(frameLayout);
+            ThemeBind.update(linkView);
+            ThemeBind.update(optionsView);
+            ThemeBind.update(avatarsContainer.countTextView);
+            ThemeBind.update(avatarsContainer);
+            if (qrCodeBottomSheet != null) {
+                qrCodeBottomSheet.updateColors();
+            }
+            return;
+        }
+        colorsBound = true;
+        // bindings: re-applied on theme switches
+        ThemeBind.textColor(copyView, Theme.key_featuredStickers_buttonText);
+        ThemeBind.textColor(shareView, Theme.key_featuredStickers_buttonText);
+        ThemeBind.textColor(removeView, Theme.key_featuredStickers_buttonText);
+        ThemeBind.selectorBackground(copyView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed));
+        ThemeBind.selectorBackground(shareView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed));
+        ThemeBind.selectorBackground(removeView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_chat_attachAudioBackground), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)), ThemeBind.of(Theme.key_chat_attachAudioBackground), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120));
+        ThemeBind.selectorBackground(frameLayout, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(21), Theme.getColor(Theme.key_graySection), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector), (int) (255 * 0.3f))), ThemeBind.of(Theme.key_graySection), ThemeBind.alpha(Theme.key_listSelector, (int) (255 * 0.3f)));
+        ThemeBind.textColor(linkView, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.colorFilter(optionsView, Theme.key_dialogTextGray3, PorterDuff.Mode.SRC_ATOP);
         //optionsView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
-        avatarsContainer.countTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
-        avatarsContainer.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText), (int) (255 * 0.3f))));
+        ThemeBind.textColor(avatarsContainer.countTextView, Theme.key_windowBackgroundWhiteBlueText);
+        ThemeBind.selectorBackground(avatarsContainer, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText), (int) (255 * 0.3f))), null, ThemeBind.alpha(Theme.key_windowBackgroundWhiteBlueText, (int) (255 * 0.3f)));
 
         if (qrCodeBottomSheet != null) {
             qrCodeBottomSheet.updateColors();
@@ -519,7 +540,7 @@ public class LinkActionView extends LinearLayout {
         AlertDialog dialog = builder.create();
         TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+            ThemeBind.textColor(button, Theme.key_text_RedBold);
         }
         builder.show();
     }

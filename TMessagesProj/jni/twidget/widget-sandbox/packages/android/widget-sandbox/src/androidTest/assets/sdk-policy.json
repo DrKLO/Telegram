@@ -1,0 +1,1069 @@
+{
+  "_": "Shared fixture for src/shared/sdk-policy.ts, ios SdkPolicy.swift, android SdkPolicy.kt and desktop sdk_policy.cpp (copies made by scripts/build-native-bundles.ts). links: checkLink(method, url) → the URL opened or null. haptics: checkHaptic(args). bridge: checkBridgeCall(method, args) → the action (or, for setResizeAnchor, the anchor the host keeps: {kind: \"setResizeAnchor\", edge}; for watchPublicData, whether the widget watches its shared public_data: {kind: \"watchPublicData\", on}) or null. hapticGate: steps on one HapticGate: decide(at, visible) → play | drop | report, or touch down / up: press(at) / release(at), the host's trusted presses. A touch (a finger down, then 5 s after it is lifted) lets haptics through under the rate limit; outside one the first call opens a series whose first second passes, the next series needs a touch or 10 s since the last began; a press with no release counts as lifted 30 s after it began. themeParams: checkThemeParams(input). locales: checkLocale(input). storage: checkStorageCommit(input) → the commit or null; strings in `repeat` are expanded (s repeated n times) before the check. utf8: utf8Length(s). The bot's data and requests: bridge has request ([id, data] or [id, data, options]: id 1–2147483647, data 1–64 UTF-8 bytes, options an object with at most wallet, a boolean or null; wallet: true is kept as wallet: true, nothing else), wallet ([id, method, argument, data]: sendTransaction with a transaction or signData with a payload as walletTransactions and signDataPayloads check them, data as a request's) and copyText ([text]: 1–256 UTF-16 code units). widgetData: checkWidgetData(input, copy) → {chatData, publicData, rejected}: each field text of 1–1024 UTF-8 bytes without a NUL or null, the empty string null, a broken field null and listed in rejected (chatData then publicData), a copy drops chatData without listing it. viewer: checkViewer(input) → {viewer, rejected}: the input and the viewer have the widget's field names (Mini Apps' WebAppUser: id, first_name, last_name, username, is_premium); no viewer (null) without an integer id of 1 to 2^53 − 1; a name is 1–64 UTF-16 code units, a username 5–32 characters of A–Z, a–z, 0–9 and _, is_premium kept only when true; a field that breaks its rule is left out and listed in rejected (first_name, last_name, username, is_premium); strings in `repeat` are expanded. chatType: checkChatType(input). answers: checkRequestAnswer(input) → {result} or null when result is over 1024 bytes or has a NUL (an absent result is null). requestGate: steps on one RequestGate, decide(at, {gesture, visible, canQuery, backgroundQuery, withWallet, wallet}) → foreground | background | held | disabled | no-wallet | busy | no-activation | rate-limited, decideWallet(at, {gesture, visible, canQuery, wallet}) → foreground | granted | disabled | no-wallet | busy | no-activation, finish() or finish(answeredAt) (an answer with no error reached the widget then: after a call that went out on a press or the grant it grants one wallet call within 10 s; any call that goes out on a press or the grant uses the grant up; withWallet and wallet absent are false), or show(at) → expect (the widget appeared on screen: its next background request may go out at once; true when the request held while it was off screen goes out now). requestRefusals: requestRefusal(verdict) → the error code or null. previewMethods: allowedInPreview(method) → whether a preview (an inline result not sent yet) may make that bridge call: only ready and setResizeAnchor (a preview never watches its public_data). walletTransactions: checkWalletTransaction(input) → the transaction or null: TON Connect's sendTransaction fields only (valid_until, network, from, messages), 1–255 messages of address, amount, payload, stateInit; valid_until an integer of 1 to 2^32 − 1, network -239 or -3, from raw (0: or -1: and 64 hex digits) or user-friendly (48 characters of base64 or base64url), a message's address user-friendly only, an amount a decimal string of at most 37 digits without a leading zero, payload and stateInit base64 of at most 8192 characters each and 65536 together; null fields are left out. signDataPayloads: checkSignDataPayload(input) → the payload or null: type text (text, 1–4096 UTF-8 bytes, no NUL), binary (bytes, base64 of at most 4096 characters) or cell (schema, 1–1024 UTF-8 bytes, and cell, base64 of at most 4096 characters), with only its own fields and optionally network and from as a transaction's; null fields are left out; strings in `repeat` are expanded in both. Inputs here are typed as the native hosts take them (strings or null, integer ids). No lone surrogates here: they cannot cross every platform's string type unchanged.",
+  "links": [
+    { "method": "openLink", "url": "https://example.com/", "expect": "https://example.com/" },
+    { "method": "openLink", "url": "https://example.com", "expect": "https://example.com" },
+    { "method": "openLink", "url": "HTTPS://Example.COM/Path?Q=1#Frag", "expect": "https://example.com/Path?Q=1#Frag" },
+    { "method": "openLink", "url": "https://example.com:8443/a", "expect": "https://example.com:8443/a" },
+    { "method": "openLink", "url": "https://example.com:65535/", "expect": "https://example.com:65535/" },
+    { "method": "openLink", "url": "https://example.com:65536/", "expect": null },
+    { "method": "openLink", "url": "https://example.com:/", "expect": null },
+    { "method": "openLink", "url": "https://example.com:12a/", "expect": null },
+    { "method": "openLink", "url": "https://example.com:123456/", "expect": null },
+    { "method": "openLink", "url": "https://example.com?x=1", "expect": "https://example.com?x=1" },
+    { "method": "openLink", "url": "https://example.com#top", "expect": "https://example.com#top" },
+    { "method": "openLink", "url": "https://xn--80ak6aa92e.com/", "expect": "https://xn--80ak6aa92e.com/" },
+    { "method": "openLink", "url": "https://192.168.0.1/", "expect": "https://192.168.0.1/" },
+    { "method": "openLink", "url": "https://a-b.example/x", "expect": "https://a-b.example/x" },
+    { "method": "openLink", "url": "http://example.com/", "expect": null },
+    { "method": "openLink", "url": "javascript:alert(1)", "expect": null },
+    { "method": "openLink", "url": "tg://resolve?domain=x", "expect": null },
+    { "method": "openLink", "url": "//example.com/", "expect": null },
+    { "method": "openLink", "url": " https://example.com/", "expect": null },
+    { "method": "openLink", "url": "https:example.com", "expect": null },
+    { "method": "openLink", "url": "https:/example.com", "expect": null },
+    { "method": "openLink", "url": "https://", "expect": null },
+    { "method": "openLink", "url": "https:///path", "expect": null },
+    { "method": "openLink", "url": "https://user:pass@example.com/", "expect": null },
+    { "method": "openLink", "url": "https://user@example.com/", "expect": null },
+    { "method": "openLink", "url": "https://example.com/@x", "expect": "https://example.com/@x" },
+    {
+      "method": "openLink",
+      "url": "https://[::1]/",
+      "expect": null
+    },
+    { "method": "openLink", "url": "https://exa_mple.com/", "expect": null },
+    { "method": "openLink", "url": "https://-example.com/", "expect": null },
+    { "method": "openLink", "url": "https://example-.com/", "expect": null },
+    { "method": "openLink", "url": "https://example..com/", "expect": null },
+    { "method": "openLink", "url": "https://example.com./", "expect": null },
+    { "method": "openLink", "url": "https://.example.com/", "expect": null },
+    { "method": "openLink", "url": "https://exa\\mple.com/", "expect": null },
+    { "method": "openLink", "url": "https://example.com\\@t.me/", "expect": null },
+    { "method": "openLink", "url": "https://пример.рф/", "expect": null },
+    { "method": "openLink", "url": "https://Kelvin.com/", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a b", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a\tb", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a\"b", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a<b>", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a\\b", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a^b", "expect": null },
+    { "method": "openLink", "url": "https://example.com/a`b", "expect": null },
+    {
+      "method": "openLink",
+      "url": "https://example.com/a{b}",
+      "expect": null
+    },
+    { "method": "openLink", "url": "https://example.com/a|b", "expect": null },
+    { "method": "openLink", "url": "https://example.com/", "expect": null },
+    { "method": "openLink", "url": "https://example.com/%41%2f", "expect": "https://example.com/%41%2f" },
+    { "method": "openLink", "url": "https://example.com/%4", "expect": null },
+    { "method": "openLink", "url": "https://example.com/%zz", "expect": null },
+    { "method": "openLink", "url": "https://example.com/100%", "expect": null },
+    {
+      "method": "openLink",
+      "url": "https://example.com/a-._~:/?#[]@!$&'()*+,;=",
+      "expect": "https://example.com/a-._~:/?#[]@!$&'()*+,;="
+    },
+    { "method": "openLink", "url": "https://example.com/поиск?q=ё", "expect": "https://example.com/%D0%BF%D0%BE%D0%B8%D1%81%D0%BA?q=%D1%91" },
+    { "method": "openLink", "url": "https://example.com/é", "expect": "https://example.com/%C3%A9" },
+    { "method": "openLink", "url": "https://example.com/€", "expect": "https://example.com/%E2%82%AC" },
+    { "method": "openLink", "url": "https://example.com/😀", "expect": "https://example.com/%F0%9F%98%80" },
+    { "method": "openLink", "url": "https://example.com/ ", "expect": "https://example.com/%C2%A0" },
+    { "method": "openLink", "url": "https://t.me/durov", "expect": null },
+    { "method": "openLink", "url": "https://T.ME/durov", "expect": null },
+    { "method": "openLink", "url": "https://telegram.me/x", "expect": null },
+    { "method": "openLink", "url": "https://telegram.dog/x", "expect": null },
+    { "method": "openLink", "url": "https://durov.t.me/", "expect": null },
+    { "method": "openLink", "url": "https://t.me:443/x", "expect": null },
+    { "method": "openLink", "url": "https://t.me.example.com/", "expect": "https://t.me.example.com/" },
+    { "method": "openLink", "url": "https://at.me/", "expect": "https://at.me/" },
+    { "method": "openLink", "url": "https://nottelegram.me/", "expect": "https://nottelegram.me/" },
+    { "method": "openTelegramLink", "url": "https://t.me/durov", "expect": "https://t.me/durov" },
+    { "method": "openTelegramLink", "url": "https://T.Me/Durov", "expect": "https://t.me/Durov" },
+    { "method": "openTelegramLink", "url": "https://t.me", "expect": "https://t.me" },
+    { "method": "openTelegramLink", "url": "https://t.me/proxy?server=1.2.3.4&port=443&secret=00", "expect": "https://t.me/proxy?server=1.2.3.4&port=443&secret=00" },
+    { "method": "openTelegramLink", "url": "https://t.me/+AbCdEf", "expect": "https://t.me/+AbCdEf" },
+    { "method": "openTelegramLink", "url": "https://telegram.me/x", "expect": "https://telegram.me/x" },
+    { "method": "openTelegramLink", "url": "https://telegram.dog/x", "expect": "https://telegram.dog/x" },
+    { "method": "openTelegramLink", "url": "https://durov.t.me/", "expect": "https://durov.t.me/" },
+    { "method": "openTelegramLink", "url": "https://t.me/канал", "expect": "https://t.me/%D0%BA%D0%B0%D0%BD%D0%B0%D0%BB" },
+    { "method": "openTelegramLink", "url": "http://t.me/durov", "expect": null },
+    { "method": "openTelegramLink", "url": "tg://resolve?domain=durov", "expect": null },
+    { "method": "openTelegramLink", "url": "https://example.com/", "expect": null },
+    { "method": "openTelegramLink", "url": "https://t.me.example.com/", "expect": null },
+    { "method": "openTelegramLink", "url": "https://at.me/", "expect": null },
+    { "method": "openTelegramLink", "url": "https://user@t.me/x", "expect": null },
+    { "method": "openTelegramLink", "url": "https://t.me./x", "expect": null },
+    { "method": "openLink", "url": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "expect": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "note": "exactly 256 characters" },
+    { "method": "openLink", "url": "https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "expect": null, "note": "257 characters" },
+    { "method": "openLink", "url": "https://example.com/éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé", "expect": null, "note": "122 characters, 224 UTF-8 bytes, 632 once encoded" },
+    { "method": "openLink", "url": "https://example.com/ééééééééééééééééééééééééééééééééééééééé", "expect": "https://example.com/%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9", "note": "254 characters once encoded" },
+    { "method": "openLink", "url": "https://example.com/éééééééééééééééééééééééééééééééééééééééé", "expect": null, "note": "260 characters once encoded" },
+    { "method": "openLink", "url": 42, "expect": null },
+    { "method": "openLink", "url": null, "expect": null }
+  ],
+  "haptics": [
+    {
+      "args": [
+        "impact",
+        "light"
+      ],
+      "expect": {
+        "haptic": "impact",
+        "value": "light"
+      }
+    },
+    {
+      "args": [
+        "impact",
+        "medium"
+      ],
+      "expect": {
+        "haptic": "impact",
+        "value": "medium"
+      }
+    },
+    {
+      "args": [
+        "impact",
+        "heavy"
+      ],
+      "expect": {
+        "haptic": "impact",
+        "value": "heavy"
+      }
+    },
+    {
+      "args": [
+        "impact",
+        "rigid"
+      ],
+      "expect": {
+        "haptic": "impact",
+        "value": "rigid"
+      }
+    },
+    {
+      "args": [
+        "impact",
+        "soft"
+      ],
+      "expect": {
+        "haptic": "impact",
+        "value": "soft"
+      }
+    },
+    {
+      "args": [
+        "notification",
+        "error"
+      ],
+      "expect": {
+        "haptic": "notification",
+        "value": "error"
+      }
+    },
+    {
+      "args": [
+        "notification",
+        "success"
+      ],
+      "expect": {
+        "haptic": "notification",
+        "value": "success"
+      }
+    },
+    {
+      "args": [
+        "notification",
+        "warning"
+      ],
+      "expect": {
+        "haptic": "notification",
+        "value": "warning"
+      }
+    },
+    {
+      "args": [
+        "selection"
+      ],
+      "expect": {
+        "haptic": "selection"
+      }
+    },
+    {
+      "args": [
+        "impact"
+      ],
+      "expect": null
+    },
+    {
+      "args": [
+        "impact",
+        "Light"
+      ],
+      "expect": null
+    },
+    {
+      "args": [
+        "impact",
+        "light",
+        "x"
+      ],
+      "expect": null
+    },
+    {
+      "args": [
+        "notification",
+        "light"
+      ],
+      "expect": null
+    },
+    {
+      "args": [
+        "selection",
+        "light"
+      ],
+      "expect": null
+    },
+    {
+      "args": [
+        "vibrate",
+        200
+      ],
+      "expect": null
+    },
+    {
+      "args": [],
+      "expect": null
+    },
+    { "args": "impact", "expect": null }
+  ],
+  "bridge": [
+    {
+      "method": "ready",
+      "args": [],
+      "expect": {
+        "kind": "ready"
+      }
+    },
+    {
+      "method": "ready",
+      "args": [
+        "x"
+      ],
+      "expect": null
+    },
+    {
+      "method": "openLink",
+      "args": [
+        "https://example.com/"
+      ],
+      "expect": {
+        "kind": "openLink",
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "method": "openLink",
+      "args": [
+        "https://t.me/x"
+      ],
+      "expect": null
+    },
+    {
+      "method": "openLink",
+      "args": [],
+      "expect": null
+    },
+    {
+      "method": "openLink",
+      "args": [
+        "https://example.com/",
+        "x"
+      ],
+      "expect": null
+    },
+    {
+      "method": "openTelegramLink",
+      "args": [
+        "https://t.me/x"
+      ],
+      "expect": {
+        "kind": "openTelegramLink",
+        "url": "https://t.me/x"
+      }
+    },
+    {
+      "method": "openTelegramLink",
+      "args": [
+        "https://example.com/"
+      ],
+      "expect": null
+    },
+    {
+      "method": "haptic",
+      "args": [
+        "impact",
+        "heavy"
+      ],
+      "expect": {
+        "kind": "haptic",
+        "haptic": "impact",
+        "value": "heavy"
+      }
+    },
+    {
+      "method": "haptic",
+      "args": [
+        "selection"
+      ],
+      "expect": {
+        "kind": "haptic",
+        "haptic": "selection"
+      }
+    },
+    {
+      "method": "haptic",
+      "args": [
+        "impact",
+        "loud"
+      ],
+      "expect": null
+    },
+    {
+      "method": "sendMessage",
+      "args": [
+        "hi"
+      ],
+      "expect": null
+    },
+    {
+      "method": "alert",
+      "args": [
+        "hi"
+      ],
+      "expect": null
+    },
+    {
+      "method": "clipboard",
+      "args": [
+        "hi"
+      ],
+      "expect": null
+    },
+    {
+      "method": "openInvoice",
+      "args": [
+        "x"
+      ],
+      "expect": null
+    },
+    { "method": "ready", "args": "x", "expect": null },
+    {
+      "method": 7,
+      "args": [],
+      "expect": null
+    },
+    { "method": "setResizeAnchor", "args": ["top"], "expect": { "kind": "setResizeAnchor", "edge": "top" } },
+    { "method": "setResizeAnchor", "args": ["bottom"], "expect": { "kind": "setResizeAnchor", "edge": "bottom" } },
+    { "method": "setResizeAnchor", "args": [], "expect": null },
+    { "method": "setResizeAnchor", "args": ["bottom", "top"], "expect": null },
+    { "method": "setResizeAnchor", "args": ["Bottom"], "expect": null },
+    { "method": "setResizeAnchor", "args": [" top"], "expect": null },
+    { "method": "setResizeAnchor", "args": ["left"], "expect": null },
+    { "method": "watchPublicData", "args": [true], "expect": {"kind": "watchPublicData", "on": true} },
+    { "method": "watchPublicData", "args": [false], "expect": {"kind": "watchPublicData", "on": false} },
+    { "method": "watchPublicData", "args": [], "expect": null },
+    { "method": "watchPublicData", "args": ["true"], "expect": null },
+    { "method": "watchPublicData", "args": [1], "expect": null },
+    { "method": "watchPublicData", "args": [true, false], "expect": null },
+    { "method": "setResizeAnchor", "args": ["center"], "expect": null },
+    { "method": "setResizeAnchor", "args": [""], "expect": null },
+    { "method": "setResizeAnchor", "args": [1], "expect": null },
+    { "method": "setResizeAnchor", "args": [null], "expect": null },
+    { "method": "setResizeAnchor", "args": [true], "expect": null },
+    { "method": "setResizeAnchor", "args": [["top"]], "expect": null },
+    { "method": "setResizeAnchor", "args": [{ "edge": "top" }], "expect": null },
+    { "method": "setResizeAnchor", "args": "bottom", "expect": null },
+    { "method": "setresizeanchor", "args": ["top"], "expect": null },
+    {"method": "request", "args": [1, "vote:1"], "expect": {"kind": "request", "id": 1, "data": "vote:1"}},
+    {"method": "request", "args": [2147483647, "x"], "expect": {"kind": "request", "id": 2147483647, "data": "x"}},
+    {"method": "request", "args": [7, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"], "expect": {"kind": "request", "id": 7, "data": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}},
+    {"method": "request", "args": [7, "жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж"], "expect": {"kind": "request", "id": 7, "data": "жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж"}},
+    {"method": "request", "args": [7, "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"], "expect": {"kind": "request", "id": 7, "data": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"}},
+    {"method": "request", "args": [7, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"], "expect": null},
+    {"method": "request", "args": [7, "жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжa"], "expect": null},
+    {"method": "request", "args": [7, ""], "expect": null},
+    {"method": "request", "args": [0, "x"], "expect": null},
+    {"method": "request", "args": [-1, "x"], "expect": null},
+    {"method": "request", "args": [2147483648, "x"], "expect": null},
+    {"method": "request", "args": [1.5, "x"], "expect": null},
+    {"method": "request", "args": ["1", "x"], "expect": null},
+    {"method": "request", "args": [1, 5], "expect": null},
+    {"method": "request", "args": [1, null], "expect": null},
+    {"method": "request", "args": [1], "expect": null},
+    {"method": "request", "args": ["x"], "expect": null},
+    {"method": "request", "args": [1, "x", "y"], "expect": null},
+    {"method": "request", "args": "x", "expect": null},
+    {"method": "Request", "args": [1, "x"], "expect": null},
+    {"method": "copyText", "args": ["hello"], "expect": {"kind": "copyText", "text": "hello"}},
+    {"method": "copyText", "args": ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"], "expect": {"kind": "copyText", "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}},
+    {"method": "copyText", "args": ["жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж"], "expect": {"kind": "copyText", "text": "жжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжжж"}},
+    {"method": "copyText", "args": ["😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"], "expect": {"kind": "copyText", "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"}},
+    {"method": "copyText", "args": ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"], "expect": null},
+    {"method": "copyText", "args": ["😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀a"], "expect": null},
+    {"method": "copyText", "args": [""], "expect": null},
+    {"method": "copyText", "args": [1], "expect": null},
+    {"method": "copyText", "args": [null], "expect": null},
+    {"method": "copyText", "args": ["a", "b"], "expect": null},
+    {"method": "copyText", "args": [], "expect": null},
+    {"method": "copyText", "args": "a", "expect": null},
+    {"method": "copytext", "args": ["a"], "expect": null},
+    {"method": "request", "args": [1, "pay:42", {"wallet": true}], "expect": {"kind": "request", "id": 1, "data": "pay:42", "wallet": true}},
+    {"method": "request", "args": [1, "x", {"wallet": false}], "expect": {"kind": "request", "id": 1, "data": "x"}},
+    {"method": "request", "args": [1, "x", {}], "expect": {"kind": "request", "id": 1, "data": "x"}},
+    {"method": "request", "args": [1, "x", {"wallet": null}], "expect": {"kind": "request", "id": 1, "data": "x"}},
+    {"method": "request", "args": [1, "x", {"wallet": 1}], "expect": null},
+    {"method": "request", "args": [1, "x", {"wallet": true, "balance": true}], "expect": null},
+    {"method": "request", "args": [1, "x", null], "expect": null},
+    {"method": "request", "args": [1, "x", [true]], "expect": null},
+    {"method": "request", "args": [1, "", {"wallet": true}], "expect": null},
+    {"method": "wallet", "args": [3, "sendTransaction", {"valid_until": 1900000000, "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "pay:42"], "expect": {"kind": "wallet", "id": 3, "call": {"method": "sendTransaction", "transaction": {"valid_until": 1900000000, "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "data": "pay:42"}}},
+    {"method": "wallet", "args": [3, "sendTransaction", {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": null}]}, "pay:42"], "expect": {"kind": "wallet", "id": 3, "call": {"method": "sendTransaction", "transaction": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "data": "pay:42"}}},
+    {"method": "wallet", "args": [4, "signData", {"type": "text", "text": "I agree"}, "sign:1"], "expect": {"kind": "wallet", "id": 4, "call": {"method": "signData", "payload": {"type": "text", "text": "I agree"}, "data": "sign:1"}}},
+    {"method": "wallet", "args": [4, "sendTransaction", {"messages": [{"address": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8", "amount": "1"}]}, "x"], "expect": null},
+    {"method": "wallet", "args": [4, "signMessage", {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "x"], "expect": null},
+    {"method": "wallet", "args": [4, "sendTransaction", {"messages": []}, "x"], "expect": null},
+    {"method": "wallet", "args": [4, "signData", {"type": "text", "text": "x"}, ""], "expect": null},
+    {"method": "wallet", "args": [4, "signData", {"type": "text", "text": "x"}, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"], "expect": null},
+    {"method": "wallet", "args": [4, "signData", {"type": "text", "text": "x"}], "expect": null},
+    {"method": "wallet", "args": [0, "signData", {"type": "text", "text": "x"}, "x"], "expect": null},
+    {"method": "wallet", "args": [4, "signData", {"type": "text", "text": "x"}, "x", "y"], "expect": null},
+    {"method": "wallet", "args": "x", "expect": null}
+  ],
+  "hapticGate": [
+    {
+      "name": "a burst of 5, then one every 100 ms",
+      "steps": [
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 0, "visible": true, "expect": "report" },
+        { "at": 50, "visible": true, "expect": "drop" },
+        { "at": 100, "visible": true, "expect": "play" },
+        { "at": 150, "visible": true, "expect": "drop" },
+        { "at": 199, "visible": true, "expect": "drop" },
+        { "at": 300, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "play" },
+        { "at": 999, "visible": true, "expect": "drop" },
+        { "at": 1000, "visible": true, "expect": "report" }
+      ]
+    },
+    {
+      "name": "the bucket refills to 5, not beyond",
+      "steps": [
+        { "at": 0, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "play" },
+        { "at": 10000, "visible": true, "expect": "report" }
+      ]
+    },
+    {
+      "name": "hidden: dropped without using the bucket, reported once per second",
+      "steps": [
+        { "at": 0, "visible": false, "expect": "report" },
+        { "at": 10, "visible": false, "expect": "drop" },
+        { "at": 20, "visible": true, "expect": "play" },
+        { "at": 20, "visible": true, "expect": "play" },
+        { "at": 20, "visible": true, "expect": "play" },
+        { "at": 20, "visible": true, "expect": "play" },
+        { "at": 20, "visible": true, "expect": "play" },
+        { "at": 20, "visible": true, "expect": "drop" },
+        { "at": 1500, "visible": false, "expect": "report" }
+      ]
+    },
+    {
+      "name": "a clock that goes back refills nothing",
+      "steps": [
+        { "at": 1000, "visible": true, "expect": "play" },
+        { "at": 1000, "visible": true, "expect": "play" },
+        { "at": 1000, "visible": true, "expect": "play" },
+        { "at": 1000, "visible": true, "expect": "play" },
+        { "at": 1000, "visible": true, "expect": "play" },
+        { "at": 500, "visible": true, "expect": "report" },
+        { "at": 600, "visible": true, "expect": "play" }
+      ]
+    },
+    {"name": "the bug: a timer with no touch gets one second of haptics, then nothing for 9 s, then another second", "steps": [{"at": 0, "visible": true, "expect": "play"}, {"at": 0, "visible": true, "expect": "play"}, {"at": 0, "visible": true, "expect": "play"}, {"at": 0, "visible": true, "expect": "play"}, {"at": 0, "visible": true, "expect": "play"}, {"at": 0, "visible": true, "expect": "report"}, {"at": 100, "visible": true, "expect": "play"}, {"at": 500, "visible": true, "expect": "play"}, {"at": 999, "visible": true, "expect": "play"}, {"at": 1000, "visible": true, "expect": "report"}, {"at": 1500, "visible": true, "expect": "drop"}, {"at": 5000, "visible": true, "expect": "report"}, {"at": 9999, "visible": true, "expect": "report"}, {"at": 10000, "visible": true, "expect": "play"}, {"at": 10999, "visible": true, "expect": "play"}, {"at": 11000, "visible": true, "expect": "report"}]},
+    {"name": "a slider drag: haptics pass while the finger is down and 5 s after it is lifted, then one series", "steps": [{"at": 0, "touch": "down"}, {"at": 0, "visible": true, "expect": "play"}, {"at": 100, "visible": true, "expect": "play"}, {"at": 200, "visible": true, "expect": "play"}, {"at": 1500, "visible": true, "expect": "play"}, {"at": 3000, "visible": true, "expect": "play"}, {"at": 3000, "touch": "up"}, {"at": 4000, "visible": true, "expect": "play"}, {"at": 8000, "visible": true, "expect": "play"}, {"at": 8500, "visible": true, "expect": "play"}, {"at": 9400, "visible": true, "expect": "play"}, {"at": 9600, "visible": true, "expect": "report"}, {"at": 12000, "touch": "down"}, {"at": 12000, "visible": true, "expect": "play"}, {"at": 12100, "touch": "up"}]},
+    {"name": "one series after a tap, even 10 s later; the next needs a touch or 10 s", "steps": [{"at": 0, "touch": "down"}, {"at": 100, "touch": "up"}, {"at": 20000, "visible": true, "expect": "play"}, {"at": 20500, "visible": true, "expect": "play"}, {"at": 21500, "visible": true, "expect": "report"}, {"at": 29999, "visible": true, "expect": "report"}, {"at": 30000, "visible": true, "expect": "play"}]},
+    {"name": "a second series without a touch within 10 s is dropped", "steps": [{"at": 0, "visible": true, "expect": "play"}, {"at": 3000, "visible": true, "expect": "report"}, {"at": 9000, "visible": true, "expect": "report"}, {"at": 10000, "visible": true, "expect": "play"}]},
+    {"name": "hidden: nothing, touch or not", "steps": [{"at": 0, "touch": "down"}, {"at": 0, "visible": false, "expect": "report"}, {"at": 500, "visible": false, "expect": "drop"}, {"at": 600, "touch": "up"}, {"at": 1000, "visible": false, "expect": "report"}, {"at": 1000, "visible": true, "expect": "play"}]},
+    {"name": "a press whose release never came counts as lifted 30 s after it began", "steps": [{"at": 0, "touch": "down"}, {"at": 20000, "visible": true, "expect": "play"}, {"at": 34000, "visible": true, "expect": "play"}, {"at": 36000, "visible": true, "expect": "play"}, {"at": 37500, "visible": true, "expect": "report"}]}
+  ],
+  "themeParams": [
+    {
+      "input": {
+        "bg_color": "#FFFFFF",
+        "text_color": "#000000"
+      },
+      "expect": {
+        "bg_color": "#ffffff",
+        "text_color": "#000000"
+      }
+    },
+    {
+      "input": {
+        "bg_color": "#fff",
+        "text_color": "red",
+        "link_color": "#12345g",
+        "hint_color": " #123456",
+        "button_color": "#abcdef"
+      },
+      "expect": {
+        "button_color": "#abcdef"
+      }
+    },
+    {
+      "input": {
+        "unknown_color": "#123456",
+        "__proto__x": "#123456",
+        "bg_color": 16777215
+      },
+      "expect": {}
+    },
+    {
+      "input": {
+        "bg_color": "#010203",
+        "text_color": "#040506",
+        "hint_color": "#070809",
+        "link_color": "#0a0b0c",
+        "button_color": "#0d0e0f",
+        "button_text_color": "#101112",
+        "secondary_bg_color": "#131415",
+        "accent_text_color": "#161718",
+        "subtitle_text_color": "#191a1b",
+        "destructive_text_color": "#1c1d1e",
+        "section_bg_color": "#1f2021",
+        "section_header_text_color": "#222324",
+        "section_separator_color": "#252627",
+        "header_bg_color": "#28292a",
+        "bottom_bar_bg_color": "#2b2c2d"
+      },
+      "expect": {
+        "bg_color": "#010203",
+        "text_color": "#040506",
+        "hint_color": "#070809",
+        "link_color": "#0a0b0c",
+        "button_color": "#0d0e0f",
+        "button_text_color": "#101112",
+        "secondary_bg_color": "#131415",
+        "accent_text_color": "#161718",
+        "subtitle_text_color": "#191a1b",
+        "destructive_text_color": "#1c1d1e",
+        "section_bg_color": "#1f2021",
+        "section_header_text_color": "#222324",
+        "section_separator_color": "#252627",
+        "header_bg_color": "#28292a",
+        "bottom_bar_bg_color": "#2b2c2d"
+      }
+    },
+    {
+      "input": [
+        "#ffffff"
+      ],
+      "expect": {}
+    },
+    {
+      "input": "bg_color",
+      "expect": {}
+    },
+    {
+      "input": null,
+      "expect": {}
+    }
+  ],
+  "locales": [
+    { "input": "ru", "expect": "ru" },
+    { "input": "en-US", "expect": "en-US" },
+    { "input": "pt-BR", "expect": "pt-BR" },
+    { "input": "zh-Hant-TW", "expect": "zh-Hant-TW" },
+    { "input": "es-419", "expect": "es-419" },
+    { "input": "en_US", "expect": null },
+    { "input": "e", "expect": null },
+    { "input": "", "expect": null },
+    { "input": "en-", "expect": null },
+    { "input": "-en", "expect": null },
+    { "input": "en--US", "expect": null },
+    { "input": "en-US ", "expect": null },
+    { "input": "ру", "expect": null },
+    { "input": "en-abcdefghi", "expect": null },
+    { "input": "en-aaaaaaaa-bbbbbbbb-cccccccc-ddddd", "expect": "en-aaaaaaaa-bbbbbbbb-cccccccc-ddddd", "note": "35 characters" },
+    { "input": "en-aaaaaaaa-bbbbbbbb-cccccccc-dddddd", "expect": null, "note": "36 characters" },
+    { "input": 7, "expect": null }
+  ],
+  "storage": [
+    {
+      "input": {},
+      "expect": {}
+    },
+    {
+      "input": {
+        "local": {}
+      },
+      "expect": {
+        "local": {}
+      }
+    },
+    {
+      "input": {
+        "local": {
+          "a": "1",
+          "b": ""
+        },
+        "session": {
+          "c": "x"
+        }
+      },
+      "expect": {
+        "local": {
+          "a": "1",
+          "b": ""
+        },
+        "session": {
+          "c": "x"
+        }
+      }
+    },
+    {
+      "input": {
+        "local": {
+          "__proto__": "x",
+          "constructor": "y",
+          "toString": "z"
+        }
+      },
+      "expect": {
+        "local": {
+          "__proto__": "x",
+          "constructor": "y",
+          "toString": "z"
+        }
+      },
+      "note": "keys that name Object.prototype members are plain keys"
+    },
+    {
+      "input": {
+        "local": {
+          "a": 1
+        }
+      },
+      "expect": null
+    },
+    {
+      "input": {
+        "local": {
+          "a": null
+        }
+      },
+      "expect": null
+    },
+    {
+      "input": {
+        "local": [
+          "a"
+        ]
+      },
+      "expect": null
+    },
+    {
+      "input": {
+        "local": "a"
+      },
+      "expect": null
+    },
+    {
+      "input": {
+        "cookies": {}
+      },
+      "expect": null
+    },
+    {
+      "input": {
+        "local": {
+          "a": "1"
+        },
+        "session": {
+          "b": 2
+        }
+      },
+      "expect": null,
+      "note": "a commit is checked whole"
+    },
+    {
+      "input": [],
+      "expect": null
+    },
+    { "input": null, "expect": null },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "x",
+              4095
+            ]
+          }
+        }
+      },
+      "expect": {
+        "local": {
+          "k": {
+            "repeat": [
+              "x",
+              4095
+            ]
+          }
+        }
+      },
+      "note": "1 + 4095 = 4096 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "x",
+              4096
+            ]
+          }
+        }
+      },
+      "expect": null,
+      "note": "4097 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "ж",
+              2047
+            ]
+          }
+        }
+      },
+      "expect": {
+        "local": {
+          "k": {
+            "repeat": [
+              "ж",
+              2047
+            ]
+          }
+        }
+      },
+      "note": "1 + 2 × 2047 = 4095 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "kk": {
+            "repeat": [
+              "ж",
+              2048
+            ]
+          }
+        }
+      },
+      "expect": null,
+      "note": "2 + 2 × 2048 = 4098 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "😀",
+              1023
+            ]
+          }
+        }
+      },
+      "expect": {
+        "local": {
+          "k": {
+            "repeat": [
+              "😀",
+              1023
+            ]
+          }
+        }
+      },
+      "note": "1 + 4 × 1023 = 4093 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "😀",
+              1024
+            ]
+          }
+        }
+      },
+      "expect": null,
+      "note": "1 + 4 × 1024 = 4097 bytes"
+    },
+    {
+      "input": {
+        "local": {
+          "k": {
+            "repeat": [
+              "x",
+              4000
+            ]
+          }
+        },
+        "session": {
+          "k": {
+            "repeat": [
+              "x",
+              4000
+            ]
+          }
+        }
+      },
+      "expect": {
+        "local": {
+          "k": {
+            "repeat": [
+              "x",
+              4000
+            ]
+          }
+        },
+        "session": {
+          "k": {
+            "repeat": [
+              "x",
+              4000
+            ]
+          }
+        }
+      },
+      "note": "the quota is per area"
+    }
+  ],
+  "utf8": [
+    { "s": "", "bytes": 0 },
+    { "s": "abc", "bytes": 3 },
+    { "s": "é", "bytes": 2 },
+    { "s": "ж", "bytes": 2 },
+    { "s": "€", "bytes": 3 },
+    { "s": "😀", "bytes": 4 },
+    { "s": "a😀ж€", "bytes": 10 }
+  ],
+  "widgetData": [
+    {"input": {}, "copy": false, "expect": {"chatData": null, "publicData": null, "rejected": []}},
+    {"input": {"chatData": "a", "publicData": "b"}, "copy": false, "expect": {"chatData": "a", "publicData": "b", "rejected": []}},
+    {"input": {"chatData": "a", "publicData": "b"}, "copy": true, "expect": {"chatData": null, "publicData": "b", "rejected": []}, "note": "a copy never has chatData: dropped, not rejected"},
+    {"input": {"chatData": "", "publicData": null}, "copy": false, "expect": {"chatData": null, "publicData": null, "rejected": []}, "note": "the empty string is how the bot clears a field"},
+    {"input": {"chatData": {"repeat": ["x", 1024]}}, "copy": false, "expect": {"chatData": {"repeat": ["x", 1024]}, "publicData": null, "rejected": []}},
+    {"input": {"chatData": {"repeat": ["x", 1025]}, "publicData": "p"}, "copy": false, "expect": {"chatData": null, "publicData": "p", "rejected": ["chatData"]}},
+    {"input": {"publicData": {"repeat": ["ж", 512]}}, "copy": false, "expect": {"chatData": null, "publicData": {"repeat": ["ж", 512]}, "rejected": []}, "note": "1024 bytes"},
+    {"input": {"publicData": {"repeat": ["ж", 513]}}, "copy": false, "expect": {"chatData": null, "publicData": null, "rejected": ["publicData"]}, "note": "1026 bytes"},
+    {"input": {"chatData": {"repeat": ["😀", 256]}, "publicData": {"repeat": ["😀", 257]}}, "copy": false, "expect": {"chatData": {"repeat": ["😀", 256]}, "publicData": null, "rejected": ["publicData"]}},
+    {"input": {"chatData": {"repeat": ["x", 1025]}, "publicData": {"repeat": ["y", 1025]}}, "copy": false, "expect": {"chatData": null, "publicData": null, "rejected": ["chatData", "publicData"]}},
+    {"input": {"chatData": {"repeat": ["x", 1025]}, "publicData": {"repeat": ["y", 1025]}}, "copy": true, "expect": {"chatData": null, "publicData": null, "rejected": ["publicData"]}},
+    {"input": {"chatData": "a\u0000b", "publicData": "\u0000"}, "copy": false, "expect": {"chatData": null, "publicData": null, "rejected": ["chatData", "publicData"]}, "note": "a NUL is not text (the server refuses it): like the other limits"},
+    {"input": {"publicData": "tab\tnewline\nok"}, "copy": false, "expect": {"chatData": null, "publicData": "tab\tnewline\nok", "rejected": []}, "note": "other control characters are text"}
+  ],
+  "viewer": [
+    {"input": {"id": 1}, "expect": {"viewer": {"id": 1}, "rejected": []}},
+    {"input": {"id": 123456789012}, "expect": {"viewer": {"id": 123456789012}, "rejected": []}},
+    {"input": {"id": 9007199254740991}, "expect": {"viewer": {"id": 9007199254740991}, "rejected": []}},
+    {"input": {"id": 9007199254740992}, "expect": {"viewer": null, "rejected": []}, "note": "over 53 bits: no viewer"},
+    {"input": {"id": 0}, "expect": {"viewer": null, "rejected": []}},
+    {"input": {"id": -5}, "expect": {"viewer": null, "rejected": []}},
+    {"input": null, "expect": {"viewer": null, "rejected": []}},
+    {"input": {"id": 0, "first_name": "Ann"}, "expect": {"viewer": null, "rejected": []}, "note": "no id, no viewer: the other fields do not matter"},
+    {"input": {"id": 7, "first_name": "Ann", "last_name": "Lee", "username": "ann_lee", "is_premium": true}, "expect": {"viewer": {"id": 7, "first_name": "Ann", "last_name": "Lee", "username": "ann_lee", "is_premium": true}, "rejected": []}},
+    {"input": {"id": 7, "first_name": "Ann", "is_premium": false}, "expect": {"viewer": {"id": 7, "first_name": "Ann"}, "rejected": []}, "note": "is_premium only when true, as in WebAppUser"},
+    {"input": {"id": 7, "first_name": "Анна", "last_name": "李"}, "expect": {"viewer": {"id": 7, "first_name": "Анна", "last_name": "李"}, "rejected": []}},
+    {"input": {"id": 7, "first_name": {"repeat": ["x", 64]}}, "expect": {"viewer": {"id": 7, "first_name": {"repeat": ["x", 64]}}, "rejected": []}},
+    {"input": {"id": 7, "first_name": {"repeat": ["x", 65]}, "last_name": "Lee"}, "expect": {"viewer": {"id": 7, "last_name": "Lee"}, "rejected": ["first_name"]}, "note": "a field that breaks its rule is left out, the viewer stays"},
+    {"input": {"id": 7, "first_name": "Ann", "last_name": {"repeat": ["😀", 32]}}, "expect": {"viewer": {"id": 7, "first_name": "Ann", "last_name": {"repeat": ["😀", 32]}}, "rejected": []}, "note": "names count UTF-16 code units: an emoji is 2"},
+    {"input": {"id": 7, "last_name": {"repeat": ["😀", 33]}}, "expect": {"viewer": {"id": 7}, "rejected": ["last_name"]}},
+    {"input": {"id": 7, "first_name": "", "last_name": ""}, "expect": {"viewer": {"id": 7}, "rejected": ["first_name", "last_name"]}, "note": "an empty name is not a name"},
+    {"input": {"id": 7, "username": "annl"}, "expect": {"viewer": {"id": 7}, "rejected": ["username"]}, "note": "a username is 5–32 characters"},
+    {"input": {"id": 7, "username": "ann_l"}, "expect": {"viewer": {"id": 7, "username": "ann_l"}, "rejected": []}},
+    {"input": {"id": 7, "username": {"repeat": ["a", 32]}}, "expect": {"viewer": {"id": 7, "username": {"repeat": ["a", 32]}}, "rejected": []}},
+    {"input": {"id": 7, "username": {"repeat": ["a", 33]}}, "expect": {"viewer": {"id": 7}, "rejected": ["username"]}},
+    {"input": {"id": 7, "username": "ann-lee"}, "expect": {"viewer": {"id": 7}, "rejected": ["username"]}},
+    {"input": {"id": 7, "username": "@ann_lee"}, "expect": {"viewer": {"id": 7}, "rejected": ["username"]}, "note": "no @"},
+    {"input": {"id": 7, "username": "анна_ли"}, "expect": {"viewer": {"id": 7}, "rejected": ["username"]}, "note": "Latin letters, digits and _ only"},
+    {"input": {"id": 7, "first_name": "", "username": "x", "is_premium": true}, "expect": {"viewer": {"id": 7, "is_premium": true}, "rejected": ["first_name", "username"]}, "note": "rejected fields in this order: first_name, last_name, username, is_premium"}
+  ],
+  "chatType": [
+    {"input": "private", "expect": "private"},
+    {"input": "group", "expect": "group"},
+    {"input": "supergroup", "expect": "supergroup"},
+    {"input": "channel", "expect": "channel"},
+    {"input": "Private", "expect": null},
+    {"input": "sender", "expect": null},
+    {"input": "", "expect": null},
+    {"input": null, "expect": null}
+  ],
+  "answers": [
+    {"input": {}, "expect": {"result": null}, "note": "an empty answer: the request closes without a result"},
+    {"input": {"result": "ok"}, "expect": {"result": "ok"}},
+    {"input": {"result": ""}, "expect": {"result": ""}, "note": "an empty result is a result"},
+    {"input": {"result": {"repeat": ["x", 1024]}}, "expect": {"result": {"repeat": ["x", 1024]}}},
+    {"input": {"result": {"repeat": ["x", 1025]}}, "expect": null},
+    {"input": {"result": {"repeat": ["ж", 512]}}, "expect": {"result": {"repeat": ["ж", 512]}}, "note": "1024 bytes"},
+    {"input": {"result": {"repeat": ["ж", 513]}}, "expect": null, "note": "1026 bytes"},
+    {"input": {"result": "a\u0000b"}, "expect": null, "note": "a NUL is not text"},
+    {"input": {"result": "{\"v\":[1,2]}\n"}, "expect": {"result": "{\"v\":[1,2]}\n"}}
+  ],
+  "requestGate": [
+    {"name": "a tap: one request in flight, the next tap after the answer", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "decide", "at": 10, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "busy"}, {"op": "finish"}, {"op": "decide", "at": 20, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}]},
+    {"name": "no tap and no backgroundQuery (a group, via bot, a live copy): refused", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}]},
+    {"name": "backgroundQuery: visible only, one per 5 s from the start of the last", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish"}, {"op": "decide", "at": 4999, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 5000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "decide", "at": 6000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "finish"}, {"op": "decide", "at": 6000, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "foreground"}, {"op": "finish"}, {"op": "decide", "at": 9999, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 10000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "no canQuery (sent without allow_queries, or a copy of one sent without fwd_allow_queries): never, with a tap or without", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": false, "backgroundQuery": false, "expect": "disabled"}, {"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": false, "backgroundQuery": true, "expect": "disabled"}]},
+    {"name": "a tap on a hidden widget is no tap", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": false, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": true, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}]},
+    {"name": "a refused request leaves nothing in flight", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "decide", "at": 1, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}]},
+    {"name": "busy before the background rules; a tap's request does not count toward the interval", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "foreground"}, {"op": "decide", "at": 100, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "finish"}, {"op": "decide", "at": 100, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "the widget appears on screen: its next background request goes out at once, then one per 5 s", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish"}, {"op": "decide", "at": 1000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "show", "at": 1000, "expect": false}, {"op": "decide", "at": 1000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish"}, {"op": "decide", "at": 2000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 5999, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 6000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "show changes nothing in flight, without canQuery or without backgroundQuery", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "show", "at": 5, "expect": false}, {"op": "decide", "at": 10, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "finish"}, {"op": "show", "at": 15, "expect": false}, {"op": "decide", "at": 20, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "show", "at": 25, "expect": false}, {"op": "decide", "at": 30, "gesture": false, "visible": true, "canQuery": false, "backgroundQuery": true, "expect": "disabled"}]},
+    {"name": "a background request off screen is held (in flight) and goes out when the widget appears, as that appearance's; then one per 5 s from then", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "decide", "at": 10, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "show", "at": 100, "expect": true}, {"op": "decide", "at": 200, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "decide", "at": 200, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "busy"}, {"op": "finish"}, {"op": "decide", "at": 300, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 5099, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 5100, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "a held request goes out once: a second appearance with nothing held sends nothing, and only frees the next background request", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "show", "at": 10, "expect": true}, {"op": "show", "at": 20, "expect": false}, {"op": "finish"}, {"op": "decide", "at": 30, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish"}, {"op": "decide", "at": 40, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "show", "at": 50, "expect": true}, {"op": "finish"}, {"op": "decide", "at": 60, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}]},
+    {"name": "finish drops a held request (the widget stopped): nothing goes out when it appears", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "finish"}, {"op": "show", "at": 10, "expect": false}, {"op": "decide", "at": 20, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "nothing is held without backgroundQuery or canQuery: the hidden request is refused, and an appearance sends nothing", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": true, "visible": false, "canQuery": true, "backgroundQuery": false, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": false, "backgroundQuery": true, "expect": "disabled"}, {"op": "show", "at": 10, "expect": false}, {"op": "decide", "at": 20, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}]},
+    {"name": "held after a visible background request: the interval does not apply off screen, the appearance sends it at once", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish"}, {"op": "decide", "at": 1000, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "show", "at": 1500, "expect": true}, {"op": "finish"}, {"op": "decide", "at": 2000, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "rate-limited"}, {"op": "decide", "at": 6500, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}]},
+    {"name": "the wallet: the answer to a tap lets one wallet call follow within 10 s, and its answer the next", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "withWallet": true, "wallet": true, "expect": "foreground"}, {"op": "finish", "answeredAt": 1000}, {"op": "decideWallet", "at": 2000, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "granted"}, {"op": "decideWallet", "at": 2100, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "busy"}, {"op": "finish", "answeredAt": 3000}, {"op": "decideWallet", "at": 13000, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "granted"}, {"op": "finish"}, {"op": "decideWallet", "at": 13100, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "no-activation"}, {"op": "decideWallet", "at": 13200, "gesture": true, "visible": true, "canQuery": true, "wallet": true, "expect": "foreground"}]},
+    {"name": "the wallet: the grant ends 10 s after the answer", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "finish", "answeredAt": 100}, {"op": "decideWallet", "at": 10101, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "no-activation"}, {"op": "decideWallet", "at": 10102, "gesture": true, "visible": true, "canQuery": true, "wallet": true, "expect": "foreground"}]},
+    {"name": "the wallet: a background or held request's answer grants nothing", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish", "answeredAt": 10}, {"op": "decideWallet", "at": 20, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "no-activation"}, {"op": "decide", "at": 30, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "expect": "held"}, {"op": "show", "at": 40, "expect": true}, {"op": "finish", "answeredAt": 50}, {"op": "decideWallet", "at": 60, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "no-activation"}]},
+    {"name": "the wallet: the grant needs the visible widget, and a refusal leaves it", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "finish", "answeredAt": 100}, {"op": "decideWallet", "at": 200, "gesture": false, "visible": false, "canQuery": true, "wallet": true, "expect": "no-activation"}, {"op": "decideWallet", "at": 300, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "granted"}]},
+    {"name": "the wallet: any call made on a press uses the grant up; a failure brings none", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "finish", "answeredAt": 100}, {"op": "decide", "at": 200, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}, {"op": "finish"}, {"op": "decideWallet", "at": 300, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "no-activation"}]},
+    {"name": "the wallet: a background request leaves the grant to the next wallet call", "steps": [{"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "foreground"}, {"op": "finish", "answeredAt": 100}, {"op": "decide", "at": 200, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "expect": "background"}, {"op": "finish", "answeredAt": 300}, {"op": "decideWallet", "at": 400, "gesture": false, "visible": true, "canQuery": true, "wallet": true, "expect": "granted"}]},
+    {"name": "the wallet: without it, or without canQuery, nothing", "steps": [{"op": "decideWallet", "at": 0, "gesture": true, "visible": true, "canQuery": true, "wallet": false, "expect": "no-wallet"}, {"op": "decideWallet", "at": 0, "gesture": true, "visible": true, "canQuery": false, "wallet": true, "expect": "disabled"}, {"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "withWallet": true, "wallet": false, "expect": "no-wallet"}, {"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": false, "backgroundQuery": false, "withWallet": true, "wallet": true, "expect": "disabled"}, {"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "withWallet": false, "wallet": false, "expect": "foreground"}]},
+    {"name": "the wallet: a request for it needs a tap, never the background, never held", "steps": [{"op": "decide", "at": 0, "gesture": false, "visible": true, "canQuery": true, "backgroundQuery": true, "withWallet": true, "wallet": true, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": false, "visible": false, "canQuery": true, "backgroundQuery": true, "withWallet": true, "wallet": true, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": true, "visible": false, "canQuery": true, "backgroundQuery": true, "withWallet": true, "wallet": true, "expect": "no-activation"}, {"op": "decide", "at": 0, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": true, "withWallet": true, "wallet": true, "expect": "foreground"}]},
+    {"name": "the wallet: one call in flight with the requests", "steps": [{"op": "decideWallet", "at": 0, "gesture": true, "visible": true, "canQuery": true, "wallet": true, "expect": "foreground"}, {"op": "decide", "at": 10, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "busy"}, {"op": "decideWallet", "at": 20, "gesture": true, "visible": true, "canQuery": true, "wallet": true, "expect": "busy"}, {"op": "finish", "answeredAt": 30}, {"op": "decide", "at": 40, "gesture": true, "visible": true, "canQuery": true, "backgroundQuery": false, "expect": "foreground"}]}
+  ],
+  "requestRefusals": [
+    {"verdict": "foreground", "expect": null},
+    {"verdict": "background", "expect": null},
+    {"verdict": "disabled", "expect": "NOT_ALLOWED"},
+    {"verdict": "busy", "expect": "BUSY"},
+    {"verdict": "no-activation", "expect": "NOT_ALLOWED"},
+    {"verdict": "held", "expect": null},
+    {"verdict": "rate-limited", "expect": "RATE_LIMITED"},
+    {"verdict": "granted", "expect": null},
+    {"verdict": "no-wallet", "expect": "NOT_ALLOWED"}
+  ],
+  "previewMethods": [
+    {"method": "ready", "allowed": true},
+    {"method": "setResizeAnchor", "allowed": true},
+    {"method": "watchPublicData", "allowed": false},
+    {"method": "openLink", "allowed": false},
+    {"method": "openTelegramLink", "allowed": false},
+    {"method": "haptic", "allowed": false},
+    {"method": "request", "allowed": false},
+    {"method": "copyText", "allowed": false},
+    {"method": "sendMessage", "allowed": false},
+    {"method": "Ready", "allowed": false},
+    {"method": "", "allowed": false}
+  ],
+  "walletTransactions": [
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "note": "one message, nothing else"},
+    {"input": {"valid_until": 1900000000, "network": "-239", "from": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8", "messages": [{"address": "UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8x-_9I", "amount": "5", "payload": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I=", "stateInit": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}]}, "expect": {"valid_until": 1900000000, "network": "-239", "from": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8", "messages": [{"address": "UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8x-_9I", "amount": "5", "payload": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I=", "stateInit": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}]}, "note": "from may be raw"},
+    {"input": {"valid_until": null, "network": null, "from": null, "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "0", "payload": null, "stateInit": null}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "0"}]}, "note": "null is absent; an amount of 0 is a message"},
+    {"input": {"network": "-3", "from": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "2"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "3"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "4"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "5"}]}, "expect": {"network": "-3", "from": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "2"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "3"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "4"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "5"}]}, "note": "five messages"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "2"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "3"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "4"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "5"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "6"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "7"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "8"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "9"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "10"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "11"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "12"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "13"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "14"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "15"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "16"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "17"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "18"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "19"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "20"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "21"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "22"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "23"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "24"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "25"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "26"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "27"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "28"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "29"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "30"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "31"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "32"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "33"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "34"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "35"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "36"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "37"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "38"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "39"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "40"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "41"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "42"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "43"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "44"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "45"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "46"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "47"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "48"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "49"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "50"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "51"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "52"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "53"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "54"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "55"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "56"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "57"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "58"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "59"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "60"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "61"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "62"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "63"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "64"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "65"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "66"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "67"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "68"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "69"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "70"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "71"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "72"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "73"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "74"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "75"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "76"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "77"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "78"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "79"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "80"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "81"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "82"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "83"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "84"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "85"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "86"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "87"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "88"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "89"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "90"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "91"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "92"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "93"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "94"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "95"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "96"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "97"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "98"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "99"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "100"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "101"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "102"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "103"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "104"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "105"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "106"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "107"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "108"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "109"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "110"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "111"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "112"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "113"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "114"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "115"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "116"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "117"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "118"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "119"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "120"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "121"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "122"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "123"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "124"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "125"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "126"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "127"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "128"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "129"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "130"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "131"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "132"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "133"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "134"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "135"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "136"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "137"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "138"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "139"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "140"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "141"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "142"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "143"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "144"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "145"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "146"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "147"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "148"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "149"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "150"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "151"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "152"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "153"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "154"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "155"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "156"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "157"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "158"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "159"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "160"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "161"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "162"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "163"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "164"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "165"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "166"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "167"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "168"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "169"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "170"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "171"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "172"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "173"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "174"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "175"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "176"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "177"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "178"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "179"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "180"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "181"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "182"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "183"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "184"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "185"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "186"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "187"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "188"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "189"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "190"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "191"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "192"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "193"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "194"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "195"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "196"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "197"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "198"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "199"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "200"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "201"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "202"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "203"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "204"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "205"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "206"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "207"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "208"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "209"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "210"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "211"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "212"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "213"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "214"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "215"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "216"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "217"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "218"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "219"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "220"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "221"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "222"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "223"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "224"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "225"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "226"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "227"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "228"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "229"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "230"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "231"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "232"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "233"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "234"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "235"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "236"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "237"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "238"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "239"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "240"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "241"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "242"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "243"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "244"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "245"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "246"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "247"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "248"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "249"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "250"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "251"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "252"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "253"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "254"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "255"}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "2"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "3"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "4"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "5"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "6"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "7"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "8"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "9"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "10"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "11"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "12"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "13"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "14"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "15"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "16"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "17"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "18"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "19"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "20"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "21"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "22"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "23"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "24"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "25"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "26"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "27"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "28"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "29"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "30"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "31"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "32"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "33"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "34"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "35"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "36"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "37"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "38"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "39"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "40"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "41"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "42"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "43"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "44"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "45"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "46"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "47"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "48"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "49"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "50"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "51"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "52"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "53"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "54"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "55"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "56"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "57"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "58"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "59"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "60"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "61"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "62"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "63"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "64"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "65"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "66"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "67"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "68"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "69"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "70"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "71"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "72"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "73"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "74"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "75"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "76"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "77"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "78"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "79"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "80"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "81"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "82"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "83"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "84"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "85"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "86"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "87"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "88"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "89"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "90"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "91"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "92"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "93"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "94"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "95"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "96"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "97"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "98"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "99"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "100"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "101"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "102"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "103"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "104"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "105"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "106"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "107"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "108"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "109"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "110"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "111"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "112"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "113"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "114"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "115"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "116"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "117"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "118"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "119"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "120"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "121"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "122"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "123"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "124"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "125"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "126"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "127"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "128"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "129"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "130"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "131"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "132"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "133"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "134"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "135"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "136"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "137"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "138"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "139"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "140"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "141"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "142"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "143"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "144"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "145"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "146"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "147"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "148"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "149"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "150"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "151"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "152"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "153"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "154"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "155"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "156"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "157"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "158"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "159"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "160"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "161"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "162"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "163"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "164"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "165"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "166"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "167"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "168"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "169"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "170"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "171"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "172"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "173"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "174"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "175"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "176"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "177"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "178"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "179"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "180"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "181"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "182"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "183"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "184"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "185"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "186"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "187"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "188"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "189"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "190"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "191"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "192"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "193"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "194"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "195"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "196"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "197"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "198"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "199"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "200"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "201"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "202"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "203"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "204"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "205"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "206"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "207"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "208"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "209"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "210"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "211"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "212"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "213"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "214"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "215"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "216"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "217"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "218"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "219"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "220"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "221"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "222"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "223"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "224"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "225"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "226"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "227"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "228"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "229"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "230"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "231"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "232"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "233"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "234"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "235"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "236"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "237"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "238"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "239"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "240"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "241"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "242"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "243"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "244"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "245"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "246"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "247"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "248"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "249"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "250"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "251"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "252"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "253"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "254"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "255"}]}, "note": "255 messages: what Gram Wallet takes"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "2"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "3"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "4"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "5"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "6"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "7"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "8"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "9"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "10"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "11"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "12"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "13"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "14"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "15"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "16"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "17"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "18"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "19"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "20"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "21"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "22"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "23"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "24"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "25"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "26"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "27"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "28"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "29"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "30"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "31"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "32"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "33"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "34"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "35"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "36"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "37"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "38"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "39"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "40"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "41"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "42"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "43"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "44"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "45"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "46"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "47"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "48"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "49"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "50"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "51"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "52"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "53"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "54"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "55"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "56"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "57"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "58"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "59"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "60"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "61"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "62"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "63"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "64"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "65"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "66"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "67"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "68"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "69"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "70"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "71"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "72"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "73"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "74"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "75"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "76"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "77"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "78"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "79"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "80"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "81"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "82"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "83"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "84"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "85"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "86"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "87"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "88"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "89"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "90"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "91"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "92"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "93"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "94"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "95"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "96"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "97"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "98"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "99"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "100"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "101"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "102"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "103"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "104"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "105"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "106"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "107"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "108"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "109"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "110"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "111"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "112"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "113"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "114"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "115"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "116"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "117"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "118"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "119"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "120"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "121"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "122"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "123"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "124"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "125"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "126"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "127"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "128"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "129"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "130"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "131"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "132"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "133"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "134"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "135"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "136"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "137"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "138"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "139"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "140"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "141"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "142"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "143"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "144"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "145"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "146"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "147"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "148"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "149"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "150"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "151"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "152"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "153"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "154"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "155"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "156"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "157"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "158"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "159"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "160"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "161"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "162"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "163"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "164"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "165"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "166"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "167"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "168"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "169"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "170"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "171"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "172"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "173"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "174"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "175"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "176"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "177"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "178"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "179"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "180"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "181"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "182"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "183"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "184"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "185"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "186"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "187"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "188"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "189"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "190"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "191"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "192"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "193"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "194"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "195"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "196"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "197"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "198"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "199"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "200"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "201"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "202"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "203"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "204"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "205"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "206"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "207"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "208"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "209"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "210"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "211"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "212"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "213"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "214"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "215"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "216"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "217"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "218"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "219"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "220"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "221"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "222"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "223"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "224"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "225"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "226"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "227"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "228"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "229"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "230"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "231"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "232"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "233"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "234"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "235"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "236"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "237"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "238"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "239"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "240"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "241"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "242"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "243"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "244"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "245"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "246"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "247"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "248"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "249"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "250"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "251"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "252"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "253"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "254"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "255"}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "256"}]}, "expect": null, "note": "256 messages"},
+    {"input": {"messages": []}, "expect": null},
+    {"input": {"messages": {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}}, "expect": null},
+    {"input": {}, "expect": null},
+    {"input": {"validUntil": 1900000000, "messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}]}, "expect": null, "note": "the SDK spelling is not the protocol"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "extra_currency": {"100": "1"}}]}, "expect": null, "note": "no extra currencies"},
+    {"input": {"items": [{"type": "ton", "address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1"}]}, "expect": null, "note": "no structured items (Gram Wallet takes raw messages)"},
+    {"input": {"messages": [{"address": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8", "amount": "1"}]}, "expect": null, "note": "a raw destination: TON Connect wallets must refuse it"},
+    {"input": {"messages": [{"address": "-1:3333333333333333333333333333333333333333333333333333333333333333", "amount": "1"}]}, "expect": null, "note": "a raw destination"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": 1000000000}]}, "expect": null, "note": "an amount is a string"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "01"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "-1"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1.5"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": ""}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000000000000000000000000000000"}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000000000000000000000000000000"}]}, "note": "37 digits"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "10000000000000000000000000000000000000"}]}, "expect": null, "note": "38 digits"},
+    {"input": {"messages": [{"amount": "1"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": 4294967295}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": 4294967295}},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": 4294967296}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": 0}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": 1.5}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "valid_until": "1900000000"}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "network": "mainnet"}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "network": -239}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "from": "x"}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "from": "0:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "expect": null},
+    {"input": {"messages": [{"address": "UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8x+/9I", "amount": "1"}]}, "expect": {"messages": [{"address": "UQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8x+/9I", "amount": "1"}]}, "note": "user-friendly in plain base64"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2", "amount": "1"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB==", "amount": "1"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2 ", "amount": "1"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": ""}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": "ab=c"}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": "abc=="}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": "abc=="}]}},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}}]}},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8193]}}]}, "expect": null},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}]}, "expect": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}]}, "note": "65536 characters of payloads together"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": {"repeat": ["A", 8192]}, "stateInit": {"repeat": ["A", 8192]}}, {"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "payload": "AA=="}]}, "expect": null, "note": "65540 characters of payloads together"},
+    {"input": {"messages": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000", "stateInit": 5}]}, "expect": null},
+    {"input": null, "expect": null},
+    {"input": [{"address": "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N", "amount": "1000000000"}], "expect": null},
+    {"input": "x", "expect": null}
+  ],
+  "signDataPayloads": [
+    {"input": {"type": "text", "text": "I agree to the terms of order 42"}, "expect": {"type": "text", "text": "I agree to the terms of order 42"}},
+    {"input": {"type": "text", "text": "x", "network": "-239", "from": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8"}, "expect": {"type": "text", "text": "x", "network": "-239", "from": "0:83dfd552e63729b472fcbcc8c45ebcc6691702558b68ec7527e1ba403a0f31a8"}},
+    {"input": {"type": "text", "text": "x", "network": null, "from": null}, "expect": {"type": "text", "text": "x"}},
+    {"input": {"type": "text", "text": ""}, "expect": null},
+    {"input": {"type": "text", "text": {"repeat": ["x", 4096]}}, "expect": {"type": "text", "text": {"repeat": ["x", 4096]}}},
+    {"input": {"type": "text", "text": {"repeat": ["x", 4097]}}, "expect": null},
+    {"input": {"type": "text", "text": {"repeat": ["ж", 2048]}}, "expect": {"type": "text", "text": {"repeat": ["ж", 2048]}}, "note": "4096 bytes"},
+    {"input": {"type": "text", "text": {"repeat": ["ж", 2049]}}, "expect": null, "note": "4098 bytes"},
+    {"input": {"type": "text", "text": "a\u0000b"}, "expect": null},
+    {"input": {"type": "text", "text": 5}, "expect": null},
+    {"input": {"type": "text"}, "expect": null},
+    {"input": {"type": "text", "text": "x", "domain": "example.com"}, "expect": null, "note": "the client sets the domain"},
+    {"input": {"type": "text", "text": "x", "bytes": "AA=="}, "expect": null},
+    {"input": {"type": "text", "text": "x", "network": "mainnet"}, "expect": null},
+    {"input": {"type": "text", "text": "x", "from": "x"}, "expect": null},
+    {"input": {"type": "binary", "bytes": "SGVsbG8="}, "expect": {"type": "binary", "bytes": "SGVsbG8="}},
+    {"input": {"type": "binary", "bytes": "Hello!"}, "expect": null},
+    {"input": {"type": "binary", "bytes": {"repeat": ["A", 4096]}}, "expect": {"type": "binary", "bytes": {"repeat": ["A", 4096]}}},
+    {"input": {"type": "binary", "bytes": {"repeat": ["A", 4097]}}, "expect": null},
+    {"input": {"type": "binary", "text": "x"}, "expect": null},
+    {"input": {"type": "cell", "schema": "message#_ text:SnakeData = InMsgBody;", "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}, "expect": {"type": "cell", "schema": "message#_ text:SnakeData = InMsgBody;", "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}},
+    {"input": {"type": "cell", "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}, "expect": null},
+    {"input": {"type": "cell", "schema": "x", "cell": "not base64!"}, "expect": null},
+    {"input": {"type": "cell", "schema": {"repeat": ["x", 1024]}, "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}, "expect": {"type": "cell", "schema": {"repeat": ["x", 1024]}, "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}},
+    {"input": {"type": "cell", "schema": {"repeat": ["x", 1025]}, "cell": "te6cckEBAQEADgAAGAAAAABIZWxsbyEhIQ5sm/I="}, "expect": null},
+    {"input": {"type": "Text", "text": "x"}, "expect": null},
+    {"input": {"text": "x"}, "expect": null},
+    {"input": null, "expect": null},
+    {"input": "I agree", "expect": null}
+  ]
+}

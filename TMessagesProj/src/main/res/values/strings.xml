@@ -3208,13 +3208,14 @@
     <string name="Directions">Directions</string>
     <string name="GetDirections">Get Directions</string>
     <string name="NoPlacesFound">No places found</string>
-    <string name="NoPlacesFoundInfo">There are no matches with **%1$s** near you.</string>
     <string name="SendLocation">Send my current location</string>
     <string name="SendLiveLocation">Share My Live Location for...</string>
     <string name="SendLiveLocationMenu">Share my Live Location</string>
     <string name="StopLiveLocation">Stop Sharing Location</string>
     <string name="SharingLiveLocation">Sharing Location...</string>
     <string name="SharingLiveLocationAdd">tap to add more time</string>
+    <string name="LiveLocationPausedTitle">Live Location paused</string>
+    <string name="LiveLocationPausedText">Open Telegram to continue sharing your location.</string>
     <string name="StopLiveLocationAlertToTitle">Stop location sharing</string>
     <string name="StopLiveLocationAlertToUserText">Do you want to stop sharing your live location with **%1$s**?</string>
     <string name="StopLiveLocationAlertToGroupText">Do you want to stop sharing your live location with **%1$s**?</string>
@@ -3227,9 +3228,7 @@
     <string name="ShareLocation">Location</string>
     <string name="SharedPlace">Place</string>
     <string name="AccurateTo">Accurate to %1$s</string>
-    <string name="NearbyVenue">Or choose a venue</string>
     <string name="LocationOnMap">Location on map</string>
-    <string name="TapToSendLocation">Tap to send this location</string>
     <string name="LiveLocations">Live locations</string>
     <string name="LiveLocationContext">Live Location</string>
     <string name="SendLiveLocationFor15m">for 15 minutes</string>
@@ -3251,7 +3250,6 @@
     <string name="LiveLocationAlertGroup">Choose for how long people in this chat will see your live location.</string>
     <string name="GpsDisabledAlertText">Please enable your GPS to access location-based features.</string>
     <string name="ChatSetThisLocation">Set this location</string>
-    <string name="PlacesInThisArea">Places in this area</string>
     <string name="OpenInMaps">Open in Maps</string>
     <string name="LocationNotifiation">Proximity alert</string>
     <string name="LocationNotifiationButtonUser">Notify when %1$s is within %2$s</string>
@@ -3935,6 +3933,7 @@
     <string name="AttachOnceAudio">One-time Voice Message</string>
     <string name="AttachOnceRound">One-time Video Message</string>
     <string name="AttachGame">Game</string>
+    <string name="AttachWidget">Widget</string>
     <string name="FromYou">You</string>
     <string name="NoNewCarMessages">No new messages</string>
     <string name="NoCarMusic">No music in your chats</string>
@@ -4328,10 +4327,6 @@
     <string name="TranscriptionReportSent">Thank you for your feedback.</string>
     <string name="VoipQuickReplies">Respond with Text</string>
     <string name="VoipQuickRepliesExplain">These quick responses will be available when you respond to an incoming call with a Telegram message. Change them to say anything you like.</string>
-    <string name="QuickReplyDefault1">Can\'t talk now. What\'s up?</string>
-    <string name="QuickReplyDefault2">I\'ll call you right back.</string>
-    <string name="QuickReplyDefault3">I\'ll call you later.</string>
-    <string name="QuickReplyDefault4">Can\'t talk now. Call me later?</string>
     <string name="AllowCustomQuickReply">Allow Custom</string>
     <string name="VoipInCallBrandingWithName">Telegram Call to %s</string>
     <string name="VoipInVideoCallBrandingWithName">Telegram Video Call to %s</string>
@@ -6357,6 +6352,7 @@
     <string name="AccDescrRateTranscriptionUp">Rate up</string>
     <string name="AccDescrRateTranscriptionDown">Rate down</string>
     <string name="PauseMusicOnMedia">Pause music while playing media</string>
+    <string name="CompactMode">Compact Mode</string>
     <string name="ProxyBottomSheetCheckStatus">**Check Status**</string>
     <string name="ProxyBottomSheetChecking">Checking</string>
     <string name="ProxyBottomSheetCheckWarning">Warning</string>
@@ -10032,6 +10028,7 @@
     <string name="TopicsLayoutInfo">Choose how topics appear for all members.</string>
     <string name="TopicsLayoutList">List</string>
     <string name="TopicsLayoutTabs">Tabs</string>
+    <string name="TopicsSidebar">Sidebar</string>
     <string name="SendInStandardQuality">Send in standard quality</string>
     <string name="SendInHighQuality">Send in high quality</string>
     <string name="ShortHighQuality">HD</string>
@@ -10042,6 +10039,8 @@
     <string name="AllChatsShort">All</string>
     <string name="AllTopicsShort">All</string>
     <string name="AllTopicsSide">All</string>
+    <string name="TopicsPanelAllMessages">All Messages</string>
+    <string name="TopicsPanelDirectMessages">Direct messages</string>
     <string name="VoicePauseHint">Pause to trim or replay</string>
     <string name="RecordingTrimTitle">Trim to selected range?</string>
     <string name="RecordingTrimText">Audio outside that range will be discarded, and recording will start immediately.</string>
@@ -11085,6 +11084,7 @@
     <string name="CommunitySectionHiddenChats">Hidden chats</string>
     <string name="CommunitySectionChatsYouCanRequestToJoin">Chats you can request to join</string>
     <string name="CommunityAddAChatToCommunity">Add a Chat to Community</string>
+    <string name="CommunityAddAChatToCommunityHeader">Add a Chat to Community</string>
     <string name="CommunityMenuAddChat">Add Chat to Community</string>
     <string name="CommunityMenuSettings">Settings</string>
     <string name="CommunityMenuShowAsOneChat">Show as One Chat</string>
@@ -11301,6 +11301,19 @@
     <string name="RoundVideoComposition">Composition</string>
     <string name="RoundVideoCompositionEnabled">Round video styling</string>
     <string name="RoundVideoCompositionInfo">Disable styling to record a plain square without outside-circle blur, dimming or Telegram overlays.</string>
+
+    <string name="HeaderSettings">Header</string>
+    <string name="HeaderDoneButtonColor">Done button color</string>
+    <string name="HeaderDoneButtonColorGlass">White</string>
+    <string name="HeaderDoneButtonColorAccent">Blue</string>
+    <string name="HeaderDoneButtonColorInfo">A white button appears only when there is something to save. A blue button is always shown and is dimmed until then.</string>
+    <string name="HeaderDoneButtonShape">Done button shape</string>
+    <string name="HeaderDoneButtonShapeIcon">Round with a check</string>
+    <string name="HeaderDoneButtonShapeText">Text</string>
+    <string name="HeaderDoneButtonPreview">Preview</string>
+    <string name="HeaderDoneButtonPreviewChanges">Has changes</string>
+    <string name="HeaderDoneButtonPreviewInfo">Toggle to see how the button in the header above reacts to changes.</string>
+    <string name="Apply">Apply</string>
 
     <string name="AudioRecorderSettings">Voice Messages</string>
     <string name="AudioRecorderGeneral">Recorder</string>
@@ -11562,6 +11575,8 @@
     <string name="WalletAddressNoLinkedAccount">This address has no linked\nTelegram account.</string>
     <string name="WalletTapToSetAmount">Tap to set amount</string>
     <string name="WalletTonConnectRequestUnavailable">This TON Connect request is unavailable or has already been answered</string>
+    <string name="WalletWidgetNoWallet">Your wallet is not available on this device.</string>
+    <string name="WalletWidgetRequestExpired">This request has expired.</string>
     <string name="WalletTonConnectSessionResponseEmpty">Empty TON Connect session response</string>
     <string name="WalletTonConnectManifestLoadFailed">Could not load dApp manifest: %1$s</string>
     <string name="WalletTonConnectSessionClosed">TON Connect session is closed</string>
@@ -11631,6 +11646,12 @@
     <string name="NoPaidMessagesTokenUsed">un1 used your QR code and can message you for free</string>
     <string name="NoPaidMessagesTokenUsedOut">You used the QR code of un1 and can message them for free</string>
     <string name="NoPaidMessagesTokenImported">You can now message **%1$s** for free.</string>
+    <string name="WidgetStopped">Widget stopped</string>
+    <string name="WidgetLoading">Loading widget…</string>
+    <string name="WidgetLoadFailed">Widget failed to load</string>
+    <string name="WidgetOpenLinkTitle">Open link</string>
+    <string name="WidgetOpenLinkText">This widget wants to open:\n%1$s</string>
+    <string name="WidgetTextCopied">Copied: %1$s</string>
     <string name="NewContactPhoneNotOnTelegram">This phone number is not on Telegram. **Invite >**</string>
     <string name="NewContactPhoneInContacts">This phone number is already in your contacts. **View >**</string>
     <string name="NewContactPhoneOnTelegram">This phone number is on Telegram.</string>

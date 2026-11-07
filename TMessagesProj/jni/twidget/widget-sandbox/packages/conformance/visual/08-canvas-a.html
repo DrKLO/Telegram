@@ -1,0 +1,29 @@
+<!doctype html>
+<html data-test="visual/08-canvas-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: canvas 2D (1/2)</title>
+<!-- conformance {"title":"Canvas 2D (1/2): shapes and paths, line styles, colours, gradients, text, alpha","hint":"Each canvas should look like the reference picture posted next to this message.","covers":["canvas.rect","canvas.path","canvas.line-style","canvas.colors","canvas.gradients","canvas.text","canvas.alpha","canvas.hidpi"]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}body{line-height:18px}.v-head{margin:6px 10px 2px;font-weight:600;font-size:15px;line-height:20px}.v-hint{margin:0 10px 4px;font-size:12px;line-height:16px}.v-row{display:flex;align-items:flex-start;margin:4px 10px 6px}.v-cap{margin-left:10px;font-size:12px;line-height:16px}[data-stage]{flex:none;width:150px;height:90px}</style><script>var T=function(){var p=document,x=p.documentElement,S=typeof TelegramWidget!="undefined",w=window.__conformanceMode||(S?"sandbox":"native"),i=[],h={},l=[];var j,s,u,c,M,f,y,d,m=t=>typeof t=="string"?p.querySelector(t):t;var k=()=>{d=d||setTimeout(T,0)};function A(t,e,n,o,r){r=r||{};let a=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),g=h[t+"|"+e]||(h[t+"|"+e]=i[i.length]=[t,e]);return g[2]=a,g[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&a[0]=="x"?" (expected to fail: "+r.xfail+")":""),k(),a}function C(t,e){let n=m('[data-stage="'+t+'"]');if(n&&!(w=="ref"&&m('template[data-ref="'+t+'"]')))try{e(n)}catch(o){A("harness","stage "+t,!1,o)}}var D=()=>{},O=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function T(){d=0,u&&!c&&D();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of i)t[o[2]]++;let e=u&&!l.length,n=c||e&&!t.pending?"done":e&&M?"awaiting":"running";c=n=="done",x.setAttribute("data-conformance",JSON.stringify({v:1,id:x.getAttribute("data-test"),mode:w,status:n,n:t,checks:i,targets:j,stages:s})),b&&b(n,t)}var b;function q(){if(s||(s={},[].forEach.call(p.querySelectorAll("[data-stage]"),e=>{s[e.getAttribute("data-stage")]=O(e)})),!l.length)return u=1,f&&y&&setTimeout(y,f),k();let t;try{t=l.shift()()}catch(e){A("harness","step",!1,e)}setTimeout(q,t||0)}function R(t){t=t||{},M=t.awaitInput,f=t.awaitInput||t.deadline,T();let e=()=>{e=()=>{},setTimeout(q,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}return{run:R,stage:C}}();</script><!-- /conformance:harness -->
+<style>
+[data-stage] canvas{display:block;width:150px;height:90px}
+.cand{font-size:10px;font-weight:600;padding:0 4px;border-radius:3px;background:#e8a20044}
+</style>
+</head>
+<body>
+<div class="v-head">08a · Canvas 2D (1/2)</div>
+<div class="v-hint">Compare with the reference picture posted next to this message.</div>
+<div class="v-row"><div data-stage="shapes"><canvas width="300" height="180"></canvas></div><div class="v-cap">Rectangles with a cut-out, a pie slice, a bezier curve, an ellipse, a rounded rectangle, dashed and round-capped lines</div></div>
+<div class="v-row"><div data-stage="paint"><canvas width="300" height="180"></canvas></div><div class="v-cap">Linear and radial gradients, a half-transparent overlap</div></div>
+<div class="v-row"><div data-stage="text"><canvas width="300" height="180"></canvas></div><div class="v-cap">Filled bold text, outlined serif text right-aligned, centred small text</div></div>
+<script>
+function C(name) { var c = document.querySelector('[data-stage="' + name + '"] canvas').getContext('2d'); c.scale(2, 2); return c; }
+var R = '#cc3333', B = '#3366cc', G = '#33aa33', O = '#ee8833';
+T.stage('shapes', function () { var c = C('shapes'); c.fillStyle = R; c.fillRect(6, 6, 40, 30); c.clearRect(14, 14, 12, 12); c.strokeStyle = B; c.lineWidth = 3; c.strokeRect(20, 22, 36, 26); c.fillStyle = O; c.beginPath(); c.moveTo(80, 28); c.arc(80, 28, 20, -Math.PI / 2, Math.PI); c.closePath(); c.fill(); c.strokeStyle = G; c.lineWidth = 4; c.beginPath(); c.moveTo(106, 40); c.bezierCurveTo(116, 4, 136, 4, 146, 40); c.stroke(); c.fillStyle = B; c.beginPath(); c.ellipse(28, 70, 22, 11, 0.2, 0, Math.PI * 2); c.fill(); c.fillStyle = G; c.beginPath(); c.roundRect(60, 56, 36, 26, 8); c.fill(); c.strokeStyle = '#222'; c.lineWidth = 2; c.setLineDash([6, 4]); c.beginPath(); c.moveTo(104, 62); c.lineTo(146, 62); c.stroke(); c.setLineDash([]); c.lineWidth = 8; c.lineCap = 'round'; c.strokeStyle = R; c.beginPath(); c.moveTo(108, 78); c.lineTo(142, 78); c.stroke(); });
+T.stage('paint', function () { var c = C('paint'); var g = c.createLinearGradient(0, 0, 75, 0); g.addColorStop(0, R); g.addColorStop(1, B); c.fillStyle = g; c.fillRect(0, 0, 75, 45); var r = c.createRadialGradient(37, 67, 2, 37, 67, 22); r.addColorStop(0, O); r.addColorStop(1, G); c.fillStyle = r; c.fillRect(0, 45, 75, 45); c.fillStyle = R; c.fillRect(84, 14, 40, 40); c.globalAlpha = 0.5; c.fillStyle = B; c.fillRect(102, 34, 44, 44); c.globalAlpha = 1; });
+T.stage('text', function () { var c = C('text'); c.fillStyle = '#222'; c.font = 'bold 28px sans-serif'; c.textBaseline = 'top'; c.fillText('Canvas', 8, 6); c.strokeStyle = B; c.lineWidth = 1.2; c.font = '24px serif'; c.textAlign = 'right'; c.textBaseline = 'alphabetic'; c.strokeText('Outline', 144, 64); c.fillStyle = R; c.font = '12px monospace'; c.textAlign = 'center'; c.fillText('centred mono', 75, 84); });
+T.run();
+</script>
+</body>
+</html>

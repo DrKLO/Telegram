@@ -55,6 +55,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -194,16 +195,16 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         horizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         minimumBidCell = new InfoCell(context, resourcesProvider);
-        minimumBidCell.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray), ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundGray))));
+        ThemeBind.selectorBackground(minimumBidCell, Theme.createSimpleSelectorRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray), ColorUtils.compositeColors(getThemedColor(Theme.key_listSelector), getThemedColor(Theme.key_windowBackgroundGray))), ThemeBind.of(Theme.key_windowBackgroundGray), null, resourcesProvider);
         minimumBidCell.setOnClickListener(v -> {
             slider.setValueAnimated((int) this.auction.getMinimumBid());
         });
         minimumBidCell.titleView.setText(getString(R.string.Gift2AuctionBidInfoMinimumBid));
         nextRoundCell = new InfoCell(context, resourcesProvider);
-        nextRoundCell.setBackground(Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)));
+        ThemeBind.fillBackground(nextRoundCell, Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)), ThemeBind.of(Theme.key_windowBackgroundGray), resourcesProvider);
         nextRoundCell.titleView.setText(getString(R.string.Gift2AuctionBidInfoUntilNextRound));
         giftsLeftCell = new InfoCell(context, resourcesProvider);
-        giftsLeftCell.setBackground(Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)));
+        ThemeBind.fillBackground(giftsLeftCell, Theme.createRoundRectDrawable(dp(12), getThemedColor(Theme.key_windowBackgroundGray)), ThemeBind.of(Theme.key_windowBackgroundGray), resourcesProvider);
         giftsLeftCell.titleView.setText(getString(R.string.Gift2AuctionBidInfoLeft));
 
         horizontalLayout.addView(minimumBidCell, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
@@ -220,8 +221,8 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
 
             itemsBought.setGravity(Gravity.CENTER);
             itemsBought.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            itemsBought.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
-            itemsBought.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            ThemeBind.textColor(itemsBought, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
+            ThemeBind.linkTextColor(itemsBought, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
             itemsBought.setOnClickListener((v) -> {
                 if (pending[0]) {
                     return;
@@ -260,6 +261,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         selfBidderHeader.addView(selfBidderFutureGift, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 17, Gravity.LEFT | Gravity.TOP, 0, 12, 0, 0));
 
         selfBidderCell = new BidderCell(context, resourcesProvider);
+        ThemeBind.clear(selfBidderCell.placeTextView); // state color (blue/red/green), re-applied by updateColors() in onThemeColorsChanged()
         selfBidderCell.placeTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueHeader));
         selfBidderCell.setUser(userSelf, false);
         linearLayout.addView(selfBidderCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, -7));
@@ -531,6 +533,18 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
 
     private void onColorFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
         updateColors();
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (selfBidderHeader != null && selfBidderFutureGift != null && selfBidderCell != null) {
+                updateColors();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void updateColors() {
@@ -812,13 +826,13 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         //editText.lineYFix = true;
 
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText, resourcesProvider));
+        ThemeBind.textColor(editText, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.editHintColor(editText, Theme.key_groupcreate_hintText, resourcesProvider);
         editText.setHintText(getString(R.string.Gift2AuctionPlaceACustomBidHint2));
         editText.setFocusable(true);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER);
         editText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(9)});
-        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
+        ThemeBind.lineColors(editText, Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular, resourcesProvider);
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         editText.setBackgroundDrawable(null);
         editText.hintLayoutOffset = dp(24);
@@ -902,14 +916,14 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             layout.setOrientation(LinearLayout.VERTICAL);
 
             infoView = new AnimatedTextView(context);
-            infoView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(infoView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             infoView.setTextSize(dp(17));
             infoView.setTypeface(AndroidUtilities.bold());
             layout.addView(infoView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 23, Gravity.CENTER_HORIZONTAL));
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             titleView.setSingleLine();
             titleView.setMaxLines(1);
             titleView.setEllipsize(TextUtils.TruncateAt.END);
@@ -930,19 +944,19 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
             setOrientation(HORIZONTAL);
 
             nameTextView = new AnimatedTextView(context);
-            nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             nameTextView.setTextSize(dp(15));
             nameTextView.setPadding(dp(12), 0, dp(12), 0);
             nameTextView.setEllipsizeByGradient(true);
             bidTextView = new AnimatedTextView(context);
-            bidTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            ThemeBind.textColor(bidTextView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             bidTextView.setTextSize(dp(15));
             backupImageView = new BackupImageView(context);
 
             placeTextView = new AnimatedTextView(context);
             placeTextView.setTextSize(dp(15));
             placeTextView.setPadding(dp(20), 0, 0, 0);
-            placeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(placeTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             placeTextView.setTypeface(AndroidUtilities.bold());
             placeTextView.setGravity(Gravity.CENTER);
 
@@ -1009,7 +1023,7 @@ public class AuctionBidSheet extends BottomSheetWithRecyclerListView implements 
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+            NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         }
 
         @Override

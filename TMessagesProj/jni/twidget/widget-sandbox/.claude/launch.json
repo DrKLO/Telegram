@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "dev-5174",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "dev",
+        "--port",
+        "5174"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "dev-5175",
+      "runtimeExecutable": "corepack",
+      "runtimeArgs": [
+        "pnpm",
+        "dev",
+        "--port",
+        "5175"
+      ],
+      "port": 5175
+    }
+  ]
+}

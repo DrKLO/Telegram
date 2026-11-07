@@ -1,0 +1,349 @@
+{
+  "_": "Shared fixture for src/shared/gesture-policy.ts, ios GesturePolicy.swift, android GesturePolicy.kt and desktop gesture_policy.cpp (copies made by scripts/build-native-bundles.ts). constants: the thresholds every copy exports. claims: claimOf(touchActions, prevented) -> claim (touchActions: the target first, up to the widget's <html>). cases: steps on one GestureArbiter, in order: down [t, x, y] with claim = claimOf([claim]) (default \"auto\"), or the claim object `claimed` {x, y, hold} as given (what a client may build by hand), pointer (default \"touch\"), button (default 0); move / up [t, x, y]; tick t; cancel (no expectation); holdDeadline -> number or null. expect is the verdict (owner, gesture, cancel always; action, event, edge only when set) or null. x from the widget's leading edge, CSS px; t in ms.",
+  "constants": {
+    "TOUCH_SLOP_PX": 10,
+    "HOLD_MS": 500,
+    "DOUBLE_TAP_MS": 300,
+    "DOUBLE_TAP_SLOP_PX": 40,
+    "EDGE_STRIP_PX": 20
+  },
+  "claims": [
+    { "touchActions": [], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["auto", "auto"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["manipulation"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["none"], "prevented": false, "expect": { "x": true, "y": false, "hold": true } },
+    { "touchActions": ["auto", "none", "auto"], "prevented": false, "expect": { "x": true, "y": false, "hold": true } },
+    { "touchActions": ["auto", "auto", "none"], "prevented": false, "expect": { "x": true, "y": false, "hold": true } },
+    { "touchActions": ["pan-y"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-x"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["pan-up"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-right"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["pan-y pinch-zoom"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-left pan-down"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["pan-x pan-y"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": ["pinch-zoom"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-x", "pan-y"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-y", "pan-x"], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-x", "auto"], "prevented": false, "expect": { "x": false, "y": false, "hold": false } },
+    { "touchActions": [" PAN-Y "], "prevented": false, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["auto"], "prevented": true, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["pan-x"], "prevented": true, "expect": { "x": true, "y": false, "hold": false } },
+    { "touchActions": ["none"], "prevented": true, "expect": { "x": true, "y": false, "hold": true } }
+  ],
+  "cases": [
+    {
+      "name": "a tap on auto is the widget's",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "holdDeadline": 500 },
+        { "move": [40, 104, 53], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [80, 104, 53], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "holdDeadline": null }
+      ]
+    },
+    {
+      "name": "a hold on auto is the bubble's menu: the widget is cancelled once",
+      "steps": [
+        { "down": [1000, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 1499, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 1500, "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu" } },
+        { "holdDeadline": null },
+        { "tick": 1600, "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu" } },
+        { "move": [1700, 140, 50], "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu" } },
+        { "up": [1900, 140, 50], "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu" } },
+        { "move": [1950, 140, 50], "expect": null },
+        { "tick": 2000, "expect": null }
+      ]
+    },
+    {
+      "name": "a hold on none is the widget's, with contextmenu",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 500, "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } },
+        { "move": [800, 160, 90], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } },
+        { "up": [1200, 160, 90], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } }
+      ]
+    },
+    {
+      "name": "a hold on pan-y or pan-x stays with the bubble",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "pan-y", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 500, "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu" } },
+        { "up": [600, 100, 50], "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu" } },
+        { "down": [2000, 100, 50], "claim": "pan-x", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 2500, "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu" } }
+      ]
+    },
+    {
+      "name": "a move or an up past the deadline decides the hold first",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [700, 100, 90], "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu" } },
+        { "up": [800, 100, 90], "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu" } },
+        { "down": [2000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [2650, 100, 50], "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } }
+      ]
+    },
+    {
+      "name": "a double tap on auto is the widget's: the first tap, then the second with dblclick; a third starts over",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [60, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [200, 110, 55], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [260, 110, 55], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } },
+        { "down": [400, 110, 55], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [460, 110, 55], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } }
+      ]
+    },
+    {
+      "name": "a double tap on none is the widget's, with dblclick",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [60, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [200, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [260, 100, 50], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } }
+      ]
+    },
+    {
+      "name": "a double tap across elements (none, then auto) is the widget's too",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [60, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [200, 120, 50], "claim": "auto", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [260, 120, 50], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } }
+      ]
+    },
+    {
+      "name": "double tap window: 300 ms from the first up to the second down, inclusive",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [60, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [360, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [400, 100, 50], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } },
+        { "down": [1000, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1060, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [1361, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1400, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } }
+      ]
+    },
+    {
+      "name": "double tap distance: at most 40 px between the two pointerdowns",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [60, 105, 52], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [150, 124, 82], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [200, 124, 82], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } },
+        { "down": [1000, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1060, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [1150, 141, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1200, 141, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } }
+      ]
+    },
+    {
+      "name": "a drag, a hold or a cancel ends the tap chain",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [30, 100, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "up": [60, 100, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } },
+        { "down": [150, 100, 70], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [200, 100, 70], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [300, 100, 70], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "cancel": true },
+        { "move": [320, 100, 70], "expect": null },
+        { "up": [330, 100, 70], "expect": null },
+        { "holdDeadline": null },
+        { "down": [400, 100, 70], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [450, 100, 70], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } }
+      ]
+    },
+    {
+      "name": "horizontal swipe on auto: the bubble's (reply or back)",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [16, 108, 54], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [32, 112, 52], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": true, "action": "swipe" } },
+        { "move": [48, 60, 52], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": false, "action": "swipe" } },
+        { "tick": 600, "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": false, "action": "swipe" } },
+        { "up": [700, 60, 52], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": false, "action": "swipe" } }
+      ]
+    },
+    {
+      "name": "vertical drag on auto: the list scrolls",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 103, 61], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "up": [40, 103, 90], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } }
+      ]
+    },
+    {
+      "name": "pan-y: horizontal drags are the widget's, vertical ones scroll",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "pan-y", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 120, 52], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "move": [700, 120, 140], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "up": [720, 120, 140], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "down": [2000, 100, 50], "claim": "pan-y", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [2020, 102, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } }
+      ]
+    },
+    {
+      "name": "pan-x claims nothing: a vertical drag scrolls the chat, a horizontal one swipes",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "pan-x", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 100, 30], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "down": [1000, 100, 50], "claim": "pan-x", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 80, 50], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": true, "action": "swipe" } }
+      ]
+    },
+    {
+      "name": "none: a horizontal drag is the widget's, on both axes once locked; a vertical one scrolls the chat",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 130, 50], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "move": [60, 135, 140], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "up": [80, 135, 140], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "down": [1000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 100, 20], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "move": [1040, 160, 20], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } },
+        { "up": [1060, 160, 20], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } }
+      ]
+    },
+    {
+      "name": "none: a diagonal locks by its dominant axis; a tie is vertical, the chat's",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 109, 56], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "down": [1000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 106, 59], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "down": [2000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [2020, 108, 58], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } }
+      ]
+    },
+    {
+      "name": "none: a hold is the widget's, and the first move past the slop still locks the axis: vertical goes to the chat",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 500, "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } },
+        { "move": [600, 106, 57], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } },
+        { "move": [700, 104, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "move": [750, 160, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } },
+        { "up": [800, 160, 70], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": false, "action": "scroll" } },
+        { "down": [2000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 2500, "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } },
+        { "move": [2600, 125, 55], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } },
+        { "move": [2700, 125, 150], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } },
+        { "up": [2800, 125, 150], "expect": { "owner": "widget", "gesture": "hold", "cancel": false } },
+        { "down": [4000, 100, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [4700, 100, 90], "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } }
+      ]
+    },
+    {
+      "name": "a claim built by hand with y: a vertical touch drag still scrolls the chat",
+      "steps": [
+        { "down": [0, 100, 50], "claimed": { "x": true, "y": true, "hold": true }, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 100, 80], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "down": [1000, 100, 50], "claimed": { "x": false, "y": true, "hold": false }, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 100, 20], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "down": [2000, 100, 50], "claimed": { "x": true, "y": true, "hold": false }, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [2020, 125, 50], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } }
+      ]
+    },
+    {
+      "name": "the slop is a distance, and a diagonal tie counts as vertical",
+      "steps": [
+        { "down": [0, 100, 50], "claim": "pan-y", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [10, 107, 57], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [20, 108, 58], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll" } },
+        { "down": [1000, 100, 50], "claim": "pan-y", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1010, 110, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 110.5, 50], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } }
+      ]
+    },
+    {
+      "name": "the leading edge strip takes no claim: a drag there is the back gesture",
+      "steps": [
+        { "down": [0, 19, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false, "edge": true } },
+        { "move": [20, 45, 52], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": true, "action": "back", "edge": true } },
+        { "up": [40, 90, 52], "expect": { "owner": "bubble", "gesture": "drag-x", "cancel": false, "action": "back", "edge": true } },
+        { "down": [1000, 20, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [1020, 45, 52], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } }
+      ]
+    },
+    {
+      "name": "in the edge strip a hold and a vertical drag are the bubble's too",
+      "steps": [
+        { "down": [0, 4, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false, "edge": true } },
+        { "tick": 500, "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu", "edge": true } },
+        { "up": [600, 4, 50], "expect": { "owner": "bubble", "gesture": "hold", "cancel": false, "action": "menu", "edge": true } },
+        { "down": [2000, 10, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false, "edge": true } },
+        { "move": [2020, 10, 80], "expect": { "owner": "bubble", "gesture": "drag-y", "cancel": true, "action": "scroll", "edge": true } }
+      ]
+    },
+    {
+      "name": "a pen is a touch",
+      "steps": [
+        { "down": [0, 100, 50], "pointer": "pen", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "holdDeadline": 500 },
+        { "tick": 500, "expect": { "owner": "bubble", "gesture": "hold", "cancel": true, "action": "menu" } }
+      ]
+    },
+    {
+      "name": "mouse: no hold, a drag is the widget's, no edge strip",
+      "steps": [
+        { "down": [0, 100, 50], "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "holdDeadline": null },
+        { "tick": 900, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1000, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [3000, 5, 50], "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [3020, 60, 52], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "up": [3040, 60, 52], "expect": { "owner": "widget", "gesture": "drag-x", "cancel": false } },
+        { "down": [5000, 100, 50], "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "move": [5020, 100, 90], "expect": { "owner": "widget", "gesture": "drag-y", "cancel": false } }
+      ]
+    },
+    {
+      "name": "mouse: a right click is the menu on auto, contextmenu on none",
+      "steps": [
+        { "down": [0, 100, 50], "pointer": "mouse", "button": 2, "expect": { "owner": "bubble", "gesture": "menu-click", "cancel": true, "action": "menu" } },
+        { "move": [20, 100, 80], "expect": { "owner": "bubble", "gesture": "menu-click", "cancel": false, "action": "menu" } },
+        { "up": [80, 100, 80], "expect": { "owner": "bubble", "gesture": "menu-click", "cancel": false, "action": "menu" } },
+        { "down": [1000, 100, 50], "claim": "none", "pointer": "mouse", "button": 2, "expect": { "owner": "widget", "gesture": "menu-click", "cancel": false, "event": "contextmenu" } },
+        { "up": [1080, 100, 50], "expect": { "owner": "widget", "gesture": "menu-click", "cancel": false } },
+        { "down": [1100, 100, 50], "claim": "none", "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1150, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } }
+      ]
+    },
+    {
+      "name": "mouse: a double click is the widget's dblclick on any element, also at the leading edge",
+      "steps": [
+        { "down": [0, 100, 50], "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [50, 100, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [150, 100, 50], "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [200, 100, 50], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } },
+        { "down": [1000, 5, 50], "claim": "none", "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1050, 5, 50], "expect": { "owner": "widget", "gesture": "tap", "cancel": false } },
+        { "down": [1150, 5, 50], "claim": "none", "pointer": "mouse", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "up": [1200, 5, 50], "expect": { "owner": "widget", "gesture": "double-tap", "cancel": false, "event": "dblclick" } }
+      ]
+    },
+    {
+      "name": "a new pointerdown replaces a press still open",
+      "steps": [
+        { "down": [0, 100, 50], "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "down": [100, 200, 50], "claim": "none", "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "holdDeadline": 600 },
+        { "tick": 599, "expect": { "owner": "pending", "gesture": "press", "cancel": false } },
+        { "tick": 600, "expect": { "owner": "widget", "gesture": "hold", "cancel": false, "event": "contextmenu" } }
+      ]
+    },
+    {
+      "name": "nothing open: move, up and tick answer null",
+      "steps": [
+        { "move": [0, 10, 10], "expect": null },
+        { "up": [0, 10, 10], "expect": null },
+        { "tick": 1000, "expect": null },
+        { "holdDeadline": null }
+      ]
+    }
+  ]
+}

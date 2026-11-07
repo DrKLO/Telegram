@@ -1,0 +1,26 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 03-stress-test.chat, message 13
+  author: fuzz 11:12
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#000, #fff); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  /* app:aurora → gradient of the same size */
+  .aurora { background-image: linear-gradient(160deg, #0b1a3a 0%, #123c6b 30%, #1fb389 55%, #8ef0c4 75%, #0b1a3a 100%); }
+  /* sf:star.fill?size=12&color=ffcc00 → 12 px tile: the star path rasterised into a 24×24 PNG (profile 1 has no SVG images) */
+  .stars { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAxElEQVR42tWVUQ0DIQyGKwEJSDgJSEHCJNTJSTgJM0ByEk5CJbAs6UOzlNE2I7k9/E/A/8FPKdAbwErB3QCFtQxwsJYAcm/QWXkFYBeA/dcAuXvXKawAVAAYBWxcKQ82ecdBCoB4DHlu4bVDQFVMoqqjE9TBbq0iaf4tIgqab9ZL9kJU81kVWSFDc0uZngbAGX0HyRFRigCKA1AiAFSyRhZZX/WsNcvmlj7ik83viACu3uA5aWqZ51zRO/D8dP/xJ98P8AJeAZ3tql0gxAAAAABJRU5ErkJggg=="); background-size: 12px 12px; }
+</style>
+<div style="height: 36px; border-radius: 8px; margin-bottom: 6px; background-image: linear-gradient(45deg, #ff9500 25%, #ffcc00 25%, #ffcc00 50%, #ff9500 50%, #ff9500 75%, #ffcc00 75%); background-size: 20px 20px"></div>
+<div style="height: 56px; border-radius: 8px; margin-bottom: 6px; background: radial-gradient(circle at 30% 40%, #ffffff, #5ac8fa 40%, #007aff)"></div>
+<div style="display: flex; align-items: center; margin-bottom: 6px">
+  <div style="width: 70px; height: 70px; border-radius: 35px; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); margin-right: 10px"></div>
+  <div style="width: 70px; height: 70px; border-radius: 12px; background: conic-gradient(from 45deg, #1c1c1e 0% 25%, #ffffff 25% 50%, #1c1c1e 50% 75%, #ffffff 75% 100%); background-size: 35px 35px; margin-right: 10px; border: 1px solid #c7c7cc"></div>
+  <div style="width: 70px; height: 70px; border-radius: 12px; background: radial-gradient(ellipse at center, #ff2d55 0%, #ff2d55 30%, transparent 31%), linear-gradient(135deg, #ffd60a, #ff9f0a)"></div>
+</div>
+<div class="aurora" style="height: 90px; border-radius: 12px; background-size: cover; background-position: center; padding: 12px; color: #ffffff; box-sizing: border-box">
+  <div style="font-size: 18px; font-weight: 800">background-image: url(app:aurora)</div>
+  <div style="font-size: 12px">background-size: cover · text drawn on top</div>
+</div>
+<div class="stars" style="height: 16px; margin-top: 6px; background-repeat: repeat-x"></div>

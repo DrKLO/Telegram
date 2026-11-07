@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mortgage Calculator</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #f5f7fa; color: #1f2937; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  h2 { margin: 0 0 16px; font-size: 18px; }
+  .label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+  .stepper { display: flex; align-items: center; border: 1px solid #d1d5db; border-radius: 8px; padding: 3px; margin-bottom: 14px; }
+  .stepper span { flex: 1; text-align: center; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stepper button { width: 38px; height: 32px; padding: 0; border: none; border-radius: 6px; background: #eef2ff; color: #4338ca; font-size: 20px; cursor: pointer; }
+  .presets { display: flex; gap: 6px; margin-bottom: 14px; }
+  .presets button { flex: 1; padding: 8px 0; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #1f2937; font-size: 14px; cursor: pointer; }
+  .presets button.active { background: #4338ca; border-color: #4338ca; color: #fff; }
+  .result { background: #eef2ff; border-radius: 10px; padding: 16px; margin-top: 8px; }
+  .big { font-size: 28px; font-weight: 600; color: #4338ca; }
+  .row { display: flex; justify-content: space-between; font-size: 14px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🏠 Mortgage Calculator</h2>
+  <span class="label">Loan amount ($)</span>
+  <div class="stepper" data-field="amount"><button data-step="-10000">−</button><span id="amountVal"></span><button data-step="10000">+</button></div>
+  <span class="label">Interest rate (%)</span>
+  <div class="stepper" data-field="rate"><button data-step="-0.25">−</button><span id="rateVal"></span><button data-step="0.25">+</button></div>
+  <span class="label">Term (years)</span>
+  <div class="presets" id="years">
+    <button data-years="10">10</button><button data-years="15">15</button><button data-years="20">20</button><button data-years="25">25</button><button data-years="30">30</button>
+  </div>
+  <div class="result">
+    <div style="font-size:13px;color:#6b7280">Monthly payment</div>
+    <div class="big" id="monthly">$0</div>
+    <div class="row"><span>Total paid</span><strong id="total">$0</strong></div>
+    <div class="row"><span>Total interest</span><strong id="interest">$0</strong></div>
+  </div>
+</div>
+<script>
+  // Steppers and presets instead of number fields and sliders: a widget takes taps only.
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const state = { amount: 300000, rate: 6.5, years: 30 };
+  const limits = { amount: [10000, 2000000], rate: [0.5, 15] };
+  function calc() {
+    const P = state.amount;
+    const r = state.rate / 100 / 12;
+    const n = state.years * 12;
+    $('amountVal').textContent = fmt.format(P);
+    $('rateVal').textContent = state.rate.toFixed(2);
+    document.querySelectorAll('#years button').forEach(b => b.classList.toggle('active', +b.dataset.years === state.years));
+    const m = r === 0 ? P / n : P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    $('monthly').textContent = fmt.format(m);
+    $('total').textContent = fmt.format(m * n);
+    $('interest').textContent = fmt.format(m * n - P);
+  }
+  document.querySelectorAll('.stepper').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const f = s.dataset.field, [lo, hi] = limits[f];
+    state[f] = Math.min(hi, Math.max(lo, Math.round((state[f] + +b.dataset.step) * 100) / 100));
+    calc();
+  }));
+  $('years').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { state.years = +b.dataset.years; calc(); } });
+  calc();
+</script>
+</body>
+</html>

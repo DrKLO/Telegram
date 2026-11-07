@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #fef2f2; display: flex; flex-direction: column; align-items: center; }
+  .ring { position: relative; width: 220px; height: 220px; }
+  svg { transform: rotate(-90deg); }
+  circle { fill: none; stroke-width: 12; }
+  .bg { stroke: #fecaca; }
+  .fg { stroke: #ef4444; stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+  .time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 44px; font-weight: 700; color: #991b1b; font-variant-numeric: tabular-nums; }
+  .time small { font-size: 13px; font-weight: 500; color: #b91c1c; letter-spacing: 1px; }
+  .controls { display: flex; gap: 10px; margin-top: 20px; }
+  button { padding: 10px 18px; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; background: #ef4444; color: #fff; }
+  button.secondary { background: #fff; color: #991b1b; border: 1px solid #fca5a5; }
+  .modes { display: flex; gap: 6px; margin-bottom: 16px; }
+  .modes button { background: #fff; color: #7f1d1d; border: 1px solid #fecaca; padding: 6px 12px; font-size: 13px; }
+  .modes button.active { background: #7f1d1d; color: #fff; }
+  .done { margin-top: 12px; font-size: 14px; color: #991b1b; min-height: 20px; }
+</style>
+</head>
+<body>
+<div class="modes">
+  <button class="active" data-min="25">Focus</button>
+  <button data-min="5">Short break</button>
+  <button data-min="15">Long break</button>
+</div>
+<div class="ring">
+  <svg width="220" height="220" viewBox="0 0 220 220">
+    <circle class="bg" cx="110" cy="110" r="100"/>
+    <circle class="fg" id="fg" cx="110" cy="110" r="100" stroke-dasharray="628.3" stroke-dashoffset="0"/>
+  </svg>
+  <div class="time"><span id="clock">25:00</span><small id="label">FOCUS</small></div>
+</div>
+<div class="controls">
+  <button id="start">Start</button>
+  <button class="secondary" id="reset">Reset</button>
+</div>
+<div class="done" id="done"></div>
+<script>
+  let total = 25 * 60, left = total, timer = null;
+  const clock = document.getElementById('clock'), fg = document.getElementById('fg'), startBtn = document.getElementById('start'), doneEl = document.getElementById('done');
+  const C = 2 * Math.PI * 100;
+  function render() {
+    const m = Math.floor(left / 60), s = left % 60;
+    clock.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    fg.style.strokeDashoffset = C * (1 - left / total);
+    document.title = clock.textContent + ' – Pomodoro';
+  }
+  function tick() {
+    if (left > 0) { left--; render(); }
+    // No notifications or alert() in a widget: the message is shown under the controls.
+    if (left === 0) { clearInterval(timer); timer = null; startBtn.textContent = 'Start'; doneEl.textContent = '⏰ Time is up!'; }
+  }
+  startBtn.onclick = () => {
+    doneEl.textContent = '';
+    if (timer) { clearInterval(timer); timer = null; startBtn.textContent = 'Resume'; }
+    else { timer = setInterval(tick, 1000); startBtn.textContent = 'Pause'; }
+  };
+  document.getElementById('reset').onclick = () => { clearInterval(timer); timer = null; left = total; startBtn.textContent = 'Start'; doneEl.textContent = ''; render(); };
+  document.querySelectorAll('.modes button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.modes button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    total = left = b.dataset.min * 60;
+    document.getElementById('label').textContent = b.textContent.toUpperCase();
+    clearInterval(timer); timer = null; startBtn.textContent = 'Start'; doneEl.textContent = ''; render();
+  });
+  render();
+</script>
+</body>
+</html>

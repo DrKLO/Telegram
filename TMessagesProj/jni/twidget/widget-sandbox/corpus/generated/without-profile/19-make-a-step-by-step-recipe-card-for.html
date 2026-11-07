@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pancake Recipe</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #fff7ed; color: #1f2937; }
+  .card { background: #fff; border-radius: 14px; overflow: hidden; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+  .hero { height: 100px; background: radial-gradient(circle at 80% 30%, #fde68a 0 18%, transparent 19%), linear-gradient(135deg, #fb923c, #c2410c); display: flex; align-items: flex-end; padding: 12px; color: #fff; font-size: 22px; font-weight: 700; }
+  .body { padding: 16px; }
+  h3 { font-size: 14px; text-transform: uppercase; letter-spacing: .5px; color: #9a3412; margin: 14px 0 8px; display: flex; justify-content: space-between; }
+  h3 small { font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #9ca3af; }
+  .ing { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ing button { display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 6px; border: 1px solid #fed7aa; border-radius: 999px; background: #fff; color: #1f2937; font-size: 13px; cursor: pointer; }
+  .ing button i { width: 14px; height: 14px; border: 2px solid #ea580c; border-radius: 4px; font-style: normal; font-size: 11px; line-height: 14px; text-align: center; color: #fff; }
+  .ing button.checked { text-decoration: line-through; color: #9ca3af; }
+  .ing button.checked i { background: #ea580c; }
+  .step { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #fed7aa; font-size: 14px; min-height: 64px; }
+  .step .n { width: 26px; height: 26px; border-radius: 50%; background: #ea580c; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; font-size: 13px; }
+  .step .t { flex: 1; }
+  .timer { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  .timer button { padding: 4px 10px; border: 1px solid #ea580c; background: #fff; color: #ea580c; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .timer button.running { background: #ea580c; color: #fff; }
+  .timer span { font-family: ui-monospace, monospace; font-size: 13px; }
+  .nav { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #fed7aa; }
+  .nav button { padding: 7px 14px; border: none; border-radius: 8px; background: #ea580c; color: #fff; font-size: 13px; cursor: pointer; }
+  .nav span { font-size: 12px; color: #9ca3af; }
+  .meta { font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="hero">🥞 Fluffy Pancakes</div>
+  <div class="body">
+    <div class="meta">⏱ 25 min · 🍽 Serves 4 · 🔥 Easy</div>
+    <h3>Ingredients <small id="have"></small></h3>
+    <div class="ing" id="ing"></div>
+    <h3>Steps</h3>
+    <div id="steps"></div>
+    <div class="nav"><button id="prev">← Back</button><span id="pos"></span><button id="next">Next →</button></div>
+  </div>
+</div>
+<script>
+  // No remote images or checkboxes in a widget: a gradient hero, toggle buttons for the
+  // ingredients, and one step at a time (the card stays short; nothing scrolls inside a widget).
+  const ingredients = ['1½ cups flour', '3½ tsp baking powder', '1 tbsp sugar', '¼ tsp salt', '1¼ cups milk', '1 egg', '3 tbsp melted butter'];
+  const steps = [
+    { t: 'Whisk flour, baking powder, sugar and salt in a large bowl.', m: 0 },
+    { t: 'Add milk, egg and melted butter; stir until just combined (lumps are fine).', m: 0 },
+    { t: 'Let the batter rest.', m: 5 },
+    { t: 'Heat a lightly oiled pan over medium heat.', m: 2 },
+    { t: 'Pour ¼ cup batter per pancake; cook until bubbles form, then flip.', m: 2 },
+    { t: 'Cook the other side until golden. Repeat with remaining batter.', m: 1 },
+  ];
+  const checked = new Set();
+  let cur = 0;
+  const timers = steps.map(s => ({ left: s.m * 60, iv: null, done: false }));
+  document.getElementById('ing').innerHTML = ingredients.map((x, k) => `<button data-k="${k}"><i></i>${x}</button>`).join('');
+  const have = () => { document.getElementById('have').textContent = `${checked.size} / ${ingredients.length} ready`; };
+  document.getElementById('ing').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const k = +b.dataset.k;
+    if (checked.has(k)) checked.delete(k); else checked.add(k);
+    b.classList.toggle('checked', checked.has(k));
+    b.querySelector('i').textContent = checked.has(k) ? '✓' : '';
+    have();
+  });
+  const clock = t => `${Math.floor(t.left / 60)}:${String(t.left % 60).padStart(2, '0')}`;
+  function renderStep() {
+    const s = steps[cur], t = timers[cur];
+    const label = t.iv ? '■ Stop' : t.done ? '✓ Done' : `▶ ${s.m} min`;
+    document.getElementById('steps').innerHTML = `<div class="step"><div class="n">${cur + 1}</div><div class="t">${s.t}${s.m ? `<div class="timer"><button id="timer" class="${t.iv ? 'running' : ''}">${label}</button><span id="left">${t.iv ? clock(t) : ''}</span></div>` : ''}</div></div>`;
+    document.getElementById('pos').textContent = `Step ${cur + 1} of ${steps.length}`;
+    document.getElementById('prev').disabled = cur === 0;
+    document.getElementById('next').disabled = cur === steps.length - 1;
+  }
+  document.getElementById('steps').addEventListener('click', e => {
+    if (!e.target.closest('#timer')) return;
+    const i = cur, t = timers[i];
+    if (t.iv) { clearInterval(t.iv); t.iv = null; t.left = steps[i].m * 60; renderStep(); return; }
+    t.left = steps[i].m * 60; t.done = false;
+    t.iv = setInterval(() => {
+      t.left--;
+      if (t.left <= 0) { clearInterval(t.iv); t.iv = null; t.done = true; if (cur === i) renderStep(); return; }
+      if (cur === i) document.getElementById('left').textContent = clock(t);
+    }, 1000);
+    renderStep();
+  });
+  document.getElementById('prev').onclick = () => { if (cur > 0) { cur--; renderStep(); } };
+  document.getElementById('next').onclick = () => { if (cur < steps.length - 1) { cur++; renderStep(); } };
+  have();
+  renderStep();
+</script>
+</body>
+</html>

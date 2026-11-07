@@ -1,0 +1,103 @@
+<!doctype html>
+<html data-test="auto/03-layout-b">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: layout and box model (2/3)</title>
+<!-- conformance {"title":"Layout and box model (2/3): sizes, spacing, border, box-sizing, aspect-ratio, logical properties, outline, float, columns"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages{height:76px}</style><script>var T=function(){var u=document,m=u.documentElement,k=typeof TelegramWidget!="undefined",D=window.__conformanceMode||(k?"sandbox":"native"),a=[],y={},l=[];var O,c,p,f,M,d,b,g,A=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),T=()=>{g=g||setTimeout(S,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),T(),s}function q(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>q(t,e,[n,o],r);var B=(t,e,n,o,r,s)=>q(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+w(n)+", want "+w(o)+" ±"+r],s);var E=(t,e,n)=>getComputedStyle(A(t),n).getPropertyValue(e).trim();function I(t){let e=A(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var F=t=>{l.push(t)};var J=()=>{},N=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function S(){g=0,p&&!f&&J();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&M?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:D,status:n,n:t,checks:a,targets:O,stages:c})),x&&x(n,t)}var x;function j(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function C(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=N(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),T();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(C,t||0)}function _(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,S();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}j();return{cs:E,near:B,ok:R,rect:I,run:_,step:F}}();</script><!-- /conformance:harness -->
+<style>
+.p{position:relative;width:200px;margin:0 0 3px;background:#eef}
+.b{height:10px;background:#46c}
+#sizes .pct{width:50%}
+#sizes .minw{width:10px;min-width:30px}
+#sizes .maxw{width:150px;max-width:60px}
+#sizes .fit{width:fit-content;background:#9c6}
+#sp .m{margin-left:10px;width:20px}
+#sp .auto{margin:0 auto;width:50px}
+#sp .pad{padding:5px;width:20px}
+#sp .neg{margin-top:-10px;width:20px}
+#bd .b5{border:5px solid #333;width:20px}
+#bd .bb{box-sizing:border-box;width:50px;padding:10px;border:2px solid #333}
+#bd .cb{box-sizing:content-box;width:50px;padding:10px}
+#ar{width:60px;aspect-ratio:2;background:#6c9}
+#logi .mis{margin-inline-start:20px;width:20px}
+#logi .isz{inline-size:44px}
+#logi .pb{padding-block:5px;height:10px}
+#logi-rtl{direction:rtl}
+#logi-rtl .mis{margin-inline-start:20px;width:20px}
+#ol{outline:4px solid #f0f;width:30px}
+#fl .l{float:left;width:40px;height:20px;background:#c64}
+#fl .r{float:right;width:30px;height:20px;background:#c64}
+#cols{column-count:2;column-gap:0;width:200px}
+#cols>div{height:10px;break-inside:avoid}
+/* stages */
+.s-border{position:absolute;inset:6px;border:6px dashed #333;border-left:6px solid #c33;border-right:6px dotted #36c}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="border" data-covers="css.box.border"><div class="s-border"></div></div>
+</div>
+<div class="conf-head">03b · Layout and box model (2/3)</div>
+<div class="conf-probes">
+  <div class="p" id="sizes"><div class="b pct"></div><div class="b minw"></div><div class="b maxw"></div><div class="fit">x</div></div>
+  <div class="p" id="sp"><div class="b m"></div><div class="b auto"></div><div class="b pad"></div><div class="b neg"></div></div>
+  <div class="p" id="bd"><div class="b b5"></div><div class="b bb"></div><div class="b cb"></div></div>
+  <div class="p"><div id="ar"></div></div>
+  <div class="p" id="logi"><div class="b mis"></div><div class="b isz"></div><div class="b pb"></div></div>
+  <div class="p" id="logi-rtl"><div class="b mis"></div></div>
+  <div class="p" style="padding:6px"><div class="b" id="ol"></div></div>
+  <div class="p" id="fl"><div class="l"></div><div class="r"></div><span id="fl-t">t</span></div>
+  <div class="p" id="cols"><div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect;
+function kids(sel) { return Array.prototype.map.call(document.querySelector(sel).children, R); }
+function inside(sel) { var p = R(sel); return kids(sel).map(function (k) { return { x: k.x - p.x, y: k.y - p.y, w: k.w, h: k.h, r: k.r - p.x, b: k.b - p.y }; }); }
+
+T.step(function () {
+  var sz = document.querySelectorAll('#sizes > *');
+  T.near('css.box.size', 'width: 50%', R(sz[0]).w, 100, 0.5);
+  T.near('css.box.size', 'min-width wins over width', R(sz[1]).w, 30, 0.5);
+  T.near('css.box.size', 'max-width caps width', R(sz[2]).w, 60, 0.5);
+  T.ok('css.box.size', 'width: fit-content shrinks to the text', R(sz[3]).w > 2 && R(sz[3]).w < 40, 'w ' + R(sz[3]).w);
+
+  var sp = inside('#sp');
+  T.near('css.box.spacing', 'margin-left offsets the box', sp[0].x, 10, 0.5);
+  T.near('css.box.spacing', 'margin: 0 auto centres', sp[1].x, 75, 0.5);
+  T.near('css.box.spacing', 'padding adds to the box', sp[2].w, 30, 0.5);
+  T.near('css.box.spacing', 'negative margin pulls the box up', sp[3].y - sp[2].b, -10, 0.5);
+
+  var bd = inside('#bd');
+  T.ok('css.box.border', 'a 5px border adds 10px', Math.abs(bd[0].w - 30) < 0.5 && Math.abs(bd[0].h - 20) < 0.5, bd[0].w + 'x' + bd[0].h);
+  T.near('css.box.sizing', 'border-box keeps the declared width', bd[1].w, 50, 0.5);
+  T.near('css.box.sizing', 'content-box adds the padding', bd[2].w, 70, 0.5);
+  var ar = R('#ar');
+  T.near('css.box.aspect-ratio', 'aspect-ratio: 2 makes a 60px wide box 30px high', ar.h, 30, 0.5);
+
+  var lg = inside('#logi');
+  T.near('css.box.logical', 'margin-inline-start is dropped (profile 1: out)', lg[0].x, 0, 0.5);
+  T.near('css.box.logical', 'inline-size is dropped: the block keeps its full width', lg[1].w, 200, 0.5);
+  T.near('css.box.logical', 'padding-block is dropped', lg[2].h, 10, 0.5);
+  var rt = inside('#logi-rtl');
+  T.near('css.box.logical', 'margin-inline-start is dropped in RTL too', rt[0].r, 200, 0.5);
+
+  var ol = R('#ol');
+  T.ok('css.box.outline', 'outline does not change the box', Math.abs(ol.w - 30) < 0.5 && Math.abs(ol.h - 10) < 0.5, ol.w + 'x' + ol.h);
+  T.ok('css.box.outline', 'computed outline is 4px solid', T.cs('#ol', 'outline-width') === '4px' && T.cs('#ol', 'outline-style') === 'solid', T.cs('#ol', 'outline-width') + ' ' + T.cs('#ol', 'outline-style'));
+
+  var t = R('#fl-t'), flp = R('#fl');
+  T.ok('css.box.float', 'float:left pushes inline text right', t.x - flp.x >= 39.5, 'text x ' + (t.x - flp.x));
+  var fr = inside('#fl');
+  T.near('css.box.float', 'float:right sits at the right edge', fr[1].r, 200, 0.5);
+
+  var cl = inside('#cols');
+  T.ok('css.box.columns', 'column-count is dropped: one column (profile 1: out)', Math.abs(cl[2].x) < 0.5 && Math.abs(cl[2].y - 20) < 0.5, cl[2].x + ',' + cl[2].y);
+});
+T.run();
+</script>
+</body>
+</html>

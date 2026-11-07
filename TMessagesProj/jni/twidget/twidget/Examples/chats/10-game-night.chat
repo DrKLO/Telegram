@@ -1,0 +1,1686 @@
+@chat Game Night
+@subtitle Chess, quiz, calendar, music, recipe, pixel art, puzzles
+@icon gamecontroller.fill
+@participant me | You | #007aff | me
+@participant sam | Sam Rivera | #af52de
+@participant kai | Kai Müller | #ff9500
+@participant zoe | Zoe Martin | #34c759
+
+--- sam 19:00
+Chess first ♟️ I'm white, playing the Ruy Lopez again (sorry Kai)
+
+--- sam 19:01 bare
+<style>
+  .chs { width: 392px; max-width: 100%; }
+  .chs .hd { display: flex; align-items: center; }
+  .chs .wrap { display: flex; align-items: flex-start; margin-top: 10px; }
+  .chs .rk div { width: 12px; height: 34px; line-height: 34px; font-size: 10px; color: #8e8e93; }
+  .chs .fl { display: flex; padding-left: 12px; height: 14px; }
+  .chs .fl div { width: 34px; text-align: center; font-size: 10px; line-height: 14px; color: #8e8e93; }
+  .chs .bd { position: relative; width: 272px; height: 272px; overflow: hidden; border-radius: 4px; }
+  .chs .rw { display: flex; height: 34px; }
+  .chs .sq { width: 34px; height: 34px; }
+  .chs .hv { width: 34px; height: 34px; }
+  .chs .sq:hover .hv { background-color: rgba(255,255,255,0.22); }
+  .chs .dot { margin: 0 auto; background-color: rgba(20,20,20,0.28); }
+  .chs .pc { position: absolute; width: 34px; height: 34px; line-height: 34px; text-align: center; }
+  .chs .pc.act:hover { background-color: rgba(255,255,255,0.28); }
+  .chs .ol { position: absolute; left: 0; top: 0; width: 34px; height: 34px; line-height: 34px; text-align: center; }
+  .chs .banner { position: absolute; left: 36px; width: 200px; text-align: center; border-radius: 12px; padding: 12px 0; color: #ffffff; }
+  .chs .side { position: relative; width: 98px; height: 286px; margin-left: 10px; }
+  .chs .clk { padding: 4px 8px; border-radius: 8px; background-color: rgba(127,127,127,0.12); }
+  .chs .clk b { font-family: ui-monospace; font-size: 16px; }
+  .chs .clk.on { background-color: #1c1c1e; color: #ffffff; }
+  .lc-dark .chs .clk.on { background-color: #f2f2f7; color: #1c1c1e; }
+  .chs .cap { font-size: 13px; line-height: 16px; height: 16px; margin: 4px 0; white-space: nowrap; overflow: hidden; color: #8e8e93; }
+  .chs .bk { display: inline-block; padding: 2px 9px; margin: 4px 4px 0 0; border-radius: 11px; border: 1px solid #ff9500; color: #ff9500; font-size: 12px; font-weight: 700; }
+  .chs .bk:hover { background-color: rgba(255,149,0,0.16); }
+  .chs .pgn { margin-top: 8px; font-size: 12.5px; line-height: 21px; }
+  .chs .pgn .n { color: #8e8e93; margin-right: 3px; }
+  .chs .pgn .m { padding: 1px 4px; border-radius: 4px; margin-right: 2px; }
+  .chs .pgn .last { background-color: rgba(205,210,106,0.55); font-weight: 700; }
+  .chs .ctl { display: flex; align-items: center; margin-top: 8px; }
+  .chs .ctl button { margin-left: 6px; padding: 4px 11px; font-size: 13px; }
+  .chs .ctl button.off { color: #8e8e93; }
+</style>
+<div class="card pad chs"><b>♟️ Sam vs Kai · Ruy Lopez</b><div class="small muted">1. e4 e5 2. Nf3 Nc6 3. Bb5 · Black to move</div></div>
+<script>
+const S = 34, FILES = 'abcdefgh';
+const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+const FILL = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟︎' };
+const LINE = { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' };
+const NAME = { k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' };
+const DIAG = [[1, 1], [1, -1], [-1, 1], [-1, -1]], ORTH = [[1, 0], [-1, 0], [0, 1], [0, -1]], ALL = DIAG.concat(ORTH);
+const KNIGHT = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
+const OPENING = ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5'];
+const REPLY = {
+  'a6': 'Ba4', 'Nf6': 'O-O', 'Bc5': 'c3', 'd6': 'd4', 'f5': 'Nc3', 'Nd4': 'Nxd4', 'g6': 'c3', 'Nge7': 'c3',
+  'a6 Ba4 Nf6': 'O-O', 'a6 Ba4 d6': 'c3', 'a6 Ba4 b5': 'Bb3',
+  'a6 Ba4 Nf6 O-O Be7': 'Re1', 'a6 Ba4 Nf6 O-O Nxe4': 'd4', 'a6 Ba4 Nf6 O-O Be7 Re1 b5': 'Bb3',
+  'a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O': 'c3', 'a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 d6': 'c3',
+  'a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d5': 'exd5',
+  'Nf6 O-O Nxe4': 'Re1', 'Nf6 O-O Bc5': 'Nxe5', 'Nf6 O-O Nxe4 Re1 Nd6': 'Nxe5',
+  'Bc5 c3 Nf6': 'O-O', 'Bc5 c3 f5': 'd4', 'd6 d4 Bd7': 'Nc3', 'f5 Nc3 fxe4': 'Nxe4', 'Nd4 Nxd4 exd4': 'O-O',
+};
+const NAMES = {
+  'a6': 'Morphy Defence', 'a6 Ba4 d6': 'Modern Steinitz', 'a6 Ba4 Nf6 O-O Be7': 'Closed Variation',
+  'a6 Ba4 Nf6 O-O Nxe4': 'Open Variation', 'a6 Ba4 Nf6 O-O Be7 Re1 b5 Bb3 O-O c3 d5': 'Marshall Attack',
+  'Nf6': 'Berlin Defence', 'Nf6 O-O Nxe4': 'Berlin, Open Variation', 'Bc5': 'Classical Defence', 'd6': 'Steinitz Defence',
+  'f5': 'Schliemann Gambit', 'Nd4': 'Bird Defence', 'g6': 'Smyslov Defence', 'Nge7': 'Cozio Defence',
+};
+
+let board, pieces, kings, history, turn, sel, targets, last, over, thinking, started;
+let busy = 0, game = 0, think = 0, z = 0, clockId = 0, note = '', noteId = 0, flipTo = 0;
+const clock = { w: 291, b: 298 };
+const fx = { hl: 1, sel: 0, dot: 0, flip: 0, over: 0 };
+
+const on = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+const foe = c => c === 'w' ? 'b' : 'w';
+const sqName = s => FILES[s & 7] + (8 - (s >> 3));
+const plain = text => text.replace(/[+#]/g, '');
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+function put(t, c, s) {
+  const p = { t, c, s, x: s & 7, y: s >> 3, a: 1, lift: 0, z: 0, moved: false, dead: false };
+  board[s] = p;
+  pieces.push(p);
+  if (t === 'k') kings[c] = p;
+}
+
+function attacked(s, by) {
+  const r = s >> 3, c = s & 7;
+  const at = (r2, c2) => on(r2, c2) ? board[r2 * 8 + c2] : null;
+  const pr = by === 'w' ? r + 1 : r - 1;
+  for (const dc of [-1, 1]) { const q = at(pr, c + dc); if (q && q.c === by && q.t === 'p') return true; }
+  for (const [dr, dc] of KNIGHT) { const q = at(r + dr, c + dc); if (q && q.c === by && q.t === 'n') return true; }
+  for (const [dr, dc] of ALL) { const q = at(r + dr, c + dc); if (q && q.c === by && q.t === 'k') return true; }
+  for (const [dirs, kinds] of [[DIAG, 'bq'], [ORTH, 'rq']]) {
+    for (const [dr, dc] of dirs) {
+      let r2 = r + dr, c2 = c + dc;
+      while (on(r2, c2)) {
+        const q = board[r2 * 8 + c2];
+        if (q) { if (q.c === by && kinds.includes(q.t)) return true; break; }
+        r2 += dr; c2 += dc;
+      }
+    }
+  }
+  return false;
+}
+
+function pseudo(color) {
+  const out = [];
+  for (const p of pieces) {
+    if (p.dead || p.c !== color) continue;
+    const s = p.s, r = s >> 3, c = s & 7;
+    const add = (r2, c2) => {
+      const t = r2 * 8 + c2, q = board[t];
+      if (q && q.c === color) return false;
+      out.push({ p, from: s, to: t, cap: q, promo: p.t === 'p' && (r2 === 0 || r2 === 7) });
+      return !q;
+    };
+    if (p.t === 'p') {
+      const d = color === 'w' ? -1 : 1;
+      if (on(r + d, c) && !board[(r + d) * 8 + c]) {
+        add(r + d, c);
+        if (r === (color === 'w' ? 6 : 1) && !board[(r + 2 * d) * 8 + c]) add(r + 2 * d, c);
+      }
+      for (const dc of [-1, 1]) if (on(r + d, c + dc)) { const q = board[(r + d) * 8 + c + dc]; if (q && q.c !== color) add(r + d, c + dc); }
+    } else if (p.t === 'n' || p.t === 'k') {
+      for (const [dr, dc] of p.t === 'n' ? KNIGHT : ALL) if (on(r + dr, c + dc)) add(r + dr, c + dc);
+      if (p.t === 'k' && !p.moved && !attacked(s, foe(color))) {
+        for (const [rc, step, path] of [[7, 1, [5, 6]], [0, -1, [3, 2, 1]]]) {
+          const rook = board[r * 8 + rc];
+          if (!rook || rook.t !== 'r' || rook.c !== color || rook.moved) continue;
+          if (path.some(f => board[r * 8 + f]) || attacked(s + step, foe(color))) continue;
+          out.push({ p, from: s, to: s + 2 * step, cap: null, rook, rookFrom: r * 8 + rc, rookTo: s + step });
+        }
+      }
+    } else {
+      for (const [dr, dc] of p.t === 'b' ? DIAG : p.t === 'r' ? ORTH : ALL) {
+        let r2 = r + dr, c2 = c + dc;
+        while (on(r2, c2) && add(r2, c2)) { r2 += dr; c2 += dc; }
+      }
+    }
+  }
+  return out;
+}
+
+function make(m) {
+  board[m.from] = null;
+  if (m.cap) m.cap.dead = true;
+  board[m.to] = m.p;
+  m.p.s = m.to;
+  m.wasMoved = m.p.moved;
+  m.p.moved = true;
+  if (m.promo) m.p.t = 'q';
+  if (m.rook) { board[m.rookFrom] = null; board[m.rookTo] = m.rook; m.rook.s = m.rookTo; m.rook.moved = true; }
+  turn = foe(m.p.c);
+}
+
+function unmake(m) {
+  board[m.to] = m.cap;
+  if (m.cap) m.cap.dead = false;
+  board[m.from] = m.p;
+  m.p.s = m.from;
+  m.p.moved = m.wasMoved;
+  if (m.promo) m.p.t = 'p';
+  if (m.rook) { board[m.rookTo] = null; board[m.rookFrom] = m.rook; m.rook.s = m.rookFrom; m.rook.moved = false; }
+  turn = m.p.c;
+}
+
+function legal(color) {
+  const keep = turn;
+  const out = pseudo(color).filter(m => { make(m); const ok = !attacked(kings[color].s, foe(color)); unmake(m); return ok; });
+  turn = keep;
+  return out;
+}
+
+function san(m, list, suffix) {
+  let s;
+  if (m.rook) s = (m.rookFrom & 7) === 7 ? 'O-O' : 'O-O-O';
+  else if (m.p.t === 'p') s = (m.cap ? FILES[m.from & 7] + 'x' : '') + sqName(m.to) + (m.promo ? '=Q' : '');
+  else {
+    const twins = list.filter(o => o.p !== m.p && o.p.t === m.p.t && o.to === m.to);
+    let dis = '';
+    if (twins.length) dis = twins.every(o => (o.from & 7) !== (m.from & 7)) ? FILES[m.from & 7]
+      : twins.every(o => (o.from >> 3) !== (m.from >> 3)) ? String(8 - (m.from >> 3)) : sqName(m.from);
+    s = m.p.t.toUpperCase() + dis + (m.cap ? 'x' : '') + sqName(m.to);
+  }
+  if (suffix) {
+    make(m);
+    const them = foe(m.p.c);
+    if (attacked(kings[them].s, m.p.c)) s += legal(them).length ? '+' : '#';
+    unmake(m);
+  }
+  return s;
+}
+
+function find(color, text) {
+  const list = legal(color);
+  return [list.find(m => san(m, list, false) === text), list];
+}
+
+const line = () => history.slice(OPENING.length).map(m => plain(m.san));
+
+function bookMoves() {
+  const k = line().join(' '), pre = k ? k + ' ' : '';
+  return Object.keys(REPLY).filter(x => x.startsWith(pre) && x.length > pre.length && !x.slice(pre.length).includes(' '))
+    .map(x => x.slice(pre.length)).slice(0, 3);
+}
+
+function openingName() {
+  const seq = line();
+  for (let n = seq.length; n > 0; n--) { const name = NAMES[seq.slice(0, n).join(' ')]; if (name) return name; }
+  return '';
+}
+
+function commit(m, list) {
+  m.san = san(m, list, true);
+  make(m);
+  history.push(m);
+  last = { from: m.from, to: m.to };
+  m.p.z = ++z;
+  if (m.rook) m.rook.z = z;
+}
+
+async function slide(m, back, ms) {
+  const g = game;
+  busy++;
+  const to = back ? m.from : m.to;
+  const jobs = [tween(m.p, { x: to & 7, y: to >> 3 }, ms, ease.inOutCubic)];
+  if (m.rook) { const rt = back ? m.rookFrom : m.rookTo; jobs.push(tween(m.rook, { x: rt & 7, y: rt >> 3 }, ms, ease.inOutCubic)); }
+  if (m.cap) jobs.push(tween(m.cap, { a: back ? 1 : 0 }, ms, back ? ease.outQuad : ease.inQuad));
+  fx.hl = 0;
+  jobs.push(tween(fx, { hl: 1 }, ms + 120, ease.outQuad));
+  await Promise.all(jobs);
+  if (g === game) busy--;
+}
+
+function pick(list) {
+  const want = REPLY[line().join(' ')];
+  if (want) { const m = list.find(x => san(x, list, false) === want); if (m) return m; }
+  let best = null, top = -Infinity;
+  for (const m of list) {
+    const v = VAL[m.p.t];
+    let sc = (m.cap ? VAL[m.cap.t] * 10 : 0) + (m.promo ? 80 : 0) + Math.random() * 1.5;
+    if (attacked(m.from, 'b')) sc += v * 3;
+    make(m);
+    if (attacked(m.to, 'b')) sc -= attacked(m.to, 'w') ? Math.max(0, v - 3) * 10 : v * 10;
+    if (attacked(kings.b.s, 'w')) sc += legal('b').length ? 2 : 10000;
+    unmake(m);
+    const r = m.to >> 3, c = m.to & 7;
+    if ('nbp'.includes(m.p.t)) sc += (3.5 - Math.max(Math.abs(r - 3.5), Math.abs(c - 3.5))) * 0.6;
+    if ((m.p.t === 'n' || m.p.t === 'b') && (m.from >> 3) === 7) sc += 1.5;
+    if (m.rook) sc += 4; else if (m.p.t === 'k') sc -= 2;
+    if (sc > top) { top = sc; best = m; }
+  }
+  return best;
+}
+
+function flash(text) {
+  note = text;
+  clearTimeout(noteId);
+  noteId = setTimeout(() => { note = ''; }, 1800);
+}
+
+function stopClock() { if (clockId) clearInterval(clockId); clockId = 0; }
+function startClock() {
+  started = true;
+  if (clockId) return;
+  clockId = setInterval(() => {
+    if (over) return stopClock();
+    clock[turn] = Math.max(0, clock[turn] - 1);
+    if (!clock[turn]) finish(turn === 'b' ? 'Kai flagged' : 'Sam flagged', turn === 'b' ? 'Sam wins on time' : 'Kai wins on time 🏆');
+  }, 1000);
+}
+
+function finish(title, sub) {
+  over = { title, sub };
+  stopClock();
+  clearSel();
+  transition('pop');
+  fx.over = 0;
+  tween(fx, { over: 1 }, 480, ease.outBack);
+}
+
+function checkEnd() {
+  if (legal(turn).length) return false;
+  const mate = attacked(kings[turn].s, foe(turn));
+  finish(mate ? 'Checkmate' : 'Stalemate', !mate ? 'Draw 🤝' : turn === 'w' ? 'Kai wins 🏆' : 'Sam wins');
+  return true;
+}
+
+function clearSel() {
+  if (sel >= 0 && board[sel]) tween(board[sel], { lift: 0 }, 160, ease.outQuad);
+  sel = -1;
+  targets = [];
+}
+
+function select(s) {
+  clearSel();
+  sel = s;
+  targets = legal('b').filter(m => m.from === s);
+  tween(board[s], { lift: 1 }, 300, ease.outBack);
+  fx.sel = 0; fx.dot = 0;
+  tween(fx, { sel: 1 }, 180, ease.outQuad);
+  tween(fx, { dot: 1 }, 320, ease.outBack);
+  if (!targets.length) flash(`That ${NAME[board[s].t]} has no moves`);
+}
+
+const idle = () => !busy && !thinking && !over && turn === 'b' && (fx.flip === 0 || fx.flip === 1);
+
+async function userMove(m) {
+  const list = legal('b');
+  clearSel();
+  commit(m, list);
+  startClock();
+  const g = game;
+  await slide(m, false, 300);
+  if (g !== game || over || checkEnd()) return;
+  reply();
+}
+
+async function reply() {
+  const g = game, me = ++think;
+  thinking = true;
+  await sleep(450 + Math.random() * 450);
+  if (g !== game || me !== think) return;
+  thinking = false;
+  if (over) return;
+  const list = legal('w');
+  const m = pick(list);
+  if (!m) return;
+  commit(m, list);
+  await slide(m, false, 340);
+  if (g === game) checkEnd();
+}
+
+async function undo() {
+  if (busy || history.length <= OPENING.length || (fx.flip !== 0 && fx.flip !== 1)) return;
+  think++;
+  thinking = false;
+  clearSel();
+  if (over) {
+    transition('fade');
+    over = null; fx.over = 0;
+    for (const c of 'wb') clock[c] = Math.max(clock[c], 15);
+    if (started) startClock();
+  }
+  const g = game;
+  let n = turn === 'b' ? 2 : 1;
+  while (n-- > 0 && history.length > OPENING.length) {
+    const m = history.pop();
+    unmake(m);
+    const prev = history[history.length - 1];
+    last = prev ? { from: prev.from, to: prev.to } : null;
+    m.p.z = ++z;
+    await slide(m, true, 240);
+    if (g !== game) return;
+  }
+}
+
+function reset() {
+  game++; think++; busy = 0; z = 0;
+  board = Array(64).fill(null); pieces = []; kings = {}; history = [];
+  turn = 'w'; sel = -1; targets = []; last = null; over = null; thinking = false; started = false; note = '';
+  stopClock();
+  clock.w = 291; clock.b = 298; fx.over = 0; fx.hl = 1;
+  const back = 'rnbqkbnr';
+  for (let c = 0; c < 8; c++) { put(back[c], 'b', c); put('p', 'b', 8 + c); put('p', 'w', 48 + c); put(back[c], 'w', 56 + c); }
+  for (const text of OPENING.slice(0, 4)) { const [m, list] = find(turn, text); commit(m, list); }
+  for (const p of pieces) { p.x = p.s & 7; p.y = p.s >> 3; }
+}
+
+function intro() {
+  if (history.length !== OPENING.length - 1) return;
+  const [m, list] = find('w', 'Bb5');
+  commit(m, list);
+  slide(m, false, 560);
+}
+
+reset();
+setTimeout(intro, 250);
+
+function onAction(name, value) {
+  if (name === 'sq') {
+    if (!idle()) return;
+    const s = Number(value), p = board[s];
+    if (sel >= 0) {
+      const m = targets.find(t => t.to === s);
+      if (m) return userMove(m);
+      if (p && p.c === 'b' && s !== sel) return select(s);
+      return clearSel();
+    }
+    if (p && p.c === 'b') return select(s);
+    if (p) flash("That's Sam's piece, you play Black");
+    return;
+  }
+  if (name === 'book') {
+    if (!idle()) return;
+    const [m] = find('b', value);
+    if (m) userMove(m);
+    return;
+  }
+  if (name === 'undo') return undo();
+  if (name === 'flip') {
+    clearSel();
+    flipTo = 1 - flipTo;
+    tween(fx, { flip: flipTo }, 620, ease.inOutCubic);
+    return;
+  }
+  if (name === 'new') {
+    transition('fade');
+    reset();
+    setTimeout(intro, 350);
+  }
+}
+
+function render() {
+  const F = fx.flip > 0.5, hv = Math.abs(fx.flip * 2 - 1);
+  const chk = attacked(kings[turn].s, foe(turn)) ? kings[turn].s : -1;
+  const tmap = {};
+  for (const m of targets) tmap[m.to] = m;
+  let sqs = '';
+  for (let R = 0; R < 8; R++) {
+    sqs += '<div class="rw">';
+    for (let C = 0; C < 8; C++) {
+      const s = F ? 63 - (R * 8 + C) : R * 8 + C;
+      const light = (R + C) % 2 === 0;
+      let bg = light ? '#f0d9b5' : '#b58863';
+      if (last && (s === last.from || s === last.to)) bg = mix(bg, light ? '#cdd26a' : '#aaa23a', fx.hl * hv);
+      if (s === sel) bg = mix(bg, light ? '#f7ec5c' : '#d9c13a', fx.sel * hv);
+      if (s === chk) bg = mix(bg, '#ff3b30', 0.62 * hv);
+      const t = tmap[s];
+      if (t && t.cap) bg = mix(bg, '#e0584a', 0.5 * clamp(fx.dot, 0, 1) * hv);
+      let inner = '<div class="hv"></div>';
+      if (t && !t.cap) {
+        const d = Math.max(0, 11 * fx.dot * hv), pt = (S - d) / 2;
+        inner = `<div class="hv" style="height: ${(S - pt).toFixed(1)}px; padding-top: ${pt.toFixed(1)}px"><div class="dot" style="width: ${d.toFixed(1)}px; height: ${d.toFixed(1)}px; border-radius: ${(d / 2).toFixed(1)}px"></div></div>`;
+      }
+      sqs += `<div class="sq" data-action="sq" data-value="${s}" style="background-color: ${bg}">${inner}</div>`;
+    }
+    sqs += '</div>';
+  }
+
+  const canAct = idle();
+  const pcs = pieces.filter(p => !p.dead || p.a > 0.02).sort((a, b) => a.z - b.z).map(p => {
+    const X = lerp(p.x, 7 - p.x, fx.flip) * S, Y = lerp(p.y, 7 - p.y, fx.flip) * S - 2 * p.lift;
+    const a = clamp(p.a, 0, 1).toFixed(2);
+    const act = canAct && !p.dead && (p.c === 'b' || !!tmap[p.s]);
+    const glyph = p.c === 'w'
+      ? `<span style="color: rgba(255,255,255,${a})">${FILL[p.t]}</span><div class="ol" style="color: rgba(28,28,30,${a})">${LINE[p.t]}</div>`
+      : `<span style="color: rgba(28,28,30,${a})">${FILL[p.t]}</span>`;
+    return `<div class="pc${act ? ' act' : ''}"${p.dead ? '' : ` data-action="sq" data-value="${p.s}"`} style="left: ${X.toFixed(1)}px; top: ${Y.toFixed(1)}px; font-size: ${(29 + 5 * p.lift).toFixed(1)}px">${glyph}</div>`;
+  }).join('');
+
+  const o = clamp(fx.over, 0, 1);
+  const banner = over ? `<div class="banner" style="top: ${(98 + 10 * (1 - o)).toFixed(1)}px; background-color: rgba(28,28,30,${(0.88 * o).toFixed(2)})">
+      <div style="font-size: ${Math.max(1, 19 * fx.over).toFixed(1)}px; font-weight: 800">${esc(over.title)}</div>
+      <div class="small" style="color: rgba(255,255,255,${(0.8 * o).toFixed(2)})">${esc(over.sub)}</div></div>` : '';
+
+  const ranks = [0, 1, 2, 3, 4, 5, 6, 7].map(R => `<div>${F ? R + 1 : 8 - R}</div>`).join('');
+  const files = [0, 1, 2, 3, 4, 5, 6, 7].map(C => `<div>${FILES[F ? 7 - C : C]}</div>`).join('');
+
+  const who = { w: 'Sam · White', b: 'Kai · you' };
+  const clk = c => `<div class="clk${!over && turn === c ? ' on' : ''}"><div class="tiny">${who[c]}</div><b>${mmss(clock[c])}</b></div>`;
+  const taken = c => {
+    const gone = pieces.filter(p => p.dead && p.c === foe(c)).sort((a, b) => VAL[b.t] - VAL[a.t]);
+    const mine = gone.reduce((n, p) => n + VAL[p.t], 0);
+    const theirs = pieces.filter(p => p.dead && p.c === c).reduce((n, p) => n + VAL[p.t], 0);
+    const glyphs = gone.map(p => p.c === 'w' ? LINE[p.t] : FILL[p.t]).join('');
+    return `<div class="cap">${glyphs || '&nbsp;'}${mine > theirs ? ` <b class="small">+${mine - theirs}</b>` : ''}</div>`;
+  };
+  const topSide = F ? 'w' : 'b', bottomSide = foe(topSide);
+  const name = openingName();
+  const book = canAct ? bookMoves() : [];
+  const middle = `<div style="margin-top: 6px"><div class="caps">Opening</div><div class="small" style="margin-top: 2px">Ruy Lopez${name ? `<br><span class="muted">${esc(name)}</span>` : ''}</div>
+    ${book.length ? `<div class="caps" style="margin-top: 8px">Book</div><div>${book.map(b => `<span class="bk" data-action="book" data-value="${esc(b)}">${esc(b)}</span>`).join('')}</div>` : ''}</div>`;
+
+  const status = over ? `<span class="badge">${esc(over.title)}</span>`
+    : thinking ? '<span class="badge purple">Sam is thinking…</span>'
+    : chk >= 0 ? '<span class="badge red">Check!</span>'
+    : turn === 'b' ? '<span class="badge orange">Black to move</span>' : '<span class="badge">White to move</span>';
+
+  const sans = history.map(m => m.san);
+  const first = Math.max(0, sans.length - 16) & ~1;
+  let pgn = first ? '<span class="n">…</span>' : '';
+  for (let i = first; i < sans.length; i++) {
+    pgn += (i % 2 ? '' : `<span class="n">${i / 2 + 1}.</span>`) + `<span class="m${i === sans.length - 1 ? ' last' : ''}">${sans[i]}</span> `;
+  }
+
+  const hint = over ? 'Undo, or start a new game' : thinking ? 'Your move is on the board' : sel >= 0 ? `${targets.length} move${targets.length === 1 ? '' : 's'} · tap a dot` : turn === 'b' ? 'Tap a black piece' : 'Sam opens…';
+  const canUndo = history.length > OPENING.length && !busy;
+
+  return `<div class="card pad chs">
+    <div class="hd"><b class="grow" style="font-size: 16px">♟️ Sam vs Kai</b>${status}</div>
+    <div class="tiny ${note ? 't-orange' : 'muted'}">${note ? esc(note) : 'You play Black for Kai · Sam answers from the book'}</div>
+    <div class="wrap">
+      <div>
+        <div class="row" style="align-items: flex-start"><div class="rk">${ranks}</div><div class="bd">${sqs}${pcs}${banner}</div></div>
+        <div class="fl">${files}</div>
+      </div>
+      <div class="side">
+        ${clk(topSide)}${taken(topSide)}${middle}
+        <div style="position: absolute; left: 0; top: 218px; width: 98px">${taken(bottomSide)}${clk(bottomSide)}</div>
+      </div>
+    </div>
+    <div class="pgn">${pgn}</div>
+    <div class="ctl"><span class="small muted grow">${hint}</span>
+      <button${canUndo ? '' : ' class="off"'} data-action="undo">↶ Undo</button><button data-action="flip">⇅ Flip</button><button data-action="new">↻ New</button></div>
+  </div>`;
+}
+</script>
+
+--- kai 19:20 bare
+<style>
+  .qz { width: 380px; max-width: 100%; }
+  .qz .hd { display: flex; align-items: center; }
+  .qz .segs { display: flex; margin: 10px 0 12px 0; }
+  .qz .segs div { height: 5px; border-radius: 3px; flex-grow: 1; flex-basis: 0; }
+  .qz .qn { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #ff9500; }
+  .qz .qt { font-size: 16px; font-weight: 700; margin: 3px 0 10px 0; line-height: 1.3; }
+  .qz .opts { overflow: hidden; }
+  .qz .opt { display: flex; align-items: center; padding: 7px 10px; margin-bottom: 7px; border-radius: 11px; border: 1px solid rgba(127,127,127,0.28); font-size: 14px; }
+  .qz .opt.live:hover { background-color: rgba(255,149,0,0.09); border-color: rgba(255,149,0,0.75); }
+  .qz .lt { width: 24px; height: 24px; line-height: 24px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 800; margin-right: 10px; background-color: rgba(127,127,127,0.16); }
+  .qz .why { padding: 9px 11px; border-radius: 10px; font-size: 13px; background-color: rgba(255,149,0,0.12); }
+  .qz .foot { display: flex; align-items: center; margin-top: 10px; }
+  .qz .ring { position: relative; width: 120px; height: 120px; margin: 4px auto 6px auto; }
+  .qz .ring .num { position: absolute; left: 0; top: 36px; width: 120px; text-align: center; font-size: 30px; font-weight: 800; line-height: 34px; }
+  .qz .ring .of { position: absolute; left: 0; top: 70px; width: 120px; text-align: center; font-size: 11px; color: #8e8e93; }
+  .qz .rv { display: flex; align-items: flex-start; padding: 7px 0; border-top: 1px solid rgba(127,127,127,0.16); font-size: 13px; }
+  .qz .rv .ic { width: 22px; font-weight: 800; }
+</style>
+<div class="card pad qz"><b>❓ Nerd quiz: rendering edition</b><div class="small muted">3 questions about how these bubbles are drawn.</div></div>
+<script>
+const QS = [
+  { q: 'Which HTML5 parser does litehtml bundle?', opts: ['html5ever', 'gumbo', 'libxml2', 'Lexbor'], a: 1,
+    why: "Google's <b>gumbo</b>. It lives in <code>vendor/litehtml/src/gumbo</code>." },
+  { q: 'What does this app use to draw text?', opts: ['WebKit', 'Skia', 'CoreText', 'FreeType'], a: 2,
+    why: 'Every word becomes a <code>CTLine</code>, which also gives automatic emoji fallback.' },
+  { q: 'Which of these does litehtml NOT support?', opts: ['Flexbox', 'Conic gradients', 'CSS counters', 'CSS grid'], a: 3,
+    why: 'No grid (yet). Flexbox, all three gradient types and counters all work. You have seen them in this app.' },
+];
+const LETTERS = 'ABCD';
+const VERDICT = ['Try again 🙈', 'Read the source, Luke 📖', 'Solid! The grid one is a trap 😏', 'Rendering nerd 🤓 Zoe-level'];
+let phase = 'q', qi = 0, picked = null, answers = [], score = 0, streak = 0, order = [[0, 1, 2, 3], [0, 1, 2, 3], [0, 1, 2, 3]], shake = 0, round = 0;
+const fx = { enter: 0, fb: 0, pop: 1, bar: 0, ring: 0 };
+
+function enter() {
+  fx.enter = 0;
+  tween(fx, { enter: 1 }, 700, ease.linear);
+  tween(fx, { bar: qi + 0.5 }, 500, ease.outCubic);
+}
+setTimeout(enter, 250);
+
+function shuffle(a) {
+  const b = a.slice();
+  for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; }
+  return b;
+}
+
+function onAction(name, value) {
+  if (name === 'pick') {
+    if (phase !== 'q' || picked !== null) return;
+    const Q = QS[qi];
+    picked = Number(value);
+    answers[qi] = picked;
+    const ok = picked === Q.a;
+    if (ok) { score++; streak++; } else streak = 0;
+    transition('fade');
+    fx.fb = 0;
+    tween(fx, { fb: 1 }, 420, ease.outCubic);
+    tween(fx, { bar: qi + 1 }, 420, ease.outCubic);
+    if (ok) { fx.pop = 1.7; tween(fx, { pop: 1 }, 480, ease.outBack); }
+    else animate(520, (e, t) => { shake = Math.sin(t * Math.PI * 6) * 9 * (1 - t); }, ease.linear).then(() => { shake = 0; });
+    return;
+  }
+  if (name === 'next') {
+    if (phase !== 'q' || picked === null) return;
+    if (qi + 1 < QS.length) {
+      transition('slide-left');
+      qi++; picked = null;
+      enter();
+    } else {
+      transition('pop');
+      phase = 'done';
+      fx.ring = 0;
+      tween(fx, { ring: score / QS.length }, 950, ease.outCubic);
+    }
+    return;
+  }
+  if (name === 'restart') {
+    transition('slide-right');
+    phase = 'q'; qi = 0; picked = null; answers = []; score = 0; streak = 0; round++;
+    order = QS.map(() => shuffle([0, 1, 2, 3]));
+    fx.bar = 0;
+    enter();
+  }
+}
+
+function ring(p) {
+  const arc = p > 0.005 ? `<circle cx='60' cy='60' r='50' fill='none' stroke='${p >= 0.99 ? '#34c759' : '#ff9500'}' stroke-width='12' stroke-linecap='round' stroke-dasharray='${(p * 314.16).toFixed(1)} 400' transform='rotate(-90 60 60)'/>` : '';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><circle cx='60' cy='60' r='50' fill='none' stroke='rgba(127,127,127,0.2)' stroke-width='12'/>${arc}</svg>`);
+}
+
+function header() {
+  return `<div class="hd"><img src="icon:question-fill?size=24&color=ff9500" style="margin-right: 8px"><b class="grow" style="font-size: 16px">Nerd quiz: rendering edition</b>
+    <span class="badge ${score ? 'green' : ''}" style="font-size: ${(11 * fx.pop).toFixed(1)}px">★ ${score}</span></div>`;
+}
+
+function segments() {
+  return '<div class="segs">' + QS.map((Q, i) => {
+    let color = 'rgba(127,127,127,0.2)';
+    if (answers[i] !== undefined) color = mix('rgba(127,127,127,0.2)', answers[i] === Q.a ? '#34c759' : '#ff3b30', clamp(fx.bar - i, 0, 1));
+    else if (i === qi) color = mix('rgba(127,127,127,0.2)', '#ff9500', clamp((fx.bar - i) * 2, 0, 1));
+    return `<div style="background-color: ${color}; margin-right: ${i < QS.length - 1 ? 4 : 0}px"></div>`;
+  }).join('') + '</div>';
+}
+
+function question() {
+  const Q = QS[qi], done = picked !== null, ok = picked === Q.a;
+  const rows = order[qi].map((j, k) => {
+    const local = ease.outCubic(clamp((fx.enter - k * 0.12) / 0.5, 0, 1));
+    let cls = 'opt fg', style = '', ltStyle = '', mark = '';
+    if (!done) {
+      cls += ' live';
+      style = `margin-left: ${((1 - local) * 36).toFixed(1)}px; margin-right: ${((local - 1) * 36).toFixed(1)}px`;
+    } else if (j === Q.a) {
+      style = `background-color: ${mix('rgba(52,199,89,0)', 'rgba(52,199,89,0.18)', fx.fb)}; border-color: ${mix('rgba(127,127,127,0.28)', '#34c759', fx.fb)}`;
+      ltStyle = `background-color: ${mix('rgba(127,127,127,0.16)', '#34c759', fx.fb)}; color: #ffffff`;
+      mark = '<b class="t-green">✓</b>';
+    } else if (j === picked) {
+      style = `background-color: ${mix('rgba(255,59,48,0)', 'rgba(255,59,48,0.15)', fx.fb)}; border-color: ${mix('rgba(127,127,127,0.28)', '#ff3b30', fx.fb)}; margin-left: ${shake.toFixed(1)}px; margin-right: ${(-shake).toFixed(1)}px`;
+      ltStyle = `background-color: ${mix('rgba(127,127,127,0.16)', '#ff3b30', fx.fb)}; color: #ffffff`;
+      mark = '<b class="t-red">✗</b>';
+    } else {
+      cls = 'opt muted';
+    }
+    return `<div class="${cls}" ${done ? '' : `data-action="pick" data-value="${j}"`} style="${style}">
+      <span class="lt" style="${ltStyle}">${LETTERS[k]}</span><span class="grow">${esc(Q.opts[j])}</span>${mark}</div>`;
+  }).join('');
+  const feedback = done ? `<div class="why"><b class="${ok ? 't-green' : 't-red'}">${ok ? 'Correct! +1' : `Not quite. It's ${LETTERS[order[qi].indexOf(Q.a)]}, ${esc(Q.opts[Q.a])}`}</b><div style="margin-top: 3px">💡 ${Q.why}</div></div>` : '';
+  const last = qi === QS.length - 1;
+  return `${segments()}
+    <div class="qn">Question ${qi + 1} of ${QS.length}</div>
+    <div class="qt">${esc(Q.q)}</div>
+    <div class="opts">${rows}</div>${feedback}
+    <div class="foot"><span class="small muted grow">${streak > 1 ? `🔥 ${streak} in a row` : done ? `Score ${score}/${qi + 1}` : 'Pick an answer'}</span>
+      ${done ? `<button class="primary" data-action="next">${last ? 'See results' : 'Next →'}</button>` : ''}</div>`;
+}
+
+function results() {
+  const shown = fx.ring * QS.length;
+  const rows = QS.map((Q, i) => {
+    const ok = answers[i] === Q.a;
+    return `<div class="rv"><span class="ic ${ok ? 't-green' : 't-red'}">${ok ? '✓' : '✗'}</span><div class="grow">${esc(Q.q)}
+      <div class="tiny muted">${ok ? 'You said' : `You said ${esc(Q.opts[answers[i]])} ·`} <b>${esc(Q.opts[Q.a])}</b></div></div></div>`;
+  }).join('');
+  return `<div class="ring"><img src="${ring(fx.ring)}" width="120" height="120">
+      <div class="num">${Math.round(shown)}/${QS.length}</div><div class="of">correct</div></div>
+    <div class="center" style="font-size: 15px; font-weight: 700; margin-bottom: 8px">${VERDICT[score]}</div>
+    ${rows}
+    <div class="foot"><span class="small muted grow">${round ? `Round ${round + 1} · answers shuffled` : 'Answers get shuffled next round'}</span><button class="primary" data-action="restart">↻ Play again</button></div>`;
+}
+
+function render() {
+  return `<div class="card pad qz">${header()}${phase === 'q' ? question() : results()}</div>`;
+}
+</script>
+
+--- zoe 19:24
+I got all three 😎 the grid one was a trap
+
+--- sam 19:30 bare
+<style>
+  .cal { width: 392px; max-width: 100%; }
+  .cal .hd { display: flex; align-items: center; margin-bottom: 6px; }
+  .cal .nav { display: inline-block; width: 28px; height: 26px; line-height: 25px; text-align: center; border-radius: 8px; font-size: 19px; font-weight: 700; color: #007aff; margin-left: 2px; }
+  .cal .nav:hover { background-color: rgba(0,122,255,0.12); }
+  .cal .tdy { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; color: #007aff; border: 1px solid rgba(0,122,255,0.5); margin-right: 4px; }
+  .cal .tdy:hover { background-color: rgba(0,122,255,0.1); }
+  .cal table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .cal th { width: 14.28%; font-size: 10px; color: #8e8e93; text-transform: uppercase; padding: 3px 0; font-weight: 700; }
+  .cal td { width: 14.28%; height: 47px; vertical-align: top; border: 1px solid rgba(127,127,127,0.15); padding: 2px 3px; }
+  .cal td.we { background-color: rgba(127,127,127,0.05); }
+  .cal td.empty { background-color: transparent; border-color: transparent; }
+  .cal td.d:hover { background-color: rgba(0,122,255,0.08); }
+  .cal .dn { display: inline-block; width: 19px; height: 19px; line-height: 19px; text-align: center; font-size: 12px; font-weight: 600; border-radius: 10px; margin-bottom: 1px; }
+  .cal .ev { font-size: 9px; line-height: 13px; height: 13px; color: #ffffff; border-radius: 3px; padding: 0 3px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; }
+  .cal .more { font-size: 9px; line-height: 12px; color: #8e8e93; font-weight: 700; }
+  .cal .day { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background-color: rgba(127,127,127,0.09); }
+  .cal .er { display: flex; align-items: center; padding: 4px 0; }
+  .cal .er .bar { width: 4px; height: 28px; border-radius: 2px; margin-right: 9px; }
+  .cal .x { width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 11px; color: #8e8e93; }
+  .cal .x:hover { background-color: rgba(255,59,48,0.14); color: #ff3b30; }
+  .cal .pre { display: inline-block; padding: 3px 10px; margin: 6px 6px 0 0; border-radius: 13px; font-size: 12px; font-weight: 600; border: 1px solid rgba(127,127,127,0.3); }
+  .cal .pre:hover { background-color: rgba(0,122,255,0.1); border-color: #007aff; }
+</style>
+<div class="card pad cal"><b style="font-size: 18px">October 2026</b><div class="small muted">Game night on Sat 3 and Sat 24 · Lisbon trip 9–11 · Kai's birthday on the 17th</div></div>
+<script>
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const TODAY = { y: 2026, m: 9, d: 7 };
+const PRESETS = [
+  { t: '🎲 Game night', c: '#af52de', time: '19:00 · at Sam’s' },
+  { t: '🍕 Dinner', c: '#ff9500', time: '20:00' },
+  { t: '🏃 Morning run', c: '#34c759', time: '07:30' },
+];
+const key = (y, m, d) => `${y}-${m}-${d}`;
+const events = {};
+const seed = (y, m, days, t, c, time) => { for (const d of days) (events[key(y, m, d)] = events[key(y, m, d)] || []).push({ t, c, time, mine: false, grow: 1, flash: 0 }); };
+seed(2026, 8, [5, 19], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 8, [12], 'Design review', '#007aff', '14:00');
+seed(2026, 8, [24], 'Release 0.2', '#34c759', '16:00');
+seed(2026, 9, [3, 24], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 9, [9, 10, 11], '✈️ Lisbon', '#ff9500', 'All day · TP 1351');
+seed(2026, 9, [14], 'Sprint review', '#007aff', '11:00');
+seed(2026, 9, [17], 'Kai’s 🎂', '#ff2d55', 'All day');
+seed(2026, 9, [21], 'Dentist', '#8e8e93', '09:30');
+seed(2026, 9, [21], 'Release 0.3', '#34c759', '16:00');
+seed(2026, 9, [28, 29], 'Offsite', '#30b0c7', 'All day · Sintra');
+seed(2026, 9, [31], '🎃 Party', '#ff9500', '20:00 · costumes!');
+seed(2026, 10, [7, 21], 'Game night', '#af52de', '19:00 · at Sam’s');
+seed(2026, 10, [11], 'Sprint review', '#007aff', '11:00');
+seed(2026, 10, [18], 'Release 0.4', '#34c759', '16:00');
+
+let view = { y: 2026, m: 9 }, sel = { y: 2026, m: 9, d: 7 }, added = 0;
+const fx = { enter: 0, sel: 1 };
+setTimeout(() => tween(fx, { enter: 1 }, 850, ease.linear), 250);
+
+function shift(dir) {
+  transition(dir > 0 ? 'slide-left' : 'slide-right');
+  const m = view.m + dir;
+  view = { y: view.y + Math.floor(m / 12), m: (m + 12) % 12 };
+}
+
+function onAction(name, value) {
+  if (name === 'prev') return shift(-1);
+  if (name === 'next') return shift(1);
+  if (name === 'today') {
+    const dir = (TODAY.y - view.y) * 12 + TODAY.m - view.m;
+    transition(dir > 0 ? 'slide-left' : dir < 0 ? 'slide-right' : 'fade');
+    view = { y: TODAY.y, m: TODAY.m };
+    sel = Object.assign({}, TODAY);
+    fx.sel = 0; tween(fx, { sel: 1 }, 380, ease.outBack);
+    return;
+  }
+  if (name === 'day') {
+    const d = Number(value);
+    if (sel && sel.y === view.y && sel.m === view.m && sel.d === d) return;
+    transition('fade');
+    sel = { y: view.y, m: view.m, d };
+    fx.sel = 0; tween(fx, { sel: 1 }, 380, ease.outBack);
+    return;
+  }
+  if (!sel) return;
+  const k = key(sel.y, sel.m, sel.d), list = events[k] = events[k] || [];
+  if (name === 'add') {
+    if (list.length >= 4) return;
+    const p = PRESETS[Number(value)];
+    const ev = { t: p.t, c: p.c, time: p.time, mine: true, grow: 0, flash: 1 };
+    list.push(ev);
+    added++;
+    transition('pop');
+    tween(ev, { grow: 1 }, 520, ease.outCubic);
+    tween(ev, { flash: 0 }, 900, ease.inQuad);
+    return;
+  }
+  if (name === 'del') {
+    const i = Number(value);
+    if (!list[i] || !list[i].mine) return;
+    transition('fade');
+    list.splice(i, 1);
+    added--;
+  }
+}
+
+function grid() {
+  const offset = (new Date(view.y, view.m, 1).getDay() + 6) % 7;
+  const days = new Date(view.y, view.m + 1, 0).getDate();
+  const rows = Math.ceil((offset + days) / 7);
+  let html = '<tr>' + DOW.map(d => `<th>${d}</th>`).join('') + '</tr>';
+  for (let r = 0; r < rows; r++) {
+    html += '<tr>';
+    for (let c = 0; c < 7; c++) {
+      const i = r * 7 + c, d = i - offset + 1;
+      if (d < 1 || d > days) { html += '<td class="empty">&nbsp;</td>'; continue; }
+      const evs = events[key(view.y, view.m, d)] || [];
+      const isSel = sel && sel.y === view.y && sel.m === view.m && sel.d === d;
+      const isToday = view.y === TODAY.y && view.m === TODAY.m && d === TODAY.d;
+      const local = ease.outCubic(clamp(fx.enter * 1.7 - i / 42, 0, 1));
+      let dn = '';
+      if (isToday) dn = 'background-color: #ff3b30; color: #ffffff';
+      else if (isSel) dn = `background-color: ${mix('rgba(0,122,255,0)', '#007aff', clamp(fx.sel, 0, 1))}; color: #ffffff`;
+      const shown = evs.length > 2 ? evs.slice(0, 1) : evs;
+      const pills = shown.map(e => {
+        const w = Math.round(42 * local * clamp(e.grow, 0, 1));
+        return `<div class="ev" style="width: ${w}px; background-color: ${e.flash > 0.01 ? mix(e.c, '#ffffff', 0.55 * e.flash) : e.c}">${esc(e.t)}</div>`;
+      }).join('') + (evs.length > 2 ? `<div class="more">+${evs.length - 1} more</div>` : '');
+      const bg = isSel ? ` style="background-color: rgba(0,122,255,${(0.11 * clamp(fx.sel, 0, 1)).toFixed(3)})"` : '';
+      html += `<td class="d${c >= 5 ? ' we' : ''}" data-action="day" data-value="${d}"${bg}><div class="dn" style="${dn}">${d}</div>${pills}</td>`;
+    }
+    html += '</tr>';
+  }
+  return html;
+}
+
+function details() {
+  if (!sel) return '';
+  const list = events[key(sel.y, sel.m, sel.d)] || [];
+  const wd = WEEKDAY[new Date(sel.y, sel.m, sel.d).getDay()];
+  const isToday = sel.y === TODAY.y && sel.m === TODAY.m && sel.d === TODAY.d;
+  const rows = list.map((e, i) => `<div class="er"><div class="bar" style="background-color: ${e.c}"></div>
+      <div class="grow"><b>${esc(e.t)}</b><div class="tiny muted">${esc(e.time)}${e.mine ? ' · added by you' : ''}</div></div>
+      ${e.mine ? `<span class="x" data-action="del" data-value="${i}">✕</span>` : ''}</div>`).join('');
+  const presets = list.length < 4 ? `<div class="caps" style="margin-top: 8px">Propose</div><div>${PRESETS.map((p, i) => `<span class="pre" data-action="add" data-value="${i}">${esc(p.t)}</span>`).join('')}</div>` : '';
+  return `<div class="day">
+    <div class="row"><b class="grow">${wd}, ${MONTHS[sel.m].slice(0, 3)} ${sel.d}${isToday ? ' · <span class="t-red">today</span>' : ''}</b><span class="small muted">${list.length ? `${list.length} event${list.length > 1 ? 's' : ''}` : 'Free'}</span></div>
+    ${rows || '<div class="small muted" style="padding: 4px 0">Nothing planned yet.</div>'}${presets}</div>`;
+}
+
+function render() {
+  const total = Object.keys(events).filter(k => k.startsWith(`${view.y}-${view.m}-`)).reduce((n, k) => n + events[k].length, 0);
+  return `<div class="card pad cal">
+    <div class="hd"><b class="grow" style="font-size: 18px">${MONTHS[view.m]} <span class="muted">${view.y}</span></b>
+      <span class="tdy" data-action="today">Today</span><span class="nav" data-action="prev">‹</span><span class="nav" data-action="next">›</span></div>
+    <table>${grid()}</table>
+    ${details()}
+    <div class="tiny muted" style="margin-top: 6px">${total} event${total === 1 ? '' : 's'} this month${added ? ` · ${added} proposed by you` : ''} · tap a day for details</div>
+  </div>`;
+}
+</script>
+
+--- kai 19:40 bare
+<style>
+  .mp { width: 380px; max-width: 100%; overflow: hidden; }
+  .mp .top { display: flex; padding: 14px; color: #ffffff; border-radius: 13px 13px 0 0; }
+  .mp .art { width: 92px; height: 92px; border-radius: 12px; background-size: cover; margin-right: 14px; flex-shrink: 0; }
+  .mp .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.72); }
+  .mp .eq { display: flex; align-items: flex-end; height: 24px; margin-top: 7px; }
+  .mp .eq div { width: 3px; margin-right: 2px; border-radius: 2px; background-color: rgba(255,255,255,0.8); }
+  .mp .like { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 14px; }
+  .mp .like:hover { background-color: rgba(255,255,255,0.18); }
+  .mp .body { padding: 10px 14px 2px 14px; }
+  .mp .prog { position: relative; height: 14px; }
+  .mp .rail { position: absolute; left: 0; top: 5px; width: 352px; height: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.25); }
+  .mp .fill { position: absolute; left: 0; top: 5px; height: 4px; border-radius: 2px; background-color: #7f5af0; }
+  .mp .knob { position: absolute; top: 0; width: 12px; height: 12px; border-radius: 7px; margin-left: -7px; background-color: #ffffff; border: 1px solid rgba(0,0,0,0.2); }
+  .mp .zone { position: absolute; top: 0; height: 14px; border-radius: 3px; }
+  .mp .zone:hover { background-color: rgba(127,90,240,0.16); }
+  .mp .ctl { display: flex; align-items: center; justify-content: center; height: 56px; margin: 2px 0; }
+  .mp .ib { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 17px; margin: 0 7px; }
+  .mp .ib:hover { background-color: rgba(127,90,240,0.13); }
+  .mp .play { display: flex; align-items: center; justify-content: center; border-radius: 26px; background-color: #7f5af0; margin: 0 10px; }
+  .mp .play:hover { background-color: #6a45e0; }
+  .mp .qrow { position: relative; display: flex; align-items: center; height: 44px; padding: 0 14px; border-top: 1px solid rgba(127,127,127,0.15); font-size: 13px; }
+  .mp .qrow.cur { background-color: rgba(127,90,240,0.10); }
+  .mp .qrow:hover { background-color: rgba(127,90,240,0.07); }
+  .mp .no { width: 22px; color: #8e8e93; font-size: 12px; }
+  .mp .mini { display: flex; align-items: flex-end; width: 22px; height: 14px; }
+  .mp .mini div { width: 3px; margin-right: 1px; border-radius: 1px; background-color: #7f5af0; }
+  .mp .thumb { width: 30px; height: 30px; border-radius: 6px; margin-right: 10px; background-size: cover; }
+</style>
+<div class="card mp"><div class="pad"><b>🎧 Game night mix</b><div class="small muted">Sunset Over Alfama · Float: Left · Conic Dreams · No JavaScript Required</div></div></div>
+<script>
+const TRACKS = [
+  { title: 'Sunset Over Alfama', artist: 'The Box Models', album: 'Margin Collapse', art: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27180%27%20viewBox=%270%200%20360%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%232b1055%27/%3E%3Cstop%20offset=%270.33%27%20stop-color=%27%237597de%27/%3E%3Cstop%20offset=%270.67%27%20stop-color=%27%23ff9a8b%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ffd194%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27360%27%20height=%27180%27%20fill=%27url%28%23g%29%27/%3E%3Ccircle%20cx=%27252%27%20cy=%27110%27%20r=%2732%27%20fill=%27%23fff3c4%27/%3E%3Cpolygon%20points=%270,180%200,130%200,112%2030,110%2060,107%2090,105%20120,102%20150,123%20180,97%20210,118%20240,92%20270,113%20300,110%20330,108%20360,105%20360,180%27%20fill=%27%236a3d7c%27%20fill-opacity=%270.9%27/%3E%3Cpolygon%20points=%270,180%200,150%200,132%2030,130%2060,127%2090,125%20120,122%20150,143%20180,117%20210,138%20240,112%20270,133%20300,130%20330,128%20360,125%20360,180%27%20fill=%27%233f2a5c%27/%3E%3C/svg%3E', len: 221, bpm: 112, g: ['#2b1055', '#7597de'] },
+  { title: 'Float: Left', artist: 'The Box Models', album: 'Margin Collapse', art: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E', len: 192, bpm: 96, g: ['#0b3954', '#3a86b4'] },
+  { title: 'Conic Dreams', artist: 'Gradient Collective', album: 'Color Stops', art: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23d4fc79%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2396e6a1%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%233a7d44%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%20200L10%20130L30%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M16%20200L36%2093L56%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M42%20200L62%20106L82%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M68%20200L88%20119L108%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M94%20200L114%2082L134%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M120%20200L140%2095L160%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M146%20200L166%20108L186%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M172%20200L192%20121L212%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M198%20200L218%2084L238%20200Z%27%20fill=%27%232d6a4f%27/%3E%3C/svg%3E', len: 245, bpm: 124, g: ['#16422b', '#5f9e57'] },
+  { title: 'No JavaScript Required', artist: 'Static Site Generators', album: 'Build Step', art: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%230b1d3a%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2310294d%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%230d3b4f%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%2050C60%200%20140%20110%20210%2070%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.55%27%20stroke-width=%2718%27/%3E%3Cpath%20d=%27M-10%2078C60%2028%20140%20138%20210%2098%27%20fill=%27none%27%20stroke=%27%235ef2c4%27%20stroke-opacity=%270.43%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M-10%20106C60%2056%20140%20166%20210%20126%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.31%27%20stroke-width=%2710%27/%3E%3Cpath%20d=%27M0.8%200a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M53.8%2029a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M106.8%2058a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M159.8%2087a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M12.8%206a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M65.8%2035a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M118.8%2064a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M171.8%2093a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M24.8%2012a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M77.8%2041a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M130.8%2070a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M183.8%2099a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M36.8%2018a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M89.8%2047a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M142.8%2076a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M195.8%20105a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M48.8%2024a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M101.8%2053a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M154.8%2082a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M7.8%201a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M60.8%2030a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M113.8%2059a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M166.8%2088a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M19.8%207a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M72.8%2036a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M125.8%2065a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M178.8%2094a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M31.8%2013a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M84.8%2042a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M137.8%2071a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M190.8%20100a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M43.8%2019a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M96.8%2048a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M149.8%2077a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M2.8%20106a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M55.8%2025a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M108.8%2054a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M161.8%2083a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M14.8%202a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M67.8%2031a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6%27%20fill=%27%23ffffff%27%20fill-opacity=%270.8%27/%3E%3Cpath%20d=%27M0%20200V165C70%20140%20130%20185%20200%20160V200Z%27%20fill=%27%23081322%27/%3E%3C/svg%3E', len: 168, bpm: 132, g: ['#1d2b64', '#3fb39c'] },
+  { title: 'Reflow (Night Mix)', artist: 'Shrink-to-Fit', album: 'Layout Thrash', art: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E', len: 236, bpm: 104, g: ['#5a2a0c', '#c9814a'] },
+];
+const N = 22, ROW = 45;
+const REST = Array.from({ length: N }, (_, i) => 0.25 + 0.55 * Math.abs(Math.sin(i * 1.7 + 0.4)));
+let cur = 0, pos = 84, playing = false, shuffle = false, repeat = 0, order = [0, 1, 2, 3, 4];
+let running = false, lastT = 0, energy = 0, levels = REST.map(() => 0), liked = new Set([2]);
+const fx = { enter: 0, press: 1, heart: 1, grad: 1, seek: 0 };
+const slot = TRACKS.map((_, i) => ({ p: i }));
+let gradFrom = TRACKS[0].g, gradTo = TRACKS[0].g;
+
+setTimeout(() => { tween(fx, { enter: 1 }, 800, ease.outCubic); wake(); }, 250);
+
+function wake() {
+  if (running) return;
+  running = true;
+  lastT = performance.now();
+  requestAnimationFrame(step);
+}
+
+function step(t) {
+  const dt = Math.min(0.1, (t - lastT) / 1000);
+  lastT = t;
+  const tr = TRACKS[cur];
+  if (playing) { pos += dt; if (pos >= tr.len) ended(); }
+  energy += ((playing ? 1 : 0) - energy) * Math.min(1, dt * 5);
+  const s = t / 1000, beat = Math.pow(Math.max(0, Math.sin(s * Math.PI * tr.bpm / 60)), 6);
+  let settled = true;
+  levels = levels.map((l, i) => {
+    const live = Math.min(1, 0.2 + 0.35 * Math.abs(Math.sin(s * (1.9 + i * 0.37) + i)) + 0.45 * beat * (1 - i / N) + 0.25 * Math.random());
+    const target = REST[i] * 0.3 * fx.enter * (1 - energy) + live * energy;
+    if (Math.abs(target - l) > 0.004) settled = false;
+    return l + (target - l) * (target > l ? 0.5 : 0.22);
+  });
+  if (playing || !settled || fx.enter < 1) requestAnimationFrame(step); else running = false;
+}
+
+function ended() {
+  if (repeat === 2) { pos = 0; return; }
+  const i = order.indexOf(cur);
+  if (i + 1 < order.length) return go(order[i + 1], 'slide-left');
+  if (repeat === 1) return go(order[0], 'slide-left');
+  playing = false;
+  pos = TRACKS[cur].len;
+}
+
+function go(i, kind) {
+  if (kind) transition(kind);
+  gradFrom = TRACKS[cur].g; gradTo = TRACKS[i].g;
+  fx.grad = 0;
+  tween(fx, { grad: 1 }, 600, ease.inOutSine);
+  cur = i;
+  pos = 0;
+}
+
+function reorder() {
+  order = shuffle ? [cur].concat(TRACKS.map((_, i) => i).filter(i => i !== cur).sort(() => Math.random() - 0.5)) : TRACKS.map((_, i) => i);
+  order.forEach((t, k) => tween(slot[t], { p: k }, 520 + k * 60, ease.inOutCubic));
+}
+
+function onAction(name, value) {
+  if (name === 'play') {
+    if (!playing && pos >= TRACKS[cur].len) pos = 0;
+    playing = !playing;
+    fx.press = 0.82;
+    tween(fx, { press: 1 }, 380, ease.outBack);
+  } else if (name === 'next') {
+    const i = order.indexOf(cur);
+    go(order[(i + 1) % order.length], 'slide-left');
+  } else if (name === 'prev') {
+    if (pos > 3) { const p = { v: pos }; tween(p, { v: 0 }, 260, ease.outCubic); animate(260, () => { pos = p.v; }, ease.linear); }
+    else { const i = order.indexOf(cur); go(order[(i - 1 + order.length) % order.length], 'slide-right'); }
+  } else if (name === 'track') {
+    const i = Number(value);
+    if (i === cur) playing = !playing;
+    else { go(i, 'fade'); playing = true; }
+  } else if (name === 'seek') {
+    const target = Number(value) / 20 * TRACKS[cur].len;
+    const p = { v: pos };
+    tween(p, { v: target }, 280, ease.outCubic);
+    animate(280, () => { pos = p.v; }, ease.linear);
+  } else if (name === 'shuffle') {
+    shuffle = !shuffle;
+    reorder();
+  } else if (name === 'repeat') {
+    repeat = (repeat + 1) % 3;
+  } else if (name === 'like') {
+    if (liked.has(cur)) liked.delete(cur); else liked.add(cur);
+    fx.heart = 0.5;
+    tween(fx, { heart: 1 }, 420, ease.outBack);
+  }
+  wake();
+}
+
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const icon = (name, size, color) => `<img src="icon:${name}?size=${Math.max(1, Math.round(size * 1.2))}&color=${color}">`;
+
+function render() {
+  const tr = TRACKS[cur], k = clamp(fx.grad, 0, 1);
+  const grad = `linear-gradient(135deg, ${mix(gradFrom[0], gradTo[0], k)}, ${mix(gradFrom[1], gradTo[1], k)})`;
+  const bars = levels.map(l => `<div style="height: ${(2 + l * 22).toFixed(1)}px"></div>`).join('');
+  const shown = Math.min(pos, tr.len) * (fx.enter < 1 ? fx.enter : 1);
+  const pct = shown / tr.len * 100;
+  const zones = Array.from({ length: 20 }, (_, i) => `<div class="zone" data-action="seek" data-value="${i}" style="left: ${(i * 17.6).toFixed(1)}px; width: 17.6px"></div>`).join('');
+  const heart = liked.has(cur);
+  const hs = Math.round(17 * fx.heart);
+  const ps = Math.round(50 * fx.press);
+  const rows = order.map((t, k) => {
+    const x = TRACKS[t], isCur = t === cur;
+    const mark = isCur
+      ? `<div class="mini">${[3, 9, 15].map(i => `<div style="height: ${(3 + (playing ? levels[i] : 0.2) * 11).toFixed(1)}px"></div>`).join('')}</div>`
+      : `<span class="no">${k + 1}</span>`;
+    return `<div class="qrow${isCur ? ' cur' : ''}" data-action="track" data-value="${t}" style="top: ${((slot[t].p - k) * ROW).toFixed(1)}px">
+      ${mark}<div class="thumb" style="background-image: url(${x.art})"></div>
+      <div class="grow"><b class="${isCur ? 't-purple' : ''}">${esc(x.title)}</b><div class="tiny muted">${esc(x.artist)}</div></div>
+      <span class="muted small">${liked.has(t) ? '♥ ' : ''}${mmss(x.len)}</span></div>`;
+  }).join('');
+  return `<div class="card mp">
+    <div class="top" style="background: ${grad}">
+      <div class="art" style="background-image: url(${tr.art})"></div>
+      <div class="grow">
+        <div class="row"><div class="lbl grow">${playing ? 'Now playing' : 'Paused'} · Game night mix</div>
+          <span class="like" data-action="like">${icon(heart ? 'heart-fill' : 'heart', Math.max(1, hs), heart ? 'ff375f' : 'ffffff')}</span></div>
+        <div style="font-size: 18px; font-weight: 800">${esc(tr.title)}</div>
+        <div style="font-size: 13px; color: rgba(255,255,255,0.85)">${esc(tr.artist)} — <i>${esc(tr.album)}</i></div>
+        <div class="eq">${bars}</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="prog"><div class="rail"></div><div class="fill" style="width: ${(pct * 3.52).toFixed(1)}px"></div>
+        <div class="knob" style="left: ${(pct * 3.52).toFixed(1)}px"></div>${zones}</div>
+      <div class="row between tiny muted"><span>${mmss(shown)}</span><span>−${mmss(tr.len - shown)}</span></div>
+      <div class="ctl">
+        <span class="ib" data-action="shuffle">${icon('shuffle', 15, shuffle ? '7f5af0' : '8e8e93')}</span>
+        <span class="ib" data-action="prev">${icon('rewind-fill', 20, '7f5af0')}</span>
+        <span class="play" data-action="play" style="width: ${ps}px; height: ${ps}px">${icon(playing ? 'pause-fill' : 'play-fill', Math.max(1, Math.round(22 * fx.press)), 'ffffff')}</span>
+        <span class="ib" data-action="next">${icon('fast-forward-fill', 20, '7f5af0')}</span>
+        <span class="ib" data-action="repeat">${icon(repeat === 2 ? 'repeat-once' : 'repeat', 15, repeat ? '7f5af0' : '8e8e93')}</span>
+      </div>
+    </div>
+    <div class="row" style="padding: 4px 14px 6px 14px"><span class="caps grow">${shuffle ? 'Shuffled queue' : 'Up next'}</span><span class="tiny muted">${repeat === 2 ? 'Repeat one' : repeat === 1 ? 'Repeat all' : ''}</span></div>
+    ${rows}
+  </div>`;
+}
+</script>
+
+--- zoe 19:55 bare on=sv-4,ing1,ing3
+<style>
+  .rp { width: 392px; max-width: 100%; overflow: hidden; }
+  .rp .hero { position: relative; height: 140px; border-radius: 13px 13px 0 0; overflow: hidden; background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.6)), url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E); background-size: cover; }
+  .rp .ttl { position: absolute; left: 14px; width: 360px; }
+  .rp .facts { display: flex; text-align: center; padding: 10px 6px; border-bottom: 1px solid rgba(127,127,127,0.18); }
+  .rp .facts div { flex-grow: 1; flex-basis: 0; font-size: 12px; }
+  .rp .facts b { display: block; font-size: 15px; }
+  .rp .seg { display: flex; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.13); }
+  .rp .seg span { flex-grow: 1; flex-basis: 0; text-align: center; padding: 4px 0; border-radius: 7px; font-size: 13px; font-weight: 600; }
+  .rp .seg span:hover { background-color: rgba(127,127,127,0.14); }
+  .rp .seg span.on { background-color: #ff9500; color: #ffffff; }
+  .rp .stp { display: inline-block; width: 26px; height: 26px; line-height: 25px; text-align: center; border-radius: 13px; font-size: 17px; font-weight: 700; color: #ff9500; background-color: rgba(255,149,0,0.13); }
+  .rp .stp:hover { background-color: rgba(255,149,0,0.26); }
+  .rp .cnt { display: inline-block; width: 34px; text-align: center; font-weight: 800; }
+  .rp .meter { height: 4px; border-radius: 2px; background-color: rgba(127,127,127,0.2); margin: 6px 0 2px 0; }
+  .rp .meter div { height: 4px; border-radius: 2px; background-color: #ff9500; }
+  .rp .ing { display: flex; align-items: center; padding: 6px 4px; border-bottom: 1px solid rgba(127,127,127,0.12); font-size: 14px; border-radius: 6px; }
+  .rp .ing:hover { background-color: rgba(255,149,0,0.08); }
+  .rp .cb { width: 16px; height: 16px; line-height: 16px; border-radius: 5px; border: 2px solid rgba(127,127,127,0.5); margin-right: 10px; text-align: center; color: #ffffff; font-weight: 800; }
+  .rp .qty { font-weight: 700; font-size: 13px; }
+  .rp .mrow { display: flex; align-items: flex-start; padding: 6px 4px; border-radius: 8px; font-size: 13.5px; }
+  .rp .mrow:hover { background-color: rgba(255,149,0,0.08); }
+  .rp .num { width: 22px; height: 22px; line-height: 22px; border-radius: 11px; text-align: center; font-size: 12px; font-weight: 800; color: #ffffff; background-color: #ff9500; margin-right: 10px; flex-shrink: 0; }
+  .rp .dots { display: flex; justify-content: center; margin: 8px 0 12px 0; }
+  .rp .dots div { height: 6px; border-radius: 3px; margin: 0 2px; }
+  .rp .big { text-align: center; font-size: 40px; line-height: 48px; }
+  .rp .stxt { text-align: center; font-size: 16px; font-weight: 600; line-height: 1.35; margin: 6px 8px 10px 8px; }
+  .rp .need { text-align: center; margin-bottom: 8px; }
+  .rp .need span { display: inline-block; padding: 2px 8px; margin: 2px; border-radius: 10px; font-size: 12px; background-color: rgba(255,149,0,0.13); }
+  .rp .tmr { display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 12px; background-color: rgba(127,127,127,0.09); margin-bottom: 10px; }
+  .rp .tmr b { font-family: ui-monospace; font-size: 22px; }
+  .rp .x { width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 12px; color: #8e8e93; }
+  .rp .x:hover { background-color: rgba(127,127,127,0.16); }
+  .rp .star { font-size: 28px; padding: 0 3px; color: rgba(127,127,127,0.4); }
+  .rp .star:hover { color: #ffcc00; }
+  .rp .nut { display: flex; align-items: center; padding: 5px 0; font-size: 13px; }
+  .rp .nut .k { width: 70px; color: #8e8e93; }
+  .rp .nut .b { flex-grow: 1; height: 6px; border-radius: 3px; background-color: rgba(127,127,127,0.15); margin-right: 10px; }
+  .rp .nut .b div { height: 6px; border-radius: 3px; background-color: #ff9500; }
+  .rp .nut .v { width: 60px; text-align: right; font-weight: 700; }
+</style>
+<div class="card rp"><div class="pad"><b style="font-size: 18px">Pastéis de nata</b><div class="small muted">Dessert · Portugal 🇵🇹 · 25 min prep · 12 min bake · makes 12</div></div></div>
+<script>
+const ING = [
+  { n: 'Puff pastry', q: 2, u: ['sheet', 'sheets'] }, { n: 'Whole milk', q: 250, u: 'ml' }, { n: 'Sugar', q: 200, u: 'g' },
+  { n: 'Egg yolks', q: 6, u: null }, { n: 'Flour', q: 30, u: 'g' }, { n: 'Cinnamon stick', q: 1, u: null },
+  { n: 'Lemon peel', q: 2, u: ['strip', 'strips'] }, { n: 'Water', q: 140, u: 'ml' },
+];
+const SIZES = [6, 12, 18, 24, 36];
+const STEPS = [
+  { e: '🔥', t: 'Preheat the oven as hot as it goes, 290 °C if you can.', s: 'Preheat to 290 °C' },
+  { e: '🍯', t: 'Boil sugar, water, cinnamon and lemon peel to a syrup, about 3 minutes, 105 °C.', s: 'Make the syrup', timer: 180, use: [2, 7, 5, 6] },
+  { e: '🥛', t: 'Whisk flour into a little cold milk, then add the rest of the milk and cook until thick.', s: 'Cook the milk base', use: [4, 1] },
+  { e: '🥚', t: 'Pour the syrup into the milk while whisking. Let it cool for 10 minutes, then whisk in the yolks.', s: 'Combine, cool, add yolks', timer: 600, use: [3] },
+  { e: '🥐', t: 'Roll the pastry into a log, slice into 1.5 cm discs and press each into a muffin cup with wet thumbs.', s: 'Shape the shells', use: [0] },
+  { e: '♨️', t: 'Fill three-quarters full and bake 10 to 12 minutes, until the tops blister dark brown.', s: 'Fill and bake', timer: 720 },
+  { e: '✨', t: 'Dust with cinnamon and powdered sugar. Eat warm. Do not share.', s: 'Dust and serve' },
+];
+const NUT = [['Calories', 214, ' kcal', 300], ['Sugar', 18, ' g', 30], ['Fat', 11, ' g', 30], ['Protein', 4, ' g', 30]];
+const TABS = ['Ingredients', 'Method', 'Nutrition'];
+
+let tab = 0, mode = 'tabs', step = 0, servings = 12, rating = 0, note = '', tickId = 0, noteId = 0;
+const ticked = new Set([0, 2]);
+const pop = ING.map((_, i) => ticked.has(i) ? 1 : 0);
+const timers = {};
+const fx = { enter: 0, k: 1, n: 12, ready: 2, step: 0, bars: 0, star: 1, ring: 0 };
+
+setTimeout(() => { tween(fx, { enter: 1 }, 900, ease.linear); tween(fx, { bars: 1 }, 900, ease.outCubic); }, 250);
+
+function qty(i, k) {
+  const it = ING[i], v = it.q * k;
+  if (typeof it.u === 'string') return `${Math.round(v)} ${it.u}`;
+  const r = Math.round(v * 4) / 4, w = Math.floor(r), f = r - w;
+  const text = (w ? String(w) : '') + (f === 0.25 ? '¼' : f === 0.5 ? '½' : f === 0.75 ? '¾' : '') || '0';
+  return text + (it.u ? ' ' + (r > 1 ? it.u[1] : it.u[0]) : '');
+}
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+
+function flash(text) {
+  note = text;
+  clearTimeout(noteId);
+  noteId = setTimeout(() => { note = ''; }, 2600);
+}
+
+function tick() {
+  const now = performance.now();
+  let live = 0;
+  for (const i in timers) {
+    const t = timers[i];
+    if (!t.running) continue;
+    t.left = Math.max(0, (t.endsAt - now) / 1000);
+    if (t.left > 0) { live++; continue; }
+    t.running = false;
+    t.done = true;
+    flash(`⏰ Step ${Number(i) + 1} timer is done: ${STEPS[i].s.toLowerCase()}`);
+    fx.ring = 0;
+    animate(1400, (e, raw) => { fx.ring = Math.abs(Math.sin(raw * Math.PI * 4)); }, ease.linear).then(() => { fx.ring = 0; });
+  }
+  if (!live) { clearInterval(tickId); tickId = 0; }
+}
+
+function timerAction(i, what) {
+  const t = timers[i] = timers[i] || { total: STEPS[i].timer, left: STEPS[i].timer, running: false, endsAt: 0, done: false };
+  if (what === 'go') {
+    if (t.running) { t.left = Math.max(0, (t.endsAt - performance.now()) / 1000); t.running = false; return; }
+    if (t.left <= 0) t.left = t.total;
+    t.running = true; t.done = false;
+    t.endsAt = performance.now() + t.left * 1000;
+    if (!tickId) tickId = setInterval(tick, 250);
+  } else {
+    t.running = false; t.done = false; t.left = t.total;
+  }
+}
+
+function goStep(i) {
+  if (i === step) return;
+  transition(i > step ? 'slide-left' : 'slide-right');
+  step = i;
+  tween(fx, { step: i }, 420, ease.outCubic);
+}
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    const i = Number(value);
+    if (i === tab) return;
+    transition(i > tab ? 'slide-left' : 'slide-right');
+    tab = i;
+    fx.bars = 0;
+    tween(fx, { bars: 1 }, 700, ease.outCubic);
+  } else if (name === 'more' || name === 'less') {
+    const i = SIZES.indexOf(servings) + (name === 'more' ? 1 : -1);
+    if (i < 0 || i >= SIZES.length) return;
+    servings = SIZES[i];
+    tween(fx, { k: servings / 12, n: servings }, 520, ease.outCubic);
+  } else if (name === 'tick') {
+    const i = Number(value);
+    if (ticked.has(i)) { ticked.delete(i); pop[i] = 0; }
+    else { ticked.add(i); animate(360, e => { pop[i] = e; }, ease.outBack); }
+    tween(fx, { ready: ticked.size }, 380, ease.outCubic);
+    if (ticked.size === ING.length) flash('All set, mise en place done 👩‍🍳');
+  } else if (name === 'cook') {
+    transition('slide-up');
+    mode = 'cook';
+    step = Number(value) || 0;
+    fx.step = step;
+  } else if (name === 'exit') {
+    transition('slide-down');
+    mode = 'tabs';
+  } else if (name === 'fwd') {
+    if (step + 1 < STEPS.length) goStep(step + 1);
+    else { transition('pop'); mode = 'done'; rating = 0; }
+  } else if (name === 'back') {
+    if (step > 0) goStep(step - 1);
+  } else if (name === 'jump') {
+    goStep(Number(value));
+  } else if ((name === 'timer' || name === 'treset') && mode === 'cook' && STEPS[step].timer) {
+    timerAction(step, name === 'timer' ? 'go' : 'reset');
+  } else if (name === 'rate') {
+    rating = Number(value);
+    fx.star = 0.4;
+    tween(fx, { star: 1 }, 420, ease.outBack);
+  } else if (name === 'again') {
+    transition('slide-down');
+    mode = 'tabs'; tab = 0; step = 0;
+  }
+}
+
+function hero() {
+  const e = ease.outCubic(clamp(fx.enter * 1.6, 0, 1));
+  return `<div class="hero"><div class="ttl" style="top: ${(84 + 22 * (1 - e)).toFixed(1)}px; color: rgba(255,255,255,${e.toFixed(2)})">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase">Dessert · Portugal 🇵🇹</div>
+      <div style="font-size: 24px; font-weight: 800">Pastéis de nata</div></div></div>`;
+}
+
+function facts() {
+  const e = ease.outCubic(clamp(fx.enter * 1.4 - 0.2, 0, 1));
+  return `<div class="facts"><div><b>${Math.round(25 * e)} min</b><span class="muted">prep</span></div><div><b>${Math.round(12 * e)} min</b><span class="muted">bake</span></div>
+    <div><b>🌶🌶</b><span class="muted">medium</span></div><div><b>★ ${(4.9 * e).toFixed(1)}</b><span class="muted">${Math.round(312 * e)} cooks</span></div></div>`;
+}
+
+function seg() {
+  return `<div class="seg">${TABS.map((t, i) => `<span class="${i === tab ? 'on' : ''}" data-action="tab" data-value="${i}">${t}</span>`).join('')}</div>`;
+}
+
+function ingredients() {
+  const rows = ING.map((it, i) => {
+    const on = ticked.has(i), p = clamp(pop[i], 0, 1.3);
+    const local = ease.outCubic(clamp(fx.enter * 1.8 - 0.35 - i * 0.07, 0, 1));
+    const cb = on ? `background-color: ${mix('rgba(255,149,0,0)', '#ff9500', clamp(p, 0, 1))}; border-color: #ff9500; font-size: ${Math.max(1, 12 * p).toFixed(1)}px` : 'font-size: 12px';
+    return `<div class="ing" data-action="tick" data-value="${i}" style="margin-left: ${((1 - local) * 30).toFixed(1)}px; margin-right: ${((local - 1) * 30).toFixed(1)}px">
+      <div class="cb" style="${cb}">${on ? '✓' : '&nbsp;'}</div>
+      <span class="grow ${on ? 'muted' : 'fg'}" style="${on ? 'text-decoration: line-through' : ''}">${it.n}</span><span class="qty ${on ? 'muted' : 't-orange'}">${qty(i, fx.k)}</span></div>`;
+  }).join('');
+  return `<div class="row" style="margin: 10px 0 2px 0"><b class="grow" style="font-size: 15px">Makes ${Math.round(fx.n)} tarts</b>
+      <span class="stp" data-action="less">−</span><span class="cnt">${Math.round(fx.n)}</span><span class="stp" data-action="more">+</span></div>
+    <div class="meter"><div style="width: ${(fx.ready / ING.length * 100).toFixed(1)}%"></div></div>
+    <div class="tiny muted" style="margin-bottom: 4px">${ticked.size} of ${ING.length} ready · tap to tick off</div>
+    ${rows}
+    <div class="row" style="margin-top: 10px"><span class="small muted grow">${note ? esc(note) : 'Quantities follow the batch size'}</span><button class="primary" data-action="cook" data-value="0">▶ Start cooking</button></div>`;
+}
+
+function method() {
+  const rows = STEPS.map((s, i) => `<div class="mrow" data-action="cook" data-value="${i}"><span class="num">${i + 1}</span>
+      <span class="grow">${esc(s.t)}</span>${s.timer ? `<span class="badge orange" style="margin-left: 6px">⏱ ${s.timer / 60}m</span>` : ''}</div>`).join('');
+  return `<div style="margin-top: 8px">${rows}</div>
+    <div class="row" style="margin-top: 8px"><span class="small muted grow">Tap a step to jump in</span><button class="primary" data-action="cook" data-value="0">▶ Step by step</button></div>`;
+}
+
+function nutrition() {
+  const rows = NUT.map(([k, v, u, max], i) => {
+    const e = ease.outCubic(clamp(fx.bars * 1.5 - i * 0.15, 0, 1));
+    return `<div class="nut"><span class="k">${k}</span><div class="b"><div style="width: ${(v / max * 100 * e).toFixed(1)}%"></div></div><span class="v">${Math.round(v * e)}${u}</span></div>`;
+  }).join('');
+  return `<div class="caps" style="margin-top: 10px">Per tart</div>${rows}
+    <div class="nut"><span class="k">Joy</span><div class="b"><div style="width: ${(100 * fx.bars).toFixed(1)}%; background-color: #ff2d55"></div></div><span class="v">∞</span></div>
+    <div class="small muted" style="margin: 4px 0 10px 0">Whole batch of ${Math.round(fx.n)}: <b class="fg">${Math.round(214 * fx.n).toLocaleString('en-US')} kcal</b></div>
+    <div class="panel" style="font-size: 13px">💡 <b>Tip:</b> the blisters are the point. If your oven tops out at 250 °C, use the grill for the last 2 minutes.</div>`;
+}
+
+function ring(p, hot) {
+  const arc = p > 0.003 ? `<circle cx='30' cy='30' r='24' fill='none' stroke='${hot ? '#ff3b30' : '#ff9500'}' stroke-width='6' stroke-linecap='round' stroke-dasharray='${(p * 150.8).toFixed(1)} 200' transform='rotate(-90 30 30)'/>` : '';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'><circle cx='30' cy='30' r='24' fill='none' stroke='rgba(127,127,127,0.22)' stroke-width='6'/>${arc}</svg>`);
+}
+
+function cook() {
+  const s = STEPS[step];
+  const dots = STEPS.map((_, i) => {
+    const near = Math.max(0, 1 - Math.abs(fx.step - i));
+    return `<div data-action="jump" data-value="${i}" style="width: ${(6 + 16 * near).toFixed(1)}px; background-color: ${i <= fx.step + 0.01 ? '#ff9500' : 'rgba(127,127,127,0.3)'}"></div>`;
+  }).join('');
+  const need = s.use ? `<div class="need">${s.use.map(i => `<span>${ING[i].n} · <b>${qty(i, fx.k)}</b></span>`).join('')}</div>` : '';
+  let timer = '';
+  if (s.timer) {
+    const t = timers[step] || { total: s.timer, left: s.timer, running: false, done: false };
+    const hot = t.done && fx.ring > 0.5;
+    timer = `<div class="tmr"><img src="${ring(t.left / t.total, hot)}" width="60" height="60" style="margin-right: 12px">
+      <div><b class="${t.done ? 't-red' : ''}">${t.done ? 'Done!' : mmss(Math.ceil(t.left))}</b><div style="margin-top: 4px">
+        <button class="primary" data-action="timer">${t.running ? '❚❚ Pause' : t.done ? '↻ Again' : t.left < t.total ? '▶ Resume' : `▶ Start ${s.timer / 60} min`}</button>
+        ${t.left < t.total || t.done ? '<button data-action="treset">Reset</button>' : ''}</div></div></div>`;
+  }
+  const others = Object.keys(timers).filter(i => Number(i) !== step && timers[i].running).map(i => `<span class="badge orange" style="margin-right: 4px">⏱ ${Number(i) + 1} · ${mmss(Math.ceil(timers[i].left))}</span>`).join(' ');
+  return `<div class="pad">
+    <div class="row"><span class="caps grow">Step ${step + 1} of ${STEPS.length} · ${esc(s.s)}</span>${others}<span class="x" data-action="exit">✕</span></div>
+    <div class="dots">${dots}</div>
+    <div class="big">${s.e}</div>
+    <div class="stxt">${esc(s.t)}</div>
+    ${need}${timer}
+    ${note ? `<div class="small t-orange center" style="margin-bottom: 8px">${esc(note)}</div>` : ''}
+    <div class="row"><button data-action="back" class="${step ? '' : 'muted'}">← Back</button><span class="grow"></span>
+      <button class="primary" data-action="fwd">${step + 1 < STEPS.length ? 'Next step →' : 'Done 🎉'}</button></div>
+  </div>`;
+}
+
+function done() {
+  const stars = [1, 2, 3, 4, 5].map(i => {
+    const size = i === rating ? 28 * fx.star : 28;
+    return `<span class="star" data-action="rate" data-value="${i}" style="font-size: ${size.toFixed(1)}px${i <= rating ? '; color: #ffcc00' : ''}">★</span>`;
+  }).join('');
+  return `<div class="pad center">
+    <div style="font-size: 44px; line-height: 54px">🥧</div>
+    <div style="font-size: 20px; font-weight: 800">Bom apetite!</div>
+    <div class="small muted" style="margin: 2px 0 10px 0">${servings} pastéis de nata, warm from the oven</div>
+    <div style="height: 40px; line-height: 40px">${stars}</div>
+    <div class="small muted" style="margin-bottom: 12px">${rating ? `You rated it ${rating}/5${rating === 5 ? ' · new house favourite' : ''}` : 'How did they turn out?'}</div>
+    <button class="primary" data-action="again">Back to the recipe</button>
+  </div>`;
+}
+
+function render() {
+  if (mode === 'cook') return `<div class="card rp">${cook()}</div>`;
+  if (mode === 'done') return `<div class="card rp">${done()}</div>`;
+  const body = tab === 0 ? ingredients() : tab === 1 ? method() : nutrition();
+  return `<div class="card rp">${hero()}${facts()}<div class="pad">${seg()}${body}</div></div>`;
+}
+</script>
+
+--- kai 20:10
+<style>
+  .pa { width: 300px; max-width: 100%; }
+  .pa .tabs span { display: inline-block; padding: 2px 10px; margin-right: 4px; border-radius: 12px; font-size: 12px; font-weight: 700; background-color: rgba(127,127,127,0.13); }
+  .pa .tabs span:hover { background-color: rgba(127,127,127,0.24); }
+  .pa .tabs span.on { background-color: #5e5ce6; color: #ffffff; }
+  .pa .wrap { display: flex; align-items: flex-start; margin-top: 8px; }
+  .pa .canvas { padding: 8px; border-radius: 10px; background-color: #1c1c1e; }
+  .pa .pr { display: flex; height: 18px; }
+  .pa .px { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.05); }
+  .pa .px:hover { border-color: rgba(255,255,255,0.75); }
+  .pa .side { margin-left: 8px; }
+  .pa .tb { display: block; width: 36px; height: 30px; padding: 0; margin-bottom: 5px; font-size: 15px; line-height: 30px; }
+  .pa .tb.on { background-color: #5e5ce6; color: #ffffff; }
+  .pa .pal { display: flex; align-items: center; height: 30px; margin-top: 6px; }
+  .pa .sw { width: 18px; height: 18px; margin-right: 5px; border-radius: 6px; border: 2px solid rgba(127,127,127,0.25); text-align: center; font-size: 11px; line-height: 18px; }
+  .pa .sw:hover { border-color: rgba(94,92,230,0.6); }
+  .pa .sw.on { border-color: #5e5ce6; }
+</style>
+<p style="margin-bottom: 8px">Made pixel art while you were baking 👾 (each pixel is a div)</p>
+<script>
+const COLS = 13, ROWS = 10;
+const PAL = ['#34c759', '#ff2d55', '#ff3b30', '#ff9500', '#ffcc00', '#30b0c7', '#007aff', '#af52de', '#ffffff'];
+const EMPTY = 'rgba(28,28,30,0)';
+const CODE = { G: 0, P: 1, R: 2, O: 3, Y: 4, T: 5, B: 6, V: 7 };
+const ART = {
+  invader: { name: '👾 Invader', ox: 1, oy: 1, rows: ['..G.....G..', '...G...G...', '..GGGGGGG..', '.GG.GGG.GG.', 'GGGGGGGGGGG', 'G.GGGGGGG.G', 'G.G.....G.G', '...GG.GG...'] },
+  heart: { name: '🌈 Heart', ox: 2, oy: 1, rows: ['.PP...PP.', 'RRRR.RRRR', 'OOOOOOOOO', 'YYYYYYYYY', '.GGGGGGG.', '..TTTTT..', '...BBB...', '....V....'] },
+};
+const TOOLS = { pen: '✏️ Pen', fill: '🪣 Fill' };
+let grid = Array(COLS * ROWS).fill(-1), color = 0, tool = 'pen', mirror = false, art = 'invader', history = [], edited = false, looping = false;
+const anims = new Map();
+const fx = { sw: 1 };
+
+const colorOf = v => v < 0 ? EMPTY : PAL[v];
+
+function artGrid(key) {
+  const a = ART[key], g = Array(COLS * ROWS).fill(-1);
+  a.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch !== '.') g[(r + a.oy) * COLS + c + a.ox] = CODE[ch]; }));
+  return g;
+}
+
+function shown(i, now) {
+  const a = anims.get(i);
+  if (!a) return colorOf(grid[i]);
+  const p = clamp((now - a.t0) / a.ms, 0, 1);
+  let c = mix(a.from, a.to, ease.outCubic(p));
+  if (a.sparkle && p > 0 && p < 1) c = mix(c, '#ffffff', 0.5 * Math.sin(p * Math.PI));
+  return c;
+}
+
+function frame(t) {
+  for (const [i, a] of anims) if (t >= a.t0 + a.ms) anims.delete(i);
+  if (anims.size) requestAnimationFrame(frame); else looping = false;
+}
+
+function paint(i, v, delay = 0, ms = 220) {
+  if (grid[i] === v) return false;
+  const now = performance.now();
+  anims.set(i, { from: shown(i, now), to: colorOf(v), t0: now + delay, ms, sparkle: v >= 0 });
+  grid[i] = v;
+  if (!looping) { looping = true; requestAnimationFrame(frame); }
+  return true;
+}
+
+function snapshot() {
+  history.push(grid.slice());
+  if (history.length > 40) history.shift();
+}
+
+function reveal(key) {
+  const target = artGrid(key);
+  target.forEach((v, i) => paint(i, v, (Math.floor(i / COLS) + i % COLS) * 26, 240));
+  art = key;
+  edited = false;
+}
+
+function flood(i) {
+  const from = grid[i];
+  if (from === color) return;
+  snapshot();
+  const dist = new Map([[i, 0]]), queue = [i];
+  while (queue.length) {
+    const j = queue.shift(), r = Math.floor(j / COLS), c = j % COLS;
+    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const r2 = r + dr, c2 = c + dc, k = r2 * COLS + c2;
+      if (r2 < 0 || r2 >= ROWS || c2 < 0 || c2 >= COLS || dist.has(k) || grid[k] !== from) continue;
+      dist.set(k, dist.get(j) + 1);
+      queue.push(k);
+    }
+  }
+  for (const [k, d] of dist) paint(k, color, d * 32, 240);
+  edited = true;
+}
+
+setTimeout(() => reveal('invader'), 250);
+
+function onAction(name, value) {
+  if (name === 'px') {
+    const i = Number(value);
+    if (tool === 'fill') return flood(i);
+    const twin = Math.floor(i / COLS) * COLS + (COLS - 1 - i % COLS);
+    if (grid[i] === color && (!mirror || grid[twin] === color)) return;
+    snapshot();
+    paint(i, color, 0, 260);
+    if (mirror) paint(twin, color, 70, 260);
+    edited = true;
+  } else if (name === 'color') {
+    color = Number(value);
+    fx.sw = 0.5;
+    tween(fx, { sw: 1 }, 380, ease.outBack);
+  } else if (name === 'tool') {
+    if (TOOLS[value]) tool = value;
+  } else if (name === 'mirror') {
+    mirror = !mirror;
+  } else if (name === 'undo') {
+    const prev = history.pop();
+    if (!prev) return;
+    prev.forEach((v, i) => paint(i, v, 0, 180));
+    edited = true;
+  } else if (name === 'clear') {
+    if (grid.every(v => v < 0)) return;
+    snapshot();
+    grid.forEach((v, i) => { if (v >= 0) paint(i, -1, (ROWS - 1 - Math.floor(i / COLS)) * 40, 220); });
+    edited = true;
+  } else if (name === 'art') {
+    if (!ART[value]) return;
+    if (artGrid(value).some((v, i) => v !== grid[i])) snapshot();
+    reveal(value);
+  } else if (name === 'replay') {
+    snapshot();
+    anims.clear();
+    grid.fill(-1);
+    reveal(art);
+  }
+}
+
+function render() {
+  const now = performance.now();
+  let rows = '';
+  for (let r = 0; r < ROWS; r++) {
+    rows += '<div class="pr">';
+    for (let c = 0; c < COLS; c++) {
+      const i = r * COLS + c;
+      rows += `<div class="px" data-action="px" data-value="${i}" style="background-color: ${shown(i, now)}"></div>`;
+    }
+    rows += '</div>';
+  }
+  const sw = PAL.map((p, k) => {
+    const s = k === color ? 18 + 4 * fx.sw : 18;
+    return `<div class="sw${k === color ? ' on' : ''}" data-action="color" data-value="${k}" style="background-color: ${p}; width: ${s.toFixed(1)}px; height: ${s.toFixed(1)}px"></div>`;
+  }).join('') + `<div class="sw${color < 0 ? ' on' : ''}" data-action="color" data-value="-1" style="background-color: rgba(127,127,127,0.12)">⌫</div>`;
+  const used = grid.filter(v => v >= 0);
+  const colours = new Set(used).size;
+  const tabs = Object.keys(ART).map(k => `<span class="${k === art && !edited ? 'on' : ''}" data-action="art" data-value="${k}">${ART[k].name}</span>`).join('');
+  const tb = (action, value, label, on) => `<button class="tb${on ? ' on' : ''}" data-action="${action}"${value ? ` data-value="${value}"` : ''}>${label}</button>`;
+  return `<p style="margin-bottom: 8px">Made pixel art while you were baking 👾 Now it's yours: pick a colour and paint, every pixel is a div.</p>
+  <div class="pa">
+    <div class="tabs">${tabs}</div>
+    <div class="wrap">
+      <div><div class="canvas">${rows}</div><div class="pal">${sw}</div></div>
+      <div class="side">${tb('tool', 'pen', '✏️', tool === 'pen')}${tb('tool', 'fill', '🪣', tool === 'fill')}${tb('mirror', '', '⇆', mirror)}
+        ${tb('undo', '', '↶', false)}${tb('clear', '', '🗑', false)}${tb('replay', '', '✨', false)}</div>
+    </div>
+    <div class="tiny muted">${TOOLS[tool]}${mirror ? ' · mirror' : ''} · ${used.length} px · ${colours} colour${colours === 1 ? '' : 's'}${history.length ? ` · ${history.length} undo` : ''}${edited ? ' · tap a preset to restore' : ''}</div>
+  </div>`;
+}
+</script>
+
+--- sam 20:30 bare
+<style>[hidden]{display:none!important}
+  .sdk { width: 300px; max-width: 100%; }
+  .sdk .hd { display: flex; align-items: center; margin-bottom: 8px; }
+  .sdk .su { border-collapse: collapse; border: 2px solid #1c1c1e; background-color: #ffffff; }
+  .sdk .su td { width: 31px; height: 31px; padding: 0; text-align: center; vertical-align: middle; border: 1px solid #c7c7cc; color: #1c1c1e; }
+  .sdk .su td.br { border-right: 2px solid #1c1c1e; }
+  .sdk .su td.bb { border-bottom: 2px solid #1c1c1e; }
+  .sdk .su .h { width: 31px; height: 31px; line-height: 31px; }
+  .sdk .su td:hover .h { background-color: rgba(0,122,255,0.10); }
+  .sdk .su .g { font-weight: 700; }
+  .sdk .su .m { color: #007aff; }
+  .sdk .su .x { color: #ff3b30; }
+  .lc-dark .sdk .su { border-color: #d1d1d6; background-color: #1c1c1e; }
+  .lc-dark .sdk .su td { border-color: #48484a; color: #f2f2f7; }
+  .lc-dark .sdk .su td.br { border-right-color: #d1d1d6; }
+  .lc-dark .sdk .su td.bb { border-bottom-color: #d1d1d6; }
+  .lc-dark .sdk .su .m { color: #0a84ff; }
+  .sdk .keys { display: flex; justify-content: space-between; margin-top: 10px; }
+  .sdk .nk { width: 27px; padding: 4px 0 2px 0; border-radius: 8px; text-align: center; font-size: 17px; font-weight: 600; background-color: rgba(127,127,127,0.13); }
+  .sdk .nk:hover { background-color: rgba(0,122,255,0.18); }
+  .sdk .nk .c { font-size: 9px; line-height: 10px; color: #8e8e93; font-weight: 400; }
+  .sdk .nk.full { color: #8e8e93; }
+  .sdk .ctl { display: flex; align-items: center; margin-top: 10px; }
+  .sdk .ctl button { margin-left: 6px; font-size: 13px; padding: 4px 11px; }
+  .sdk .banner { margin-top: 10px; padding: 9px 12px; border-radius: 10px; background-color: rgba(52,199,89,0.15); text-align: center; }
+</style>
+<div class="card pad sdk"><b>🔢 Sudoku · medium</b><div class="small muted">Select a cell, then tap a number.</div></div>
+<script>
+const SOL = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+const MASK = '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79';
+const PEERS = Array.from({ length: 81 }, (_, i) => {
+  const r = Math.floor(i / 9), c = i % 9, out = [];
+  for (let j = 0; j < 81; j++) {
+    const r2 = Math.floor(j / 9), c2 = j % 9;
+    if (j !== i && (r2 === r || c2 === c || (Math.floor(r2 / 3) === Math.floor(r / 3) && Math.floor(c2 / 3) === Math.floor(c / 3)))) out.push(j);
+  }
+  return out;
+});
+let sol, giv, val, sel = -1, wrong = new Set(), mistakes = 0, elapsed = 0, clockId = 0, solved = null, entered = false, number = 0, looping = false, busy = 0;
+const anims = new Map();
+const fx = { sel: 1, wave: 0 };
+
+const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+
+function load(first) {
+  number++;
+  const perm = first ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const lines = () => first ? [0, 1, 2, 3, 4, 5, 6, 7, 8] : shuffle([0, 1, 2]).flatMap(b => shuffle([0, 1, 2]).map(r => b * 3 + r));
+  const rows = lines(), cols = lines(), flip = !first && Math.random() < 0.5;
+  sol = []; giv = []; val = [];
+  for (let i = 0; i < 81; i++) {
+    let sr = rows[Math.floor(i / 9)], sc = cols[i % 9];
+    if (flip) [sr, sc] = [sc, sr];
+    const k = sr * 9 + sc;
+    sol[i] = perm[Number(SOL[k]) - 1];
+    giv[i] = MASK[k] !== '.';
+    val[i] = giv[i] ? sol[i] : 0;
+  }
+  if (first) for (const i of [2, 3, 10, 18]) val[i] = sol[i];
+  sel = -1; wrong = new Set(); mistakes = 0; elapsed = 0; solved = null; entered = false; busy = 0;
+  anims.clear();
+  stopClock();
+}
+
+function loop() {
+  if (looping) return;
+  looping = true;
+  requestAnimationFrame(function frame(t) {
+    for (const [i, a] of anims) if (t >= a.t0 + a.ms) anims.delete(i);
+    if (anims.size) requestAnimationFrame(frame); else looping = false;
+  });
+}
+function anim(i, opts, delay = 0) {
+  anims.set(i, Object.assign({ t0: performance.now() + delay, ms: 320, pop: false, shake: false, flash: null }, opts));
+  loop();
+}
+
+function enter() {
+  entered = true;
+  for (let i = 0; i < 81; i++) if (val[i]) anim(i, { pop: true, ms: 300 }, (Math.floor(i / 9) + i % 9) * 30);
+}
+
+function startClock() {
+  if (clockId || solved) return;
+  clockId = setInterval(() => { elapsed++; }, 1000);
+}
+function stopClock() { if (clockId) clearInterval(clockId); clockId = 0; }
+
+const conflicts = () => {
+  const out = new Set();
+  for (let i = 0; i < 81; i++) if (val[i]) for (const j of PEERS[i]) if (val[j] === val[i]) { out.add(i); break; }
+  return out;
+};
+
+function win(byBot) {
+  stopClock();
+  sel = -1;
+  solved = byBot ? 'bot' : 'you';
+  transition('pop');
+  fx.wave = 0;
+  tween(fx, { wave: 1 }, 1100, ease.inOutSine);
+}
+
+function place(d) {
+  if (sel < 0 || giv[sel] || solved || busy) return;
+  const before = val[sel];
+  val[sel] = before === d ? 0 : d;
+  wrong.delete(sel);
+  startClock();
+  if (!val[sel]) return anim(sel, { ms: 160 });
+  const clash = PEERS[sel].filter(j => val[j] === d);
+  anim(sel, clash.length ? { pop: true, shake: true, ms: 480 } : { pop: true, ms: 300 });
+  for (const j of clash) anim(j, { flash: 'rgba(255,59,48,0.45)', ms: 600 });
+  if (val.every(Boolean) && !conflicts().size) win(false);
+}
+
+function check() {
+  if (solved || busy) return;
+  const mine = val.map((v, i) => i).filter(i => val[i] && !giv[i]);
+  const bad = mine.filter(i => val[i] !== sol[i]);
+  mistakes += bad.filter(i => !wrong.has(i)).length;
+  wrong = new Set(bad);
+  mine.forEach((i, k) => anim(i, { flash: bad.includes(i) ? 'rgba(255,59,48,0.5)' : 'rgba(52,199,89,0.42)', pop: bad.includes(i), ms: 520 }, k * 22));
+}
+
+async function solve() {
+  if (solved || busy) return;
+  busy++;
+  const n = number;
+  const todo = val.map((v, i) => i).filter(i => val[i] !== sol[i]);
+  sel = -1; wrong = new Set();
+  for (let k = 0; k < todo.length; k++) {
+    if (n !== number) return;
+    const i = todo[k];
+    val[i] = sol[i];
+    anim(i, { pop: true, flash: 'rgba(52,199,89,0.4)', ms: 380 });
+    if (k % 3 === 2) await sleep(50);
+  }
+  await sleep(250);
+  if (n !== number) return;
+  busy--;
+  win(true);
+}
+
+load(true);
+setTimeout(enter, 250);
+
+function onAction(name, value) {
+  if (name === 'cell') {
+    const i = Number(value);
+    if (solved || i === sel) return;
+    sel = i;
+    fx.sel = 0;
+    tween(fx, { sel: 1 }, 220, ease.outQuad);
+  } else if (name === 'num') place(Number(value));
+  else if (name === 'erase') { if (sel >= 0 && !giv[sel] && val[sel] && !solved && !busy) { val[sel] = 0; wrong.delete(sel); anim(sel, { ms: 160 }); } }
+  else if (name === 'check') check();
+  else if (name === 'solve') solve();
+  else if (name === 'new') {
+    transition('slide-left');
+    load(false);
+    enter();
+  }
+}
+
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+
+function render() {
+  const now = performance.now(), bad = conflicts();
+  const sd = sel >= 0 ? val[sel] : 0;
+  let rows = '';
+  for (let r = 0; r < 9; r++) {
+    rows += '<tr>';
+    for (let c = 0; c < 9; c++) {
+      const i = r * 9 + c, v = val[i], a = anims.get(i);
+      let bg = '';
+      if (sel >= 0) {
+        if (i === sel) bg = `rgba(0,122,255,${(0.3 * clamp(fx.sel, 0, 1)).toFixed(3)})`;
+        else if (sd && v === sd) bg = 'rgba(0,122,255,0.16)';
+        else if (PEERS[sel].includes(i)) bg = 'rgba(127,127,127,0.13)';
+      }
+      if (v && bad.has(i) && i !== sel) bg = 'rgba(255,59,48,0.18)';
+      if (wrong.has(i)) bg = 'rgba(255,59,48,0.26)';
+      let size = 17, shift = 0;
+      if (a) {
+        const p = clamp((now - a.t0) / a.ms, 0, 1);
+        if (a.pop) size = 17 * ease.outBack(p);
+        if (a.shake) shift = Math.sin(p * Math.PI * 6) * 5 * (1 - p);
+        if (a.flash && p > 0) bg = mix(a.flash, 'rgba(127,127,127,0)', ease.inQuad(p));
+      }
+      if (solved && fx.wave > 0 && fx.wave < 1) {
+        const near = Math.max(0, 1 - Math.abs(fx.wave * 22 - 2 - r - c) / 3);
+        if (near > 0) bg = `rgba(52,199,89,${(0.45 * near).toFixed(3)})`;
+      }
+      const show = v && entered && size >= 1;
+      const cls = (c === 2 || c === 5 ? 'br ' : '') + (r === 2 || r === 5 ? 'bb' : '');
+      const tone = giv[i] ? 'g' : bad.has(i) || wrong.has(i) ? 'x' : 'm';
+      rows += `<td class="${cls}" data-action="cell" data-value="${i}"${bg ? ` style="background-color: ${bg}"` : ''}><div class="h ${tone}" style="font-size: ${show ? size.toFixed(1) : 17}px${shift ? `; margin-left: ${shift.toFixed(1)}px` : ''}">${show ? v : '&nbsp;'}</div></td>`;
+    }
+    rows += '</tr>';
+  }
+  const counts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+  for (const v of val) counts[v]++;
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<div class="nk${counts[d] >= 9 ? ' full' : ''}" data-action="num" data-value="${d}">${d}<div class="c">${Math.max(0, 9 - counts[d]) || '✓'}</div></div>`).join('')
+    + '<div class="nk" data-action="erase">⌫<div class="c">&nbsp;</div></div>';
+  const filled = val.filter(Boolean).length;
+  const status = solved ? (solved === 'you' ? `<span class="badge green">Solved</span>` : '<span class="badge purple">Bot solved</span>')
+    : bad.size ? `<span class="badge red">${bad.size} clash${bad.size === 1 ? '' : 'es'}</span>` : '<span class="badge orange">medium</span>';
+  const banner = solved ? `<div class="banner"><b class="t-green">${solved === 'you' ? `🎉 Solved in ${mmss(elapsed)}` : '🤖 Solved with a little help'}</b>
+      <div class="small muted">${mistakes ? `${mistakes} mistake${mistakes === 1 ? '' : 's'} caught by Check` : 'No mistakes'} · puzzle #${number}</div></div>` : '';
+  const hint = sel < 0 ? 'Tap a cell' : giv[sel] ? 'Given, pick an empty cell' : `Row ${Math.floor(sel / 9) + 1}, column ${sel % 9 + 1}`;
+  return `<div class="card pad sdk">
+    <div class="hd"><b class="grow" style="font-size: 16px">🔢 Sudoku <span class="muted small">#${number}</span></b><span class="small muted" style="margin-right: 6px">⏱ ${mmss(elapsed)}</span>${status}</div>
+    <table class="su">${rows}</table>
+    ${solved ? banner : `<div class="keys">${keys}</div>`}
+    <div class="ctl"><span class="small muted grow">${solved ? `${filled}/81` : `${hint} · ${filled}/81`}</span>
+      ${solved ? '' : '<button data-action="check">Check</button><button data-action="solve">Solve</button>'}<button class="${solved ? 'primary' : ''}" data-action="new">New</button></div>
+  </div>`;
+}
+</script>
+
+--- me 21:00
+Best game night yet 🎉 Same time on the 24th? (it's already in the calendar 👆)

@@ -73,7 +73,7 @@ public class TLRPC {
     public static final int MESSAGE_FLAG_HAS_BOT_ID         = 0x00000800;
     public static final int MESSAGE_FLAG_EDITED             = 0x00008000;
 
-    public static final int LAYER = 232;
+    public static final int LAYER = 233;
 
     public static abstract class EmailVerifyPurpose extends TLObject {
 
@@ -19150,6 +19150,8 @@ public class TLRPC {
                     return new TL_botInlineMessageMediaWebPage();
                 case TL_botInlineMessageRichMessage.constructor:
                     return new TL_botInlineMessageRichMessage();
+                case TL_botInlineMessageWidget.constructor:
+                    return new TL_botInlineMessageWidget();
             }
             return null;
         }
@@ -19491,6 +19493,75 @@ public class TLRPC {
                 reply_markup.serializeToStream(stream);
             }
             rich_message.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_botInlineMessageWidget extends BotInlineMessage {
+        public static final int constructor = 0xbaa17834;
+
+        public int width;
+        public int height;
+        public byte[] payload;
+        public String public_data;
+        public long public_data_hash;
+        public String chat_data;
+        public long widget_id;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            invert_media = hasFlag(flags, FLAG_5);
+            width = stream.readInt32(exception);
+            height = stream.readInt32(exception);
+            payload = stream.readByteArray(exception);
+            if (hasFlag(flags, FLAG_0)) {
+                public_data = stream.readString(exception);
+                public_data_hash = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                chat_data = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_2)) {
+                reply_markup = ReplyMarkup.TLdeserialize(stream, stream.readInt32(exception), exception);
+            }
+            if (hasFlag(flags, FLAG_3)) {
+                widget_id = stream.readInt64(exception);
+            }
+            message = stream.readString(exception);
+            if (hasFlag(flags, FLAG_4)) {
+                entities = Vector.deserialize(stream, MessageEntity::TLdeserialize, exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, public_data != null);
+            flags = setFlag(flags, FLAG_1, chat_data != null);
+            flags = setFlag(flags, FLAG_2, reply_markup != null);
+            flags = setFlag(flags, FLAG_3, widget_id != 0);
+            flags = setFlag(flags, FLAG_5, invert_media);
+            stream.writeInt32(flags);
+            stream.writeInt32(width);
+            stream.writeInt32(height);
+            stream.writeByteArray(payload);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(public_data);
+                stream.writeInt64(public_data_hash);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                stream.writeString(chat_data);
+            }
+            if (hasFlag(flags, FLAG_2)) {
+                reply_markup.serializeToStream(stream);
+            }
+            if (hasFlag(flags, FLAG_3)) {
+                stream.writeInt64(widget_id);
+            }
+            stream.writeString(message);
+            if (hasFlag(flags, FLAG_4)) {
+                Vector.serialize(stream, entities);
+            }
         }
     }
 
@@ -21728,6 +21799,7 @@ public class TLRPC {
         public boolean bot_can_manage_bots;
         public boolean bot_guestchat;
         public boolean bot_guard;
+        public boolean bot_forum_sidebar;
         public long linked_community_id;
 
         public long fromMessageDialogId; //custom
@@ -21936,6 +22008,7 @@ public class TLRPC {
             bot_can_manage_bots = hasFlag(flags2, FLAG_18);
             bot_guestchat = hasFlag(flags2, FLAG_19);
             bot_guard = hasFlag(flags2, FLAG_20);
+            bot_forum_sidebar = hasFlag(flags2, FLAG_22);
 
             id = stream.readInt64(exception);
             if (hasFlag(flags, FLAG_0)) {
@@ -22040,6 +22113,7 @@ public class TLRPC {
             flags2 = setFlag(flags2, FLAG_18, bot_can_manage_bots);
             flags2 = setFlag(flags2, FLAG_19, bot_guestchat);
             flags2 = setFlag(flags2, FLAG_20, bot_guard);
+            flags2 = setFlag(flags2, FLAG_22, bot_forum_sidebar);
 
             stream.writeInt32(flags2);
             stream.writeInt64(id);
@@ -29634,6 +29708,10 @@ public class TLRPC {
                     return new TL_inputMediaPaidMedia();
                 case TL_inputMediaTodo.constructor:
                     return new TL_inputMediaTodo();
+                case TL_inputMediaWidget.constructor:
+                    return new TL_inputMediaWidget();
+                case TL_inputMediaWidgetId.constructor:
+                    return new TL_inputMediaWidgetId();
             }
             return null;
         }
@@ -30168,6 +30246,80 @@ public class TLRPC {
         public void serializeToStream(OutputSerializedData stream) {
             stream.writeInt32(constructor);
             todo.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_inputMediaWidget extends InputMedia {
+        public static final int constructor = 0x44f6c04e;
+
+        public boolean allow_queries;
+        public boolean shared_widget;
+        public int width;
+        public int height;
+        public String html;
+        public String public_data;
+        public String chat_data;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            allow_queries = hasFlag(flags, FLAG_0);
+            shared_widget = hasFlag(flags, FLAG_1);
+            width = stream.readInt32(exception);
+            height = stream.readInt32(exception);
+            html = stream.readString(exception);
+            if (hasFlag(flags, FLAG_2)) {
+                public_data = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_3)) {
+                chat_data = stream.readString(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, allow_queries);
+            flags = setFlag(flags, FLAG_1, shared_widget);
+            flags = setFlag(flags, FLAG_2, public_data != null);
+            flags = setFlag(flags, FLAG_3, chat_data != null);
+            stream.writeInt32(flags);
+            stream.writeInt32(width);
+            stream.writeInt32(height);
+            stream.writeString(html);
+            if (hasFlag(flags, FLAG_2)) {
+                stream.writeString(public_data);
+            }
+            if (hasFlag(flags, FLAG_3)) {
+                stream.writeString(chat_data);
+            }
+        }
+    }
+
+    public static class TL_inputMediaWidgetId extends InputMedia {
+        public static final int constructor = 0x7c855cb5;
+
+        public long widget_id;
+        public String chat_data;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            widget_id = stream.readInt64(exception);
+            if (hasFlag(flags, FLAG_0)) {
+                chat_data = stream.readString(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, chat_data != null);
+            stream.writeInt32(flags);
+            stream.writeInt64(widget_id);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(chat_data);
+            }
         }
     }
 
@@ -31303,6 +31455,8 @@ public class TLRPC {
                     return new TL_update.TL_updatePinnedForumTopics();
                 case TL_update.TL_updatePinnedForumTopic.constructor:
                     return new TL_update.TL_updatePinnedForumTopic();
+                case TL_update.TL_updateEditForumTopic.constructor:
+                    return new TL_update.TL_updateEditForumTopic();
                 case TL_update.TL_updateChannelViewForumAsMessages.constructor:
                     return new TL_update.TL_updateChannelViewForumAsMessages();
                 case TL_update.TL_updatePeerWallpaper.constructor:
@@ -31377,6 +31531,20 @@ public class TLRPC {
                     return new TL_update.TL_updateEditEphemeralMessage();
                 case TL_update.TL_updateEphemeralBotCallbackQuery.constructor:
                     return new TL_update.TL_updateEphemeralBotCallbackQuery();
+                case TL_update.TL_updateBotWidgetQuery.constructor:
+                    return new TL_update.TL_updateBotWidgetQuery();
+                case TL_update.TL_updateInlineBotWidgetQuery.constructor:
+                    return new TL_update.TL_updateInlineBotWidgetQuery();
+                case TL_update.TL_updateBotWidgetCopyQuery.constructor:
+                    return new TL_update.TL_updateBotWidgetCopyQuery();
+                case TL_update.TL_updateBotWidgetQuery_layer233.constructor:
+                    return new TL_update.TL_updateBotWidgetQuery_layer233();
+                case TL_update.TL_updateInlineBotWidgetQuery_layer233.constructor:
+                    return new TL_update.TL_updateInlineBotWidgetQuery_layer233();
+                case TL_update.TL_updateBotWidgetCopyQuery_layer233.constructor:
+                    return new TL_update.TL_updateBotWidgetCopyQuery_layer233();
+                case TL_update.TL_updateMessageWidgetData.constructor:
+                    return new TL_update.TL_updateMessageWidgetData();
                 case TL_update.TL_updateSentWalletTransaction.constructor:
                     return new TL_update.TL_updateSentWalletTransaction();
                 case TL_update.TL_updateWalletGaslessInfo.constructor:
@@ -39391,6 +39559,7 @@ public class TLRPC {
         public boolean monoforum;
         public boolean forum_tabs;
         public boolean in_news;
+        public boolean forum_sidebar;
         public TL_recentStory stories_max_id;
         public PeerColor color;
         public PeerColor profile_color;
@@ -39891,6 +40060,7 @@ public class TLRPC {
             monoforum = hasFlag(flags2, FLAG_17);
             forum_tabs = hasFlag(flags2, FLAG_19);
             in_news = hasFlag(flags2, FLAG_21);
+            forum_sidebar = hasFlag(flags2, FLAG_23);
             id = stream.readInt64(exception);
             if (hasFlag(flags, FLAG_13)) {
                 access_hash = stream.readInt64(exception);
@@ -39986,6 +40156,7 @@ public class TLRPC {
             flags2 = setFlag(flags2, FLAG_17, monoforum);
             flags2 = setFlag(flags2, FLAG_19, forum_tabs);
             flags2 = setFlag(flags2, FLAG_21, in_news);
+            flags2 = setFlag(flags2, FLAG_23, forum_sidebar);
             stream.writeInt32(flags2);
             stream.writeInt64(id);
             if (hasFlag(flags, FLAG_13)) {
@@ -54486,6 +54657,376 @@ public class TLRPC {
         }
     }
 
+    public static class TL_messages_botWidgetQueryAnswer extends TLObject {
+        public static final int constructor = 0x95b73023;
+
+        public int flags;
+        public String result;
+
+        public static TL_messages_botWidgetQueryAnswer TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_messages_botWidgetQueryAnswer result = TL_messages_botWidgetQueryAnswer.constructor != constructor ? null : new TL_messages_botWidgetQueryAnswer();
+            return TLdeserialize(TL_messages_botWidgetQueryAnswer.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            if (hasFlag(flags, FLAG_0)) {
+                result = stream.readString(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, result != null);
+            stream.writeInt32(flags);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(result);
+            }
+        }
+    }
+
+    public static abstract class messages_WidgetPublicData extends TLObject {
+        public int period;
+
+        public static messages_WidgetPublicData fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_messages_widgetPublicDataNotModified.constructor:
+                    return new TL_messages_widgetPublicDataNotModified();
+                case TL_messages_widgetPublicData.constructor:
+                    return new TL_messages_widgetPublicData();
+            }
+            return null;
+        }
+
+        public static messages_WidgetPublicData TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(messages_WidgetPublicData.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+    }
+
+    public static class TL_messages_widgetPublicDataNotModified extends messages_WidgetPublicData {
+        public static final int constructor = 0xb9196e57;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            period = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(period);
+        }
+    }
+
+    public static class TL_messages_widgetPublicData extends messages_WidgetPublicData {
+        public static final int constructor = 0x4493bff;
+
+        public long hash;
+        public String data;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            hash = stream.readInt64(exception);
+            data = stream.readString(exception);
+            period = stream.readInt32(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt64(hash);
+            stream.writeString(data);
+            stream.writeInt32(period);
+        }
+    }
+
+    public static class TL_userWallet extends TLObject {
+        public static final int constructor = 0x454d2737;
+
+        public int flags;
+        public String address;
+        public long balance;
+        public byte[] public_key;
+        public byte[] state_init;
+
+        public static TL_userWallet TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            final TL_userWallet result = TL_userWallet.constructor != constructor ? null : new TL_userWallet();
+            return TLdeserialize(TL_userWallet.class, result, stream, constructor, exception);
+        }
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            address = stream.readString(exception);
+            balance = stream.readInt64(exception);
+            if (hasFlag(flags, FLAG_0)) {
+                public_key = stream.readByteArray(exception);
+                state_init = stream.readByteArray(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, public_key != null);
+            stream.writeInt32(flags);
+            stream.writeString(address);
+            stream.writeInt64(balance);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeByteArray(public_key);
+                stream.writeByteArray(state_init);
+            }
+        }
+    }
+
+    public static abstract class WidgetQueryType extends TLObject {
+
+        public static WidgetQueryType TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
+            return TLdeserialize(WidgetQueryType.class, fromConstructor(constructor), stream, constructor, exception);
+        }
+
+        private static WidgetQueryType fromConstructor(int constructor) {
+            switch (constructor) {
+                case TL_widgetQueryTypeData.constructor:
+                    return new TL_widgetQueryTypeData();
+                case TL_widgetQueryTypeSignData.constructor:
+                    return new TL_widgetQueryTypeSignData();
+                case TL_widgetQueryTypeSentTransaction.constructor:
+                    return new TL_widgetQueryTypeSentTransaction();
+                default:
+                    return null;
+            }
+        }
+    }
+
+    public static class TL_widgetQueryTypeData extends WidgetQueryType {
+        public static final int constructor = 0x16d8cf0b;
+
+        public int flags;
+        public boolean with_wallet;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            with_wallet = hasFlag(flags, FLAG_0);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, with_wallet);
+            stream.writeInt32(flags);
+        }
+    }
+
+    public static class TL_widgetQueryTypeSignData extends WidgetQueryType {
+        public static final int constructor = 0x192047dc;
+
+        public TL_userWallet wallet;
+        public TL_dataJSON sign_data;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            wallet = TL_userWallet.TLdeserialize(stream, stream.readInt32(exception), exception);
+            sign_data = TL_dataJSON.TLdeserialize(stream, stream.readInt32(exception), exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            wallet.serializeToStream(stream);
+            sign_data.serializeToStream(stream);
+        }
+    }
+
+    public static class TL_widgetQueryTypeSentTransaction extends WidgetQueryType {
+        public static final int constructor = 0xff3b33b4;
+
+        public TL_userWallet wallet;
+        public String msg_hash;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            wallet = TL_userWallet.TLdeserialize(stream, stream.readInt32(exception), exception);
+            msg_hash = stream.readString(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            wallet.serializeToStream(stream);
+            stream.writeString(msg_hash);
+        }
+    }
+
+    public static class TL_messages_getBotWidgetQueryAnswer extends TLMethod<TL_messages_botWidgetQueryAnswer> {
+        public static final int constructor = 0x5c550579;
+
+        public InputPeer peer;
+        public int msg_id;
+        public WidgetQueryType query_type;
+        public byte[] data;
+
+        @Override
+        public TL_messages_botWidgetQueryAnswer deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return TL_messages_botWidgetQueryAnswer.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeInt32(msg_id);
+            query_type.serializeToStream(stream);
+            stream.writeByteArray(data);
+        }
+    }
+
+    /** The form before the query types (the production server's until the scheme is rolled out). */
+    public static class TL_messages_getBotWidgetQueryAnswer_layer233 extends TL_messages_getBotWidgetQueryAnswer {
+        public static final int constructor = 0xd78dba1a;
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeInt32(msg_id);
+            stream.writeByteArray(data);
+        }
+    }
+
+    public static class TL_messages_setBotWidgetQueryAnswer extends TLMethod<Bool> {
+        public static final int constructor = 0xf8cdec6a;
+
+        public int flags;
+        public long query_id;
+        public String result;
+
+        @Override
+        public Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, result != null);
+            stream.writeInt32(flags);
+            stream.writeInt64(query_id);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(result);
+            }
+        }
+    }
+
+    public static class TL_messages_editMessageWidgetData extends TLMethod<Updates> {
+        public static final int constructor = 0xf624bc1e;
+
+        public int flags;
+        public InputPeer peer;
+        public int id;
+        public String public_data;
+        public String chat_data;
+
+        @Override
+        public Updates deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Updates.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, public_data != null);
+            flags = setFlag(flags, FLAG_1, chat_data != null);
+            stream.writeInt32(flags);
+            peer.serializeToStream(stream);
+            stream.writeInt32(id);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(public_data);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                stream.writeString(chat_data);
+            }
+        }
+    }
+
+    public static class TL_messages_editInlineBotMessageWidgetData extends TLMethod<Bool> {
+        public static final int constructor = 0x6396ce2b;
+
+        public int flags;
+        public TL_inputBotInlineMessageID id;
+        public String public_data;
+        public String chat_data;
+
+        @Override
+        public Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, public_data != null);
+            flags = setFlag(flags, FLAG_1, chat_data != null);
+            stream.writeInt32(flags);
+            id.serializeToStream(stream);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeString(public_data);
+            }
+            if (hasFlag(flags, FLAG_1)) {
+                stream.writeString(chat_data);
+            }
+        }
+    }
+
+    public static class TL_messages_editWidgetData extends TLMethod<Bool> {
+        public static final int constructor = 0xeac343c0;
+
+        public int flags;
+        public long widget_id;
+        public String public_data;
+        public int cache_time;
+
+        @Override
+        public Bool deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return Bool.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(flags);
+            stream.writeInt64(widget_id);
+            stream.writeString(public_data);
+            if (hasFlag(flags, FLAG_0)) {
+                stream.writeInt32(cache_time);
+            }
+        }
+    }
+
+    public static class TL_messages_getWidgetPublicData extends TLMethod<messages_WidgetPublicData> {
+        public static final int constructor = 0x6fc53181;
+
+        public InputPeer peer;
+        public int msg_id;
+        public long hash;
+
+        @Override
+        public messages_WidgetPublicData deserializeResponseT(InputSerializedData stream, int constructor, boolean exception) {
+            return messages_WidgetPublicData.TLdeserialize(stream, constructor, exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            peer.serializeToStream(stream);
+            stream.writeInt32(msg_id);
+            stream.writeInt64(hash);
+        }
+    }
+
     public static class TL_messages_getPeerDialogs extends TLObject {
         public static final int constructor = 0xe470bcfd;
 
@@ -58494,6 +59035,15 @@ public class TLRPC {
                     break;
                 case TL_messageMediaToDo.constructor:
                     result = new TL_messageMediaToDo();
+                    break;
+                case TL_messageMediaWidget.constructor:
+                    result = new TL_messageMediaWidget();
+                    break;
+                case TL_messageMediaWidget_layer233.constructor:
+                    result = new TL_messageMediaWidget_layer233();
+                    break;
+                case TL_messageMediaWidget_old.constructor:
+                    result = new TL_messageMediaWidget_old();
                     break;
                 case 0xb5223b0f:
                     result = new TL_messageMediaPhoto_layer74();
@@ -63860,11 +64410,12 @@ public class TLRPC {
     }
 
     public static class TL_channels_toggleForum extends TLObject {
-        public static final int constructor = 0x3ff75734;
+        public static final int constructor = 0xa2952b54;
 
         public InputChannel channel;
         public boolean enabled;
         public boolean tabs;
+        public boolean sidebar;
 
         public TLObject deserializeResponse(InputSerializedData stream, int constructor, boolean exception) {
             return Updates.TLdeserialize(stream, constructor, exception);
@@ -63875,6 +64426,7 @@ public class TLRPC {
             channel.serializeToStream(stream);
             stream.writeBool(enabled);
             stream.writeBool(tabs);
+            stream.writeBool(sidebar);
         }
     }
 
@@ -66139,6 +66691,113 @@ public class TLRPC {
             if (hasFlag(flags, FLAG_0)) {
                 Vector.serialize(stream, completions);
             }
+        }
+    }
+
+    public static class TL_messageMediaWidget extends MessageMedia {
+        public static final int constructor = 0x2238f214;
+
+        public boolean is_copy;
+        public boolean can_query;
+        public boolean background_query;
+        public int width;
+        public int height;
+        public byte[] payload;
+        public String public_data;
+        public long public_data_hash;
+        public String chat_data;
+        public long widget_id;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            is_copy = hasFlag(flags, FLAG_0);
+            can_query = hasFlag(flags, FLAG_1);
+            background_query = hasFlag(flags, FLAG_2);
+            width = stream.readInt32(exception);
+            height = stream.readInt32(exception);
+            payload = stream.readByteArray(exception);
+            if (hasFlag(flags, FLAG_3)) {
+                public_data = stream.readString(exception);
+                public_data_hash = stream.readInt64(exception);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                chat_data = stream.readString(exception);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                widget_id = stream.readInt64(exception);
+            }
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            flags = setFlag(flags, FLAG_0, is_copy);
+            flags = setFlag(flags, FLAG_1, can_query);
+            flags = setFlag(flags, FLAG_2, background_query);
+            flags = setFlag(flags, FLAG_3, public_data != null);
+            flags = setFlag(flags, FLAG_4, chat_data != null);
+            flags = setFlag(flags, FLAG_5, widget_id != 0);
+            stream.writeInt32(flags);
+            stream.writeInt32(width);
+            stream.writeInt32(height);
+            stream.writeByteArray(payload);
+            if (hasFlag(flags, FLAG_3)) {
+                stream.writeString(public_data);
+                stream.writeInt64(public_data_hash);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                stream.writeString(chat_data);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                stream.writeInt64(widget_id);
+            }
+        }
+    }
+
+    // layer 233 before the state became text (bytes, no public_data_hash), kept for messages cached with it; written
+    // back in the current form
+    public static class TL_messageMediaWidget_layer233 extends TL_messageMediaWidget {
+        public static final int constructor = 0xa831bf37;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            flags = stream.readInt32(exception);
+            is_copy = hasFlag(flags, FLAG_0);
+            can_query = hasFlag(flags, FLAG_1);
+            background_query = hasFlag(flags, FLAG_2);
+            width = stream.readInt32(exception);
+            height = stream.readInt32(exception);
+            payload = stream.readByteArray(exception);
+            if (hasFlag(flags, FLAG_3)) {
+                public_data = new String(stream.readByteArray(exception), java.nio.charset.StandardCharsets.UTF_8);
+            }
+            if (hasFlag(flags, FLAG_4)) {
+                chat_data = new String(stream.readByteArray(exception), java.nio.charset.StandardCharsets.UTF_8);
+            }
+            if (hasFlag(flags, FLAG_5)) {
+                widget_id = stream.readInt64(exception);
+            }
+        }
+    }
+
+    // pre-release layer 233 (no flags), kept for messages cached with it
+    public static class TL_messageMediaWidget_old extends TL_messageMediaWidget {
+        public static final int constructor = 0xb7ed7b0d;
+
+        @Override
+        public void readParams(InputSerializedData stream, boolean exception) {
+            width = stream.readInt32(exception);
+            height = stream.readInt32(exception);
+            payload = stream.readByteArray(exception);
+        }
+
+        @Override
+        public void serializeToStream(OutputSerializedData stream) {
+            stream.writeInt32(constructor);
+            stream.writeInt32(width);
+            stream.writeInt32(height);
+            stream.writeByteArray(payload);
         }
     }
 

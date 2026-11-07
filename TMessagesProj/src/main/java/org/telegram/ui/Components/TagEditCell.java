@@ -47,6 +47,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.PollEditTextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -129,7 +130,7 @@ public class TagEditCell extends LinearLayout {
         editTextCell.setTextRight(50 + 56 + 8);
         clearImageView = new ImageView(context);
         clearImageView.setImageResource(R.drawable.menu_delete_old);
-        clearImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(clearImageView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         editTextCell.addView(clearImageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 20, 0));
         ScaleStateListAnimator.apply(clearImageView);
         clearImageView.setOnClickListener(v -> {
@@ -138,7 +139,7 @@ public class TagEditCell extends LinearLayout {
         limitTextView = new AnimatedTextView(context, false, true, false);
         limitTextView.adaptWidth = false;
         limitTextView.setTypeface(AndroidUtilities.bold());
-        limitTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+        ThemeBind.textColor(limitTextView, Theme.key_text_RedBold, resourcesProvider);
         limitTextView.setTextSize(dp(14));
         limitTextView.setGravity(Gravity.CENTER);
         limitTextView.setAllowCancel(true);
@@ -265,6 +266,7 @@ public class TagEditCell extends LinearLayout {
             final float h = dp(6.66f);
 
             AndroidUtilities.rectTmp.set(x, cy - h / 2f, x + width, cy + h / 2f);
+            this.paint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_chat_inTimeText), 0.30f));
             canvas.drawRoundRect(AndroidUtilities.rectTmp, h / 2f, h / 2f, this.paint);
         }
     }
@@ -287,8 +289,8 @@ public class TagEditCell extends LinearLayout {
         final ImageView closeView = new ImageView(context);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setImageResource(R.drawable.ic_close_white);
-        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
-        closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, dp(18)));
+        ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, dp(18)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         topView.addView(closeView, LayoutHelper.createLinear(32, 32, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
         layout.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 6));
@@ -306,7 +308,7 @@ public class TagEditCell extends LinearLayout {
                 outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(16));
             }
         });
-        cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundWhite, resourcesProvider);
         cell.set(user, rank, admin, owner, newRank -> {
             currentRank[0] = newRank;
             button.setText(getString(TextUtils.isEmpty(newRank) && !admin && hadRank ? R.string.MemberTagButtonRemove : hadRank ? R.string.MemberTagButtonEdit : R.string.MemberTagButtonAdd), true);
@@ -322,7 +324,7 @@ public class TagEditCell extends LinearLayout {
         final BottomSheet sheet = b.create();
 
         sheet.smoothKeyboardAnimationEnabled = true;
-        sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        sheet.setBackgroundColorKey(Theme.key_windowBackgroundGray);
 
         final boolean adding = TextUtils.isEmpty(rank) && !admin && !owner;
         button.setOnClickListener(v -> {
@@ -412,7 +414,7 @@ public class TagEditCell extends LinearLayout {
                 }
             }, 0, tag.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         } else {
-            tag.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_chat_inTimeText)), 0, tag.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            tag.setSpan(new ForegroundColorSpanThemable(Theme.key_chat_inTimeText), 0, tag.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         subtitleView.setText(AndroidUtilities.replaceCharSequence("un1", AndroidUtilities.replaceTags(formatString(owner ? R.string.TagInfoOwnerText : admin ? R.string.TagInfoAdminText : R.string.TagInfoMemberText, UserObject.getFirstName(user), chat.title)), tag));
         layout.addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 32, 10, 32, 25));
@@ -556,7 +558,7 @@ public class TagEditCell extends LinearLayout {
         }
 
         sheet.smoothKeyboardAnimationEnabled = true;
-        sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        sheet.setBackgroundColorKey(Theme.key_windowBackgroundWhite);
         sheet.setOnDismissListener(() -> {
             if (!updatedPref[0]) {
                 final SharedPreferences p = MessagesController.getGlobalMainSettings();

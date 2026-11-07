@@ -10,6 +10,7 @@ package org.telegram.ui.Cells;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -46,6 +47,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -55,7 +57,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 
-public class GroupCreateUserCell extends FrameLayout {
+public class GroupCreateUserCell extends FrameLayout implements Theme.Colorable {
 
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
@@ -154,7 +156,7 @@ public class GroupCreateUserCell extends FrameLayout {
             }
         };
         NotificationCenter.listenEmojiLoading(nameTextView);
-        nameTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_nameText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(nameTextView, forceDarkTheme ? Theme.key_voipgroup_nameText : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -201,7 +203,7 @@ public class GroupCreateUserCell extends FrameLayout {
         avatarImageView.setImageDrawable(makePremiumUsersDrawable(getContext(), false));
         nameTextView.setText(LocaleController.getString(R.string.PrivacyPremium));
         statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-        statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         statusTextView.setEmojiColor(statusTextView.getTextColor());
         statusTextView.setText(LocaleController.getString(R.string.PrivacyPremiumText));
     }
@@ -212,7 +214,7 @@ public class GroupCreateUserCell extends FrameLayout {
         avatarImageView.setImageDrawable(makeMiniAppsDrawable(getContext(), false));
         nameTextView.setText(LocaleController.getString(R.string.PrivacyMiniapps));
         statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-        statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         statusTextView.setEmojiColor(statusTextView.getTextColor());
         statusTextView.setText(LocaleController.getString(R.string.PrivacyMiniappsText));
     }
@@ -459,16 +461,16 @@ public class GroupCreateUserCell extends FrameLayout {
                 if (currentStatus == null) {
                     if (currentUser.bot) {
                         statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-                        statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                        ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                         statusTextView.setText(LocaleController.getString(R.string.Bot));
                     } else {
                         if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                             statusTextView.setTag(Theme.key_windowBackgroundWhiteBlueText);
-                            statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_listeningText : Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+                            ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_listeningText : Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
                             statusTextView.setText(LocaleController.getString(R.string.Online));
                         } else {
                             statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-                            statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                            ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                             statusTextView.setText(LocaleController.formatUserStatus(currentAccount, currentUser));
                         }
                     }
@@ -511,7 +513,7 @@ public class GroupCreateUserCell extends FrameLayout {
 
                 if (currentStatus == null) {
                     statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-                    statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText));
+                    ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText);
                     statusTextView.setEmojiColor(statusTextView.getTextColor());
                     if (currentChat.participants_count != 0) {
                         if (ChatObject.isChannel(currentChat) && !currentChat.megagroup) {
@@ -544,7 +546,7 @@ public class GroupCreateUserCell extends FrameLayout {
         if (currentStatus != null) {
             statusTextView.setText(currentStatus, true);
             statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText);
-            statusTextView.setTextColor(Theme.getColor(forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            ThemeBind.textColor(statusTextView, forceDarkTheme ? Theme.key_voipgroup_lastSeenText : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             statusTextView.setEmojiColor(statusTextView.getTextColor());
         }
 
@@ -638,5 +640,42 @@ public class GroupCreateUserCell extends FrameLayout {
 
     public SimpleTextView getStatusTextView() {
         return statusTextView;
+    }
+
+    private int lastEmojiColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            // no full update(0) re-bind per theme frame: the status color is bound, the avatar re-reads its colors on draw
+            if (statusTextView != null && currentObject != null && !currentPremium && !currentMiniapps) {
+                final int statusColor = statusTextView.getTextColor();
+                if (statusColor != lastEmojiColor) {
+                    lastEmojiColor = statusColor;
+                    statusTextView.setEmojiColor(statusColor);
+                }
+            }
+            if (avatarImageView != null) {
+                avatarImageView.invalidate();
+            }
+            updateMiniAppsAvatarColors();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void updateMiniAppsAvatarColors() {
+        try {
+            if (!currentMiniapps || avatarImageView == null) {
+                return;
+            }
+            final Drawable drawable = avatarImageView.getImageReceiver().getDrawable();
+            if (drawable instanceof AvatarDrawable) {
+                ((AvatarDrawable) drawable).setColor(Theme.getColor(Theme.key_avatar_backgroundBlue), Theme.getColor(Theme.key_avatar_background2Blue));
+                avatarImageView.invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

@@ -49,7 +49,7 @@ import org.telegram.ui.Components.ScrimOptions;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
+import org.telegram.utils.glass.source.GlassSourceBitmap;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.GradientClip;
@@ -76,7 +76,7 @@ public class ProfileWalletCardDialog extends Dialog {
     private final TextView publicNote;
     private final Paint blurPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final RectF blurBounds = new RectF();
-    private final BlurredBackgroundSourceBitmap buttonBlur = new BlurredBackgroundSourceBitmap();
+    private final GlassSourceBitmap buttonBlur = new GlassSourceBitmap();
     private final BlurredBackgroundDrawableViewFactory buttonBlurFactory;
     private Bitmap blurBitmap;
     private Insets insets = Insets.NONE;

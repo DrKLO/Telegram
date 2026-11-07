@@ -12,6 +12,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.graphics.PorterDuff;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -27,6 +28,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotGuardHelper;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
@@ -41,11 +43,30 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 
 import androidx.core.widget.NestedScrollView;
 
 public class JoinGroupAlert extends BottomSheet {
+
+    private int themedNavigationBarColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (navBarColor == themedNavigationBarColor) {
+                final int color = getThemedColor(Theme.key_windowBackgroundWhite);
+                if (color != navBarColor) {
+                    fixNavigationBar(color);
+                    themedNavigationBarColor = navBarColor;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     public static final int ORIGINATION_OTHER = -1;
     public static final int ORIGINATION_SPONSORED_CHAT = 0;
@@ -65,7 +86,8 @@ public class JoinGroupAlert extends BottomSheet {
         super(context, false, resourcesProvider);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
-        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundWhite));
+        fixNavigationBarKey(Theme.key_windowBackgroundWhite);
+        themedNavigationBarColor = navBarColor;
 
         final long dialogId;
         fragment = parentFragment;
@@ -93,7 +115,7 @@ public class JoinGroupAlert extends BottomSheet {
 
         ImageView closeView = new ImageView(context);
         closeView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        closeView.setColorFilter(getThemedColor(Theme.key_sheet_other));
+        ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = dp(8);
@@ -144,7 +166,7 @@ public class JoinGroupAlert extends BottomSheet {
         SimpleTextView simpleTextView = new SimpleTextView(context);
         simpleTextView.setTypeface(AndroidUtilities.bold());
         simpleTextView.setTextSize(20);
-        simpleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(simpleTextView, Theme.key_dialogTextBlack, resourcesProvider);
         simpleTextView.setText(title);
         simpleTextView.setGravity(Gravity.CENTER);
         linearLayout.addView(simpleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 10, 10, 10, participants_count > 0 ? 0 : 20));
@@ -160,7 +182,7 @@ public class JoinGroupAlert extends BottomSheet {
 
         TextView textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        textView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
+        ThemeBind.textColor(textView, Theme.key_dialogTextGray3, resourcesProvider);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
 
@@ -178,7 +200,7 @@ public class JoinGroupAlert extends BottomSheet {
             TextView aboutTextView = new TextView(context);
             aboutTextView.setGravity(Gravity.CENTER);
             aboutTextView.setText(about);
-            aboutTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(aboutTextView, Theme.key_dialogTextBlack, resourcesProvider);
             aboutTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             linearLayout.addView(aboutTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 10, 24, 20));
         }
@@ -188,18 +210,18 @@ public class JoinGroupAlert extends BottomSheet {
             linearLayout.addView(requestFrameLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             requestProgressView = new RadialProgressView(getContext(), resourcesProvider);
-            requestProgressView.setProgressColor(getThemedColor(Theme.key_featuredStickers_addButton));
+            requestProgressView.setProgressColorKey(Theme.key_featuredStickers_addButton);
             requestProgressView.setSize(dp(32));
             requestProgressView.setVisibility(View.INVISIBLE);
             requestFrameLayout.addView(requestProgressView, LayoutHelper.createFrame(48, 48, Gravity.CENTER));
 
             requestTextView = new TextView(getContext());
-            requestTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+            ThemeBind.selectorBackground(requestTextView, Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed), resourcesProvider);
             requestTextView.setEllipsize(TextUtils.TruncateAt.END);
             requestTextView.setGravity(Gravity.CENTER);
             requestTextView.setSingleLine(true);
             requestTextView.setText(getString(isChannel ? R.string.RequestToJoinChannel : R.string.RequestToJoinGroup));
-            requestTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(requestTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
             requestTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             requestTextView.setTypeface(AndroidUtilities.bold());
             requestTextView.setOnClickListener((view) -> {
@@ -268,7 +290,7 @@ public class JoinGroupAlert extends BottomSheet {
             descriptionTextView.setGravity(Gravity.CENTER);
             descriptionTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             descriptionTextView.setText(getString(isChannel ? R.string.RequestToJoinChannelDescription : R.string.RequestToJoinGroupDescription));
-            descriptionTextView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
+            ThemeBind.textColor(descriptionTextView, Theme.key_dialogTextGray3, resourcesProvider);
             linearLayout.addView(descriptionTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 17, 24, 15));
         } else if (chatInvite != null) {
             if (!chatInvite.participants.isEmpty()) {
@@ -290,7 +312,7 @@ public class JoinGroupAlert extends BottomSheet {
 
                 textView = new TextView(context);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-                textView.setTextColor(getThemedColor(Theme.key_dialogTextGray3));
+                ThemeBind.textColor(textView, Theme.key_dialogTextGray3, resourcesProvider);
                 textView.setGravity(Gravity.CENTER);
 
                 String txt;
@@ -325,13 +347,13 @@ public class JoinGroupAlert extends BottomSheet {
 
             boolean isJoinToChannel = chatInvite.channel && !chatInvite.megagroup || ChatObject.isChannel(chatInvite.chat) && !chatInvite.chat.megagroup;
             final TextView joinTextView = new TextView(getContext());
-            joinTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+            ThemeBind.selectorBackground(joinTextView, Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed), resourcesProvider);
             ScaleStateListAnimator.apply(joinTextView, .02f, 1.2f);
             joinTextView.setEllipsize(TextUtils.TruncateAt.END);
             joinTextView.setGravity(Gravity.CENTER);
             joinTextView.setSingleLine(true);
             joinTextView.setText(getString(isJoinToChannel ? R.string.ProfileJoinChannel : R.string.ProfileJoinGroup));
-            joinTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(joinTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
             joinTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             joinTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(joinTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.START, 14, 0, 14, 14));

@@ -1,0 +1,52 @@
+<!doctype html>
+<html data-test="auto/canvas-aspect">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: a canvas's width and height attributes are its size, not its style</title>
+<!-- conformance {"title":"A canvas's width and height attributes give its natural size and ratio: with only a CSS width the height follows it"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}</style><script>var T=function(){var u=document,m=u.documentElement,w=typeof TelegramWidget!="undefined",S=window.__conformanceMode||(w?"sandbox":"native"),a=[],y={},l=[];var j,c,p,f,k,d,b,g,C=e=>typeof e=="string"?u.querySelector(e):e;var M=()=>{g=g||setTimeout(A,0)};function i(e,t,o,n,r){r=r||{};let s=o==null?"skip":o=="pending"?o:(r.xfail?"x":"")+(o?"pass":"fail"),h=y[e+"|"+t]||(y[e+"|"+t]=a[a.length]=[e,t]);return h[2]=s,h[3]=(n?(""+n).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),M(),s}function D(e,t,o,n){if(n&&n.sandboxOnly&&!w)return i(e,t,null,"sandbox only",n);let r;try{r=typeof o=="function"?o():o}catch(s){return i(e,t,!1,"threw "+s,n)}return r==null?i(e,t,null,"not applicable",n):i(e,t,r instanceof Array?!!r[0]:!!r,r[1],n)}var O=(e,t,o,n,r)=>D(e,t,[o,n],r);function R(e){let t=C(e).getBoundingClientRect();return{x:t.left,y:t.top,w:t.width,h:t.height,r:t.right,b:t.bottom}}var B=e=>{l.push(e)};var E=()=>{},I=e=>{let t=e.getBoundingClientRect();return[t.left,t.top,t.width,t.height].map(o=>Math.round(o*10)/10)};function A(){g=0,p&&!f&&E();let e={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let n of a)e[n[2]]++;let t=p&&!l.length,o=f||t&&!e.pending?"done":t&&k?"awaiting":"running";f=o=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:S,status:o,n:e,checks:a,targets:j,stages:c})),x&&x(o,e)}var x;function T(){x=(e,t)=>{let o=[e];for(let n in t)t[n]&&o.push(n+" "+t[n]);u.getElementById("conf-list").textContent=[o.join(" · ")].concat(a.filter(n=>/^(fail|xpass|pending)/.test(n[2])).map(n=>n.join(" · "))).join(`
+`)}}function q(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),t=>{c[t.getAttribute("data-stage")]=I(t)})),!l.length)return p=1,d&&b&&setTimeout(b,d),M();let e;try{e=l.shift()()}catch(t){i("harness","step",!1,t)}setTimeout(q,e||0)}function F(e){e=e||{},k=e.awaitInput,d=e.awaitInput||e.deadline,A();let t=()=>{t=()=>{},setTimeout(q,e.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>t()))}catch(o){}setTimeout(()=>t(),400)}T();return{ok:O,rect:R,run:F,step:B}}();</script><!-- /conformance:harness -->
+<style>
+.conf-probes{font:13px/16px sans-serif}
+[data-stage] canvas{display:block;width:80px;height:60px}
+</style>
+</head>
+<body>
+<div class="conf-head">37 · Canvas size</div>
+<div class="conf-probes">
+  <canvas id="full" width="400" height="500" style="display:block;width:100%"></canvas>
+  <canvas id="fixed" width="400" height="500" style="display:block;width:80px"></canvas>
+  <canvas id="tall" width="400" height="500" style="display:block;height:50px"></canvas>
+  <canvas id="both" width="400" height="500" style="display:block;width:80px;height:60px"></canvas>
+  <canvas id="natural" width="40" height="20" style="display:block"></canvas>
+  <canvas id="resized" width="40" height="20" style="display:block;width:80px"></canvas>
+</div>
+<div id="conf-list"></div>
+<script>
+var rectOf = function (selector) { return T.rect(selector); }, round1 = function (v) { return Math.round(v * 10) / 10; };
+['full', 'fixed', 'tall', 'both', 'natural', 'resized'].forEach(function (id) {
+  var c = document.getElementById(id).getContext('2d');
+  c.fillStyle = '#36c';
+  c.fillRect(0, 0, 400, 500);
+});
+function checkSize(name, id, w, h) {
+  var r = rectOf('#' + id);
+  T.ok('html.el.canvas', name, Math.abs(r.w - w) < 1 && Math.abs(r.h - h) < 1, round1(r.w) + 'x' + round1(r.h) + ', want ' + round1(w) + 'x' + round1(h));
+}
+T.step(function () {
+  var w = rectOf('.conf-probes').w;
+  checkSize('width: 100%: the height keeps the 4:5 ratio', 'full', w, w * 1.25);
+  checkSize('width: 80px: the height keeps the ratio', 'fixed', 80, 100);
+  checkSize('height: 50px: the width keeps the ratio', 'tall', 40, 50);
+  checkSize('both in CSS: both win over the attributes', 'both', 80, 60);
+  checkSize('no CSS size: the attributes are the size', 'natural', 40, 20);
+  document.getElementById('resized').height = 40;
+  document.getElementById('resized').getContext('2d').fillRect(0, 0, 40, 40);
+  return 100;
+});
+T.step(function () { checkSize('a new height attribute changes the ratio', 'resized', 80, 80); });
+T.run();
+</script>
+</body>
+</html>

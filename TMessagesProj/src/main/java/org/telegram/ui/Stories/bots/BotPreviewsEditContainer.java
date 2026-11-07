@@ -5,6 +5,7 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -52,6 +53,7 @@ import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.SharedPhotoVideoCell;
 import org.telegram.ui.Cells.SharedPhotoVideoCell2;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
@@ -82,7 +84,7 @@ import org.telegram.ui.Stories.recorder.StoryRecorder;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class BotPreviewsEditContainer extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class BotPreviewsEditContainer extends FrameLayout implements Theme.Colorable, NotificationCenter.NotificationCenterDelegate {
 
     private final BaseFragment fragment;
     private final int currentAccount;
@@ -576,8 +578,8 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
         LongSparseArray<BotPreviewsEditContainer> arr = attachedContainers.get(currentAccount);
         if (arr == null) attachedContainers.put(currentAccount, arr = new LongSparseArray<>());
         arr.put(bot_id, this);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesListUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesUpdated);
     }
 
     @Override
@@ -1025,7 +1027,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     super.dispatchDraw(canvas);
                 }
             };
-            this.emptyViewOr.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            ThemeBind.textColor(this.emptyViewOr, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             this.emptyViewOr.setText(LocaleController.getString(R.string.ProfileBotOr));
             this.emptyViewOr.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             this.emptyViewOr.setTextAlignment(TEXT_ALIGNMENT_CENTER);
@@ -1536,7 +1538,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
 
         private void selectPinchPosition(int pinchCenterX, int pinchCenterY) {
             pinchCenterPosition = -1;
-            int y = pinchCenterY + listView.blurTopPadding;
+            int y = pinchCenterY - listView.getTop();
 //            if (getY() != 0 && viewType == VIEW_TYPE_PROFILE_ACTIVITY) {
 //                y = 0;
 //            }
@@ -1796,7 +1798,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                 setOrientation(VERTICAL);
 
                 textView = new TextView(context);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
@@ -1827,7 +1829,7 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                         super.dispatchDraw(canvas);
                     }
                 };
-                orTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                ThemeBind.textColor(orTextView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                 orTextView.setText(LocaleController.getString(R.string.ProfileBotOr));
                 orTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 orTextView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
@@ -1938,13 +1940,13 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
 
                 title = new TextView(context);
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                ThemeBind.textColor(title, Theme.key_dialogTextBlack);
                 title.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 7, 0, 0));
 
                 subtitle = new TextView(context);
                 subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-                subtitle.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+                ThemeBind.textColor(subtitle, Theme.key_dialogTextGray2);
                 subtitle.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 4, 0, 0));
             }
@@ -1990,6 +1992,17 @@ public class BotPreviewsEditContainer extends FrameLayout implements Notificatio
                     return item;
                 }
             }
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            setBackgroundColor(Theme.blendOver( Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.04f) ));
+            invalidate();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

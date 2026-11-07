@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
@@ -23,11 +24,11 @@ public class SelectorLetterCell extends FrameLayout {
     public SelectorLetterCell(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        setBackgroundColor(getThemedColor(Theme.key_graySection));
+        ThemeBind.backgroundColor(this, Theme.key_graySection, resourcesProvider);
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTypeface(AndroidUtilities.bold());
-        textView.setTextColor(getThemedColor(Theme.key_graySectionText));
+        ThemeBind.textColor(textView, Theme.key_graySectionText, resourcesProvider);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
     }
@@ -48,7 +49,6 @@ public class SelectorLetterCell extends FrameLayout {
     }
 
     public void setTextColor(int key) {
-        int color = getThemedColor(key);
-        textView.setTextColor(color);
+        ThemeBind.textColor(textView, key, resourcesProvider);
     }
 }

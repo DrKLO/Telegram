@@ -1,0 +1,14 @@
+<!--
+  defaults: no CSS at all, the renderer's UA layer draws it (corpus/defaults/README.md)
+  idea: a link card: the site, a linked title, an excerpt and a button; both open the page through the client (openLink)
+-->
+<title>Link card</title>
+<p><small>telegram.org</small></p>
+<h3><a href="https://telegram.org/blog">Telegram blog</a></h3>
+<p>News about new features, from message effects to mini apps. The client asks before it opens the page.</p>
+<p><button id="open">Read the blog</button></p>
+<script>
+document.getElementById('open').addEventListener('click', function () {
+  TelegramWidget.openLink('https://telegram.org/blog');
+});
+</script>

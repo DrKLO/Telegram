@@ -10,7 +10,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
-import android.graphics.PointF;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
@@ -39,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -50,6 +50,7 @@ import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
@@ -64,15 +65,18 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
+import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
+import org.telegram.utils.glass.source.GlassSourceColor;
+import org.telegram.utils.glass.source.GlassSourceRenderNode;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.Components.glass.GlassTabsView;
 import org.telegram.ui.Gifts.GiftSheet;
 import org.telegram.ui.bots.AffiliateProgramFragment;
+import org.telegram.utils.glass.GlassEngine;
+import org.telegram.utils.glass.positions.GlassPositionsArray;
+import org.telegram.utils.glass.positions.GlassPositionsMerger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -113,11 +117,9 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
     private final TextView giftNameTextView;
     private final TextView giftStatusTextView;
     private final View gradientTop;
-    private final ViewGroupPartRenderer viewGroupPartRenderer;
 
     private final DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
-    private final @Nullable BlurredBackgroundSourceRenderNode glassSourceRenderNode;
-    private final @Nullable BlurredBackgroundSourceColor glassSourceFallback;
+    private final @Nullable GlassSourceRenderNode glassSourceRenderNode;
     private final BlurredBackgroundDrawableViewFactory glassFactory;
     private @Nullable Attributes selectedAttributes;
     private final boolean crafting;
@@ -142,7 +144,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         this.currentAccount = currentAccount;
         this.crafting = crafting;
 
-        this.viewGroupPartRenderer = new ViewGroupPartRenderer(recyclerListView, container, recyclerListView::drawChild);
         this.backdrops = TlUtils.findAllInstances(attributes, TL_stars.starGiftAttributeBackdrop.class);
         this.rBackdrops = new BagRandomizer<>(backdrops);
         this.rBackdrops.setReshuffleIfEnd(false);
@@ -180,31 +181,30 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         headerMoveTop = dp(6);
         occupyNavigationBar = true;
 
-        setBackgroundColor(getBackgroundColor());
+        setBackgroundColor(themedBackgroundColor = getBackgroundColor());
         fixNavigationBar();
         // setSlidingActionBar();
 
-        glassSourceFallback = new BlurredBackgroundSourceColor();
-        glassSourceFallback.setColor(getBackgroundColor());
+        GlassSourceColor glassSourceFallback = glassEngine.createThemedColorSource(this::getBackgroundColor);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SharedConfig.chatBlurEnabled()) {
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
-            glassSourceRenderNode = new BlurredBackgroundSourceRenderNode(glassSourceFallback);
-            glassSourceRenderNode.setOnDrawablesRelativePositionChangeListener(this::invalidateMergedVisibleBlurredPositionsAndSourcesPositions);
+            glassEngine.addNoiseSuppressor(scrollableViewNoiseSuppressor);
+
+            glassSourceRenderNode = new GlassSourceRenderNode(glassSourceFallback);
+            glassSourceRenderNode.setUnderSource(glassSourceFallback);
+            glassSourceRenderNode.setScrollableNoiseSuppressor(scrollableViewNoiseSuppressor, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
+
             glassFactory = new BlurredBackgroundDrawableViewFactory(glassSourceRenderNode);
-            glassFactory.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
+            glassFactory.setLiquidGlassEffectAllowed(true);
+            glassFactory.setOutset(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? dp(8) : dp(48));
         } else {
             scrollableViewNoiseSuppressor = null;
             glassSourceRenderNode = null;
             glassFactory = new BlurredBackgroundDrawableViewFactory(glassSourceFallback);
         }
-        final ViewPositionWatcher viewPositionWatcher = new ViewPositionWatcher(container);
-        glassFactory.setSourceRootView(viewPositionWatcher, container);
 
-
-
-
-
+        glassFactory.setGlassEngine(glassEngine);
 
 
         layoutManager = new ExtendedGridLayoutManager(context, 3);
@@ -229,12 +229,9 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 updateTranslationHeader();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableViewNoiseSuppressor != null) {
-                    scrollableViewNoiseSuppressor.onScrolled(dx, dy);
-                    invalidateMergedVisibleBlurredPositionsAndSources(BLUR_INVALIDATE_FLAG_SCROLL);
-                }
             }
         });
+        glassEngine.addScrolledView(recyclerListView);
         itemAnimator = new DefaultItemAnimator() {
             @Override
             protected float animateByScale(View view) {
@@ -430,6 +427,11 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
         adapter.update(false);
         updateHeaderAttributes(false);
+
+        iBlur3Capture = new ViewGroupPartRenderer(recyclerListView, containerView, recyclerListView::drawChild);
+        glassEngine.setRoot(containerView);
+        glassEngine.setGlassInvalidationListener(this::invalidateBlurCaptures);
+        glassEngine.setPositionsMerger(new GlassPositionsMerger(Float.POSITIVE_INFINITY, dp(48)));
     }
 
     @Override
@@ -588,7 +590,7 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
 
 
     @SuppressLint("ViewConstructor")
-    public static class GiftAttributeCell extends FrameLayout implements FactorAnimator.Target {
+    public static class GiftAttributeCell extends FrameLayout implements FactorAnimator.Target, Theme.Colorable {
         private final int currentAccount;
         private final Theme.ResourcesProvider resourcesProvider;
 
@@ -667,6 +669,21 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         @Override
         public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
             checkPercentageViewBackground();
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                if (percentageView == null || cardBackgroundView == null || cardBackground == null) {
+                    return;
+                }
+                if (rarityColor == null && !noPercentageBackground && (attributes == null || attributes.backdrop == null)) {
+                    return;
+                }
+                checkPercentageViewBackground();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
         }
 
         private void checkPercentageViewBackground() {
@@ -757,7 +774,12 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
                     percent = StarGiftSheet.getRarityName(attributes.pattern.rarity, rarityColor);
                 }
 
-                cell.textView.setTextColor(tab == TAB_MODELS ? Theme.getColor(Theme.key_dialogTextBlack, cell.resourcesProvider) : Color.WHITE);
+                if (tab == TAB_MODELS) {
+                    ThemeBind.textColor(cell.textView, Theme.key_dialogTextBlack, cell.resourcesProvider);
+                } else {
+                    ThemeBind.clear(cell.textView); // white over the backdrop, not a theme color
+                    cell.textView.setTextColor(Color.WHITE);
+                }
                 cell.percentageView.setText(percent);
                 cell.rarityColor = rarityColor[0];
                 cell.checkPercentageViewBackground();
@@ -778,7 +800,6 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             protected void onLayout(boolean changed, int l, int t, int r, int b) {
                 applyScrolledPosition();
                 super.onLayout(changed, l, t, r, b);
-                invalidateMergedVisibleBlurredPositionsAndSourcesImpl(BLUR_INVALIDATE_FLAG_POSITIONS);
             }
 
             @Override
@@ -791,79 +812,22 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
     @Override
     public void onOpenAnimationEnd() {
         super.onOpenAnimationEnd();
-        invalidateMergedVisibleBlurredPositionsAndSourcesImpl(BLUR_INVALIDATE_FLAG_POSITIONS);
+        glassEngine.invalidate();
     }
 
-    private static final int BLUR_INVALIDATE_FLAG_SCROLL = 1;
-    private static final int BLUR_INVALIDATE_FLAG_POSITIONS = 1 << 1;
+    private IBlur3Capture iBlur3Capture;
 
-    private final RectF tabsRectF = new RectF();
-    private final PointF tabsPosP = new PointF();
-    private final ArrayList<RectF> blurredPositions = new ArrayList<>(1); {
-        blurredPositions.add(tabsRectF);
-    }
-
-    @Override
-    protected void mainContainerDispatchDraw(Canvas canvas) {
-        super.mainContainerDispatchDraw(canvas);
-
-        final int width = container.getWidth();
-        final int height = container.getHeight();
-
-        if (Build.VERSION.SDK_INT >= 31 && canvas.isHardwareAccelerated() && scrollableViewNoiseSuppressor != null) {
-            if (glassSourceRenderNode != null && !glassSourceRenderNode.inRecording()) {
-                if (glassSourceRenderNode.needUpdateDisplayList(width, height) /*|| glassSourcesInvalidated*/) {
-                    final Canvas c = glassSourceRenderNode.beginRecording(width, height);
-                    c.drawColor(getThemedColor(Theme.key_dialogBackgroundGray));
-                    scrollableViewNoiseSuppressor.draw(c, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ?
-                        DownscaleScrollableNoiseSuppressor.DRAW_GLASS:
-                        DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
-                    glassSourceRenderNode.endRecording();
-                }
-            }
-
-            // scrollableViewNoiseSuppressor.drawDebugPositions(canvas);
-        }
-    }
-
-    private void invalidateMergedVisibleBlurredPositionsAndSourcesPositions() {
-        invalidateMergedVisibleBlurredPositionsAndSources(BLUR_INVALIDATE_FLAG_POSITIONS);
-    }
-
-    private void invalidateMergedVisibleBlurredPositionsAndSources(int flags) {
+    private void invalidateBlurCaptures(int flags) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
             return;
         }
 
-        invalidateMergedVisibleBlurredPositionsAndSourcesImpl(flags);
-    }
-
-    private void invalidateMergedVisibleBlurredPositionsAndSourcesImpl(int flags) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
-            return;
+        if (BitwiseUtils.hasFlag(flags, GlassEngine.FLAG_INVALIDATED_POSITIONS)) {
+            GlassPositionsArray glassPositionsArray = glassEngine.getAllVisibleDrawablesWithDisplayListPositionsMerged();
+            scrollableViewNoiseSuppressor.setupRenderNodes(glassPositionsArray);
         }
 
-        if (BitwiseUtils.hasFlag(flags, BLUR_INVALIDATE_FLAG_POSITIONS)) {
-            ViewPositionWatcher.computeCoordinatesInParent(tabsSelectorView, container, tabsPosP);
-            tabsRectF.left = tabsPosP.x;
-            tabsRectF.top = tabsPosP.y;
-            tabsRectF.right = tabsRectF.left + tabsSelectorView.getMeasuredWidth();
-            tabsRectF.bottom = Math.min(tabsRectF.top + tabsSelectorView.getMeasuredHeight(), container.getMeasuredHeight());
-            if (tabsRectF.isEmpty()) {
-                return;
-            }
-
-            final int inset = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : dp(48);
-            tabsRectF.inset(-inset, -inset);
-
-            scrollableViewNoiseSuppressor.setupRenderNodes(blurredPositions, 1);
-        }
-
-        if (scrollableViewNoiseSuppressor.getRenderNodesCount() == 0) {
-            return;
-        }
-
-        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(viewGroupPartRenderer, container.getWidth(), container.getHeight());
+        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, containerView.getWidth(), containerView.getHeight());
     }
 
     private int lastBottomInset;
@@ -883,6 +847,28 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
             tabsSelectorView.requestLayout();
         }
     }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int color = getBackgroundColor();
+            if (color != themedBackgroundColor) {
+                themedBackgroundColor = color;
+                setBackgroundColor(color);
+                if (gradientTop != null && gradientTop.getBackground() instanceof GradientDrawable) {
+                    ((GradientDrawable) gradientTop.getBackground()).setColors(new int[]{ColorUtils.setAlphaComponent(color, 160), color & 0x00FFFFFF});
+                }
+            }
+            if (tabsSelectorView != null) {
+                tabsSelectorView.updateLensColor();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private int themedBackgroundColor;
 
     private int getBackgroundColor() {
         return ColorUtils.blendARGB(
@@ -932,11 +918,21 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         public final Utilities.Callback<Integer> onTabSelectListener;
 
         private GlassTabView[] tabs;
+        private final Theme.ResourcesProvider lensResourcesProvider;
+
+        public void updateLensColor() {
+            setLensColor(
+                Theme.multAlpha(Theme.getColor(Theme.key_glass_defaultIcon, lensResourcesProvider), 24 / 255f),
+                Theme.multAlpha(Theme.getColor(Theme.key_glass_defaultIcon, lensResourcesProvider), 32 / 255f)
+            );
+            invalidate();
+        }
 
         public TabsSelectorView(Context context, Theme.ResourcesProvider resourcesProvider, Utilities.Callback<Integer> onTabSelectListener) {
             super(context);
 
             this.onTabSelectListener = onTabSelectListener;
+            this.lensResourcesProvider = resourcesProvider;
 
             setLensColor(
                 Theme.multAlpha(Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider), 24 / 255f),

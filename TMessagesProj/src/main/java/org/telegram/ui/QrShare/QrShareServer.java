@@ -158,7 +158,7 @@ final class QrShareServer implements NotificationCenter.NotificationCenterDelega
             loadTheme();
             return;
         }
-        NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.privacyRulesUpdated);
         if (link.contactToken) {
             contactToken = MessagesController.getInstance(account).getCachedContactToken();
             if (contactToken == null) {
@@ -391,14 +391,14 @@ final class QrShareServer implements NotificationCenter.NotificationCenterDelega
             if (user == null) {
                 return;
             }
-            NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.userInfoDidLoad);
+            NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.userInfoDidLoad);
             controller.loadUserInfo(user, true, 0);
         } else {
             final TLRPC.Chat chat = controller.getChat(-link.peerId);
             if (chat == null) {
                 return;
             }
-            NotificationCenter.getInstance(account).addObserver(this, NotificationCenter.chatInfoDidLoad);
+            NotificationCenter.getInstance(account).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
             MessagesStorage.getInstance(account).loadChatInfo(chat.id, ChatObject.isChannel(chat), null, true, false);
         }
     }

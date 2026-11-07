@@ -1,0 +1,14 @@
+<!-- One timer id asked for again and again: the widget replaces JSON.stringify, which the shim uses to write its timer
+     host calls, so 1000 setTimeout calls all arrive as the id of one long interval, due in 50 ms. The glue kept every one
+     of them running under that id (past maxTimers, and after destroy()) and each fired the interval's callback; an id
+     that has a timer now replaces it, so the callback runs once. -->
+<p id="p">waiting</p>
+<script>
+var fired = 0;
+var realId = setInterval(function () { fired++; }, 10000000);
+var orig = JSON.stringify;
+JSON.stringify = function (v) { return Array.isArray(v) && v.length === 2 ? '[' + realId + ',50]' : orig(v); };
+for (var i = 0; i < 1000; i++) clearTimeout(setTimeout(function () {}, 1));
+JSON.stringify = orig;
+setTimeout(function () { document.getElementById('p').textContent = 'fired ' + fired; }, 1500);
+</script>

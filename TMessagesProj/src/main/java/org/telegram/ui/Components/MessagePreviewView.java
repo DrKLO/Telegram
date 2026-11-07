@@ -62,6 +62,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.IMessageCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -72,6 +73,7 @@ import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundPro
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MessagePreviewView extends FrameLayout {
 
@@ -300,7 +302,7 @@ public class MessagePreviewView extends FrameLayout {
             chatPreviewContainer.setElevation(dp(4));
 
             actionBar = new MessagePreviewView.ActionBar(context, resourcesProvider);
-            actionBar.setBackgroundColor(getThemedColor(Theme.key_actionBarDefault));
+            ThemeBind.backgroundColor(actionBar, Theme.key_actionBarDefault, MessagePreviewView.this.resourcesProvider);
 
             textSelectionHelper = new TextSelectionHelper.ChatListTextSelectionHelper() {
                 {
@@ -848,7 +850,7 @@ public class MessagePreviewView extends FrameLayout {
                         swipeback.addView(backButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                         ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
-                        gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+                        ThemeBind.backgroundColor(gap, ThemeBind.multAlpha(Theme.key_actionBarDefaultSubmenuItem, 0.06f), resourcesProvider);
                         gap.setTag(R.id.fit_width_tag, 1);
                         swipeback.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -910,7 +912,7 @@ public class MessagePreviewView extends FrameLayout {
                         }
                     };
                     clearQuoteButton.setTextAndIcon(LocaleController.getString(R.string.ClearQuote), R.drawable.menu_quote_delete);
-                    btn1.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6, 0));
+                    ThemeBind.selectorBackground(btn1, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 6, 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), MessagePreviewView.this.resourcesProvider);
                     btn1.setOnClickListener(v -> {
                         if (messagePreviewParams.quote != null && !showOutdatedQuote) {
                             // clear
@@ -975,7 +977,7 @@ public class MessagePreviewView extends FrameLayout {
 
                 if (!messagePreviewParams.noforwards && !messagePreviewParams.hasSecretMessages) {
                     ActionBarPopupWindow.GapView gap2 = new ActionBarPopupWindow.GapView(context, resourcesProvider);
-                    gap2.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+                    ThemeBind.backgroundColor(gap2, ThemeBind.multAlpha(Theme.key_actionBarDefaultSubmenuItem, 0.06f), resourcesProvider);
                     gap2.setTag(R.id.fit_width_tag, 1);
                     menu.addView(gap2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
                 }
@@ -989,8 +991,8 @@ public class MessagePreviewView extends FrameLayout {
 
                 deleteReplyButton = new ActionBarMenuSubItem(context, true, false, true, resourcesProvider);
                 deleteReplyButton.setTextAndIcon(LocaleController.getString(showOutdatedQuote ? R.string.DoNotQuote : R.string.DoNotReply), R.drawable.msg_delete);
-                deleteReplyButton.setColors(getThemedColor(Theme.key_text_RedBold), getThemedColor(Theme.key_text_RedRegular));
-                deleteReplyButton.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
+                deleteReplyButton.setColorKeys(Theme.key_text_RedBold, Theme.key_text_RedRegular);
+                deleteReplyButton.setSelectorColorKey(Theme.key_text_RedRegular, .12f);
                 deleteReplyButton.setOnClickListener(v -> {
                     if (showOutdatedQuote) {
                         removeQuote();
@@ -1041,7 +1043,7 @@ public class MessagePreviewView extends FrameLayout {
                 menu.addView(changeRecipientView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                 ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
-                gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+                ThemeBind.backgroundColor(gap, ThemeBind.multAlpha(Theme.key_actionBarDefaultSubmenuItem, 0.06f), resourcesProvider);
                 gap.setTag(R.id.fit_width_tag, 1);
                 menu.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -1052,9 +1054,9 @@ public class MessagePreviewView extends FrameLayout {
 
                 ActionBarMenuSubItem deleteLink = new ActionBarMenuSubItem(context, true, false, true, resourcesProvider);
                 deleteLink.setTextAndIcon(LocaleController.getString(R.string.DoNotForward), R.drawable.msg_delete);
-                deleteLink.setColors(getThemedColor(Theme.key_text_RedBold), getThemedColor(Theme.key_text_RedRegular));
+                deleteLink.setColorKeys(Theme.key_text_RedBold, Theme.key_text_RedRegular);
                 deleteLink.setOnClickListener(v -> removeForward());
-                deleteLink.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
+                deleteLink.setSelectorColorKey(Theme.key_text_RedRegular, .12f);
                 menu.addView(deleteLink, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                 sendersNameButton.setState(messagePreviewParams.hideForwardSendersName, false);
@@ -1117,7 +1119,7 @@ public class MessagePreviewView extends FrameLayout {
                 menu.addView(changePositionBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                 changeSizeBtnContainer = new FrameLayout(context);
-                changeSizeBtnContainer.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, 0));
+                ThemeBind.selectorBackground(changeSizeBtnContainer, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), MessagePreviewView.this.resourcesProvider);
                 changeSizeBtn = new ToggleButton(
                     context,
                     R.raw.media_shrink, LocaleController.getString(R.string.LinkMediaLarger),
@@ -1143,7 +1145,7 @@ public class MessagePreviewView extends FrameLayout {
                 videoChangeSizeBtn.setState(messagePreviewParams.webpageSmall, false);
 
                 ActionBarPopupWindow.GapView gap = new ActionBarPopupWindow.GapView(context, resourcesProvider);
-                gap.setColor(Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f));
+                ThemeBind.backgroundColor(gap, ThemeBind.multAlpha(Theme.key_actionBarDefaultSubmenuItem, 0.06f), resourcesProvider);
                 gap.setTag(R.id.fit_width_tag, 1);
                 menu.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
 
@@ -1154,9 +1156,9 @@ public class MessagePreviewView extends FrameLayout {
 
                 ActionBarMenuSubItem deleteLink = new ActionBarMenuSubItem(context, true, false, true, resourcesProvider);
                 deleteLink.setTextAndIcon(LocaleController.getString(R.string.DoNotLinkPreview), R.drawable.msg_delete);
-                deleteLink.setColors(getThemedColor(Theme.key_text_RedBold), getThemedColor(Theme.key_text_RedRegular));
+                deleteLink.setColorKeys(Theme.key_text_RedBold, Theme.key_text_RedRegular);
                 deleteLink.setOnClickListener(v -> removeLink());
-                deleteLink.setSelectorColor(Theme.multAlpha(Theme.getColor(Theme.key_text_RedRegular), .12f));
+                deleteLink.setSelectorColorKey(Theme.key_text_RedRegular, .12f);
                 menu.addView(deleteLink, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
                 changeSizeBtnContainer.setOnClickListener(view -> {
@@ -2044,7 +2046,7 @@ public class MessagePreviewView extends FrameLayout {
 
     }
 
-    public static class TabsView extends View {
+    public static class TabsView extends View implements Theme.Colorable {
         private static class Tab {
             final int id;
             final Text text;
@@ -2071,6 +2073,10 @@ public class MessagePreviewView extends FrameLayout {
             super(context);
             this.resourcesProvider = resourcesProvider;
 
+            computeColors();
+        }
+
+        private void computeColors() {
             if (Theme.isCurrentThemeDark()) {
                 color = 0x90ffffff;
                 selectedColor = 0xb0ffffff;
@@ -2091,6 +2097,21 @@ public class MessagePreviewView extends FrameLayout {
                 selectedColor = Theme.adaptHue(0xe5434e3b, wallpaperColor);
                 bgPaint.setColor(Theme.adaptHue(0x30939C78, wallpaperColor));
             }
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                computeColors();
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_chat_wallpaper);
         }
 
         public int getColor() {
@@ -2234,12 +2255,33 @@ public class MessagePreviewView extends FrameLayout {
         return Theme.getColor(key, resourcesProvider);
     }
 
-    private class ActionBar extends FrameLayout {
+    private class ActionBar extends FrameLayout implements Theme.Colorable {
         private Theme.ResourcesProvider resourcesProvider;
 
         private boolean forward;
         private final AnimatedTextView.AnimatedTextDrawable title;
         private final AnimatedTextView.AnimatedTextDrawable subtitle;
+
+        @Override
+        public void updateColors() {
+            try {
+                if (title != null) {
+                    title.setTextColor(Theme.getColor(Theme.key_actionBarDefaultTitle, resourcesProvider));
+                }
+                if (subtitle != null) {
+                    subtitle.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle, resourcesProvider));
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_actionBarDefaultTitle);
+            colors.add(Theme.key_actionBarDefaultSubtitle);
+        }
 
         public ActionBar(Context context, Theme.ResourcesProvider resourcesProvider) {
             super(context);
@@ -2373,8 +2415,9 @@ public class MessagePreviewView extends FrameLayout {
         return false;
     }
 
-    public static class ToggleButton extends View {
+    public static class ToggleButton extends View implements Theme.Colorable {
         AnimatedTextView.AnimatedTextDrawable textDrawable;
+        private final Theme.ResourcesProvider resourcesProvider;
         RLottieToggleDrawable iconDrawable;
 
         private boolean first = true;
@@ -2392,8 +2435,9 @@ public class MessagePreviewView extends FrameLayout {
 
             this.text1 = text1;
             this.text2 = text2;
+            this.resourcesProvider = resourcesProvider;
 
-            setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL));
+            ThemeBind.selectorBackground(this, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
 
             textDrawable = new AnimatedTextView.AnimatedTextDrawable(true, true, true);
             textDrawable.setAnimationProperties(.35f, 0, 300, CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -2408,7 +2452,24 @@ public class MessagePreviewView extends FrameLayout {
             textDrawable.setOverrideFullWidth(minWidth);
 
             iconDrawable = new RLottieToggleDrawable(this, iconRes1, iconRes2);
-            iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.drawableColorFilter(this, iconDrawable, Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                if (textDrawable != null) {
+                    textDrawable.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                    invalidate();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_actionBarDefaultSubmenuItem);
         }
 
         public void setState(boolean state1, boolean animated) {

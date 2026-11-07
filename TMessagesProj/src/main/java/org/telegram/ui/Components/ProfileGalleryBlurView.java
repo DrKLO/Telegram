@@ -9,8 +9,6 @@ import android.graphics.BitmapShader;
 import android.graphics.BlendMode;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
 import android.graphics.ComposeShader;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
@@ -62,11 +60,7 @@ public class ProfileGalleryBlurView extends View {
     private boolean sizeChanged = false;
     private boolean needNewFrame = false;
 
-    private ProfileActionsView actionsView;
-    private ProfileSuggestionView suggestionView;
-    private ProfileMusicView musicView;
-    private boolean shouldBlurActions;
-    private RenderNode blurNode, actionsBlurNode;
+    private RenderNode blurNode;
 
     private final SizeNotifierFrameLayout.IViewWithInvalidateCallback[] listeners =
             new SizeNotifierFrameLayout.IViewWithInvalidateCallback[3];
@@ -137,18 +131,6 @@ public class ProfileGalleryBlurView extends View {
         return usingRenderNode;
     }
 
-    public void setActionsView(ProfileActionsView actionsView) {
-        this.actionsView = actionsView;
-    }
-
-    public void setSuggestionView(ProfileSuggestionView suggestionView) {
-        this.suggestionView = suggestionView;
-    }
-
-    public void setMusicView(ProfileMusicView musicView) {
-        this.musicView = musicView;
-    }
-
     private void swap(int from, int to, int clear) {
         synchronized (lock) {
             ProfileMetaballView.BlurBitmapHolder tmp2 = nextFrame[from];
@@ -216,14 +198,7 @@ public class ProfileGalleryBlurView extends View {
                 blurNode.discardDisplayList();
                 blurNode = null;
             }
-            if (actionsBlurNode != null) {
-                actionsBlurNode.discardDisplayList();
-                actionsBlurNode = null;
-            }
         }
-        actionsView = null;
-        suggestionView = null;
-        musicView = null;
         synchronized (lock) {
             for (int i = 0; i < 3; i++) {
                 if (nextFrame[i] != null) {
@@ -445,16 +420,6 @@ public class ProfileGalleryBlurView extends View {
                 return;
             }
         }
-        if (actionsView != null) {
-            actionsView.drawingBlur(false);
-        }
-        if (suggestionView != null) {
-            suggestionView.drawingBlur(false);
-        }
-        if (musicView != null) {
-            musicView.drawingBlur(false);
-        }
-
         boolean shouldCapture = needNewFrame || sizeChanged || loopInvalidate ||
                 (paints[0].getShader() == null && paints[1].getShader() == null && !isBluring);
         if (shouldCapture) {
@@ -533,28 +498,6 @@ public class ProfileGalleryBlurView extends View {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.S)
-    private void initActionsRenderNode() {
-        if (actionsView == null && suggestionView == null && musicView == null) {
-            shouldBlurActions = false;
-            return;
-        }
-
-        if (actionsBlurNode == null) {
-            actionsBlurNode = new RenderNode("profileActionsBlurNode");
-
-            ColorMatrix colorMatrix = new ColorMatrix();
-            AndroidUtilities.adjustSaturationColorMatrix(colorMatrix, .65f);
-            AndroidUtilities.multiplyBrightnessColorMatrix(colorMatrix, .5f);
-
-            actionsBlurNode.setRenderEffect(//RenderEffect.createChainEffect(
-//                    RenderEffect.createBlurEffect(8, 2, Shader.TileMode.CLAMP),
-                RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(colorMatrix))
-            /*)*/);
-        }
-        shouldBlurActions = true;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.S)
     public void drawRenderNode(Canvas canvas, float width) {
         initRenderNode();
 
@@ -585,10 +528,6 @@ public class ProfileGalleryBlurView extends View {
         canvas.scale(scale, scale);
         canvas.drawRenderNode(blurNode);
         canvas.restore();
-
-        if (getVisibility() == View.VISIBLE && getAlpha() > 0f) {
-            captureActionsBlurRenderNode(width, null, 1f, size);
-        }
     }
 
     private void drawViewWithRenderNode(Canvas recordingCanvas, int index) {
@@ -645,57 +584,6 @@ public class ProfileGalleryBlurView extends View {
         canvas.translate(0f, -scaledSize);
         canvas.scale(scale, scale);
         canvas.drawRenderNode(blurNode);
-
-        captureActionsBlurRenderNode(width, avatarImageView, openingScale, croppedSize);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.S)
-    private void captureActionsBlurRenderNode(float width, ProfileActivity.AvatarImageView avatarImageView, float openingScale, float size) {
-        initActionsRenderNode();
-
-        if (!shouldBlurActions) {
-            if (actionsView != null) {
-                actionsView.drawingBlur(false);
-            }
-            if (suggestionView != null) {
-                suggestionView.drawingBlur(false);
-            }
-            if (musicView != null) {
-                musicView.drawingBlur(false);
-            }
-            return;
-        }
-
-        float outScale = 8f;
-        float scale = getRenderNodeScale() * openingScale * outScale;
-        actionsBlurNode.setPosition(0, 0, (int) Math.ceil(width / scale), (int) Math.ceil((size + actionSize) / scale));
-        RecordingCanvas recordingCanvas = actionsBlurNode.beginRecording();
-        recordingCanvas.scale(1f / outScale, 1f / outScale);
-        recordingCanvas.drawRenderNode(blurNode);
-        actionsBlurNode.endRecording();
-        actionsBlurNode.setAlpha(alpha.set(1f));
-
-        if (actionsView != null) {
-            if (avatarImageView != null) {
-                actionsView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size);
-            } else {
-                actionsView.drawingBlur(actionsBlurNode, null, scale, -size);
-            }
-        }
-        if (suggestionView != null) {
-            if (avatarImageView != null) {
-                suggestionView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size);
-            } else {
-                suggestionView.drawingBlur(actionsBlurNode, null, scale, -size);
-            }
-        }
-        if (musicView != null) {
-            if (avatarImageView != null) {
-                musicView.drawingBlur(actionsBlurNode, avatarImageView, scale / openingScale, -size + dp(22));
-            } else {
-                musicView.drawingBlur(actionsBlurNode, null, scale, -size + dp(22));
-            }
-        }
     }
 
     private void drawOpeningImageRenderNode(

@@ -29,6 +29,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +66,7 @@ public class ReactedHeaderView extends FrameLayout {
         addView(flickerLoadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
 
         titleView = new TextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
+        ThemeBind.textColor(titleView, Theme.key_actionBarDefaultSubmenuItem);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         titleView.setLines(1);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
@@ -79,7 +80,7 @@ public class ReactedHeaderView extends FrameLayout {
         iconView = new ImageView(context);
         addView(iconView, LayoutHelper.createFrameRelatively(24, 24, Gravity.START | Gravity.CENTER_VERTICAL, 11, 0, 0, 0));
         Drawable drawable = ContextCompat.getDrawable(context, R.drawable.msg_reactions).mutate();
-        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, drawable, Theme.key_actionBarDefaultSubmenuItemIcon, PorterDuff.Mode.MULTIPLY);
         iconView.setImageDrawable(drawable);
         iconView.setVisibility(View.GONE);
 

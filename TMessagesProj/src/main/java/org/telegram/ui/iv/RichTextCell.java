@@ -39,6 +39,8 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.FloatingToolbar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.messenger.FileLog;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.CheckBoxBase;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
@@ -52,6 +54,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSelectionHelper.ArticleSelectableView {
 
@@ -435,7 +438,7 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         authorEditText.setVisibility(View.GONE);
         addView(authorEditText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
 
-        updateColors();
+        updateColorsInternal();
     }
 
     private void updateLanguageButton(TL_iv.PageBlock pageBlock, boolean recreate) {
@@ -451,10 +454,10 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         if (languageButton == null) {
             languageButton = new LinearLayout(getContext());
             languageButton.setOrientation(LinearLayout.HORIZONTAL);
-            languageButton.setBackground(Theme.createRadSelectorDrawable(
+            ThemeBind.selectorBackground(languageButton, Theme.createRadSelectorDrawable(
                 Theme.getColor(Theme.key_listSelector, resourcesProvider),
                 dp(3), dp(3)
-            ));
+            ), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             languageButton.setPadding(dp(6), dp(2), dp(2), dp(2));
             addView(languageButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.TOP, 0, -15, -5, 0));
 
@@ -483,8 +486,9 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
         int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         color = Theme.multAlpha(color, TextUtils.isEmpty(language) ? .50f : .75f);
 
-        languageButtonIcon.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-        languageButtonText.setTextColor(color);
+        final ThemeBind.Spec languageColor = ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, TextUtils.isEmpty(language) ? .50f : .75f);
+        ThemeBind.colorFilter(languageButtonIcon, languageColor, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        ThemeBind.textColor(languageButtonText, languageColor, resourcesProvider);
         if (TextUtils.isEmpty(language)) {
             languageButtonText.setText(getString(R.string.ArticleHintLanguage));
         } else {
@@ -779,15 +783,39 @@ public class RichTextCell extends FrameLayout implements Theme.Colorable, TextSe
 
     @Override
     public void updateColors() {
+        try {
+            updateColorsInternal();
+            if (getBackground() instanceof RichEditor.DraggingDrawable) {
+                ((RichEditor.DraggingDrawable) getBackground()).setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private Object lastQuoteIcon;
+    private int lastQuoteIconColor;
+
+    private void updateColorsInternal() {
         editText.updateColors();
         if (authorEditText != null) authorEditText.updateColors();
         bullet.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         if (quoteIcon != null) {
-            quoteIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            final int quoteColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+            if (quoteIcon != lastQuoteIcon || quoteColor != lastQuoteIconColor) {
+                lastQuoteIcon = quoteIcon;
+                lastQuoteIconColor = quoteColor;
+                quoteIcon.setColorFilter(new PorterDuffColorFilter(quoteColor, PorterDuff.Mode.SRC_IN));
+            }
         }
         if (quoteLine != null) {
             RichBlockChrome.applyEditorQuoteColor(quoteLine, resourcesProvider);
         }
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_featuredStickers_addButton);
     }
 
     private void applyListDecoration(BlockRow row) {

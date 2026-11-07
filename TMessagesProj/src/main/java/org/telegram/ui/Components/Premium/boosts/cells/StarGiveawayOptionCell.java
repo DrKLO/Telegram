@@ -23,6 +23,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -49,12 +50,12 @@ public class StarGiveawayOptionCell extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
 
         starDrawableOutline = context.getResources().getDrawable(R.drawable.star_small_outline).mutate();
-        starDrawableOutline.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogBackground, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.drawableColorFilter(this, starDrawableOutline, Theme.key_dialogBackground, resourcesProvider, PorterDuff.Mode.SRC_IN);
         starDrawable = context.getResources().getDrawable(R.drawable.star_small_inner).mutate();
         setWillNotDraw(false);
 
         titleView = new AnimatedTextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(dp(16));
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.LEFT | Gravity.TOP, 64, 8, 80, 0));
@@ -63,7 +64,7 @@ public class StarGiveawayOptionCell extends FrameLayout {
         loading1.setSpan(new LoadingSpan(titleView, dp(90)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         subtitleView = new AnimatedTextView(context, false, true, true);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         subtitleView.setTextSize(dp(13));
         addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 14, Gravity.LEFT | Gravity.TOP, 64, 31, 80, 0));
 
@@ -71,14 +72,14 @@ public class StarGiveawayOptionCell extends FrameLayout {
         loading2.setSpan(new LoadingSpan(subtitleView, dp(70)), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         priceView = new TextView(context);
-        priceView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(priceView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         priceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         priceView.setGravity(Gravity.RIGHT);
         addView(priceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 19, 0));
 
         radioButton = new RadioButton(context);
         radioButton.setSize(dp(20));
-        radioButton.setColor(Theme.getColor(Theme.key_checkboxDisabled, resourcesProvider), Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider));
+        ThemeBind.radioColors(radioButton, Theme.key_checkboxDisabled, Theme.key_dialogRadioBackgroundChecked, resourcesProvider);
         addView(radioButton, LayoutHelper.createFrame(20, 20, Gravity.LEFT | Gravity.CENTER_VERTICAL, 22, 0, 0, 0));
     }
 

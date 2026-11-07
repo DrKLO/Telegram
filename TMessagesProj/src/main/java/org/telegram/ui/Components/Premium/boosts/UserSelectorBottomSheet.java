@@ -54,6 +54,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
@@ -61,6 +62,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
@@ -286,7 +288,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     public UserSelectorBottomSheet(Context context, int currentAccount, long userId, BirthdayController.BirthdayState state, int type, boolean needFocus, Theme.ResourcesProvider resourcesProvider) {
         super(context, null, needFocus, false, false, resourcesProvider);
         this.currentAccount = currentAccount;
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        fixNavigationBarKey(Theme.key_dialogBackground);
         drawDoubleNavigationBar = false;
 
         this.type = type;
@@ -340,7 +342,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
                 }
             }
         };
-        searchField.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        ThemeBind.backgroundColor(searchField, Theme.key_dialogBackground, resourcesProvider);
         searchField.setOnSearchTextChange(this::onSearch);
         searchField.setHintText(getString(!selectedIds.isEmpty() || type == TYPE_STARS || type == TYPE_STAR_GIFT || type == TYPE_TRANSFER || type == TYPE_CALL ? R.string.Search : R.string.GiftPremiumUsersSearchHint), false);
 
@@ -359,13 +361,13 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
         buttonContainer.setClickable(true);
         buttonContainer.setOrientation(LinearLayout.VERTICAL);
         buttonContainer.setPadding(dp(10), dp(10), dp(10), dp(10));
-        buttonContainer.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        ThemeBind.backgroundColor(buttonContainer, Theme.key_dialogBackground, resourcesProvider);
         if (type == TYPE_CALL) {
             LinearLayout videoLayout = new LinearLayout(context);
             videoLayout.setPadding(dp(12), dp(4), dp(12), dp(4));
             videoLayout.setClipToPadding(false);
             videoLayout.setOrientation(LinearLayout.HORIZONTAL);
-            videoLayout.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 6, 6));
+            ThemeBind.selectorBackground(videoLayout, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 6, 6), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             videoCheckbox = new CheckBox2(context, 24, resourcesProvider);
             videoCheckbox.setColor(Theme.key_featuredStickers_addButton, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
             videoCheckbox.setDrawUnchecked(true);
@@ -373,7 +375,7 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
             videoCheckbox.setDrawBackgroundAsArc(10);
             videoLayout.addView(videoCheckbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
             TextView videoTextView = new TextView(context);
-            videoTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(videoTextView, Theme.key_dialogTextBlack, resourcesProvider);
             videoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             videoTextView.setText(LocaleController.getString(R.string.ConferenceCallWithVideo));
             videoLayout.addView(videoTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
@@ -688,10 +690,10 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.giftsToUserSent);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.userInfoDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.reloadHints);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.giftsToUserSent);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.userInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.contactsDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.reloadHints);
     }
 
     @Override
@@ -1163,6 +1165,27 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     public static final long OPTION_MY_GIFTS = -97L;
 
     private Drawable myWalletIcon;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+            if (myGiftsIcon instanceof CombinedDrawable) {
+                Theme.setDrawableColor(((CombinedDrawable) myGiftsIcon).getBackground(), color);
+            }
+            if (myWalletIcon instanceof CombinedDrawable) {
+                Theme.setDrawableColor(((CombinedDrawable) myWalletIcon).getBackground(), color);
+            }
+            if (recyclerListView != null) {
+                for (int i = 0; i < recyclerListView.getChildCount(); ++i) {
+                    recyclerListView.getChildAt(i).invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private Drawable myGiftsIcon;
     // "UQAl 1dVi v8··2d YKpL Jo3A": address chunks as chips, the middle one fading out in its center
     public static CharSequence formatAddressChips(String address, int textColor) {

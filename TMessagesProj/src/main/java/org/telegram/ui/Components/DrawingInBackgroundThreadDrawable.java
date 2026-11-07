@@ -197,8 +197,8 @@ public class DrawingInBackgroundThreadDrawable implements NotificationCenter.Not
             }
         }
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.stopAllHeavyOperations);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.startAllHeavyOperations);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.stopAllHeavyOperations);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.startAllHeavyOperations);
     }
 
     public void onDetachFromWindow() {

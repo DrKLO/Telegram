@@ -140,7 +140,7 @@ public class QuoteHighlight extends Path {
 
             currentOffsetX = -offsetX;
             if (block.code && !block.quote) {
-                currentOffsetX += dp(10);
+                currentOffsetX += block.compactCode ? dp(MessageObject.TextLayoutBlock.COMPACT_CODE_HPAD) : dp(10);
             }
             currentOffsetY = block.textYOffset(blocks) + block.padTop;
             minX = block.quote ? dp(10) : 0;

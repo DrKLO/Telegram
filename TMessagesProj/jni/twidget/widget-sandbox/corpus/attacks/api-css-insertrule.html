@@ -1,0 +1,5 @@
+<style>p { color: #333; }</style><p>insertRule</p><script>
+try { document.styleSheets[0].insertRule('body { background: url(http://127.0.0.1:9999/hit/api-insertrule) }', 0); } catch (e) { console.log('blocked:', e.name); }
+try { document.styleSheets[0].insertRule('@import url(http://127.0.0.1:9999/hit/api-insertrule-import);', 0); } catch (e) { console.log('blocked:', e.name); }
+try { document.querySelector('style').sheet.addRule('p', 'background: url(http://127.0.0.1:9999/hit/api-addrule)'); } catch (e) { console.log('blocked:', e.name); }
+</script>

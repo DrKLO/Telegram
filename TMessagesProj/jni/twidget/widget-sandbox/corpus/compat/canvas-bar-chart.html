@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- out-of-profile/chartjs-bar.html without Chart.js (profile 1 bundles no library): the same grouped bar chart
+     drawn with canvas 2D — sized to its box by a ResizeObserver at devicePixelRatio, a nice linear y scale with
+     "$" ticks and grid lines, a legend laid out with measureText (tap an entry to hide its dataset, as in
+     Chart.js), and a tooltip for the tapped (or hovered) category in "index" mode. -->
+<html><head><meta charset="utf-8">
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; } .wrap { position: relative; height: 240px; } canvas { display: block; touch-action: pan-y; } #readout { font-size: 12px; color: #666; margin: 6px 0 0; min-height: 16px; font-variant-numeric: tabular-nums; }</style>
+</head><body>
+<h3 style="margin:0 0 6px;font-size:15px">Expenses by category</h3>
+<div class="wrap" id="wrap"><canvas id="c"></canvas></div>
+<p id="readout">Tap a category or a legend entry</p>
+<script>
+  var labels = ['Rent', 'Food', 'Transport', 'Fun', 'Savings'];
+  var sets = [
+    { label: '2024', data: [1200, 450, 180, 220, 400], color: '#2481cc', hidden: false },
+    { label: '2025', data: [1250, 480, 150, 300, 500], color: '#f59e0b', hidden: false },
+  ];
+  var FONT = '12px system-ui, sans-serif';
+  var canvas = document.getElementById('c'), wrap = document.getElementById('wrap'), ctx = canvas.getContext('2d');
+  var cssW = 0, cssH = 240, active = -1, pinned = false, legend = [], area = null;
+
+  function niceStep(max, count) {
+    var raw = max / count, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
+  }
+  function draw() {
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssH * dpr);
+    canvas.style.width = cssW + 'px'; canvas.style.height = cssH + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+    ctx.font = FONT; ctx.textBaseline = 'middle';
+    // Legend, centred on top: a colour box and the label per dataset; hidden ones are struck through.
+    var items = sets.map(function (s) { return 12 + 6 + ctx.measureText(s.label).width; });
+    var lw = items.reduce(function (a, b) { return a + b; }, 0) + 16 * (items.length - 1), lx = (cssW - lw) / 2;
+    legend = [];
+    sets.forEach(function (s, i) {
+      ctx.fillStyle = s.color; ctx.globalAlpha = s.hidden ? 0.35 : 1; ctx.fillRect(lx, 8, 12, 12); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#666'; ctx.textAlign = 'left'; ctx.fillText(s.label, lx + 18, 14);
+      if (s.hidden) { ctx.fillRect(lx + 18, 14, items[i] - 18, 1); }
+      legend.push({ x0: lx - 8, x1: lx + items[i] + 8, set: i });
+      lx += items[i] + 16;
+    });
+    // Y scale from zero to a multiple of a nice step over the visible data.
+    var max = 0;
+    sets.forEach(function (s) { if (!s.hidden) s.data.forEach(function (v) { max = Math.max(max, v); }); });
+    var stepV = niceStep(max || 1, 6), top = Math.ceil((max || 1) / stepV) * stepV;
+    var yw = 0;
+    for (var v = 0; v <= top; v += stepV) yw = Math.max(yw, ctx.measureText('$' + v).width);
+    area = { l: Math.ceil(yw) + 10, r: cssW - 4, t: 32, b: cssH - 22 };
+    var y = function (val) { return area.b - (area.b - area.t) * val / top; };
+    ctx.textAlign = 'right';
+    for (v = 0; v <= top; v += stepV) {
+      ctx.fillStyle = v === 0 ? 'rgba(0,0,0,.25)' : 'rgba(0,0,0,.1)';
+      ctx.fillRect(area.l, Math.round(y(v)), area.r - area.l, 1);
+      ctx.fillStyle = '#666'; ctx.fillText('$' + v, area.l - 6, y(v));
+    }
+    // Bars: categoryPercentage 0.8, barPercentage 0.9 as in Chart.js.
+    var band = (area.r - area.l) / labels.length, visible = sets.filter(function (s) { return !s.hidden; });
+    var group = band * 0.8, bw = visible.length ? group / visible.length * 0.9 : 0;
+    labels.forEach(function (name, i) {
+      var gx = area.l + band * i + (band - group) / 2;
+      if (i === active) { ctx.fillStyle = 'rgba(36,129,204,.08)'; ctx.fillRect(area.l + band * i, area.t, band, area.b - area.t); }
+      visible.forEach(function (s, j) {
+        var bx = gx + group / visible.length * j + (group / visible.length - bw) / 2;
+        ctx.fillStyle = s.color; ctx.fillRect(bx, y(s.data[i]), bw, area.b - y(s.data[i]));
+      });
+      ctx.fillStyle = '#666'; ctx.textAlign = 'center'; ctx.fillText(name, area.l + band * (i + 0.5), area.b + 11);
+    });
+    if (active >= 0 && visible.length) tooltip(band, y, visible);
+  }
+  function tooltip(band, y, visible) {
+    var title = labels[active], lines = visible.map(function (s) { return s.label + ': $' + s.data[active]; });
+    ctx.font = 'bold ' + FONT;
+    var w = ctx.measureText(title).width;
+    ctx.font = FONT;
+    lines.forEach(function (l) { w = Math.max(w, 16 + ctx.measureText(l).width); });
+    var bw = w + 16, bh = 12 + 16 * (lines.length + 1), cx = area.l + band * (active + 0.5);
+    var top = Math.min.apply(null, visible.map(function (s) { return y(s.data[active]); }));
+    var bx = Math.max(2, Math.min(cssW - bw - 2, cx - bw / 2)), by = Math.max(area.t, top - bh - 8);
+    ctx.fillStyle = 'rgba(0,0,0,.8)';
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6); ctx.fill();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = 'bold ' + FONT; ctx.fillText(title, bx + 8, by + 14);
+    ctx.font = FONT;
+    lines.forEach(function (l, i) {
+      ctx.fillStyle = visible[i].color; ctx.fillRect(bx + 8, by + 25 + 16 * i, 10, 10);
+      ctx.fillStyle = '#fff'; ctx.fillText(l, bx + 24, by + 30 + 16 * i);
+    });
+  }
+  function report() {
+    var vis = sets.filter(function (s) { return !s.hidden; });
+    document.getElementById('readout').textContent = active < 0 ? 'Tap a category or a legend entry'
+      : labels[active] + ' — ' + (vis.length ? vis.map(function (s) { return s.label + ': $' + s.data[active]; }).join(' · ') : 'no dataset shown');
+  }
+  function pick(e, tap) {
+    var r = canvas.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    if (!area) return;
+    if (py < 28) {
+      if (!tap) return;
+      for (var i = 0; i < legend.length; i++) if (px >= legend[i].x0 && px <= legend[i].x1) { sets[legend[i].set].hidden = !sets[legend[i].set].hidden; draw(); report(); }
+      return;
+    }
+    var idx = px < area.l || px > area.r ? -1 : Math.min(labels.length - 1, Math.floor((px - area.l) / ((area.r - area.l) / labels.length)));
+    if (tap) pinned = idx >= 0;
+    if (idx !== active) { active = idx; draw(); report(); }
+  }
+  canvas.addEventListener('click', function (e) { pick(e, true); });
+  // Hover with a mouse, scrub with a pressed finger (touch-action: pan-y leaves vertical swipes to the chat).
+  canvas.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' || e.buttons) pick(e, false); });
+  canvas.addEventListener('pointerleave', function (e) { if (!pinned && e.pointerType === 'mouse' && active >= 0) { active = -1; draw(); report(); } });
+  // responsive: true — follow the width of the box.
+  cssW = Math.round(wrap.getBoundingClientRect().width) || 360;
+  draw();
+  new ResizeObserver(function (entries) {
+    var w = Math.round(entries[0].contentRect.width);
+    if (w && w !== cssW) { cssW = w; draw(); }
+  }).observe(wrap);
+</script>
+</body></html>

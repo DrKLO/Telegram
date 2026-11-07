@@ -1,0 +1,72 @@
+<!doctype html>
+<html data-test="auto/22-ua-defaults">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: the renderer's defaults</title>
+<!-- conformance {"title":"The UA layer: the root on the text tokens over the bubble, text defaults, author CSS wins","bare":true} -->
+<!-- conformance:harness --><script>var T=function(){var u=document,m=u.documentElement,M=typeof TelegramWidget!="undefined",C=window.__conformanceMode||(M?"sandbox":"native"),a=[],y={},l=[];var D,c,p,f,k,d,b,g,O=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),q=()=>{g=g||setTimeout(T,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),q(),s}function R(t,e,n,o){if(o&&o.sandboxOnly&&!M)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var B=(t,e,n,o,r)=>R(t,e,[n===o,"got "+w(n)+", want "+w(o)],r);var A=(t,e,n)=>getComputedStyle(O(t),n).getPropertyValue(e).trim();function E(t,e,n){let o=A(t,e||"background-color",n),r=/rgba?\(\s*([\d.]+)\D+([\d.]+)\D+([\d.]+)(?:\D+([\d.]+)(%?))?/.exec(o);return r?[Math.round(r[1]),Math.round(r[2]),Math.round(r[3]),r[4]?Math.round(r[4]*(r[5]?1:100))/100:1].join():o}var I=t=>{l.push(t)};var F=()=>{},J=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function T(){g=0,p&&!f&&F();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&k?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:C,status:n,n:t,checks:a,targets:D,stages:c})),x&&x(n,t)}var x;function S(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function j(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=J(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),q();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(j,t||0)}function N(t){t=t||{},k=t.awaitInput,d=t.awaitInput||t.deadline,T();let e=()=>{e=()=>{},setTimeout(j,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}S();return{color:E,cs:A,eq:B,run:N,step:I}}();</script><!-- /conformance:harness -->
+<style>
+#probes{height:64px;overflow:hidden}
+#won{margin:1px 0;font-size:21px;font-weight:400}
+#pre{width:50px}
+.author{padding-left:5px;list-style-type:square}
+</style>
+</head>
+<body>
+<div id="head">22 · The renderer's defaults</div>
+<div id="probes">
+  <h1>H</h1><h2>H</h2><h3>H</h3><h4>H</h4><h5>H</h5><h6>H</h6><h3 id="won">H</h3>
+  <p id="p">p <a id="a" href="https://telegram.org">a</a> <a id="name">n</a> <b id="b">b</b> <small id="sm">s</small> <code id="code">c</code> <sup id="sup">1</sup></p>
+  <ul id="ul"><li>a<ul id="ul2"><li>b</li></ul></li></ul><ol id="ol"><li>a</li></ol><ul id="ua" class="author"><li>a</li></ul>
+  <dl><dt id="dt">t</dt><dd id="dd">d</dd></dl>
+  <table id="tbl"><tr><th id="th">h</th><td id="td1">d</td><td id="td2">d</td></tr></table>
+  <hr id="hr"><pre id="pre">x x x x x x<code id="pc">y</code></pre><blockquote id="bq">q</blockquote>
+  <figure id="fig"><figcaption id="fc">f</figcaption></figure>
+</div>
+<div id="conf-list"></div>
+<script>
+var CS = T.cs, E = T.eq, html = document.documentElement;
+var px = function (s, p) { return parseFloat(CS(s, p)); };
+var v = function (n) { return getComputedStyle(html).getPropertyValue(n).trim(); };
+var hex = function (h) { return /^#[0-9a-f]{6}$/i.test(h) ? [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }).concat(1).join() : h; };
+var r2 = function (x) { return Math.round(x * 100) / 100; };
+var fsOf = function (s) { return px(s, 'font-size'); };
+var box = function (s) { return document.querySelector(s).getBoundingClientRect(); };
+var em = function (s, p, o) { var e = typeof s == 'string' ? document.querySelector(s) : s; return r2(px(e, p) / fsOf(o ? e : e.parentNode)); };
+
+T.step(function () {
+  var fs = parseFloat(v('--tg-text-font-size')), lh = parseFloat(v('--tg-text-line-height'));
+  var pd = v('--tg-text-padding').split(/\s+/).map(parseFloat);
+  var sides = [pd[0], pd[1] ?? pd[0], pd[2] ?? pd[0], pd[3] ?? pd[1] ?? pd[0]];
+  E('tw.theme-params', 'root: no background (the bubble is the canvas), the text colour', T.color(html) + ' ' + T.color(html, 'color'), '0,0,0,0 ' + hex(v('--tg-theme-text-color')));
+  E('tw.theme-params', 'a[href]: link colour, no underline; <a> without href: text colour', T.color('#a', 'color') + ' ' + CS('#a', 'text-decoration-line') + ' ' + T.color('#name', 'color'), hex(v('--tg-theme-link-color')) + ' none ' + T.color(html, 'color'));
+  E('tw.theme-params', 'figcaption is --tg-theme-hint-color', T.color('#fc', 'color'), hex(v('--tg-theme-hint-color')));
+
+  E('html.el.structure', 'root: the text tokens, system-ui', [r2(fsOf(html)), r2(px(html, 'line-height')), /system-ui/.test(CS(html, 'font-family'))].join(), [r2(fs), r2(fs * lh), true].join());
+  E('html.el.structure', 'body: the padding token as margin, no padding', ['padding-top', 'padding-left', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left'].map(function (p) { return r2(px('body', p)); }).join(), [0, 0].concat(sides).join());
+  E('html.el.structure', 'p: 0.6em margins; hr: one 1px line, no height', [em('#p', 'margin-bottom'), px('#hr', 'border-top-width'), px('#hr', 'border-bottom-width'), px('#hr', 'height')].join(), '0.6,1,0,0');
+
+  var hs = document.querySelectorAll('#probes>h1,#probes>h2,#probes>h3:not(#won),#probes>h4,#probes>h5,#probes>h6');
+  E('html.el.headings', 'h1–h6: 1.6, 1.35, 1.2, 1.07, 1, 0.87 em', [].map.call(hs, function (h) { return em(h, 'font-size'); }).join(), '1.6,1.35,1.2,1.07,1,0.87');
+  E('html.el.headings', 'headings: 600, line height 1.25; h2 0.75em above, 0.35em below', [CS(hs[0], 'font-weight'), em(hs[5], 'line-height', 1), em(hs[1], 'margin-top', 1), em(hs[1], 'margin-bottom', 1)].join(), '600,1.25,0.75,0.35');
+
+  E('html.el.inline-text', 'small 0.85em; b 600; code monospace 0.9em', [em('#sm', 'font-size'), CS('#b', 'font-weight'), /monospace/.test(CS('#code', 'font-family')), em('#code', 'font-size')].join(), '0.85,600,true,0.9');
+  E('html.el.sub-sup', 'sup: 0.75em on the baseline, raised by position', [em('#sup', 'font-size'), CS('#sup', 'vertical-align'), CS('#sup', 'position')].join(), '0.75,baseline,relative');
+
+  E('html.el.lists', 'ul: 1.5em start padding, disc; nested: circle, no margin; ol: decimal', [em('#ul', 'padding-left'), CS('#ul', 'list-style-type'), CS('#ul2', 'list-style-type'), px('#ul2', 'margin-top'), CS('#ol', 'list-style-type')].join(), '1.5,disc,circle,0,decimal');
+  E('html.el.lists', 'dt 600; dd indented 1.5em', CS('#dt', 'font-weight') + ' ' + em('#dd', 'margin-left'), '600 1.5');
+
+  E('html.el.table', 'table: collapsed, cells touch; th 600, start-aligned', [CS('#tbl', 'border-collapse'), Math.abs(box('#td2').left - box('#td1').right) < 0.5, CS('#th', 'font-weight'), /^(start|left)$/.test(CS('#th', 'text-align'))].join(), 'collapse,true,600,true');
+  E('html.el.table', 'cells: 1px line under, 0.3em above, no outer padding at the ends', [px('#td1', 'border-bottom-width'), em('#td1', 'padding-top', 1), px('#th', 'padding-left'), px('#td2', 'padding-right')].join(), '1,0.3,0,0');
+
+  E('html.el.pre', 'pre: wraps, monospace 0.9em, code inside keeps the size', [box('#pre').height - px('#pre', 'padding-top') - px('#pre', 'padding-bottom') > 1.5 * px('#pre', 'line-height'), /monospace/.test(CS('#pre', 'font-family')), em('#pre', 'font-size'), em('#pc', 'font-size')].join(), 'true,true,0.9,1');
+  E('html.el.blockquote', 'blockquote: 3px bar, 0.75em padding; no indent, as figure', [px('#bq', 'margin-left'), px('#bq', 'border-left-width'), em('#bq', 'padding-left', 1), px('#fig', 'margin-left')].join(), '0,3,0.75,0');
+
+  E('html.el.structure', 'author rules win over the layer', [px('#won', 'margin-top'), fsOf('#won'), CS('#won', 'font-weight'), px('#ua', 'padding-left'), CS('#ua', 'list-style-type')].join(), '1,21,400,5,square');
+});
+T.run();
+</script>
+</body>
+</html>
