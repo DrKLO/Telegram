@@ -4830,8 +4830,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         ViewCompat.setOnApplyWindowInsetsListener(containerView, (v, newInsetsCompat) -> {
             final Rect oldInsets = new Rect(insets);
             final Insets r = AndroidUtilities.getDefaultWindowInsets(newInsetsCompat, false);
+            // don't reserve space for a navigation bar hidden in fullscreen, so landscape video can use it
+            final int bottom = newInsetsCompat.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout()).bottom;
 
-            insets.set(r.left, r.top, r.right, r.bottom);
+            insets.set(r.left, r.top, r.right, bottom);
 
             int newTopInset = insets.top;
             if (!oldInsets.equals(insets)) {
