@@ -28,6 +28,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stats;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Business.BusinessLinksActivity;
 import org.telegram.ui.Business.QuickRepliesActivity;
 import org.telegram.ui.Business.QuickRepliesController;
@@ -61,6 +62,7 @@ import me.vkryl.core.BitwiseUtils;
 
 public class UniversalAdapter extends AdapterWithDiffUtils {
 
+    public static final int VIEW_TYPE_VIEWPORT_CUSTOM = -5;
     public static final int VIEW_TYPE_CUSTOM_SHADOW = -4;
     public static final int VIEW_TYPE_FULLSCREEN_CUSTOM = -3;
     public static final int VIEW_TYPE_FULLY_CUSTOM = -2;
@@ -125,6 +127,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     private final int classGuid;
     private final boolean dialog;
     private boolean applyBackground = true;
+    private boolean compactTextCells;
     protected Utilities.Callback2<ArrayList<UItem>, UniversalAdapter> fillItems;
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -331,8 +334,15 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         updateReorderSections();
     }
 
+    public void setCompactTextCells(boolean compact) {
+        compactTextCells = compact;
+    }
+
     public boolean shouldApplyBackground(int viewType) {
         if (!applyBackground) return false;
+        if (listView != null && listView.hasSections() && listView.getSectionsDrawBackground()) {
+            return false; // the sections under the cells already have this color: no second full layer
+        }
         if (viewType >= UItem.factoryViewTypeStartsWith) {
             return true;
         }
@@ -347,6 +357,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             case VIEW_TYPE_RADIO_2:
             case VIEW_TYPE_TEXT_CHECK:
             case VIEW_TYPE_ICON_TEXT_CHECK:
+            case VIEW_TYPE_VIEWPORT_CUSTOM:
             case VIEW_TYPE_FULLSCREEN_CUSTOM:
             case VIEW_TYPE_FILTER_CHAT:
             case VIEW_TYPE_FILTER_CHAT_CHECK:
@@ -421,6 +432,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
             case VIEW_TYPE_TEXT:
                 view = new TextCell(context, resourcesProvider);
+                ((TextCell) view).setCompactLayout(compactTextCells);
                 break;
             case VIEW_TYPE_CHECK:
             case VIEW_TYPE_CHECKRIPPLE:
@@ -434,7 +446,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 view = cell;
                 break;
             case VIEW_TYPE_RADIO:
-                view = new DialogRadioCell(context);
+                final DialogRadioCell radioCell = new DialogRadioCell(context);
+                radioCell.setHorizontalPadding(21);
+                view = radioCell;
                 break;
             case VIEW_TYPE_RADIO_2:
                 view = new RadioButtonCell(context);
@@ -472,6 +486,10 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
             case VIEW_TYPE_FULLSCREEN_CUSTOM:
                 view = new FullscreenCustomFrameLayout(context);
+                break;
+            case VIEW_TYPE_VIEWPORT_CUSTOM:
+                view = new RecyclerViewportFrameLayout(context);
+                view.setTag(RecyclerListView.TAG_NOT_SECTION);
                 break;
             case VIEW_TYPE_FILTER_CHAT:
             case VIEW_TYPE_FILTER_CHAT_CHECK:
@@ -577,7 +595,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
         }
         if (shouldApplyBackground(viewType)) {
-            view.setBackgroundColor(getThemedColor(key_background));
+            ThemeBind.backgroundColor(view, key_background, themedColors);
         }
         return new RecyclerListView.Holder(view);
     }
@@ -700,6 +718,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 } else {
                     cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                 }
+                cell.setDrawLoading(item.locked, 45, true);
                 cell.setEnabled(item.enabled, true);
                 break;
             case VIEW_TYPE_CHECK:
@@ -712,7 +731,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 checkCell.setTextAndCheck(item.text, item.checked, divider);
                 checkCell.itemId = item.id;
                 if (viewType == VIEW_TYPE_CHECKRIPPLE) {
-                    holder.itemView.setBackgroundColor(Theme.getColor(item.checked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
+                    ThemeBind.backgroundColor(holder.itemView, item.checked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked);
                 }
                 break;
             case VIEW_TYPE_RADIO: {
@@ -800,7 +819,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     Drawable shadowDrawable = Theme.getThemedDrawableByKey(context, drawable, Theme.key_windowBackgroundGrayShadow, resourcesProvider);
                     if (dialog) {
                         cell3.setBackground(new LayerDrawable(new Drawable[]{
-                                new ColorDrawable(getThemedColor(Theme.key_dialogBackgroundGray)),
+                                getThemedColor(Theme.key_dialogBackgroundGray) == Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider) ?
+                                    new ThemedColorDrawable(Theme.key_dialogBackgroundGray, resourcesProvider) :
+                                    new ColorDrawable(getThemedColor(Theme.key_dialogBackgroundGray)), // custom color from a subclass
                                 shadowDrawable
                         }));
                     } else {
@@ -837,6 +858,16 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     if (item.view != null) {
                         AndroidUtilities.removeFromParent(item.view);
                         frameLayout2.addView(item.view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+                    }
+                }
+                break;
+            case VIEW_TYPE_VIEWPORT_CUSTOM:
+                RecyclerViewportFrameLayout viewportFrameLayout = (RecyclerViewportFrameLayout) holder.itemView;
+                if (viewportFrameLayout.getChildCount() != (item.view == null ? 0 : 1) || viewportFrameLayout.getChildAt(0) != item.view) {
+                    viewportFrameLayout.removeAllViews();
+                    if (item.view != null) {
+                        AndroidUtilities.removeFromParent(item.view);
+                        viewportFrameLayout.addView(item.view, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                     }
                 }
                 break;
@@ -921,8 +952,10 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 break;
             case VIEW_TYPE_SPACE:
                 if (item.transparent) {
+                    ThemeBind.clear(holder.itemView); // custom (non-theme) background
                     holder.itemView.setBackgroundColor(0x00000000);
                 } else if (item.iconResId != 0) {
+                    ThemeBind.clear(holder.itemView); // custom (non-theme) background
                     holder.itemView.setBackgroundColor(item.iconResId);
                 }
                 holder.itemView.setId(item.id);
@@ -938,7 +971,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 TextRightIconCell textCell = (TextRightIconCell) holder.itemView;
                 textCell.setTextAndIcon(item.text, item.iconResId);
                 textCell.setDivider(divider);
-                textCell.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+                ThemeBind.backgroundColor(textCell, Theme.key_dialogBackground, themedColors);
                 break;
             case VIEW_TYPE_GRAY_SECTION:
                 GraySectionCell sectionCell = (GraySectionCell) holder.itemView;
@@ -1088,13 +1121,38 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         updateColors(holder);
     }
 
+    /** ColorDrawable filled with a theme color, re-read on draw (follows theme changes) */
+    private static class ThemedColorDrawable extends ColorDrawable {
+        private final int colorKey;
+        private final Theme.ResourcesProvider resourcesProvider;
+
+        ThemedColorDrawable(int colorKey, Theme.ResourcesProvider resourcesProvider) {
+            super(Theme.getColor(colorKey, resourcesProvider));
+            this.colorKey = colorKey;
+            this.resourcesProvider = resourcesProvider;
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            final int color = Theme.getColor(colorKey, resourcesProvider);
+            if (getColor() != color) {
+                setColor(color);
+            }
+            super.draw(canvas);
+        }
+    }
+
     private void updateColors(RecyclerView.ViewHolder holder) {
         if (holder.itemView instanceof Theme.Colorable) {
             ((Theme.Colorable) holder.itemView).updateColors();
-            if (shouldApplyBackground(holder.getItemViewType())) {
+            // re-apply the background only if the theme changed since this item view was last colored
+            final Object tag = holder.itemView.getTag(R.id.theme_generation);
+            final int generation = ThemeBind.generation();
+            if (shouldApplyBackground(holder.getItemViewType()) && (!(tag instanceof Integer) || (Integer) tag != generation)) {
                 final int key_background = dialog ? Theme.key_dialogBackground : Theme.key_windowBackgroundWhite;
                 holder.itemView.setBackgroundColor(getThemedColor(key_background));
             }
+            holder.itemView.setTag(R.id.theme_generation, generation);
         }
     }
 
@@ -1177,8 +1235,21 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
         return Theme.getColor(key, resourcesProvider);
     }
 
+    /**
+     * Theme provider for ThemeBind bindings that resolves through getThemedColor() (subclasses override it). A named
+     * class held by this adapter (not a lambda): bindings keep it weakly, so it lives exactly as long as the adapter.
+     */
+    private final Theme.ResourcesProvider themedColors = new ThemedColors();
 
-    private static class FullscreenCustomFrameLayout extends FrameLayout {
+    private class ThemedColors implements Theme.ResourcesProvider {
+        @Override
+        public int getColor(int key) {
+            return getThemedColor(key);
+        }
+    }
+
+
+    public static class FullscreenCustomFrameLayout extends FrameLayout {
         private int minusHeight = 0;
         private boolean minusPadding;
 

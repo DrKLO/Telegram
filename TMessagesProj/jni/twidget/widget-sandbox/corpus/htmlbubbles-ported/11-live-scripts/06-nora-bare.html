@@ -1,0 +1,225 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 11-live-scripts.chat, message 6
+  author: nora 10:06 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>[hidden]{display:none!important}
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #fff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+
+  .ttt { width: 300px; max-width: 100%; }
+  .ttt .opts { display: flex; justify-content: space-between; margin-top: 8px; }
+  .ttt .seg span { display: inline-block; padding: 2px 9px; margin-right: 3px; border-radius: 7px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); cursor: pointer; }
+  .ttt .seg span:hover { background-color: rgba(127,127,127,0.24); }
+  .ttt .seg span.on { background-color: #5e5ce6; color: #ffffff; }
+  .ttt table { border-collapse: collapse; margin: 10px auto 8px auto; }
+  .ttt td { width: 66px; height: 66px; padding: 0; text-align: center; vertical-align: middle; line-height: 66px; font-weight: 800; border: 2px solid rgba(127,127,127,0.35); }
+  .ttt tr:first-child td { border-top: 0; } .ttt tr:last-child td { border-bottom: 0; }
+  .ttt td:first-child { border-left: 0; } .ttt td:last-child { border-right: 0; }
+  .ttt td.free { cursor: pointer; }
+  .ttt td.free:hover { background-color: rgba(127,127,127,0.10); }
+  .ttt td.win { background-color: rgba(52,199,89,0.36); animation: ttt-pulse 1680ms linear; }
+  @keyframes ttt-pulse { 0%, 25%, 50%, 75%, 100% { background-color: rgba(52,199,89,0.12); } 12.5%, 37.5%, 62.5%, 87.5% { background-color: rgba(52,199,89,0.52); } }
+  .ttt td.hint { background-color: rgba(255,204,0,0.325); animation: ttt-glow 1140ms linear; }
+  @keyframes ttt-glow { 0%, 33.3%, 66.6%, 100% { background-color: rgba(255,204,0,0.15); } 16.6%, 50%, 83.3% { background-color: rgba(255,204,0,0.50); } }
+  .ttt td span { display: inline-block; font-size: 40px; }
+  .ttt .x { color: #ff2d55; } .ttt .o { color: #5e5ce6; }
+  .ttt td span.in { animation: ttt-in 340ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes ttt-in { from { transform: scale(0); } to { transform: none; } }
+  .ttt td span.ghost { opacity: 0; }
+  .ttt table.intro td span.ghost { animation: ttt-ghost 420ms ease-in-out; }
+  @keyframes ttt-ghost { from { opacity: 0; } 50% { opacity: 0.4; } to { opacity: 0; } }
+  .ttt .score { display: flex; justify-content: space-around; align-items: center; height: 24px; font-size: 13px; }
+  .ttt .score span { display: inline-block; transform-origin: 50% 50%; }
+  .ttt .score span.bump { animation: ttt-bump 520ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes ttt-bump { from { transform: scale(1.7); } to { transform: none; } }
+  .ttt .foot { text-align: center; margin-top: 8px; }
+  .ttt .foot button { margin: 0 3px; }
+  .ttt .result { margin-top: 8px; padding: 10px; border-radius: 12px; text-align: center; }
+  .ttt .result .t { font-size: 18px; font-weight: 800; }
+
+</style>
+<div class="card pad ttt" id="root">
+  <div class="row between"><b>Tic-tac-toe</b><span class="small muted" id="status">Your move (✕)</span></div>
+  <div class="opts">
+    <span class="seg"><span class="" data-level="easy">Easy</span><span class="on" data-level="hard">Hard</span></span>
+    <span class="seg"><span class="on" data-first="you">✕ first</span><span class="" data-first="pixel">◯ first</span></span>
+  </div>
+  <table id="board">
+    <tr><td data-i="0"><span></span></td><td data-i="1"><span></span></td><td data-i="2"><span></span></td></tr>
+    <tr><td data-i="3"><span></span></td><td data-i="4"><span></span></td><td data-i="5"><span></span></td></tr>
+    <tr><td data-i="6"><span></span></td><td data-i="7"><span></span></td><td data-i="8"><span></span></td></tr>
+  </table>
+  <div class="score"><span id="sX"><b class="x">You</b> 0</span><span class="muted" id="sD">Draws 0</span><span id="sO"><b class="o">Pixel</b> 0</span></div>
+  <div class="foot" id="foot"><button id="hintBtn">💡 Hint</button><button id="restart">↻ Restart</button></div>
+  <div class="result" id="result" hidden><div class="t" id="resT"></div><div class="small muted" id="resS"></div>
+    <button class="primary" id="again" style="margin-top: 8px">Play again</button></div>
+</div>
+<script>
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let board, winner, line, thinking, game = 0, hint = -1, moves = 0, level = 'hard', first = 'you', streak = 0, hints = 0;
+const score = { X: 0, O: 0, draw: 0 };
+const memo = new Map();
+const pick = list => list[Math.floor(Math.random() * list.length)];
+const $ = id => document.getElementById(id);
+const root = $('root'), boardEl = $('board'), status = $('status'), foot = $('foot'), result = $('result'), hintBtn = $('hintBtn');
+const cells = [...boardEl.querySelectorAll('td')], marks = cells.map(td => td.firstElementChild);
+const scoreEl = { X: $('sX'), O: $('sO'), draw: $('sD') };
+let panelAnimation = null;
+function transition(kind, target = boardEl) {
+  if (panelAnimation) panelAnimation.cancel();
+  const from = kind === 'slide-left' ? 'translateX(6px)' : kind === 'slide-right' ? 'translateX(-6px)' : kind === 'slide-up' ? 'translateY(4px)' : kind === 'pop' ? 'scale(0.985)' : 'none';
+  if (from === 'none') return;
+  panelAnimation = target.animate([{ transform: from }, { transform: 'none' }], { duration: 140, easing: 'cubic-bezier(.2,.8,.2,1)' });
+}
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+function outcome(b) {
+  for (const l of LINES) if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[0]] === b[l[2]]) return { who: b[l[0]], line: l };
+  return b.every(Boolean) ? { who: 'draw', line: [] } : null;
+}
+
+function solve(b, turn) {
+  let key = turn === 'X' ? 1 : 2;
+  for (let i = 0; i < 9; i++) key = key * 3 + (b[i] === 'X' ? 1 : b[i] === 'O' ? 2 : 0);
+  let hit = memo.get(key);
+  if (hit) return hit;
+  const r = outcome(b);
+  if (r) { let empty = 1; for (let i = 0; i < 9; i++) if (!b[i]) empty++; hit = { v: r.who === 'draw' ? 0 : -empty, moves: [] }; }
+  else {
+    const other = turn === 'X' ? 'O' : 'X';
+    let best = -Infinity, moves = [];
+    for (let i = 0; i < 9; i++) if (!b[i]) {
+      b[i] = turn;
+      const v = -solve(b, other).v;
+      b[i] = '';
+      if (v > best) { best = v; moves = [i]; } else if (v === best) moves.push(i);
+    }
+    hit = { v: best, moves };
+  }
+  memo.set(key, hit);
+  return hit;
+}
+
+function botMove() {
+  const free = board.map((v, i) => v ? -1 : i).filter(i => i >= 0);
+  if (level === 'hard') return free.length === 9 ? pick([0, 2, 4, 6, 8]) : pick(solve(board.slice(), 'O').moves);
+  for (const i of free) { const b = board.slice(); b[i] = 'O'; if (outcome(b)?.who === 'O') return i; }
+  if (Math.random() < 0.5) for (const i of free) { const b = board.slice(); b[i] = 'X'; if (outcome(b)?.who === 'X') return i; }
+  return pick(free);
+}
+
+function paintCells() {
+  board.forEach((v, i) => {
+    const td = cells[i], span = marks[i];
+    const open = !v && !winner && !thinking;
+    td.classList.toggle('free', open);
+    td.classList.toggle('win', line.includes(i));
+    td.classList.toggle('hint', i === hint);
+    if (v) {
+      if (!span.classList.contains(v === 'X' ? 'x' : 'o')) { span.className = v === 'X' ? 'x' : 'o'; span.textContent = v === 'X' ? '✕' : '◯'; }
+    } else {
+      span.className = 'ghost ' + (i % 2 ? 'o' : 'x');
+      span.textContent = i % 2 ? '◯' : '✕';
+      span.style.animationDelay = ((Math.floor(i / 3) + i % 3) * 110) + 'ms';
+    }
+  });
+}
+function paintRest() {
+  status.textContent = winner ? `${moves} moves` : thinking ? 'Pixel is thinking…' : 'Your move (✕)';
+  for (const c of root.querySelectorAll('[data-level]')) c.classList.toggle('on', c.dataset.level === level);
+  for (const c of root.querySelectorAll('[data-first]')) c.classList.toggle('on', c.dataset.first === first);
+  scoreEl.X.innerHTML = `<b class="x">You</b> ${score.X}`; scoreEl.O.innerHTML = `<b class="o">Pixel</b> ${score.O}`; scoreEl.draw.textContent = `Draws ${score.draw}`;
+  hintBtn.textContent = `💡 Hint${hints ? ` · ${hints}` : ''}`;
+  foot.hidden = !!winner; result.hidden = !winner;
+  if (winner) {
+    const r = winner === 'X' ? ['You win! 🎉', streak > 1 ? `${streak} wins in a row` : 'Nicely played', 'rgba(52,199,89,0.16)']
+            : winner === 'O' ? ['Pixel wins 🤖', level === 'hard' ? 'Hard mode never loses. Try Easy?' : 'Best of three?', 'rgba(94,92,230,0.16)']
+            : ['Draw 🤝', level === 'hard' ? 'The best you can do against Hard' : 'Evenly matched', 'rgba(127,127,127,0.14)'];
+    $('resT').textContent = r[0]; $('resS').textContent = r[1]; result.style.backgroundColor = r[2];
+  }
+}
+const paint = () => { paintCells(); paintRest(); };
+
+function place(i, who) {
+  board[i] = who; moves++; hint = -1;
+  marks[i].className = who === 'X' ? 'x' : 'o';
+  marks[i].textContent = who === 'X' ? '✕' : '◯';
+  marks[i].style.animationDelay = '';
+  replay(marks[i], 'in');
+  const r = outcome(board);
+  if (!r) { paint(); return; }
+  transition('pop', result);
+  winner = r.who; line = r.line; score[r.who]++;
+  streak = r.who === 'X' ? streak + 1 : 0;
+  paint();
+  replay(scoreEl[r.who], 'bump');
+  // The winning line pulses (|sin| × 4 over 1680 ms, then stays lit): the td.win animation.
+}
+
+function botTurn() {
+  thinking = true;
+  const me = game;
+  setTimeout(() => {
+    if (me !== game || winner) return;
+    thinking = false;
+    place(botMove(), 'O');
+  }, 380 + Math.random() * 300);
+}
+
+function newGame() {
+  game++;
+  board = Array(9).fill('');
+  winner = null; line = []; thinking = false; hint = -1; moves = 0;
+  for (const s of marks) s.classList.remove('in');
+  paint();
+  if (first === 'pixel') botTurn();
+  paint();
+}
+newGame();
+// Intro: empty cells show a faint ghost mark in a diagonal wave (250 ms after load, over ~1 s).
+setTimeout(() => { boardEl.classList.add('intro'); setTimeout(() => boardEl.classList.remove('intro'), 1100); }, 250);
+
+function handleAction(name, value) {
+  if (name === 'new') { transition('pop'); return newGame(); }
+  if (name === 'level' || name === 'first') {
+    if ((name === 'level' ? level : first) === value) return;
+    if (name === 'level') level = value; else first = value;
+    transition('fade');
+    return newGame();
+  }
+  if (name === 'hint') {
+    if (winner || thinking) return;
+    hint = pick(solve(board.slice(), 'X').moves);
+    hints++;
+    paint();
+    replay(cells[hint], 'hint');
+    return;
+  }
+  const i = Number(value);
+  if (winner || thinking || board[i]) return;
+  place(i, 'X');
+  if (!winner) { botTurn(); paint(); }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-level], [data-first], td, #hintBtn, #restart, #again');
+  if (!t) return;
+  if (t.dataset.level) return handleAction('level', t.dataset.level);
+  if (t.dataset.first) return handleAction('first', t.dataset.first);
+  if (t.id === 'hintBtn') return handleAction('hint');
+  if (t.id === 'restart' || t.id === 'again') return handleAction('new');
+  if (t.dataset.i !== undefined) handleAction('cell', t.dataset.i);
+});
+</script>

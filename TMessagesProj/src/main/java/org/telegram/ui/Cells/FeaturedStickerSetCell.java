@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -40,11 +41,12 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
 
-public class FeaturedStickerSetCell extends FrameLayout {
+public class FeaturedStickerSetCell extends FrameLayout implements Theme.Colorable {
 
     private TextView textView;
     private TextView valueTextView;
@@ -64,7 +66,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -74,7 +76,7 @@ public class FeaturedStickerSetCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 22 : 71, 10, LocaleController.isRTL ? 71 : 22, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteGrayText2);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -90,13 +92,13 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
         addButton = new ProgressButton(context);
         addButton.setText(LocaleController.getString(R.string.Add));
-        addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(addButton, Theme.key_featuredStickers_buttonText);
         addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
-        addButton.setBackgroundRoundRect(Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        ThemeBind.selectorBackground(addButton, Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 14), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.adaptiveRipple(Theme.key_featuredStickers_addButton));
         addView(addButton, LayoutHelper.createFrameRelatively(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | Gravity.END, 0, 18, 14, 0));
 
         checkImage = new ImageView(context);
-        checkImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(checkImage, Theme.key_featuredStickers_addedIcon, PorterDuff.Mode.MULTIPLY);
         checkImage.setImageResource(R.drawable.sticker_added);
         addView(checkImage, LayoutHelper.createFrame(19, 14));
     }
@@ -321,6 +323,16 @@ public class FeaturedStickerSetCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
             canvas.drawLine(0, getHeight() - 1, getWidth() - getPaddingRight(), getHeight() - 1, Theme.dividerPaint);
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            addButton.setProgressColor(Theme.getColor(Theme.key_featuredStickers_buttonProgress));
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

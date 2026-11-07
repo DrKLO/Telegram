@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
@@ -43,6 +44,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
@@ -59,7 +61,7 @@ import java.io.File;
 import java.util.Date;
 import java.util.Locale;
 
-public class SharedDocumentCell extends FrameLayout implements DownloadController.FileDownloadProgressListener {
+public class SharedDocumentCell extends FrameLayout implements Theme.Colorable, DownloadController.FileDownloadProgressListener {
 
     private ImageView placeholderImageView;
     private BackupImageView thumbImageView;
@@ -122,7 +124,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
 
         extTextView = new TextView(context);
-        extTextView.setTextColor(getThemedColor(Theme.key_files_iconText));
+        ThemeBind.textColor(extTextView, Theme.key_files_iconText, resourcesProvider);
         extTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         extTextView.setTypeface(AndroidUtilities.bold());
         extTextView.setLines(1);
@@ -159,7 +161,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setEllipsize(TextUtils.TruncateAt.END);
@@ -177,7 +179,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 16 : 72, 5, LocaleController.isRTL ? 72 : 16, 0));
 
             rightDateTextView = new TextView(context);
-            rightDateTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+            ThemeBind.textColor(rightDateTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
             rightDateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             if (!LocaleController.isRTL) {
                 linearLayout.addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 1f));
@@ -189,7 +191,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             nameTextView.setMaxLines(2);
 
             captionTextView = new TextView(context);
-            captionTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(captionTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             captionTextView.setLines(1);
             captionTextView.setMaxLines(1);
             captionTextView.setSingleLine(true);
@@ -207,7 +209,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         statusImageView = new RLottieImageView(context);
         statusImageView.setAnimation(statusDrawable);
         statusImageView.setVisibility(INVISIBLE);
-        statusImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_sharedMedia_startStopLoadIcon), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(statusImageView, Theme.key_sharedMedia_startStopLoadIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
         if (viewType == VIEW_TYPE_PICKER) {
             addView(statusImageView, LayoutHelper.createFrame(14, 14, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 8 : 70, 37, LocaleController.isRTL ? 72 : 8, 0));
         } else {
@@ -215,7 +217,7 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
         }
 
         dateTextView = new AnimatedEmojiSpan.TextViewEmojis(context);
-        dateTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+        ThemeBind.textColor(dateTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         dateTextView.setLines(1);
         dateTextView.setMaxLines(1);
         dateTextView.setSingleLine(true);
@@ -781,6 +783,16 @@ public class SharedDocumentCell extends FrameLayout implements DownloadControlle
             thumbImageView.setVisibility(View.VISIBLE);
         } else {
             thumbImageView.setVisibility(View.GONE);
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            progressView.setProgressColor(getThemedColor(Theme.key_sharedMedia_startStopLoadIcon));
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

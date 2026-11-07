@@ -1,0 +1,230 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 08-analytics.chat, message 8
+  author: bot 09:12 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --green: #34c759; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; } .right { text-align: right; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  [data-act] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .fn { width: 390px; max-width: 100%; box-sizing: border-box; }
+  .fn .seg { display: inline-block; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.14); }
+  .fn .seg span { display: inline-block; padding: 3px 9px; border-radius: 7px; font-size: 11.5px; font-weight: 700; }
+  .fn .seg span:hover { background-color: rgba(127,127,127,0.22); }
+  .fn .seg span.on { background-color: #5856d6; color: #ffffff; }
+  .fn .chips span { display: inline-block; padding: 2px 9px; margin-right: 4px; border-radius: 11px; font-size: 11px; font-weight: 700; border: 1px solid rgba(127,127,127,0.3); }
+  .fn .chips span:hover { background-color: rgba(127,127,127,0.12); }
+  .fn .chips span.on { border-color: #5856d6; color: #5856d6; background-color: rgba(88,86,214,0.1); }
+  @media (prefers-color-scheme: dark) { .fn .chips span.on { border-color: #9a98ff; color: #9a98ff; } }
+  .fn .stp { padding: 4px 6px; border-radius: 9px; }
+  .fn .stp:hover { background-color: rgba(127,127,127,0.09); }
+  .fn .stp.on { background-color: rgba(88,86,214,0.12); }
+  .fn .fl { display: flex; align-items: center; font-size: 12px; margin-bottom: 3px; }
+  .fn .trk { height: 24px; border-radius: 7px; position: relative; overflow: hidden; }
+  .fn .gh { position: absolute; top: 0; height: 24px; left: 50%; width: 0; background-color: rgba(127,127,127,0.22); }
+  .fn .gh.anim { transition: left 500ms cubic-bezier(.33,1,.68,1), width 500ms cubic-bezier(.33,1,.68,1); }
+  .fn .fs { position: relative; height: 24px; margin: 0 auto; border-radius: 7px; color: #ffffff; font-size: 11.5px; font-weight: 700; text-align: center; line-height: 24px; white-space: nowrap; overflow: hidden; }
+  .fn .drop { text-align: center; font-size: 10px; color: #ff3b30; margin: 1px 0; }
+  .fn .det { margin: 4px 6px 2px 6px; padding: 8px 10px; border-radius: 9px; background-color: rgba(127,127,127,0.1); font-size: 12px; }
+  .fn .stk { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 6px 0 5px 0; background-color: rgba(127,127,127,0.15); }
+  .fn .stk div { height: 8px; }
+  .fn .rs > div { display: flex; font-size: 11.5px; padding: 1px 0; }
+  .fn .rs i { display: inline-block; width: 8px; height: 8px; border-radius: 3px; margin: 4px 6px 0 0; }
+  .fn .x { display: inline-block; width: 22px; margin-left: 4px; text-align: center; border-radius: 7px; font-weight: 700; }
+  .fn .x:hover { background-color: rgba(127,127,127,0.2); }
+  .fn .sum { display: flex; align-items: center; margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(127,127,127,0.2); }
+
+  @keyframes tw-fade { from { opacity: 0; } to { opacity: 1; } }
+  .tr-fade { animation: tw-fade 0.25s ease-out; }
+</style>
+<div class="card pad fn" id="root">
+  <div class="row between"><b style="font-size: 16px">Conversion funnel</b><span class="seg" id="variants"><span class="on" data-act="variant" data-value="0">A · Control</span><span data-act="variant" data-value="1">B · One-tap</span></span></div>
+  <div class="tiny muted" style="margin: 2px 0 8px 0" id="hint"></div>
+  <div class="chips" style="margin-bottom: 6px" id="devices"></div>
+  <div id="steps"></div>
+  <div class="sum"><div class="grow"><div class="caps">Visit → active after 90 days</div><b style="font-size: 22px" id="overall"></b></div>
+    <div class="right"><span class="badge green" id="lift"></span><div class="tiny muted" style="margin-top: 3px" id="band"></div></div></div>
+</div>
+<script>
+const STEPS = ['Visited site', 'Signed up', 'Sent first message', 'Subscribed', 'Still active after 90 days'];
+const COLORS = ['#5856d6', '#6a5ae0', '#7d5ce8', '#af52de', '#ff2d55'];
+const DATA = {
+  all: [[182400, 69312, 38304, 13498, 9302], [182400, 84816, 45800, 15960, 10940]],
+  desktop: [[78400, 36064, 21280, 8190, 5700], [78400, 39200, 23100, 8790, 6120]],
+  mobile: [[104000, 33248, 17024, 5308, 3602], [104000, 45616, 22700, 7170, 4820]],
+};
+const DEVICES = [['all', 'All devices'], ['desktop', 'Desktop'], ['mobile', 'Mobile']];
+const VARIANTS = ['Variant A · current sign-up form', 'Variant B · one-tap sign-in'];
+const WHY = [
+  ['Where visitors come from', [['Search', 46, '#5856d6'], ['Social', 31, '#ff9500'], ['Direct', 23, '#30b0c7']]],
+  ['Why they didn’t sign up', [['Bounced on the landing page', 48, '#ff3b30'], ['Left the sign-up form', 34, '#ff9500'], ['Chose “maybe later”', 18, '#8e8e93']]],
+  ['Why no first message', [['Never opened the app again', 41, '#ff3b30'], ['No contacts on LiteChat yet', 37, '#ff9500'], ['Skipped onboarding', 22, '#8e8e93']]],
+  ['Why they didn’t subscribe', [['The free plan is enough', 58, '#ff3b30'], ['Price', 27, '#ff9500'], ['Trial ended unnoticed', 15, '#8e8e93']]],
+  ['Why they left within 90 days', [['Cancelled', 46, '#ff3b30'], ['Payment failed', 31, '#ff9500'], ['Went inactive', 23, '#8e8e93']]],
+];
+const group = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const width = s => 10 * Math.min(1, s * 20) + 90 * s;
+const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+function animate(duration, onFrame, easing) {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  step();
+}
+
+let device = 'all', variant = 0, open = -1, run = 0, detRun = 0, det = 1, ghostOn = false;
+let N = Array(5).fill(0), S = Array(5).fill(0);
+
+// --- static markup, built once ---
+const root = document.getElementById('root');
+const $ = id => document.getElementById(id);
+$('devices').innerHTML = DEVICES.map(([k, l]) => `<span data-act="device" data-value="${k}">${l}</span>`).join('');
+const stepsBox = $('steps');
+const steps = STEPS.map((name, i) => {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `${i ? '<div class="drop"></div>' : ''}
+    <div class="stp" data-act="step" data-value="${i}">
+      <div class="fl"><b class="grow">${name}</b><span class="tiny" style="margin-right: 6px" hidden></span><span class="muted"></span></div>
+      <div class="trk"><div class="gh"></div><div class="fs" style="background-color: ${COLORS[i]}"></div></div>
+    </div>
+    <div class="det" hidden>
+      <div class="row"><b class="grow"></b><span class="tiny muted"></span><span class="x" data-act="close">×</span></div>
+      <div class="stk">${WHY[i][1].map(([, , c]) => `<div style="width: 0%; background-color: ${c}"></div>`).join('')}</div>
+      <div class="rs">${WHY[i][1].map(([n, , c]) => `<div><i style="background-color: ${c}"></i><span class="grow">${esc(n)}</span><b></b></div>`).join('')}</div>
+      ${i ? '<div class="tiny muted" style="margin-top: 5px"></div>' : ''}
+    </div>`;
+  stepsBox.appendChild(wrap);
+  const det = wrap.querySelector('.det');
+  return { drop: wrap.querySelector('.drop'), stp: wrap.querySelector('.stp'), delta: wrap.querySelector('.fl .tiny'), count: wrap.querySelector('.fl .muted'),
+    gh: wrap.querySelector('.gh'), fs: wrap.querySelector('.fs'), det, dTitle: det.querySelector('b'), dSub: det.querySelector('.tiny.muted'),
+    dStk: [...det.querySelector('.stk').children], dVals: [...det.querySelectorAll('.rs b')], dRate: i ? det.lastElementChild : null };
+});
+
+// --- targeted updates ---
+function paintControls() {
+  [...$('variants').children].forEach((s, k) => s.classList.toggle('on', k === variant));
+  [...$('devices').children].forEach(s => s.classList.toggle('on', s.dataset.value === device));
+  $('hint').textContent = VARIANTS[variant] + ' · click a step for details';
+  const d = DATA[device], lift = (d[1][4] / d[1][0] - d[0][4] / d[0][0]) * 100;
+  $('lift').textContent = `B lifts it by ${lift.toFixed(1)} pp`;
+  $('band').textContent = `Grey band: variant ${variant ? 'A' : 'B'}`;
+  const cur = d[variant], other = d[1 - variant];
+  steps.forEach((st, i) => {
+    const delta = i && variant === 1 ? (cur[i] / cur[0] - other[i] / other[0]) * 100 : null;
+    st.delta.hidden = delta === null;
+    if (delta !== null) { st.delta.className = 'tiny ' + (delta < 0 ? 't-red' : 't-green'); st.delta.textContent = `${delta < 0 ? '−' : '+'}${Math.abs(delta).toFixed(1)} pp vs A`; }
+  });
+  paintGhost(false);
+}
+function paintGhost(animated) {
+  // the grey band of the other variant: a centred bar; it only animates when it first appears (1150 ms after load)
+  const d = DATA[device], other = d[1 - variant];
+  steps.forEach((st, i) => {
+    const ow = ghostOn ? width(other[i] / other[0]) : 0;
+    st.gh.classList.toggle('anim', animated);
+    st.gh.style.left = ((100 - ow) / 2).toFixed(2) + '%';
+    st.gh.style.width = ow.toFixed(2) + '%';
+  });
+}
+function paintNumbers() {
+  steps.forEach((st, i) => {
+    if (i) { const drop = N[i - 1] > 0 ? (1 - N[i] / N[i - 1]) * 100 : 0; st.drop.textContent = `▼ ${Math.round(drop)}% drop-off`; }
+    st.count.textContent = group(N[i]);
+    st.fs.style.width = width(S[i]).toFixed(2) + '%';
+    st.fs.textContent = (S[i] * 100).toFixed(S[i] < 0.1 ? 1 : 0) + '%';
+  });
+  const overall = N[0] ? N[4] / N[0] * 100 : 0;
+  $('overall').textContent = overall.toFixed(2) + '%';
+  if (open >= 0) paintDetail();
+}
+function paintDetail() {
+  const i = open, st = steps[i], [title, items] = WHY[i], d = DATA[device];
+  const lost = i ? N[i - 1] - N[i] : N[0];
+  st.dTitle.textContent = title;
+  st.dSub.textContent = i ? `${group(lost)} people lost` : `${group(N[0])} visitors`;
+  items.forEach(([, p], k) => {
+    st.dStk[k].style.width = (p * det).toFixed(2) + '%';
+    st.dVals[k].textContent = i ? group(lost * p / 100 * det) : Math.round(p * det) + '%';
+  });
+  if (i) {
+    const rate = v => (d[v][i] / d[v][i - 1] * 100).toFixed(1) + '%';
+    st.dRate.innerHTML = `Step conversion · A <b class="fg">${rate(0)}</b> · B <b class="fg">${rate(1)}</b>`;
+  }
+}
+
+function morph(ms, stagger) {
+  const d = DATA[device][variant], fromN = N.slice(), fromS = S.slice(), me = ++run, total = ms + stagger * 4;
+  animate(total, (_, t) => {
+    if (me !== run) return;
+    for (let i = 0; i < 5; i++) {
+      const p = ease.outCubic(clamp((t * total - i * stagger) / ms, 0, 1));
+      N[i] = lerp(fromN[i], d[i], p);
+      S[i] = lerp(fromS[i], d[i] / d[0], p);
+    }
+    paintNumbers();
+  }, ease.linear);
+}
+
+function transition() {
+  root.classList.remove('tr-fade');
+  requestAnimationFrame(() => root.classList.add('tr-fade'));
+}
+root.addEventListener('animationend', e => { if (e.target === root) root.classList.remove('tr-fade'); });
+
+function setOpen(i) {
+  open = i;
+  steps.forEach((st, k) => { st.stp.classList.toggle('on', k === i); st.det.hidden = k !== i; });
+}
+
+root.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-act]');
+  if (!t || !root.contains(t)) return;
+  const name = t.dataset.act, value = t.dataset.value;
+  if (name === 'variant') {
+    const v = Number(value);
+    if (v !== variant) { variant = v; paintControls(); morph(560, 45); }
+  } else if (name === 'device') {
+    if (value !== device && DATA[value]) { device = value; paintControls(); morph(560, 45); }
+  } else if (name === 'step') {
+    const i = Number(value);
+    transition();
+    if (open === i) { setOpen(-1); return; }
+    setOpen(i);
+    det = 0;
+    paintDetail();
+    const me = ++detRun;
+    animate(550, e => { if (me === detRun) { det = e; paintDetail(); } }, ease.outCubic);
+  } else if (name === 'close' && open >= 0) {
+    ev.stopPropagation();
+    transition();
+    setOpen(-1);
+  }
+});
+
+paintControls();
+paintNumbers();
+setTimeout(() => morph(620, 70), 250);
+setTimeout(() => { ghostOn = true; paintGhost(true); }, 1150);
+</script>

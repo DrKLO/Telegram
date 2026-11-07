@@ -1,10 +1,13 @@
 package org.telegram.utils.settings;
 
+import android.content.SharedPreferences;
+
 public final class BooleanSetting {
 
     private final String name;
     private final boolean defaultValue;
     private volatile boolean loaded;
+    private volatile boolean present;
     private volatile boolean value;
 
     private BooleanSetting(String name, boolean defaultValue) {
@@ -17,15 +20,13 @@ public final class BooleanSetting {
     }
 
     public boolean get() {
-        if (!loaded) {
-            synchronized (this) {
-                if (!loaded) {
-                    value = SettingsPreferences.get().getBoolean(name, defaultValue);
-                    loaded = true;
-                }
-            }
-        }
+        ensureLoaded();
         return value;
+    }
+
+    public boolean isSet() {
+        ensureLoaded();
+        return present;
     }
 
     public synchronized void set(boolean value) {
@@ -33,17 +34,30 @@ public final class BooleanSetting {
     }
 
     public synchronized boolean toggle() {
-        if (!loaded) {
-            value = SettingsPreferences.get().getBoolean(name, defaultValue);
-            loaded = true;
-        }
+        loadLocked();
         boolean newValue = !value;
         setLocked(newValue);
         return newValue;
     }
 
+    private void ensureLoaded() {
+        if (loaded) return;
+        synchronized (this) {
+            loadLocked();
+        }
+    }
+
+    private void loadLocked() {
+        if (loaded) return;
+        SharedPreferences preferences = SettingsPreferences.get();
+        present = preferences.contains(name);
+        value = preferences.getBoolean(name, defaultValue);
+        loaded = true;
+    }
+
     private void setLocked(boolean value) {
         this.value = value;
+        present = true;
         loaded = true;
         SettingsPreferences.get().edit().putBoolean(name, value).apply();
     }

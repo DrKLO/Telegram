@@ -1,0 +1,257 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 09-code-review.chat, message 5
+  author: ci 16:12 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --green: #34c759; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  [data-action] { cursor: pointer; }
+  svg { vertical-align: middle; }
+
+  .js { width: 420px; max-width: 100%; }
+  .js .req { font-family: ui-monospace, monospace; font-size: 11px; }
+  .js .tb { display: flex; align-items: center; margin-top: 8px; }
+  .js .tb svg { margin-right: 4px; }
+  .js .bt { display: inline-block; font-size: 11.5px; font-weight: 600; padding: 2px 8px; margin-left: 4px; border-radius: 7px; background-color: rgba(127,127,127,0.14); }
+  .js .bt:hover { background-color: rgba(127,127,127,0.26); }
+  .js .bt.ok { background-color: rgba(52,199,89,0.18); color: #34c759; }
+  .js .tree { margin-top: 8px; padding: 6px 0; border-radius: 10px; background-color: rgba(127,127,127,0.07); font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.6; }
+  .js .ln { white-space: pre-wrap; padding-right: 8px; }
+  .js .ln:hover { background-color: rgba(0,122,255,0.07); }
+  .js .ln.insel { background-color: rgba(0,122,255,0.06); }
+  .js .ln.sel { background-color: rgba(0,122,255,0.14); transition: background-color 700ms cubic-bezier(.33,1,.68,1); }
+  .js .ln.sel.hot { background-color: rgba(0,122,255,0.44); transition: none; }
+  .js .ln.flash { background-color: rgba(255,204,0,0.55) !important; transition: none !important; }
+  .js .ln.flash-out { transition: background-color 1200ms cubic-bezier(.11,0,.5,0) !important; }
+  .js .tg { display: inline-block; width: 14px; color: #8e8e93; }
+  .js .tg:hover { color: #007aff; }
+  .js .sum { color: #8e8e93; padding: 0 4px; margin: 0 2px; border-radius: 4px; background-color: rgba(127,127,127,0.14); }
+  .js .sum:hover { color: #007aff; background-color: rgba(0,122,255,0.14); }
+  .js .k { color: light-dark(#af52de, #da8ee7); } .js .s { color: light-dark(#248a3d, #a6e3a1); } .js .n { color: light-dark(#c93400, #fab387); } .js .bo { color: light-dark(#007aff, #89b4fa); } .js .nl { color: #8e8e93; }
+  .js .anc .k { color: light-dark(#007aff, #64a8ff); font-weight: 700; } .js .anc .tg { color: #007aff; }
+  .js .crumb { font-family: ui-monospace, monospace; font-size: 11px; }
+  .js .crumb .c { padding: 1px 2px; border-radius: 4px; color: #007aff; }
+  .js .crumb .c:hover { background-color: rgba(0,122,255,0.12); }
+  .spin { animation: spin 840ms steps(12) infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #badge.pop { animation: bpop 380ms ease-out; }
+  @keyframes bpop { 0% { font-size: 6.6px; } 70% { font-size: 11.5px; } 100% { font-size: 11px; } }
+  .tr-slide-up { animation: trUp 220ms ease-out; } .tr-slide-down { animation: trDown 220ms ease-out; }
+  @keyframes trUp { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes trDown { from { opacity: 0; transform: translateY(-8px); } }
+</style>
+<div class="card pad js" id="root">
+  <div class="row"><span class="badge" id="badge" style="margin-right: 8px">· · ·</span><span class="req grow"><b>GET</b> /v1/conversations/42/messages?limit=3</span></div>
+  <div class="tb"><span class="small muted grow"><span id="metaLoading"><svg class="spin" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#8e8e93" stroke-opacity="0.3" stroke-width="2"/><path d="M8 2A6 6 0 0 1 14 8" fill="none" stroke="#0a84ff" stroke-width="2" stroke-linecap="round"/></svg>waiting… <span id="msL">0</span> ms</span><span id="metaDone" hidden><span id="msD">0</span> ms · 1.2 KB · <span id="nLines">0</span> lines</span></span><span class="bt" data-action="expand">Expand all</span><span class="bt" data-action="collapse">Collapse all</span><span class="bt" data-action="refetch">↻</span></div>
+  <div class="tree" id="tree"></div>
+  <div class="row" style="margin-top: 8px"><span class="crumb grow" id="crumb"><span class="muted">Click a line to highlight its path</span></span><span class="bt" id="copy" data-action="copy" hidden>Copy path</span></div>
+  <div class="tiny muted" id="info" hidden style="margin-top: 2px"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const root = $('root'), tree = $('tree');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const ease = { linear: t => t };
+const animate = (duration, onFrame, easing = ease.linear) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const TR = ['slide-up', 'slide-down'];
+function transition(kind) { for (const k of TR) root.classList.remove('tr-' + k); requestAnimationFrame(() => root.classList.add('tr-' + kind)); }
+function replay(el, cls) { el.classList.remove(cls); requestAnimationFrame(() => el.classList.add(cls)); }
+
+const DATA = {
+  conversation: 42,
+  has_more: true,
+  items: [
+    { id: 'msg_8f2a', sender: 'leo', format: 'html', body: '<p>Floats work <b>too</b>.</p>', bytes: 1734, edited: false },
+    { id: 'msg_8f2b', sender: 'rin', format: 'html', body: '<table class="grid">…', bytes: 9120, reactions: { '👍': 3, '🎯': 1 } },
+    { id: 'msg_8f2c', sender: 'ci', format: 'html', body: null, attachments: [] },
+  ],
+  meta: { request_id: 'req_01HZX4', region: 'eu-central-1', rate_limit: { remaining: 4987, reset: 1759852800 } },
+};
+const NODES = [];
+function build(key, value, depth, parent, last) {
+  const id = NODES.length;
+  const kind = value !== null && typeof value === 'object' ? (Array.isArray(value) ? 'arr' : 'obj') : 'prim';
+  const node = { id, key, value, depth, parent, kind, last, children: [] };
+  NODES.push(node);
+  if (kind !== 'prim') {
+    const entries = kind === 'arr' ? value.map((v, i) => [i, v]) : Object.entries(value);
+    entries.forEach(([k, v], i) => node.children.push(build(k, v, depth + 1, id, i === entries.length - 1)));
+  }
+  return id;
+}
+build(null, DATA, 0, -1, true);
+const byKey = k => NODES.find(n => n.key === k).id;
+const ITEMS = byKey('items'), REMAIN = byKey('remaining'), REQID = byKey('request_id');
+
+const open = { 0: true };
+let sel = -1, loading = true, ms = 0, fetchRun = 0, copied = false, copyRun = 0, touched = false;
+
+function chain(id) { const out = []; for (let n = id; n >= 0; n = NODES[n].parent) out.unshift(n); return out; }
+function seg(id) {
+  const n = NODES[id];
+  if (n.parent < 0) return '$';
+  if (typeof n.key === 'number') return `[${n.key}]`;
+  return /^[A-Za-z_]\w*$/.test(n.key) ? '.' + n.key : `[${JSON.stringify(n.key)}]`;
+}
+const prim = (v, id) => v === null ? `<span class="nl" data-v="${id}">null</span>` : typeof v === 'string' ? `<span class="s" data-v="${id}">${esc(JSON.stringify(v))}</span>` : typeof v === 'boolean' ? `<span class="bo" data-v="${id}">${v}</span>` : `<span class="n" data-v="${id}">${v}</span>`;
+function info(n) {
+  if (n.kind === 'arr') return `array · ${n.children.length} item${n.children.length === 1 ? '' : 's'}`;
+  if (n.kind === 'obj') return `object · ${n.children.length} key${n.children.length === 1 ? '' : 's'}`;
+  return n.value === null ? 'null' : `${typeof n.value} · ${esc(String(n.value).slice(0, 40))}`;
+}
+
+// ---- tree: a list, rebuilt on fold changes; selection / flashes are class toggles on the lines ----
+function line(n, html, main) {
+  return `<div class="ln" data-id="${n.id}" data-main="${main ? 1 : 0}" data-action="pick" data-value="${n.id}" style="padding-left: ${8 + n.depth * 14}px">${html}</div>`;
+}
+function emit(id, out) {
+  const n = NODES[id];
+  const key = n.key === null || typeof n.key === 'number' ? '' : `<span class="k">${esc(JSON.stringify(n.key))}</span>: `;
+  const comma = n.last ? '' : ',';
+  if (n.kind === 'prim') { out.push(line(n, `<span class="tg">&nbsp;</span>${key}${prim(n.value, n.id)}${comma}`, true)); return; }
+  const [o, c] = n.kind === 'arr' ? ['[', ']'] : ['{', '}'];
+  const count = n.children.length;
+  if (!count) { out.push(line(n, `<span class="tg">&nbsp;</span>${key}${o}${c}${comma}`, true)); return; }
+  const tg = `<span class="tg" data-action="fold" data-value="${id}">${open[id] ? '▾' : '▸'}</span>`;
+  if (!open[id]) {
+    const word = n.kind === 'arr' ? (count === 1 ? 'item' : 'items') : (count === 1 ? 'key' : 'keys');
+    out.push(line(n, `${tg}${key}${o}<span class="sum" data-action="fold" data-value="${id}">… ${count} ${word}</span>${c}${comma}`, true));
+    return;
+  }
+  out.push(line(n, `${tg}${key}${o}`, true));
+  for (const ch of n.children) emit(ch, out);
+  out.push(line(n, `<span class="tg">&nbsp;</span>${c}${comma}`, false));
+}
+function buildTree() {
+  const out = [];
+  emit(0, out);
+  tree.innerHTML = out.join('');
+  $('nLines').textContent = out.length;
+  syncSel();
+}
+function syncSel(hot) {
+  const anc = new Set(sel >= 0 ? chain(sel).slice(0, -1) : []);
+  for (const el of tree.children) {
+    const id = Number(el.dataset.id), main = el.dataset.main === '1';
+    const inSel = sel >= 0 && chain(id).includes(sel);
+    el.classList.toggle('sel', id === sel && main);
+    el.classList.toggle('insel', inSel && !(id === sel && main));
+    el.classList.toggle('anc', main && anc.has(id));
+    if (hot && id === sel && main) { el.classList.add('hot'); requestAnimationFrame(() => el.classList.remove('hot')); }
+  }
+  $('crumb').innerHTML = sel < 0 ? '<span class="muted">Click a line to highlight its path</span>'
+    : chain(sel).map(i => `<span class="c" data-action="pick" data-value="${i}">${esc(seg(i))}</span>`).join('');
+  $('copy').hidden = sel < 0;
+  $('copy').classList.toggle('ok', copied);
+  $('copy').textContent = copied ? '✓ Copied' : 'Copy path';
+  $('info').hidden = sel < 0;
+  if (sel >= 0) $('info').innerHTML = info(NODES[sel]);
+}
+function syncMeta() {
+  $('metaLoading').hidden = !loading; $('metaDone').hidden = loading;
+  $('msL').textContent = ms; $('msD').textContent = ms;
+  $('badge').className = loading ? 'badge' : 'badge green';
+  $('badge').textContent = loading ? '· · ·' : '200 OK';
+}
+function flash(id) {
+  const els = [...tree.querySelectorAll(`.ln[data-id="${id}"][data-main="1"]`)];
+  for (const el of els) { el.classList.remove('flash-out'); el.classList.add('flash'); }
+  requestAnimationFrame(() => { for (const el of els) { el.classList.remove('flash'); el.classList.add('flash-out'); } });
+  setTimeout(() => { for (const el of els) el.classList.remove('flash-out'); }, 1200);
+}
+
+async function refetch(first) {
+  const me = ++fetchRun;
+  loading = true; ms = 0; syncMeta();
+  const target = first ? 84 : 58 + Math.round(Math.random() * 70);
+  await animate(first ? 450 : 520, p => { if (me === fetchRun) { ms = Math.round(target * p); syncMeta(); } }, ease.linear);
+  if (me !== fetchRun) return;
+  loading = false; syncMeta();
+  replay($('badge'), 'pop');
+  if (first) {
+    await sleep(150);
+    if (touched || open[ITEMS]) return;
+    transition('slide-down');
+    open[ITEMS] = true; open[NODES[ITEMS].children[0]] = true;
+    buildTree();
+    return;
+  }
+  NODES[REMAIN].value -= 1;
+  NODES[REQID].value = 'req_01HZ' + Math.floor(Math.random() * 46656).toString(36).toUpperCase().padStart(3, '0');
+  for (const id of [REMAIN, REQID]) {
+    const v = tree.querySelector(`[data-v="${id}"]`);
+    if (v) v.textContent = typeof NODES[id].value === 'string' ? JSON.stringify(NODES[id].value) : String(NODES[id].value);
+    flash(id);
+  }
+  if (sel === REMAIN || sel === REQID) $('info').innerHTML = info(NODES[sel]);
+}
+setTimeout(() => refetch(true), 250);
+
+function setOpen(pred, kind) {
+  const changed = NODES.some(n => n.kind !== 'prim' && !!open[n.id] !== pred(n));
+  if (!changed) return;
+  transition(kind);
+  for (const n of NODES) if (n.kind !== 'prim') open[n.id] = pred(n);
+  buildTree();
+}
+
+function handleAction(name, v) {
+  const id = Number(v);
+  if (name === 'fold') {
+    touched = true;
+    transition(open[id] ? 'slide-up' : 'slide-down');
+    open[id] = !open[id];
+    buildTree();
+  } else if (name === 'expand') {
+    touched = true;
+    setOpen(() => true, 'slide-down');
+  } else if (name === 'collapse') {
+    touched = true;
+    setOpen(n => n.id === 0, 'slide-up');
+  } else if (name === 'pick') {
+    sel = sel === id ? -1 : id;
+    const hidden = sel >= 0 ? chain(sel).slice(0, -1).filter(a => !open[a]) : [];
+    if (hidden.length) { transition('slide-down'); for (const a of hidden) open[a] = true; buildTree(); }
+    copied = false; copyRun++;
+    syncSel(true);
+  } else if (name === 'copy') {
+    if (sel < 0) return;
+    // copyText(path): the clipboard is a no-op in the sandbox, only the "Copied" feedback remains
+    copied = true; syncSel();
+    const me = ++copyRun;
+    setTimeout(() => { if (me === copyRun) { copied = false; syncSel(); } }, 1500);
+  } else if (name === 'refetch') {
+    refetch(false);
+  }
+}
+root.addEventListener('click', e => {
+  const t = e.target.closest('[data-action]');
+  if (!t || !root.contains(t)) return;
+  e.stopPropagation();
+  handleAction(t.dataset.action, t.dataset.value);
+});
+
+buildTree();
+syncMeta();
+</script>

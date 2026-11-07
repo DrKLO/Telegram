@@ -1021,9 +1021,18 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private ColorFilter colorFilterToSet;
+    private ColorFilter lastColorFilter;
+
+    /** the filter passed to setColorFilter last (lets ThemeBind.drawableColorFilter re-apply it on theme changes) */
+    @Nullable
+    @Override
+    public ColorFilter getColorFilter() {
+        return lastColorFilter;
+    }
 
     @Override
     public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        lastColorFilter = colorFilter;
         if (imageReceiver == null || document == null) {
             colorFilterToSet = colorFilter;
         } else if (canOverrideColor()) {

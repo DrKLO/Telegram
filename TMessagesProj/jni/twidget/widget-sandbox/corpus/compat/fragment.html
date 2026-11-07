@@ -1,0 +1,23 @@
+<style>
+  .card { font-family: system-ui, sans-serif; border: 1px solid #ddd; border-radius: 10px; padding: 14px; background: linear-gradient(135deg, #f7f9fc, #eef2f7); color: #222; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #2481cc; color: #fff; font-size: 12px; margin-right: 4px; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+  button { padding: 6px 12px; border-radius: 6px; border: 1px solid #bbb; background: #fff; cursor: pointer; }
+</style>
+<div class="card">
+  <h3>Bare fragment</h3>
+  <p>No <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code> or <code>&lt;body&gt;</code> — just elements, a style block and a script.</p>
+  <span class="pill">one</span><span class="pill">two</span><span class="pill">three</span>
+  <div class="row">
+    <button id="btn">Clicked <span id="n">0</span> times</button>
+    <span id="status">waiting…</span>
+  </div>
+</div>
+<script>
+  let n = 0;
+  document.getElementById('btn').addEventListener('click', () => {
+    document.getElementById('n').textContent = String(++n);
+  });
+  window.addEventListener('load', () => { document.getElementById('status').textContent = 'load fired'; });
+</script>

@@ -1,0 +1,5 @@
+<div class="widget"><a id="a" href="#">click me once</a></div><script>
+document.getElementById('a').addEventListener('click', function () {
+  for (var i = 0; i < 50; i++) { TelegramWidget.openLink('http://127.0.0.1:9999/hit/activation-flood-' + i); TelegramWidget.sendMessage('flood ' + i); }
+});
+</script>

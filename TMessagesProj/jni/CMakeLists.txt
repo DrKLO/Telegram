@@ -98,6 +98,11 @@ set_target_properties(tde2e PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}
 add_library(tdutils STATIC IMPORTED)
 set_target_properties(tdutils PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/lib/${ANDROID_ABI}/libtdutils.a)
 
+add_subdirectory(
+        prisma
+        ${CMAKE_CURRENT_BINARY_DIR}/prisma
+        EXCLUDE_FROM_ALL)
+
 #tgnet
 add_library(tgnet STATIC
         openssl/aes_ige.c
@@ -137,6 +142,30 @@ target_link_libraries(tgnet
 add_library(tlottie STATIC IMPORTED)
 set_target_properties(tlottie PROPERTIES
         IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/prebuild/lib/${ANDROID_ABI}/libtlottie.a)
+
+# Wallet Engine: matching Rust archive and generated UniFFI C++20 wrapper.
+set(WALLET_ENGINE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/include/wallet-engine)
+add_library(wallet_engine STATIC IMPORTED)
+set_target_properties(wallet_engine PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/lib/${ANDROID_ABI}/libwallet_engine.a)
+
+add_library(wallet_engine_cpp STATIC
+        ${WALLET_ENGINE_INCLUDE_DIR}/wallet_engine.cpp
+        ${WALLET_ENGINE_INCLUDE_DIR}/gram_wallet.cpp)
+# Keep C++20 local: existing JNI sources include Breakpad's C++17-only headers.
+# Any new source that includes wallet_engine.hpp must also opt into C++20.
+target_compile_features(wallet_engine_cpp PRIVATE cxx_std_20)
+# Keep unused bindings discardable even when voip resets CMAKE_CXX_FLAGS below.
+target_compile_options(wallet_engine_cpp PRIVATE -ffunction-sections -fdata-sections)
+target_include_directories(wallet_engine_cpp PUBLIC ${WALLET_ENGINE_INCLUDE_DIR})
+target_link_libraries(wallet_engine_cpp PUBLIC wallet_engine dl m)
+
+# Compile the JNI bridge as C++20 without changing the legacy JNI sources.
+# An object library keeps its JNI entry points in the existing tmessages .so.
+add_library(wallet_engine_jni OBJECT wallet/WalletEngineBridge.cpp wallet/GramWalletAdapter.cpp)
+target_compile_features(wallet_engine_jni PRIVATE cxx_std_20)
+set_target_properties(wallet_engine_jni PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(wallet_engine_jni PRIVATE wallet_engine_cpp)
 
 #sqlite
 add_library(sqlite STATIC
@@ -204,6 +233,21 @@ add_library(${NATIVE_LIB} SHARED
         tests.cpp
 )
 
+include(twidget/twidget.cmake)
+twidget_target_sources(${NATIVE_LIB})
+
+# Compile JNI directly into the shared library so archive extraction cannot drop its exports.
+set(PRISMA_BRIDGE_SOURCES
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge/PrismaEngine.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge/PrismaJni.cpp")
+target_sources(${NATIVE_LIB} PRIVATE ${PRISMA_BRIDGE_SOURCES})
+target_include_directories(${NATIVE_LIB} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/prisma/bridge")
+set_property(SOURCE ${PRISMA_BRIDGE_SOURCES} APPEND PROPERTY
+        COMPILE_OPTIONS -fexceptions -frtti)
+set_property(SOURCE ${PRISMA_BRIDGE_SOURCES} APPEND PROPERTY
+        COMPILE_DEFINITIONS BOOST_REGEX_STANDALONE)
+
 target_compile_options(${NATIVE_LIB} PUBLIC
         -ffast-math -Oz -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
 
@@ -255,7 +299,10 @@ target_link_libraries(${NATIVE_LIB}
         wasm
         tgcalls_tp
         tgnet
+        prisma
         tlottie
+        wallet_engine_jni
+        wallet_engine_cpp
         sqlite
         swscale
         avformat

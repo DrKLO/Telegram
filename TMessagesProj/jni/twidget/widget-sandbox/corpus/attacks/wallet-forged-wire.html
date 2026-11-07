@@ -1,0 +1,27 @@
+<!-- a widget that rewrites what the shim sends (JSON.stringify is a global it can replace): in one tap, a transaction
+     of 256 messages, a canary URL as the address, a payload over the limit, a signData with a domain of its own, a
+     request that asks for the wallet with a string. The glue re-checks every call (invariant 2): none reaches the
+     client, no wallet window opens. -->
+<div class="widget"><button id="go">tap</button><p id="log"></p></div>
+<script>
+var T = TelegramWidget, stringify = JSON.stringify, mode = '';
+var M = { address: 'EQ' + '9'.repeat(46), amount: '1' };
+JSON.stringify = function (v) {
+  if (Array.isArray(v) && v[0] === 'wallet') {
+    var id = v[1][0];
+    if (mode === 'many') { var list = []; for (var i = 0; i < 256; i++) list.push(M); v = ['wallet', [id, 'sendTransaction', { messages: list }, 'many']]; }
+    if (mode === 'canary') v = ['wallet', [id, 'sendTransaction', { messages: [{ address: 'http://127.0.0.1:9999/hit/wallet-forged', amount: '1' }] }, 'canary']];
+    if (mode === 'big') v = ['wallet', [id, 'sendTransaction', { messages: [{ address: M.address, amount: '1', payload: 'A'.repeat(9000) }] }, 'big']];
+    if (mode === 'domain') v = ['wallet', [id, 'signData', { type: 'text', text: 'x', domain: 'evil.example' }, 'domain']];
+  }
+  if (Array.isArray(v) && v[0] === 'request' && mode === 'ask') v = ['request', [v[1][0], 'r', { wallet: 'yes' }]];
+  return stringify.apply(JSON, arguments.length > 1 ? [v].concat([].slice.call(arguments, 1)) : [v]);
+};
+document.getElementById('go').addEventListener('click', function () {
+  ['many', 'canary', 'big'].forEach(function (m) { mode = m; T.wallet.sendTransaction({ messages: [M] }, m).catch(function () {}); });
+  mode = 'domain'; T.wallet.signData({ type: 'text', text: 'x' }, 'domain').catch(function () {});
+  mode = 'ask'; T.request('r', { wallet: true }).catch(function () {});
+  mode = '';
+  document.getElementById('log').textContent = 'sent';
+});
+</script>

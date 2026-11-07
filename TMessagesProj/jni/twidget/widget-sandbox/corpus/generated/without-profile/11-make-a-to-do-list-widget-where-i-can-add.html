@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To-Do List</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: #fffbeb; }
+  .app { background: #fff; border-radius: 12px; padding: 16px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  h2 { margin: 0 0 12px; font-size: 18px; }
+  .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .quick button { padding: 7px 11px; background: #f59e0b; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; align-items: center; gap: 10px; padding: 10px 6px; border-bottom: 1px solid #f3f4f6; }
+  li.done span { text-decoration: line-through; color: #9ca3af; }
+  li span { flex: 1; font-size: 15px; }
+  li .check { width: 20px; height: 20px; padding: 0; border: 2px solid #d1d5db; border-radius: 5px; background: #fff; color: #fff; font-size: 13px; line-height: 16px; font-weight: 700; cursor: pointer; }
+  li.done .check { background: #f59e0b; border-color: #f59e0b; }
+  li .del { background: none; border: none; padding: 0 4px; color: #ef4444; font-size: 18px; cursor: pointer; opacity: .6; }
+  li .del:hover { opacity: 1; }
+  .empty { text-align: center; color: #9ca3af; padding: 16px; font-size: 14px; }
+  .footer { font-size: 12px; color: #6b7280; margin-top: 10px; display: flex; justify-content: space-between; }
+  .footer a { color: #6b7280; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h2>✅ To-Do</h2>
+  <div class="quick" id="quick"></div>
+  <ul id="list"></ul>
+  <div class="footer"><span id="count"></span><a id="clear">Clear completed</a></div>
+</div>
+<script>
+  // No text field in a widget: tasks are added from quick-add buttons; check-offs are toggle buttons.
+  const ideas = ['Water the plants', 'Pay the bills', 'Go for a run', 'Read 20 pages', 'Book a haircut', 'Reply to emails'];
+  const load = () => { try { return JSON.parse(localStorage.getItem('todos') || 'null'); } catch { return null; } };
+  let todos = load() || [
+    { text: 'Buy groceries', done: false },
+    { text: 'Call the dentist', done: true },
+    { text: 'Finish the report', done: false },
+  ];
+  const list = document.getElementById('list');
+  function save() { try { localStorage.setItem('todos', JSON.stringify(todos)); } catch { } }
+  function render() {
+    const have = new Set(todos.map(t => t.text));
+    document.getElementById('quick').innerHTML = ideas.filter(x => !have.has(x)).slice(0, 3).map(x => `<button>+ ${x}</button>`).join('');
+    list.innerHTML = '';
+    if (!todos.length) list.innerHTML = '<li class="empty">Nothing to do 🎉</li>';
+    todos.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = t.done ? 'done' : '';
+      li.innerHTML = `<button class="check" aria-label="Done">${t.done ? '✓' : ''}</button><span></span><button class="del" title="Delete">×</button>`;
+      li.querySelector('span').textContent = t.text;
+      li.querySelector('.check').onclick = () => { t.done = !t.done; save(); render(); };
+      // No confirm() dialog in a widget: delete right away.
+      li.querySelector('.del').onclick = () => { todos.splice(i, 1); save(); render(); };
+      list.appendChild(li);
+    });
+    const left = todos.filter(t => !t.done).length;
+    document.getElementById('count').textContent = `${left} item${left === 1 ? '' : 's'} left`;
+  }
+  document.getElementById('quick').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    todos.push({ text: b.textContent.slice(2), done: false });
+    save(); render();
+  });
+  document.getElementById('clear').onclick = () => { todos = todos.filter(t => !t.done); save(); render(); };
+  render();
+</script>
+</body>
+</html>

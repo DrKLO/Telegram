@@ -3,19 +3,18 @@ package org.telegram.ui.Components;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLink;
 import static org.telegram.messenger.AndroidUtilities.replaceSingleLinkBold;
-import static org.telegram.messenger.LocaleController.formatPluralStringComma;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ClickableSpan;
-import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -26,6 +25,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AppGlobalConfig;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -40,6 +41,7 @@ import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.LaunchActivity;
@@ -47,8 +49,38 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class CreateBotAlert {
+
+    private static class ColorsLayout extends LinearLayout implements Theme.Colorable {
+        private final Theme.ResourcesProvider resourcesProvider;
+        private java.lang.ref.WeakReference<BottomSheet> sheet;
+        private EditTextCaption hintEditText;
+
+        public ColorsLayout(android.content.Context context, Theme.ResourcesProvider resourcesProvider) {
+            super(context);
+            this.resourcesProvider = resourcesProvider;
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                // sheet background: setBackgroundColorKey, hint color: ThemeBind.editHintColor (both follow theme changes)
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundGray);
+            colors.add(Theme.key_windowBackgroundWhiteHintText);
+        }
+    }
 
     public static void show(
         Context context,
@@ -87,9 +119,20 @@ public class CreateBotAlert {
             return;
         }
 
+        final Set<String> allowedBotSuffixes = new TreeSet<>();
+        final Set<String> configuredSuffixes = AppGlobalConfig.getInstance(currentAccount).botAllowedSuffixes.get();
+        if (configuredSuffixes != null) {
+            for (String suffix : configuredSuffixes) {
+                if (!TextUtils.isEmpty(suffix)) {
+                    allowedBotSuffixes.add(suffix.toLowerCase(Locale.US));
+                }
+            }
+        }
+        // "bot" is always available for creation and is never a Premium suffix.
+        allowedBotSuffixes.remove("bot");
         final BottomSheet.Builder b = new BottomSheet.Builder(context, true, resourcesProvider);
 
-        final LinearLayout layout = new LinearLayout(context);
+        final ColorsLayout layout = new ColorsLayout(context, resourcesProvider);
         layout.setClipChildren(false);
         layout.setClipToPadding(false);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -104,19 +147,19 @@ public class CreateBotAlert {
 
         final TextView titleTextView = new TextView(context);
         titleTextView.setTypeface(AndroidUtilities.bold());
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setText(getString(R.string.CreateManagedBotTitle));
         titleTextView.setGravity(Gravity.CENTER);
-        layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 16, 0, 16, 8));
+        layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 16, 0, 16, 5));
 
         final TextView subtitleTextView = new TextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleTextView.setText(
-            replaceSingleLinkBold(
+            AndroidUtilities.replaceSingleLinkBoldKey(
                 formatString(R.string.CreateManagedBotText, UserObject.getUserName(bot)),
-                Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider)
+                Theme.key_chat_messageLinkIn, resourcesProvider, null
             )
         );
         subtitleTextView.setGravity(Gravity.CENTER);
@@ -124,39 +167,38 @@ public class CreateBotAlert {
 
         final EditTextCell nameEdit = new EditTextCell(context, getString(R.string.CreateManagedBotName), false, false, -1, resourcesProvider);
         nameEdit.editText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        nameEdit.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(nameEdit, Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         nameEdit.setText(peerType.suggested_name);
         layout.addView(nameEdit, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 12, 0, 12, 0));
 
         final TextInfoPrivacyCell nameEditInfo = new TextInfoPrivacyCell(context, resourcesProvider);
         nameEditInfo.setText(getString(R.string.CreateManagedBotNameInfo));
-        layout.addView(nameEditInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        layout.addView(nameEditInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 9, 0, 9, 0));
 
-        final EditTextCell usernameEdit = new EditTextCell(context, getString(R.string.CreateManagedBotUsername), false, false, 32 - 3, resourcesProvider);
+        final EditTextCell usernameEdit = new EditTextCell(context, getString(R.string.CreateManagedBotUsername), false, false, 32, resourcesProvider);
         final LinearLayout usernameLayout = new LinearLayout(context);
         usernameLayout.setOrientation(LinearLayout.HORIZONTAL);
         usernameEdit.removeView(usernameEdit.editText);
-        usernameEdit.editText.setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
-        usernameEdit.editText.setRightText("bot");
+        ThemeBind.editHintColor(usernameEdit.editText, Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
         usernameEdit.editText.setPadding(0, dp(15), dp(42 + 21), dp(15));
         final TextView at = new TextView(context);
         at.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         at.setText("@");
-        at.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(at, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         at.setGravity(Gravity.CENTER);
         at.setPadding(0, dp(15), 0, dp(15));
         usernameLayout.addView(at, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 21, -1, 0, 0));
         usernameLayout.addView(usernameEdit.editText, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, Gravity.FILL, 1, 0, 0, 0, 0));
         usernameEdit.addView(usernameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        usernameEdit.setBackground(Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(usernameEdit, Theme.createRoundRectDrawable(dp(16), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         usernameEdit.editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        usernameEdit.editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        usernameEdit.editText.setSingleLine(true);
         String suggested_username = peerType.suggested_username;
         if (suggested_username != null) {
             suggested_username = suggested_username.trim();
         }
-        if (suggested_username != null && suggested_username.toLowerCase().endsWith("bot")) {
-            suggested_username = suggested_username.substring(0, suggested_username.length() - 3);
-        }
+        // Keep the suggestion intact, including its explicit (possibly Premium) suffix.
         usernameEdit.setText(suggested_username);
         layout.addView(usernameEdit, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 12, 0, 12, 0));
 
@@ -170,8 +212,7 @@ public class CreateBotAlert {
         });
 
         final TextInfoPrivacyCell usernameEditInfo = new TextInfoPrivacyCell(context, resourcesProvider);
-        usernameEditInfo.setText(getString(R.string.CreateManagedBotUsernameInfo));
-        layout.addView(usernameEditInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        layout.addView(usernameEditInfo, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 9, 0, 9, 0));
 
         final LinearLayout buttons = new LinearLayout(context);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -180,6 +221,10 @@ public class CreateBotAlert {
         layout.addView(buttons, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         final ButtonWithCounterView cancel = new ButtonWithCounterView(context, resourcesProvider).setRound().setNeutral();
+        cancel.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.10f));
+        if (cancel.getBackground() != null) {
+            ThemeBind.fillBackground(cancel, cancel.getBackground(), ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, 0.10f), resourcesProvider);
+        }
         cancel.setText(getString(R.string.Cancel));
         buttons.addView(cancel, LayoutHelper.createLinear(0, 48, Gravity.FILL, 1, 0, 0, 5, 0));
 
@@ -190,77 +235,120 @@ public class CreateBotAlert {
         final BottomSheet sheet = b.create();
         sheet.useBackgroundTopPadding = false;
         sheet.smoothKeyboardAnimationEnabled = true;
-        sheet.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        sheet.doNotOverlayNavigationBar = true;
+        sheet.setBackgroundColorKey(Theme.key_windowBackgroundGray);
         sheet.fixNavigationBar();
+        layout.sheet = new java.lang.ref.WeakReference<>(sheet);
+        layout.hintEditText = usernameEdit.editText;
 
         final boolean[] sent = new boolean[1];
-
+        final boolean[] dismissed = new boolean[1];
         final String[] checkedUsername = new String[1];
         final int[] creatingRequestId = new int[] { -1 };
-
-        final String[] checking = new String[1];
         final int[] checkingRequestId = new int[] { -1 };
+        final int[] checkGeneration = new int[1];
+        final Runnable[] pendingCheck = new Runnable[1];
         final int[] shake = new int[] { 4 };
+
+        final Runnable openPremium = () -> {
+            final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+            if (lastFragment != null) {
+                sheet.dismiss();
+                final PremiumPreviewFragment fragment = new PremiumPreviewFragment("create_bot");
+                fragment.setCurrentAccount(currentAccount);
+                lastFragment.presentFragment(fragment);
+            }
+        };
+        final String visibleSuffixes = formatSuffixes(allowedBotSuffixes);
+        final CharSequence usernameHint = TextUtils.isEmpty(visibleSuffixes)
+                ? getString(R.string.CreateManagedBotUsernameInfo)
+                : AndroidUtilities.replaceSingleLinkKey(
+                formatString(R.string.CreateManagedBotUsernameSuffixesInfo, visibleSuffixes),
+                Theme.key_chat_messageLinkIn, resourcesProvider, openPremium);
+        final Runnable showUsernameHint = () -> {
+            usernameEditInfo.setText(usernameHint);
+            ThemeBind.textColor(usernameEditInfo.getTextView(), Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider);
+        };
+        final Runnable cancelUsernameCheck = () -> {
+            ++checkGeneration[0];
+            if (pendingCheck[0] != null) {
+                AndroidUtilities.cancelRunOnUIThread(pendingCheck[0]);
+                pendingCheck[0] = null;
+            }
+            if (checkingRequestId[0] >= 0) {
+                ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingRequestId[0], true);
+                checkingRequestId[0] = -1;
+            }
+        };
+        final Runnable checkRightText = () -> {
+            final String usernameInput = usernameEdit.getText().toString();
+            final String suffix = getSuffixToAdd(usernameInput, allowedBotSuffixes);
+            usernameEdit.editText.setRightText(suffix);
+            usernameEdit.editText.setPadding(0, dp(15), dp(TextUtils.isEmpty(suffix) ? 21 : 42 + 21), dp(15));
+        };
+
         final Runnable checkUsername = () -> {
-            final String username = usernameEdit.getText() + "bot";
-            if (username.length() < 4) {
-                if (checkingRequestId[0] >= 0) {
-                    ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingRequestId[0], true);
-                    checkingRequestId[0] = -1;
-                }
-                checkedUsername[0] = checking[0] = null;
-                create.setLoading(false);
-                create.setEnabled(false);
-                usernameEditInfo.setText(getString(R.string.UsernameInvalidShort));
-                usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
-                AndroidUtilities.shakeViewSpring(usernameEditInfo, shake[0] = -shake[0]);
+            if (dismissed[0] || creatingRequestId[0] >= 0) {
                 return;
             }
-            if (username.length() > 32) {
-                if (checkingRequestId[0] >= 0) {
-                    ConnectionsManager.getInstance(currentAccount).cancelRequest(checkingRequestId[0], true);
-                    checkingRequestId[0] = -1;
-                }
-                checkedUsername[0] = checking[0] = null;
-                create.setLoading(false);
-                create.setEnabled(false);
-                usernameEditInfo.setText(getString(R.string.UsernameInvalidLong));
-                usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
-                AndroidUtilities.shakeViewSpring(usernameEditInfo, shake[0] = -shake[0]);
-                return;
-            }
-            if (TextUtils.equals(checking[0], username)) {
-                return;
-            }
-            checking[0] = username;
+            cancelUsernameCheck.run();
             checkedUsername[0] = null;
+            create.setLoading(false);
+            create.setEnabled(false);
+            final String usernameInput = usernameEdit.getText().toString();
+            final String username = usernameInput + getSuffixToAdd(usernameInput, allowedBotSuffixes);
+            if (TextUtils.isEmpty(usernameInput)) {
+                showUsernameHint.run();
+                return;
+            }
+            if (username.length() < 4 || username.length() > 32) {
+                usernameEditInfo.setText(getString(username.length() < 4 ? R.string.UsernameInvalidShort : R.string.UsernameInvalidLong));
+                ThemeBind.textColor(usernameEditInfo.getTextView(), Theme.key_text_RedBold, resourcesProvider);
+                return;
+            }
             usernameEditInfo.setText(getString(R.string.UsernameChecking));
-            usernameEditInfo.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider));
-
-            final TL_bots.checkUsername req = new TL_bots.checkUsername();
-            req.username = username;
-            create.setLoading(true);
-            checkingRequestId[0] = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
-                create.setLoading(false);
-                checking[0] = null;
-                if (res instanceof TLRPC.TL_boolTrue) {
-                    checkedUsername[0] = username;
-                    create.setEnabled(true);
-
-                    usernameEditInfo.setText(formatString(R.string.UsernameAvailable, "@" + username));
-                    usernameEditInfo.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText, resourcesProvider));
+            ThemeBind.textColor(usernameEditInfo.getTextView(), Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider);
+            final int generation = checkGeneration[0];
+            pendingCheck[0] = () -> {
+                pendingCheck[0] = null;
+                if (dismissed[0] || generation != checkGeneration[0]) {
                     return;
                 }
-
-                checkedUsername[0] = null;
-                create.setEnabled(false);
-                usernameEditInfo.setText(getString(R.string.UsernameInUse));
-                usernameEditInfo.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
-                AndroidUtilities.shakeViewSpring(usernameEditInfo, shake[0] = -shake[0]);
-            });
+                final TL_bots.checkUsername req = new TL_bots.checkUsername();
+                // Creation accepts both "bot" and configured suffixes; additional stays false.
+                req.username = username;
+                checkingRequestId[0] = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+                    if (dismissed[0] || generation != checkGeneration[0]) {
+                        return;
+                    }
+                    checkingRequestId[0] = -1;
+                    if (res instanceof TLRPC.TL_boolTrue) {
+                        checkedUsername[0] = username;
+                        create.setEnabled(true);
+                        showUsernameHint.run();
+                        return;
+                    }
+                    final CharSequence message = getUsernameError(currentAccount, username, allowedBotSuffixes,
+                            err == null ? "USERNAME_OCCUPIED" : err.text, openPremium, resourcesProvider);
+                    usernameEditInfo.setText(message != null ? message : getString(R.string.CreateManagedBotUsernameCheckFailed));
+                    ThemeBind.textColor(usernameEditInfo.getTextView(), Theme.key_text_RedBold, resourcesProvider);
+                    if (message == null && err != null) {
+                        // Allow a retry without requiring the user to edit the name.
+                        create.setEnabled(true);
+                        BulletinFactory.of(sheet.topBulletinContainer, resourcesProvider).showForError(err);
+                    }
+                });
+            };
+            AndroidUtilities.runOnUIThread(pendingCheck[0], 300);
         };
+        showUsernameHint.run();
         final Runnable createRunnable = () -> {
-            if (checkedUsername[0] == null) {
+            if (dismissed[0] || creatingRequestId[0] >= 0) {
+                return;
+            }
+            final String usernameInput = usernameEdit.getText().toString();
+            final String username = usernameInput + getSuffixToAdd(usernameInput, allowedBotSuffixes);
+            if (!TextUtils.equals(checkedUsername[0], username)) {
                 checkUsername.run();
                 return;
             }
@@ -271,15 +359,25 @@ public class CreateBotAlert {
                 return;
             }
 
+            cancelUsernameCheck.run();
             create.setLoading(true);
+            create.setEnabled(false);
+            nameEdit.editText.setEnabled(false);
+            usernameEdit.editText.setEnabled(false);
             final TL_bots.createBot req = new TL_bots.createBot();
             req.via_deeplink = via_deeplink;
             req.username = checkedUsername[0];
             req.name = name;
             req.manager_id = MessagesController.getInstance(currentAccount).getInputUser(bot);
             creatingRequestId[0] = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (newBot, err) -> {
+                if (dismissed[0]) {
+                    return;
+                }
                 creatingRequestId[0] = -1;
                 create.setLoading(false);
+                create.setEnabled(true);
+                nameEdit.editText.setEnabled(true);
+                usernameEdit.editText.setEnabled(true);
                 if (newBot != null) {
                     sent[0] = true;
                     MessagesController.getInstance(currentAccount).putUser(newBot, false);
@@ -293,7 +391,15 @@ public class CreateBotAlert {
                     return;
                 }
                 if (err != null) {
-                    if ("BOT_CREATE_LIMIT_EXCEEDED".equalsIgnoreCase(err.text)) {
+                    final CharSequence usernameError = getUsernameError(currentAccount, req.username, allowedBotSuffixes,
+                            err.text, openPremium, resourcesProvider);
+                    if (usernameError != null) {
+                        checkedUsername[0] = null;
+                        create.setEnabled(false);
+                        usernameEditInfo.setText(usernameError);
+                        ThemeBind.textColor(usernameEditInfo.getTextView(), Theme.key_text_RedBold, resourcesProvider);
+                        AndroidUtilities.shakeViewSpring(usernameEditInfo, shake[0] = -shake[0]);
+                    } else if ("BOT_CREATE_LIMIT_EXCEEDED".equalsIgnoreCase(err.text)) {
                         final MessagesController m = MessagesController.getInstance(currentAccount);
                         final boolean premium = UserConfig.getInstance(currentAccount).isPremium();
                         BulletinFactory.of(sheet.topBulletinContainer, resourcesProvider)
@@ -354,9 +460,11 @@ public class CreateBotAlert {
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
+                checkRightText.run();
                 checkUsername.run();
             }
         });
+        checkRightText.run();
         if (!TextUtils.isEmpty(suggested_username)) {
             checkUsername.run();
         }
@@ -376,6 +484,8 @@ public class CreateBotAlert {
             createRunnable.run();
         });
         sheet.setOnDismissListener(d -> {
+            dismissed[0] = true;
+            cancelUsernameCheck.run();
             if (!sent[0]) {
                 sent[0] = true;
                 if (onCreated != null) {
@@ -390,6 +500,85 @@ public class CreateBotAlert {
         });
 
         sheet.show();
+    }
+
+    private static String getSuffixToAdd(String input, Set<String> allowedSuffixes) {
+        if (endsWithIgnoreCase(input, "bot") || getPremiumSuffix(input, allowedSuffixes) != null) {
+            return "";
+        }
+        return "bot";
+    }
+
+    private static boolean endsWithIgnoreCase(String input, String suffix) {
+        return input.length() >= suffix.length()
+                && input.regionMatches(true, input.length() - suffix.length(), suffix, 0, suffix.length());
+    }
+
+    private static String getPremiumSuffix(String username, Set<String> allowedSuffixes) {
+        if (endsWithIgnoreCase(username, "bot")) {
+            return null;
+        }
+        String result = null;
+        for (String suffix : allowedSuffixes) {
+            if (!TextUtils.isEmpty(suffix) && endsWithIgnoreCase(username, suffix)
+                    && (result == null || suffix.length() > result.length())) {
+                result = suffix;
+            }
+        }
+        return result;
+    }
+
+    private static String formatSuffixes(Set<String> suffixes) {
+        final ArrayList<String> sorted = new ArrayList<>(suffixes.size());
+        for (String suffix : suffixes) {
+            // Easter egg: accepted by the server, but not advertised in suffix lists.
+            if (!"gay".equalsIgnoreCase(suffix)) {
+                sorted.add(suffix);
+            }
+        }
+        Collections.sort(sorted);
+        String result = "";
+        for (int i = 0; i < sorted.size(); i++) {
+            final String suffix = "'" + sorted.get(i) + "'";
+            if (i == 0) {
+                result = suffix;
+            } else if (i == sorted.size() - 1) {
+                result = formatString(R.string.CreateManagedBotUsernameSuffixesOr, result, suffix);
+            } else {
+                result = formatString(R.string.CreateManagedBotUsernameSuffixesComma, result, suffix);
+            }
+        }
+        return result;
+    }
+
+    private static CharSequence getUsernameError(int currentAccount, String username, Set<String> allowedSuffixes,
+                                                 String error, Runnable openPremium, Theme.ResourcesProvider resourcesProvider) {
+        if (error == null) {
+            return null;
+        }
+        switch (error.toUpperCase(Locale.US)) {
+            case "PREMIUM_ACCOUNT_REQUIRED": {
+                final String suffix = getPremiumSuffix(username, allowedSuffixes);
+                final String text = suffix == null
+                        ? getString(R.string.CreateManagedBotUsernamePremiumRequiredGeneric)
+                        : formatString(R.string.CreateManagedBotUsernamePremiumRequired, suffix);
+                return AndroidUtilities.replaceSingleLinkKey(text, Theme.key_chat_messageLinkIn, resourcesProvider, openPremium);
+            }
+            case "OWNER_USERNAMES_LIMIT_EXCEEDED":
+                return formatString(R.string.CreateManagedBotUsernameOwnerLimit,
+                        AppGlobalConfig.getInstance(currentAccount).botAdditionalUsernamesLimit.get(), formatSuffixes(allowedSuffixes));
+            case "BOT_USERNAMES_LIMIT_EXCEEDED":
+                return getString(R.string.CreateManagedBotUsernameBotLimit);
+            case "ADDITIONAL_USERNAME_SUFFIX_MISSING":
+                return formatString(R.string.CreateManagedBotUsernameSuffixMissing, formatSuffixes(allowedSuffixes));
+            case "USERNAME_INVALID":
+                return getString(R.string.UsernameInvalid);
+            case "USERNAME_OCCUPIED":
+            case "USERNAME_PURCHASE_AVAILABLE":
+                return getString(R.string.UsernameInUse);
+            default:
+                return null;
+        }
     }
 
     private static SpannableStringBuilder highlightBotFather(Context context, CharSequence c, Runnable onClick, Theme.ResourcesProvider resourcesProvider) {

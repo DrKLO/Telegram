@@ -25,6 +25,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -157,10 +158,10 @@ public class MaskPaintView extends FrameLayout {
         doneButton = new TextView(context);
         doneButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         doneButton.setTypeface(AndroidUtilities.bold());
-        doneButton.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_chat_editMediaButton), .15f), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE));
+        ThemeBind.selectorBackground(doneButton, Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_chat_editMediaButton), .15f), Theme.RIPPLE_MASK_CIRCLE_TO_BOUND_EDGE), null, ThemeBind.multAlpha(Theme.key_chat_editMediaButton, .15f));
         doneButton.setPadding(dp(28), 0, dp(28), 0);
         doneButton.setText(LocaleController.getString(R.string.Save).toUpperCase());
-        doneButton.setTextColor(Theme.getColor(Theme.key_chat_editMediaButton));
+        ThemeBind.textColor(doneButton, Theme.key_chat_editMediaButton);
         doneButton.setGravity(Gravity.CENTER);
         buttonsLayout.addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.RIGHT, 0, 0, -8, 0));
     }

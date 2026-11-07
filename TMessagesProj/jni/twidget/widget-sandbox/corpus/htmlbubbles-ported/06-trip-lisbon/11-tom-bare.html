@@ -1,0 +1,210 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 11
+  author: tom 09:02 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --orange: #ff9500; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .right { text-align: right; }
+  .t-orange { color: var(--orange); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.green { background-color: rgba(52,199,89,0.18); color: var(--green); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  .opt { cursor: pointer; }
+
+  .rs { width: 420px; max-width: 100%; }
+  .rs .opt { display: flex; align-items: center; padding: 10px; border-radius: 12px; border: 2px solid rgba(127,127,127,0.18); margin-top: 8px; }
+  .rs .opt:hover { border-color: rgba(127,127,127,0.42); }
+  .rs .opt.mine { border-color: #34c759; }
+  .rs .opt.lit { border-color: #0a84ff; }
+  .rs .opt .img { width: 54px; height: 54px; flex-shrink: 0; border-radius: 9px; margin-right: 10px; }
+  .rs .vt { width: 18px; height: 18px; line-height: 18px; font-size: 8px; margin-left: 2px; }
+  .rs .hero { position: relative; height: 130px; border-radius: 13px 13px 0 0; }
+  .rs .ocean { background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.35) 0 12%, rgba(255,255,255,0) 40%), linear-gradient(180deg, #8fdcf9 0%, #2a9fe0 40%, #0d5ea0 75%, #083c6b 100%); }
+  .rs .forest { background: radial-gradient(circle at 30% 30%, rgba(214,255,150,0.45) 0 10%, rgba(214,255,150,0) 35%), linear-gradient(180deg, #b7e36b 0%, #4f9a3d 45%, #2b6a2a 75%, #173f18 100%); }
+  .rs .dunes { background: radial-gradient(circle at 75% 20%, #fff2b0 0 6%, rgba(255,242,176,0) 22%), linear-gradient(170deg, #ffe9a8 0%, #f0bf5e 50%, #c98a35 78%, #9c6420 100%); }
+  .rs .band { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 14px; background-color: rgba(0,0,0,0.45); color: #ffffff; border-radius: 0; }
+  .rs .band .hn { height: 28px; line-height: 28px; font-weight: 800; font-size: 22px; }
+  .rs .band .hn.pop { animation: hn-pop 800ms linear; }
+  @keyframes hn-pop { 0% { font-size: 6.6px; } 5% { font-size: 16.5px; } 15% { font-size: 27.5px; } 30% { font-size: 20px; } 45% { font-size: 22.7px; } 60% { font-size: 21.9px; } 100% { font-size: 22px; } }
+  .rs .okbox { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background-color: rgba(52,199,89,0.14); }
+
+  .tr-pop { animation: tr-pop 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 280ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-pop { from { opacity: 0; transform: scale(.94); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } }
+</style>
+<div class="card rs" id="root">
+  <div class="pad" id="v-vote">
+    <div class="row"><b class="grow" style="font-size: 16px">🍽 Friday lunch — pick one</b><span class="small muted" id="voted"></span></div>
+    <div id="opts"></div>
+    <div class="row" style="margin-top: 10px"><span class="grow small muted" id="status"></span><button class="primary" id="decide">🎲 Decide for us</button></div>
+  </div>
+  <div id="v-result" hidden>
+    <div class="hero" id="hero"><div class="band"><div class="tiny" style="color: rgba(255,255,255,0.8)">FRIDAY LUNCH IS…</div><div class="hn" id="hn"></div></div></div>
+    <div class="pad">
+      <div class="small muted" id="r-meta"></div>
+      <div class="small" style="margin-top: 4px" id="r-note"></div>
+      <div class="tiny muted" style="margin-top: 4px" id="r-picked"></div>
+      <div class="okbox small" id="okbox" hidden>✓ <b>Table for 3 · Fri 13:00</b> · ref <span id="ref"></span></div>
+      <div class="row" style="margin-top: 10px"><button id="back">‹ Votes</button><span class="grow"></span><button id="reroll">↻ Re-roll</button><span id="book-wrap">&nbsp;<button class="primary" id="book">Book for 3</button></span></div>
+    </div>
+  </div>
+</div>
+<script>
+const PLACES = [
+  { name: 'Sea Me Peixaria', img: 'ocean', kind: 'Seafood', price: '€€€', stars: '4.6', area: 'Chiado', note: 'Sushi-meets-Portuguese. Book ahead.' },
+  { name: 'Ao 26 Vegan Food Project', img: 'forest', kind: 'Vegan', price: '€€', stars: '4.7', area: 'Baixa', note: "Tom's choice. The seitan bifana is real." },
+  { name: 'O Trevo', img: 'dunes', kind: 'Bifanas', price: '€', stars: '4.5', area: 'Bairro Alto', note: 'Bourdain ate here. Standing room only.' },
+];
+const PEOPLE = [{ id: 'ana', ini: 'AS', color: '#ff9500' }, { id: 'tom', ini: 'TB', color: '#30b0c7' }, { id: 'me', ini: 'ME', color: '#007aff' }];
+const votes = { ana: 0, tom: 1, me: null };
+let view = 'vote', hl = -1, spinning = false, pick = -1, booked = false, run = 0, ref = '', shareRun = 0;
+let shown = [0, 0, 0];
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3) };
+const lerp = (a, b, t) => a + (b - a) * t;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const counts = () => PLACES.map((_, i) => PEOPLE.filter(p => votes[p.id] === i).length);
+const shares = () => { const c = counts(), t = c.reduce((a, b) => a + b, 0) || 1; return c.map(x => x / t); };
+
+const TR = ['tr-pop', 'tr-slide-right'];
+function bubble(kind) {
+  if (TR.some(c => root.classList.contains(c))) { root.classList.remove(...TR); void root.offsetWidth; }
+  root.classList.add('tr-' + kind);
+}
+root.addEventListener('animationend', e => {
+  if (e.target === root) root.classList.remove(...TR);
+  else if (e.target.classList) e.target.classList.remove('pop');
+});
+
+// --- vote view ---
+$('opts').innerHTML = PLACES.map((p, i) => `<div class="opt fg" data-vote="${i}">
+  <div class="img ${p.img}"></div><div class="grow"><b>${esc(p.name)}</b> <span class="badge green" hidden>YOUR VOTE ✓</span>
+    <div class="small muted">${p.kind} · ${p.price} · <span class="t-orange">★ ${p.stars}</span> · ${p.area}</div><div class="tiny muted">${esc(p.note)}</div></div>
+  <div class="right" style="width: 62px"><b class="pct">0%</b><div class="voters" style="margin-top: 3px"></div></div></div>`).join('');
+const opts = [...$('opts').children];
+
+function renderOpts() {
+  opts.forEach((el, i) => {
+    const pc = shown[i] * 100, mine = votes.me === i, lit = hl === i;
+    const fill = lit ? 'rgba(10,132,255,0.30)' : mine ? 'rgba(52,199,89,0.22)' : 'rgba(127,127,127,0.14)';
+    el.classList.toggle('mine', mine); el.classList.toggle('lit', lit);
+    el.style.background = `linear-gradient(90deg, ${fill} ${pc.toFixed(1)}%, rgba(127,127,127,0.03) ${pc.toFixed(1)}%)`;
+    el.querySelector('.badge').hidden = !mine;
+    el.querySelector('.pct').textContent = Math.round(pc) + '%';
+    const voters = PEOPLE.filter(v => votes[v.id] === i).map(v => `<span class="av vt" style="background-color: ${v.color}">${v.ini}</span>`).join('');
+    el.querySelector('.voters').innerHTML = voters || '<span class="tiny muted">no votes</span>';
+  });
+}
+function renderStatus() {
+  const c = counts(), max = Math.max(...c), leaders = c.filter(x => x === max).length;
+  $('voted').textContent = `${c.reduce((a, b) => a + b, 0)} of 3 voted`;
+  $('status').textContent = spinning ? '🎲 The dice are rolling…'
+    : votes.me === null ? 'Ana and Tom voted · tap a place to vote'
+    : leaders > 1 ? "It's a tie — let the dice decide"
+    : `${PLACES[c.indexOf(max)].name} is winning`;
+  $('decide').textContent = spinning ? '🎲 Rolling…' : '🎲 Decide for us';
+}
+function retarget(ms) {
+  const me = ++shareRun, from = shown.slice(), to = shares();
+  animate(ms, p => { if (me !== shareRun) return; shown = from.map((f, k) => lerp(f, to[k], p)); renderOpts(); }, ease.outCubic);
+}
+
+// --- result view ---
+function renderResult() {
+  const p = PLACES[pick], c = counts()[pick];
+  $('hero').className = 'hero ' + p.img;
+  $('hn').textContent = `${p.name} 🎉`;
+  $('r-meta').innerHTML = `${p.kind} · ${p.price} · <span class="t-orange">★ ${p.stars}</span> · ${p.area}`;
+  $('r-note').textContent = p.note;
+  $('r-picked').textContent = `Picked by the dice · ${c} of 3 voted for it`;
+  $('okbox').hidden = !booked;
+  $('ref').textContent = ref;
+  $('book-wrap').hidden = booked;
+}
+function showView() {
+  $('v-vote').hidden = view !== 'vote';
+  $('v-result').hidden = view !== 'result';
+}
+
+async function decide() {
+  if (spinning) return;
+  const me = ++run;
+  spinning = true; renderStatus();
+  const w = counts().map(x => 1 + 2 * x), sum = w.reduce((a, b) => a + b, 0);
+  let r = Math.random() * sum, target = 0;
+  while (target < 2 && r >= w[target]) { r -= w[target]; target++; }
+  if (hl < 0) hl = 0;
+  renderOpts();
+  const steps = 12 + ((target - hl) % 3 + 3) % 3;
+  let delay = 60;
+  for (let k = 0; k < steps; k++) {
+    await sleep(delay);
+    if (me !== run) return;
+    hl = (hl + 1) % 3; renderOpts();
+    delay *= 1.15;
+  }
+  await sleep(450);
+  if (me !== run) return;
+  spinning = false; hl = -1; pick = target; booked = false;
+  renderOpts(); renderStatus();
+  bubble('pop');
+  view = 'result'; renderResult(); showView();
+  const hn = $('hn');
+  hn.classList.remove('pop'); void hn.offsetWidth; hn.classList.add('pop');
+}
+
+renderOpts(); renderStatus(); showView();
+setTimeout(() => retarget(850), 250);
+
+$('opts').addEventListener('click', e => {
+  const o = e.target.closest('[data-vote]');
+  if (!o || spinning) return;
+  const i = Number(o.dataset.vote);
+  votes.me = votes.me === i ? null : i;
+  renderOpts(); renderStatus(); retarget(600);
+});
+$('decide').addEventListener('click', decide);
+$('book').addEventListener('click', () => {
+  if (booked) return;
+  bubble('pop');
+  booked = true;
+  ref = '#' + (4000 + Math.floor(Math.random() * 5000));
+  renderResult();
+});
+$('reroll').addEventListener('click', () => {
+  bubble('slide-right');
+  view = 'vote'; booked = false; showView();
+  decide();
+});
+$('back').addEventListener('click', () => {
+  bubble('slide-right');
+  view = 'vote'; booked = false; showView();
+});
+</script>

@@ -504,6 +504,63 @@ public sealed class TlGen_InputMedia : TlGen_Object {
     }
   }
 
+  public data class TL_inputMediaWidget(
+    public val allow_queries: Boolean,
+    public val shared_widget: Boolean,
+    public val width: Int,
+    public val height: Int,
+    public val html: String,
+    public val public_data: String?,
+    public val chat_data: String?,
+  ) : TlGen_InputMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (allow_queries) result = result or 1U
+        if (shared_widget) result = result or 2U
+        if (public_data != null) result = result or 4U
+        if (chat_data != null) result = result or 8U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(width)
+      stream.writeInt32(height)
+      stream.writeString(html)
+      public_data?.let { stream.writeString(it) }
+      chat_data?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x44F6C04EU
+    }
+  }
+
+  public data class TL_inputMediaWidgetId(
+    public val widget_id: Long,
+    public val chat_data: String?,
+  ) : TlGen_InputMedia() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (chat_data != null) result = result or 1U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt64(widget_id)
+      chat_data?.let { stream.writeString(it) }
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0x7C855CB5U
+    }
+  }
+
   public data class TL_inputMediaUploadedPhoto_layer223(
     public val spoiler: Boolean,
     public val `file`: TlGen_InputFile,

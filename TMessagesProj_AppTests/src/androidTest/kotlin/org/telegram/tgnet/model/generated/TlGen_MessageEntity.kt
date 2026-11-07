@@ -427,6 +427,21 @@ public sealed class TlGen_MessageEntity : TlGen_Object {
     }
   }
 
+  public data class TL_messageEntityTonAddress(
+    public val offset: Int,
+    public val length: Int,
+  ) : TlGen_MessageEntity() {
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(offset)
+      stream.writeInt32(length)
+    }
+
+    public companion object {
+      public const val MAGIC: UInt = 0xFDABBFCDU
+    }
+  }
+
   public data class TL_messageEntityMentionName_layer132(
     public val offset: Int,
     public val length: Int,

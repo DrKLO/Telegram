@@ -1,0 +1,13 @@
+<!-- Paint limit (docs/decisions.md, "Heavy boxes"): 60 nested boxes, each blurred and drop-shadowed (an offscreen layer
+     each, a frame of 0.08–3 s in Chrome), the innermost text changed every frame. 60 heavy boxes: the renderer stops the
+     widget before it draws them ("Paint limit exceeded: 60 boxes …") and the frozen frame has no filter. -->
+<style>body{margin:0}.f{filter:blur(6px) drop-shadow(0 0 12px #f0f);padding:3px;background:rgba(0,128,255,.15)}</style>
+<div id="r"></div>
+<script>
+var p = document.getElementById('r');
+for (var i = 0; i < 60; i++) { var d = document.createElement('div'); d.className = 'f'; p.appendChild(d); p = d; }
+var t = document.createTextNode('0'); p.appendChild(t);
+var n = 0;
+function f() { t.data = String(n++); requestAnimationFrame(f); }
+requestAnimationFrame(f);
+</script>

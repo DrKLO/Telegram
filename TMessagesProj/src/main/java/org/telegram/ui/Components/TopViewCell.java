@@ -13,6 +13,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Stories.recorder.HintView2;
+import java.util.HashSet;
 
 public class TopViewCell extends LinearLayout implements Theme.Colorable {
 
@@ -60,6 +61,12 @@ public class TopViewCell extends LinearLayout implements Theme.Colorable {
         textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
 
         imageView.setLayoutParams(LayoutHelper.createLinear(imageSize, imageSize, Gravity.CENTER, 0, titleView.getVisibility() == View.VISIBLE ? 0 : 9, 0, 9));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_chat_messageLinkIn);
+        colors.add(Theme.key_windowBackgroundWhiteGrayText4);
     }
 
     public void setEmoji(String setName, String emoji) {

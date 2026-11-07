@@ -1,0 +1,2 @@
+<p>import()</p><script>import('http://127.0.0.1:9999/hit/api-dynamic-import.js').then(()=>console.log('LEAK')).catch(e=>console.log('blocked:', e.message));</script>
+<script type="module">import('http://127.0.0.1:9999/hit/api-dynamic-import-module.js').catch(e=>console.log('blocked:', e.message));</script>

@@ -18,6 +18,7 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class WebPagePreviewView extends FrameLayout {
     private final Theme.ResourcesProvider resourcesProvider;
@@ -68,7 +69,7 @@ public class WebPagePreviewView extends FrameLayout {
             siteNameView.setTypeface(AndroidUtilities.bold());
             siteNameView.setText(webPage.site_name);
             siteNameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            siteNameView.setTextColor(Theme.getColor(Theme.key_telegram_color_text, resourcesProvider));
+            ThemeBind.textColor(siteNameView, Theme.key_telegram_color_text, resourcesProvider);
             siteNameView.setSingleLine(true);
             siteNameView.setEllipsize(TextUtils.TruncateAt.END);
             textBlock.addView(siteNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
@@ -79,7 +80,7 @@ public class WebPagePreviewView extends FrameLayout {
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setText(webPage.title);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
             titleView.setSingleLine(true);
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             textBlock.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
@@ -89,7 +90,7 @@ public class WebPagePreviewView extends FrameLayout {
             final TextView descView = new TextView(getContext());
             descView.setText(webPage.description);
             descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            descView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(descView, Theme.key_dialogTextBlack, resourcesProvider);
             descView.setMaxLines(4);
             descView.setEllipsize(TextUtils.TruncateAt.END);
             textBlock.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -103,7 +104,7 @@ public class WebPagePreviewView extends FrameLayout {
         if (hasThumb) {
             final BackupImageView thumbView = new BackupImageView(getContext());
             thumbView.setRoundRadius(dp(6));
-            thumbView.setBackground(Theme.createRoundRectDrawable(dp(6), Theme.multAlpha(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider), 0.08f)));
+            ThemeBind.fillBackground(thumbView, Theme.createRoundRectDrawable(dp(6), Theme.multAlpha(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider), 0.08f)), ThemeBind.multAlpha(Theme.key_dialogTextBlack, 0.08f), resourcesProvider);
             addView(thumbView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 5, 0, 1));
 
             final TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(webPage.photo.sizes, 40);

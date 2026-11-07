@@ -19,6 +19,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -44,11 +45,11 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
 
         setOrientation(VERTICAL);
         setPadding(dp(18), dp(9), dp(18), dp(9));
-        setBackground(Theme.createRoundRectDrawable(dp(24), Theme.getColor(Theme.key_undo_background, resourcesProvider)));
+        ThemeBind.fillBackground(this, Theme.createRoundRectDrawable(dp(24), Theme.getColor(Theme.key_undo_background, resourcesProvider)), ThemeBind.of(Theme.key_undo_background), resourcesProvider);
 
         textView1 = new TextView(context);
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        textView1.setTextColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
+        ThemeBind.textColor(textView1, Theme.key_undo_infoColor, resourcesProvider);
         textView1.setGravity(Gravity.CENTER);
         addView(textView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER, 0, 0, 0, 0));
 
@@ -80,8 +81,8 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
         if (currency == AmountUtils.Currency.STARS) {
             textView1.setText(StarsIntroActivity.replaceStarsWithPlain(LocaleController.formatString(R.string.Gift2MessageStarsInfo, LocaleController.formatNumber(balance.asDecimal(), ',')), .60f));
 
-            textView2.setTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
-            textView2.setLinkTextColor(Theme.getColor(Theme.key_undo_cancelColor, resourcesProvider));
+            ThemeBind.textColor(textView2, Theme.key_undo_cancelColor, resourcesProvider);
+            ThemeBind.linkTextColor(textView2, Theme.key_undo_cancelColor, resourcesProvider);
             textView2.setText(AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.Gift2MessageStarsInfoLink), () -> {
                 new StarsIntroActivity.StarsOptionsSheet(getContext(), resourcesProvider).show();
             }), true, dp(8f / 3f), dp(1)));
@@ -93,8 +94,8 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
             sb.append('~');
             sb.append(BillingController.getInstance().formatCurrency((long) (balance.asDouble() * MessagesController.getInstance(currentAccount).config.tonUsdRate.get() * 100), "USD", 2));
 
-            textView2.setTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider), Theme.getColor(Theme.key_undo_background, resourcesProvider), 0.33f));
-            textView2.setLinkTextColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider), Theme.getColor(Theme.key_undo_background, resourcesProvider), 0.33f));
+            ThemeBind.textColor(textView2, ThemeBind.blend(Theme.key_undo_infoColor, Theme.key_undo_background, 0.33f), resourcesProvider);
+            ThemeBind.linkTextColor(textView2, ThemeBind.blend(Theme.key_undo_infoColor, Theme.key_undo_background, 0.33f), resourcesProvider);
             textView2.setText(sb);
         }
     }
@@ -108,8 +109,8 @@ public class BalanceCloud extends LinearLayout implements NotificationCenter.Not
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         updateBalance(false);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starBalanceUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.botStarsUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starBalanceUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.botStarsUpdated);
     }
 
     @Override

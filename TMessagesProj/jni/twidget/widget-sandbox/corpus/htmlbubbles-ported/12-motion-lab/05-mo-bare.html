@@ -1,0 +1,63 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 5
+  author: mo 14:03 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>.row{display:flex;align-items:center}.between{justify-content:space-between}.grow{flex-grow:1}.muted{color:var(--tg-theme-hint-color)}.small{font-size:.86em}.tiny{font-size:.79em}.t-red{color:#ff3b30}.badge{padding:1px 8px;border-radius:9px;font-size:.79em;font-weight:700;background:var(--tg-theme-secondary-bg-color)}.badge.red{background-color:rgba(255,59,48,.16);color:#ff3b30}[data-action]{cursor:pointer}[hidden]{display:none!important}.top{display:flex;align-items:center}.art{width:64px;height:64px;border-radius:10px;margin-right:12px;flex-shrink:0}.art-sunset{background:linear-gradient(180deg,#ffd60a,#ff9f0a 35%,#ff2d55 70%,#5e2b6e)}.art-aurora{background:linear-gradient(160deg,#0b1a2b,#30d158 40%,#64d2ff 75%,#0b1a2b)}.art-ocean{background:linear-gradient(180deg,#64d2ff,#0a84ff 55%,#1d2b64)}.art-dunes{background:linear-gradient(170deg,#ffd60a,#ff9f0a 55%,sienna)}.art-forest{background:linear-gradient(180deg,#a8e063,#34c759 50%,#14532d)}.like{display:inline-block;font-size:1.4em;padding:2px 6px;color:var(--tg-theme-hint-color)}.like.on{color:#ff2d55}.eq{display:block;width:100%;height:72px;margin:14px 0 8px}.seek{position:relative;height:14px}.prog{position:absolute;left:0;top:5px;width:100%;height:4px;border-radius:2px;background:var(--tg-theme-secondary-bg-color)}.prog div{height:4px;border-radius:2px;width:0}.knob{position:absolute;top:2px;margin-left:-5px;width:10px;height:10px;border-radius:5px}.hit{position:absolute;top:0;height:14px}.times{display:flex;justify-content:space-between;font-size:.75em;color:var(--tg-theme-hint-color);margin-top:2px;font-family:ui-monospace,monospace}.ctl{display:flex;justify-content:space-between;align-items:center;margin-top:2px}.ctl .b{display:inline-block;font-size:1.5em;padding:2px 10px}.ctl .tg{display:inline-block;padding:4px 8px;border-radius:10px;opacity:.45}.ctl .tg.on{opacity:1;background-color:rgba(255,45,85,.14)}.lnk{font-size:.86em}.q{display:flex;align-items:center;padding:5px 6px;border-radius:8px}.q .mini{width:30px;height:30px;border-radius:6px;margin-right:8px;flex-shrink:0}.q.cur{background-color:rgba(255,45,85,.1)}.like{box-sizing:border-box;width:32px;text-align:center;flex-shrink:0}.top{height:64px}.top .grow,.q .grow{min-width:0}#title{display:block;height:20px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top .small{height:18px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top .grow>div:last-child{height:20px;white-space:nowrap}.badge{display:inline-block;box-sizing:border-box;width:64px;height:18px;line-height:18px;text-align:center;vertical-align:middle}.ctl{height:36px}.ctl .b,.ctl .tg{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:36px;height:32px;padding:0;font:22px/32px "Apple Color Emoji"}.ctl .tg{width:32px;font-size:18px}.ctl>span:nth-child(2){display:flex;gap:4px}.q{height:42px;box-sizing:border-box}.q .small,.q .tiny{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q .small{height:17px;line-height:17px}.q .tiny{height:15px;line-height:15px}.q>.tiny{width:84px;flex-shrink:0;text-align:right}</style><div id="w"><div class="top"><div class="art" id="art"></div><div class="grow"><b id="title"></b><div class="small muted" id="artist"></div><div style="margin-top: 3px"><span class="badge" id="badge">paused</span><span class="tiny muted" id="bpm"></span></div></div><span class="like" id="like" data-action="like">♡</span></div><canvas class="eq" id="eq" width="332" height="72"></canvas><div class="seek"><div class="prog"><div id="prog"></div></div><div class="knob" id="knob"></div><span id="hits"></span></div><div class="times"><span id="t1">0:00</span><span id="t2">-0:00</span></div><div class="ctl"><span class="tg" id="shuffle" data-action="shuffle" role="button" aria-label="Shuffle">🔀</span><span><span class="b" data-action="prev" role="button" aria-label="Previous track">⏮️</span><span class="b" id="playbtn" data-action="play" role="button" aria-label="Play">▶️</span><span class="b" data-action="next" role="button" aria-label="Next track">⏭️</span></span><span class="tg" id="repeat" data-action="repeat" role="button" aria-label="Repeat track">🔂</span></div><div class="row between" style="margin-top: 4px"><span class="tiny muted" id="modeline">In order</span><a class="lnk" href="#" data-action="queue" id="queuelnk">Up next ▾</a></div><div id="list" hidden style="margin-top: 8px"></div></div><script>(()=>{
+const tracks=[{title:"Margin Collapse",artist:"The Box Model",art:"sunset",length:204,bpm:118,c:["#ff2d55","#ff9f0a"]},{title:"Float Left",artist:"Clearfix",art:"aurora",length:187,bpm:96,c:["#30d158","#64d2ff"]},{title:"Reflow (Night Mix)",artist:"Shrink-to-Fit",art:"ocean",length:236,bpm:128,c:["#0a84ff","#bf5af2"]},{title:"Overflow: Hidden",artist:"Clip Path",art:"dunes",length:212,bpm:104,c:["#ff9f0a","#ffd60a"]},{title:"Z-Index Blues",artist:"Stacking Context",art:"forest",length:199,bpm:88,c:["#5e5ce6","#64d2ff"]}];
+const $=id=>document.getElementById(id),root=$("w"),ctx=$("eq").getContext("2d"),liked=new Set([2]);
+let current=0,playing=false,shuffle=false,repeat=false,queue=false,position=41,energy=0,running=false,last=0,tween=null,levels=Array(24).fill(0);
+try{const s=JSON.parse(localStorage.getItem("mu"));if(s){liked.clear();s.u.forEach(i=>liked.add(i));current=Number.isInteger(s.o)&&tracks[s.o]?s.o:0;shuffle=!!s.g;repeat=!!s.m}}catch{}
+const save=()=>{try{localStorage.setItem("mu",JSON.stringify({u:[...liked],o:current,g:shuffle,m:repeat}))}catch{}},format=t=>Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0"),clamp=(n,a,b)=>Math.min(b,Math.max(a,n)),ease=t=>1-(1-t)**3;
+$("hits").innerHTML=Array.from({length:24},(_,i)=>`<div class="hit" data-action="seek" data-value="${i}" style="left:${i*100/24}%;width:${100/24}%"></div>`).join("");
+$("list").innerHTML=tracks.map((t,i)=>`<div class="q" data-action="pick" data-value="${i}"><div class="mini art-${t.art}"></div><div class="grow"><div class="small"><b>${t.title}</b></div><div class="tiny muted">${t.artist}</div></div><span class="tiny muted" id="status-${i}"></span></div>`).join("");
+const rows=Array.from($("list").children),statuses=tracks.map((_,i)=>$("status-"+i));
+function renderQueue(){
+ $("list").hidden=!queue;
+ rows.forEach((row,i)=>{row.classList.toggle("cur",i===current);const status=statuses[i];status.classList.toggle("t-red",i===current);status.classList.toggle("muted",i!==current);status.textContent=(i===current?(playing?"▶ playing":"paused"):format(tracks[i].length))+(liked.has(i)?" ♥":"")});
+}
+function controls(){
+ $("badge").classList.toggle("red",playing);$("badge").textContent=playing?"● LIVE":"paused";
+ $("playbtn").textContent=playing?"⏸️":"▶️";$("playbtn").setAttribute("aria-label",playing?"Pause":"Play");
+ $("shuffle").classList.toggle("on",shuffle);$("repeat").classList.toggle("on",repeat);$("shuffle").setAttribute("aria-pressed",String(shuffle));$("repeat").setAttribute("aria-pressed",String(repeat));
+ $("modeline").textContent=(shuffle?"Shuffle on":"In order")+(repeat?" · repeat one":"");$("queuelnk").textContent="Up next "+(queue?"▴":"▾");renderQueue();save();
+}
+let oldProgress="",oldTime="",oldRemaining="";
+function progress(){
+ const duration=tracks[current].length,fraction=clamp(position/duration,0,1),width=(100*fraction).toFixed(2)+"%",time=format(position),remaining="-"+format(duration-position);
+ if(width!==oldProgress){oldProgress=width;$("prog").style.width=width;$("knob").style.left=width}
+ if(time!==oldTime){oldTime=time;$("t1").textContent=time}if(remaining!==oldRemaining){oldRemaining=remaining;$("t2").textContent=remaining}
+}
+function header(){
+ const t=tracks[current];$("art").className="art art-"+t.art;$("title").textContent=t.title;$("artist").textContent=t.artist;$("bpm").textContent=t.bpm+" BPM";$("like").textContent=liked.has(current)?"♥":"♡";$("like").classList.toggle("on",liked.has(current));$("prog").style.backgroundColor=t.c[0];$("knob").style.backgroundColor=t.c[0];progress();controls();
+}
+const rgb=hex=>{const n=parseInt(hex.slice(1),16);return[n>>16&255,n>>8&255,n&255]},mix=(a,b,t)=>{const x=rgb(a),y=rgb(b);return"rgb("+x.map((n,i)=>Math.round(n+(y[i]-n)*t)).join(",")+")"};
+function paint(){
+ const t=tracks[current];ctx.clearRect(0,0,332,72);levels.forEach((level,i)=>{const height=3+level*69,gradient=ctx.createLinearGradient(0,72,0,72-height);gradient.addColorStop(0,t.c[0]);gradient.addColorStop(1,mix(t.c[0],t.c[1],.3+.7*level));ctx.fillStyle=gradient;ctx.fillRect(i*14,72-height,10,height)});
+}
+function select(index){if(index===current)return;current=index;position=0;tween=null;header();paint()}
+const next=()=>shuffle?(current+1+Math.floor(Math.random()*(tracks.length-1)))%tracks.length:(current+1)%tracks.length;
+function frame(now){
+ const dt=Math.min(.1,(now-last)/1000);last=now;
+ if(tween){const t=clamp((now-tween.start)/tween.duration,0,1);position=tween.from+(tween.to-tween.from)*ease(t);if(t===1)tween=null}else if(playing){position+=dt;if(position>=tracks[current].length){if(repeat)position=0;else if(shuffle||current<tracks.length-1)select(next());else{position=tracks[current].length;playing=false;controls()}}}
+ energy+=((playing?1:0)-energy)*Math.min(1,dt*5);const beat=Math.max(0,Math.sin(now/1000*Math.PI*tracks[current].bpm/60))**8,s=now/1000;
+ levels=levels.map((level,i)=>{const f=i/24,target=energy*Math.min(1,.18+.3*Math.abs(Math.sin(s*(1.7+i*.41)+i*1.3))+.55*beat*(1-f)+.2*Math.random()*(.4+f));return level+(target-level)*(target>level?.6:.25)});paint();progress();
+ if(playing||energy>.01||tween)requestAnimationFrame(frame);else running=false;
+}
+function wake(){if(!running){running=true;last=performance.now();requestAnimationFrame(frame)}}
+function seek(to,duration){tween={from:position,to,start:performance.now(),duration};wake()}
+root.addEventListener("click",event=>{
+ const el=event.target.closest("[data-action]");if(!el)return;event.preventDefault();const action=el.dataset.action;
+ if(action==="play"){playing=!playing;if(position>=tracks[current].length-.5)position=0}
+ if(action==="next")select(next());
+ if(action==="prev"){if(position>3)seek(0,300);else select((current+tracks.length-1)%tracks.length);playing=true}
+ if(action==="seek")seek((Number(el.dataset.value)+.5)/24*tracks[current].length,350);
+ if(action==="pick"){select(Number(el.dataset.value));playing=true}
+ if(action==="like"){liked.has(current)?liked.delete(current):liked.add(current);$("like").textContent=liked.has(current)?"♥":"♡";$("like").classList.toggle("on",liked.has(current))}
+ if(action==="shuffle")shuffle=!shuffle;if(action==="repeat")repeat=!repeat;if(action==="queue")queue=!queue;
+ controls();wake();
+});
+header();paint();setTimeout(()=>{playing=true;controls();wake()},250);
+})();
+</script>

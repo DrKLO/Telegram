@@ -38,6 +38,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,12 +58,13 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.DialogRadioCell;
@@ -77,8 +79,6 @@ import org.telegram.ui.Cells.UserCell2;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CircularProgressDrawable;
-import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.GuardBotReplaceSheet;
 import org.telegram.ui.Components.LayoutHelper;
@@ -88,6 +88,7 @@ import org.telegram.ui.Components.TagEditCell;
 import org.telegram.ui.Components.Text;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -101,7 +102,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
     private FrameLayout addBotButton;
     private AnimatedTextView addBotButtonText;
     private PollEditTextCell rankEditTextCell;
-    private CrossfadeDrawable doneDrawable;
+    private SimpleActionBarDoneButton doneButton;
 
     private long guardBotIdToSet;
     private boolean hasGuardBotToSet;
@@ -551,19 +552,25 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
+        setHasOwnBackground(true);
+
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
 
         if (currentType == TYPE_ADMIN) {
-            actionBar.setTitle(LocaleController.getString(R.string.EditAdmin));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.EditAdmin));
         } else if (currentType == TYPE_ADD_BOT) {
-            actionBar.setTitle(LocaleController.getString(R.string.AddBot));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.AddBot));
         } else {
-            actionBar.setTitle(LocaleController.getString(R.string.UserRestrictions));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.UserRestrictions));
         }
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -577,12 +584,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         });
 
         if (canEdit || !isChannel && currentChat.creator && UserObject.isUserSelf(currentUser)) {
-            ActionBarMenu menu = actionBar.createMenu();
-            Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
-            checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
-            doneDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
-            menu.addItemWithWidth(done_button, 0, AndroidUtilities.dp(56), LocaleController.getString(R.string.Done));
-            menu.getItem(done_button).setIcon(doneDrawable);
+            doneButton = simpleActionBar.createDoneButton(done_button, LocaleController.getString(R.string.Save));
         }
 
         fragmentView = new FrameLayout(context) {
@@ -598,7 +600,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 previousHeight = height;
             }
         };
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
         fragmentView.setFocusableInTouchMode(true);
 
@@ -641,7 +642,6 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setSections();
-        actionBar.setAdaptiveBackground(listView);
 
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -651,6 +651,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 }
             }
         });
+        listView.setSectionsDrawBackground(true);
 
         listView.setOnItemClickListener((view, position) -> {
             if (!canEdit && (!currentChat.creator || currentType != TYPE_ADMIN || position != anonymousRow)) {
@@ -1174,7 +1175,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     builder.setView(linearLayout);
 
                     TextView messageTextView = new TextView(getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     if (isChannel) {
@@ -1191,10 +1192,10 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     ImageView dotImageView = new ImageView(getParentActivity());
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
@@ -1213,10 +1214,10 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     dotImageView = new ImageView(getParentActivity());
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(getParentActivity());
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
@@ -1233,7 +1234,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     } else {
                         messageTextView = new TextView(getParentActivity());
-                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                         messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));
@@ -1278,8 +1279,8 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
 
     @Override
     public boolean onFragmentCreate() {
-        getNotificationCenter().addObserver(this, NotificationCenter.dialogDeleted);
-        getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
+        getNotificationCenter().addWeakObserver(this, NotificationCenter.dialogDeleted);
+        getNotificationCenter().addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
         return super.onFragmentCreate();
     }
 
@@ -1694,29 +1695,11 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
         }
     }
 
-    private ValueAnimator doneDrawableAnimator;
-
     public void setLoading(boolean newLoading) {
-        if (doneDrawableAnimator != null) {
-            doneDrawableAnimator.cancel();
-        }
         loading = newLoading;
-        actionBar.getBackButton().setEnabled(!loading);
-        if (doneDrawable != null) {
-            doneDrawableAnimator = ValueAnimator.ofFloat(doneDrawable.getProgress(), loading ? 1f : 0f);
-            doneDrawableAnimator.addUpdateListener(a -> {
-                doneDrawable.setProgress((float) a.getAnimatedValue());
-                doneDrawable.invalidateSelf();
-            });
-            doneDrawableAnimator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationCancel(Animator animation) {
-                    doneDrawable.setProgress(loading ? 1 : 0);
-                    doneDrawable.invalidateSelf();
-                }
-            });
-            doneDrawableAnimator.setDuration((long) (150 * Math.abs(doneDrawable.getProgress() - (loading ? 1 : 0))));
-            doneDrawableAnimator.start();
+        simpleActionBar.getBackButton().setEnabled(!loading);
+        if (doneButton != null) {
+            doneButton.setLoading(loading, true);
         }
     }
 
@@ -1760,7 +1743,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 headerCell.setText2(String.format("%d", left));
                 SimpleTextView textView = headerCell.getTextView2();
                 int key = left < 0 ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText3;
-                textView.setTextColor(Theme.getColor(key));
+                ThemeBind.textColor(textView, key);
                 textView.setTag(key);
             } else {
                 headerCell.setText2("");
@@ -1927,7 +1910,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
             switch (viewType) {
                 case VIEW_TYPE_USER_CELL:
                     view = new UserCell2(mContext, 4, 0);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case VIEW_TYPE_INFO_CELL:
                     view = new TextInfoPrivacyCell(mContext);
@@ -1935,27 +1918,27 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_TRANSFER_CELL:
                 default:
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case VIEW_TYPE_HEADER_CELL:
                     view = new HeaderCell(mContext, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, true);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case VIEW_TYPE_EXPANDABLE_SWITCH:
                 case VIEW_TYPE_SWITCH_CELL:
                     view = new TextCheckCell2(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case VIEW_TYPE_SHADOW_CELL:
                     view = new ShadowSectionCell(mContext);
                     break;
                 case VIEW_TYPE_UNTIL_DATE_CELL:
                     view = new TextDetailCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case VIEW_TYPE_ADD_BOT_CELL:
                     addBotButtonContainer = new FrameLayout(mContext);
-                    addBotButtonContainer.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    ThemeBind.backgroundColor(addBotButtonContainer, Theme.key_windowBackgroundGray);
                     addBotButton = new FrameLayout(mContext);
                     addBotButtonText = new AnimatedTextView(mContext, true, false, false);
                     addBotButtonText.setTypeface(AndroidUtilities.bold());
@@ -1969,7 +1952,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     addBotButtonContainer.addView(addBotButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.FILL, 14, 28, 14, 14));
                     addBotButtonContainer.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                     View bg = new View(mContext);
-                    bg.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    ThemeBind.backgroundColor(bg, Theme.key_windowBackgroundGray);
                     addBotButtonContainer.setClipChildren(false);
                     addBotButtonContainer.setClipToPadding(false);
                     addBotButtonContainer.addView(bg, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 800, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, -800));
@@ -1977,7 +1960,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     break;
                 case VIEW_TYPE_RANK_CELL:
                     PollEditTextCell cell = rankEditTextCell = new PollEditTextCell(mContext, null);
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundWhite);
                     cell.addTextWatcher(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -2014,7 +1997,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                     checkBoxCell.getCheckBoxRound().setColor(Theme.key_switch2TrackChecked, Theme.key_radioBackground, Theme.key_checkboxCheck);
                     checkBoxCell.setEnabled(true);
                     view = checkBoxCell;
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
             }
             return new RecyclerListView.Holder(view);
@@ -2102,7 +2085,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                 case VIEW_TYPE_TRANSFER_CELL:
                     TextSettingsCell actionCell = (TextSettingsCell) holder.itemView;
                     if (position == removeAdminRow) {
-                        actionCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                        ThemeBind.textColor(actionCell.getTextView(), Theme.key_text_RedRegular);
                         actionCell.setTag(Theme.key_text_RedRegular);
                         if (currentType == TYPE_ADMIN) {
                             actionCell.setText(LocaleController.getString(R.string.EditAdminRemoveAdmin), false);
@@ -2110,7 +2093,7 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
                             actionCell.setText(LocaleController.getString(R.string.UserRestrictionsBlock), false);
                         }
                     } else if (position == transferOwnerRow) {
-                        actionCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                        ThemeBind.textColor(actionCell.getTextView(), Theme.key_windowBackgroundWhiteBlackText);
                         actionCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
                         if (isChannel) {
                             actionCell.setText(LocaleController.getString(R.string.EditAdminChannelTransfer), false);
@@ -2640,73 +2623,85 @@ public class ChatRightsEditActivity extends BaseFragment implements Notification
     }
 
     @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
-            if (listView != null) {
-                int count = listView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = listView.getChildAt(a);
-                    if (child instanceof UserCell2) {
-                        ((UserCell2) child).update(0);
-                    }
-                }
-            }
-        };
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::cellDelegateThemeColors;
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{UserCell2.class, TextSettingsCell.class, TextCheckCell2.class, HeaderCell.class, TextDetailCell.class, PollEditTextCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextDetailCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2Track));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCheckCell2.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switch2TrackChecked));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_text_RedRegular));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{HeaderCell.class}, new String[]{"textView2"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{PollEditTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteGrayText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, new String[]{"statusOnlineColor"}, null, null, cellDelegate, Theme.key_windowBackgroundWhiteBlueText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell2.class}, null, Theme.avatarDrawables, null, Theme.key_avatar_text));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
 
-        themeDescriptions.add(new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextBlack));
         themeDescriptions.add(new ThemeDescription(null, 0, new Class[]{DialogRadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_dialogTextGray2));
-        themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOX, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackground));
-        themeDescriptions.add(new ThemeDescription(null, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{DialogRadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_dialogRadioBackgroundChecked));
 
         return themeDescriptions;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            cellDelegateThemeColors();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void cellDelegateThemeColors() {
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_dialogRadioBackgroundChecked);
+        keys.add(Theme.key_dialogRadioBackground);
+        keys.add(Theme.key_avatar_backgroundPink);
+        keys.add(Theme.key_avatar_backgroundBlue);
+        keys.add(Theme.key_avatar_backgroundCyan);
+        keys.add(Theme.key_avatar_backgroundGreen);
+        keys.add(Theme.key_avatar_backgroundViolet);
+        keys.add(Theme.key_avatar_backgroundOrange);
+        keys.add(Theme.key_avatar_backgroundRed);
+        keys.add(Theme.key_avatar_text);
+        keys.add(Theme.key_windowBackgroundWhiteBlackText);
+        keys.add(Theme.key_windowBackgroundWhiteHintText);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText3);
+        keys.add(Theme.key_windowBackgroundWhiteBlueHeader);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText2);
+        keys.add(Theme.key_windowBackgroundWhiteGrayIcon);
+        keys.add(Theme.key_windowBackgroundWhiteValueText);
+        keys.add(Theme.key_text_RedRegular);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefault);
+        keys.add(Theme.key_windowBackgroundWhite);
     }
 }

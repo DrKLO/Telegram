@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: #fff; color: #222; }
+  fieldset { border: 1px solid #ddd; border-radius: 8px; margin: 0 0 10px; padding: 10px 12px; }
+  legend { font-weight: 600; padding: 0 4px; }
+  label { display: block; padding: 4px 0; cursor: pointer; }
+  fieldset.correct { border-color: #16a34a; background: #f0fdf4; } fieldset.wrong { border-color: #dc2626; background: #fef2f2; }
+  button { padding: 10px 16px; border: 0; border-radius: 6px; background: #2481cc; color: #fff; font-size: 14px; cursor: pointer; }
+  #score { margin-top: 10px; font-size: 18px; font-weight: 700; }
+</style></head><body>
+<form id="quiz">
+  <fieldset id="q1"><legend>1. Capital of Australia?</legend>
+    <label><input type="radio" name="q1" value="sydney"> Sydney</label>
+    <label><input type="radio" name="q1" value="canberra" id="q1-right"> Canberra</label>
+    <label><input type="radio" name="q1" value="melbourne"> Melbourne</label></fieldset>
+  <fieldset id="q2"><legend>2. 7 × 8 = ?</legend>
+    <label><input type="radio" name="q2" value="54"> 54</label>
+    <label><input type="radio" name="q2" value="56" id="q2-right"> 56</label>
+    <label><input type="radio" name="q2" value="58" id="q2-wrong"> 58</label></fieldset>
+  <fieldset id="q3"><legend>3. Which are primes? (two answers)</legend>
+    <label><input type="checkbox" name="q3" value="2" id="q3-a"> 2</label>
+    <label><input type="checkbox" name="q3" value="9"> 9</label>
+    <label><input type="checkbox" name="q3" value="11" id="q3-b"> 11</label></fieldset>
+  <button type="submit" id="submit">Check answers</button>
+  <div id="score"></div>
+</form>
+<script>
+  var answers = { q1: ['canberra'], q2: ['56'], q3: ['2', '11'] };
+  document.getElementById('quiz').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var score = 0;
+    Object.keys(answers).forEach(function (q) {
+      var chosen = Array.prototype.map.call(document.querySelectorAll('input[name=' + q + ']:checked'), function (i) { return i.value; }).sort();
+      var ok = chosen.join(',') === answers[q].slice().sort().join(',');
+      document.getElementById(q).className = ok ? 'correct' : 'wrong';
+      if (ok) score++;
+    });
+    document.getElementById('score').textContent = 'Score: ' + score + ' / 3' + (score === 3 ? ' 🎉' : '');
+  });
+</script>
+</body></html>

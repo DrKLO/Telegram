@@ -1,0 +1,15 @@
+<!-- Paint limit (docs/decisions.md, "Heavy boxes"): three frosted panels with a wide backdrop-filter over a moving,
+     striped background; backdrop-filter blurs whatever is under it, the most expensive effect per pixel (tdesktop blurs
+     it on the CPU), so a widget may have 2. Stopped before the frame with the third ("Paint limit exceeded: 3 boxes with
+     backdrop-filter (max 2)"), drawn without it. -->
+<style>
+body{margin:0}
+#bg{position:relative;height:240px;background:repeating-linear-gradient(45deg,#e74c3c 0 12px,#f1c40f 12px 24px,#2ecc71 24px 36px)}
+.g{position:absolute;left:10%;width:80%;height:56px;border-radius:14px;background:rgba(255,255,255,.25);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+</style>
+<div id="bg"><div class="g" style="top:12px"></div><div class="g" style="top:92px"></div><div class="g" style="top:172px"></div></div>
+<script>
+var bg = document.getElementById('bg'), n = 0;
+function f() { bg.style.backgroundPosition = (n++ % 48) + 'px 0'; requestAnimationFrame(f); }
+requestAnimationFrame(f);
+</script>

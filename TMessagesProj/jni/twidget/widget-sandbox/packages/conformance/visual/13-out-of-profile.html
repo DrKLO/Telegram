@@ -1,0 +1,35 @@
+<!doctype html>
+<html data-test="visual/13-out-of-profile">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: out of the profile</title>
+<!-- conformance {"title":"Out of the profile, neutralised the same way everywhere: form controls, inner scrolling, sticky, named fonts, 3D, popover over the chat","hint":"Each box must look like the reference picture: the out-of-profile feature is simply not there. The popover is dropped: its red box is an ordinary block in the bubble, shown from the start. Tap “Show popover”: nothing changes, and nothing may appear outside this bubble.","covers":["html.el.forms","css.overflow.scroll","css.position.sticky","css.font.named","css.transform.3d","html.el.dialog-popover"],"actions":[{"tap":"pop-btn"}]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}body{line-height:18px}.v-head{margin:6px 10px 2px;font-weight:600;font-size:15px;line-height:20px}.v-hint{margin:0 10px 4px;font-size:12px;line-height:16px}.v-row{display:flex;align-items:flex-start;margin:4px 10px 6px}.v-cap{margin-left:10px;font-size:12px;line-height:16px}[data-stage]{flex:none;width:150px;height:90px}</style><script>var T=function(){var x=document,m=x.documentElement,D=typeof TelegramWidget!="undefined",k=window.__conformanceMode||(D?"sandbox":"native"),a=[],y={},u=[],s={},f,i,d,l,A,p,b,g,w=t=>typeof t=="string"?x.querySelector(t):t;var T=()=>{g=g||setTimeout(j,0)};function O(t,e,n,r,o){o=o||{};let c=n==null?"skip":n=="pending"?n:(o.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=c,h[3]=(r?(""+r).slice(0,160):"")+(o.xfail&&c[0]=="x"?" (expected to fail: "+o.xfail+")":""),T(),c}var R=(t,e)=>{s[t]=e,q=()=>{f={};for(let n in s)w(s[n])&&(f[n]=S(w(s[n])))}},q=()=>{},S=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function j(){g=0,d&&!l&&q();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let r of a)t[r[2]]++;let e=d&&!u.length,n=l||e&&!t.pending?"done":e&&A?"awaiting":"running";l=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:k,status:n,n:t,checks:a,targets:f,stages:i})),M&&M(n,t)}var M;function C(){if(i||(i={},[].forEach.call(x.querySelectorAll("[data-stage]"),e=>{i[e.getAttribute("data-stage")]=S(e)})),!u.length)return d=1,p&&b&&setTimeout(b,p),T();let t;try{t=u.shift()()}catch(e){O("harness","step",!1,e)}setTimeout(C,t||0)}function B(t){t=t||{},A=t.awaitInput,p=t.awaitInput||t.deadline,j();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}return{mode:k,run:B,target:R}}();</script><!-- /conformance:harness -->
+<style>
+.out{font-size:10px;font-weight:600;padding:0 4px;border-radius:3px;background:#c6282833}
+.lbl{position:absolute;left:8px;font:12px/16px system-ui;color:#222}
+#pop{margin:0 10px 6px;padding:10px 14px;border-radius:10px;border:0;background:#c33;color:#fff;font:14px system-ui}
+#pop-btn{flex:none;height:34px;padding:0 14px;border-radius:10px;border:0;background:#dde;color:#222;font:14px system-ui}
+</style>
+</head>
+<body>
+<div class="v-head">13 · Out of the profile</div>
+<div class="v-hint">The feature must simply be absent: each box looks like the reference picture.</div>
+<div class="v-row"><div data-stage="forms"><div class="lbl" style="top:6px">Form controls:</div><div style="position:absolute;left:8px;top:28px"><input value="text" style="width:60px"> <input type="checkbox" checked> <input type="range" style="width:50px"><br><select><option>select</option></select> <textarea rows="1" cols="6">area</textarea></div></div><div class="v-cap"><span class="out">out</span> Form controls are not drawn: only the label remains</div></div>
+<div class="v-row"><div data-stage="scroll-sticky"><div style="position:absolute;left:8px;top:8px;width:134px;height:74px;overflow:auto;background:#eef"><div style="position:sticky;top:0;height:16px;background:#36c"></div><div style="height:200px;background:linear-gradient(#e83,#3a3)"></div></div></div><div class="v-cap"><span class="out">out</span> No scrollbar and no scrolling inside: the box just clips (sticky bar is an ordinary bar)</div></div>
+<div class="v-row"><div data-stage="fonts"><div class="lbl" style="top:8px;font:16px/22px 'Courier New'">Courier New?</div><div class="lbl" style="top:34px;font:16px/22px 'Comic Sans MS'">Comic Sans?</div><div class="lbl" style="top:60px;font:16px/22px Georgia,serif">Georgia, serif</div></div><div class="v-cap"><span class="out">out</span> Named fonts are dropped: the first two lines use the system font, the last one serif</div></div>
+<div class="v-row"><div data-stage="three-d"><div style="position:absolute;inset:0;perspective:120px"><div style="position:absolute;left:40px;top:15px;width:70px;height:60px;background:#e83;transform:rotateY(55deg) rotateX(20deg)"></div></div></div><div class="v-cap"><span class="out">out</span> A 3D-rotated card is drawn flat</div></div>
+<div class="v-row" style="align-items:center"><button id="pop-btn" popovertarget="pop">Show popover</button><div class="v-cap"><span class="out">out</span> Popover dropped: the red box is a plain block</div></div><div id="pop" popover>An ordinary block, inside the bubble</div>
+<script>
+T.target('pop-btn', '#pop-btn');
+if (T.mode == 'ref') document.getElementById('pop').removeAttribute('popover');
+document.getElementById('pop-btn').addEventListener('click', function () { try { document.getElementById('pop').showPopover(); } catch (e) {} });
+T.run();
+</script>
+<template data-ref="forms"><div style="position:absolute;left:8px;top:6px;font:12px/16px system-ui;color:#222">Form controls:</div></template>
+<template data-ref="scroll-sticky"><div style="position:absolute;left:8px;top:8px;width:134px;height:74px;overflow:hidden;background:#eef"><div style="height:16px;background:#36c"></div><div style="height:200px;background:linear-gradient(#e83,#3a3)"></div></div></template>
+<template data-ref="fonts"><div style="position:absolute;left:8px;top:8px;font:16px/22px system-ui;color:#222">Courier New?</div><div style="position:absolute;left:8px;top:34px;font:16px/22px system-ui;color:#222">Comic Sans?</div><div style="position:absolute;left:8px;top:60px;font:16px/22px serif;color:#222">Georgia, serif</div></template>
+<template data-ref="three-d"><div style="position:absolute;left:40px;top:15px;width:70px;height:60px;background:#e83"></div></template>
+</body>
+</html>

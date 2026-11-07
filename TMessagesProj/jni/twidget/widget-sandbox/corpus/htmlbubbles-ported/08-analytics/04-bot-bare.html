@@ -1,0 +1,39 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 08-analytics.chat, message 4
+  author: bot 09:02 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14)); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .row { display: flex; align-items: center; }
+  .grow { flex-grow: 1; }
+  .muted { color: var(--muted); } .tiny { font-size: 11px; }
+
+  .tc { width: 440px; max-width: 100%; box-sizing: border-box; }
+  .hb { display: flex; align-items: center; margin: 6px 0; font-size: 13px; }
+  .hb .nm { width: 150px; }
+  .hb .tr { flex-grow: 1; height: 14px; border-radius: 4px; background-color: rgba(127,127,127,0.12); margin: 0 10px; }
+  .hb .tr div { height: 14px; border-radius: 4px; background: linear-gradient(90deg, #5856d6, #af52de); }
+  .hb .pc { width: 44px; text-align: right; font-weight: 700; font-size: 12px; }
+  .hb:hover .tr div { background: linear-gradient(90deg, #ff9500, #ff2d55); }
+</style>
+<div class="card pad tc">
+  <div class="row"><b class="grow" style="font-size: 16px">Top countries</b><span class="tiny muted">share of active users</span></div>
+  <div class="hb"><span class="nm">🇩🇪 Germany</span><div class="tr"><div style="width: 100%"></div></div><span class="pc">18.2%</span></div>
+  <div class="hb"><span class="nm">🇺🇸 United States</span><div class="tr"><div style="width: 93%"></div></div><span class="pc">16.9%</span></div>
+  <div class="hb"><span class="nm">🇬🇧 United Kingdom</span><div class="tr"><div style="width: 52%"></div></div><span class="pc">9.4%</span></div>
+  <div class="hb"><span class="nm">🇫🇷 France</span><div class="tr"><div style="width: 42%"></div></div><span class="pc">7.7%</span></div>
+  <div class="hb"><span class="nm">🇯🇵 Japan</span><div class="tr"><div style="width: 34%"></div></div><span class="pc">6.1%</span></div>
+  <div class="hb"><span class="nm">🇧🇷 Brazil</span><div class="tr"><div style="width: 29%"></div></div><span class="pc">5.3%</span></div>
+  <div class="hb"><span class="nm">🇮🇳 India</span><div class="tr"><div style="width: 27%"></div></div><span class="pc">4.9%</span></div>
+  <div class="hb"><span class="nm">🇳🇱 Netherlands</span><div class="tr"><div style="width: 21%"></div></div><span class="pc">3.8%</span></div>
+  <div class="hb"><span class="nm">🇵🇹 Portugal</span><div class="tr"><div style="width: 17%"></div></div><span class="pc">3.1%</span></div>
+  <div class="hb"><span class="nm">🇰🇷 South Korea</span><div class="tr"><div style="width: 14%"></div></div><span class="pc">2.6%</span></div>
+  <div class="tiny muted" style="margin-top: 6px">+ 84 more countries · 22.0%</div>
+</div>

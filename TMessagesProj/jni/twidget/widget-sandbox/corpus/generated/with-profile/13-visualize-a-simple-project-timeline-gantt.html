@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Build Timeline</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111827; --muted: #6b7280; --line: #e5e7eb; --stripe: #f3f4f6; --panel: #f9fafb; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f3f4f6; --muted: #9ca3af; --line: #374151; --stripe: #1f2937; --panel: #1f2937; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .gantt { display: grid; grid-template-columns: 100px 1fr; row-gap: 6px; font-size: 13px; }
+  .head { display: grid; grid-template-columns: repeat(6, 1fr); text-align: center; color: var(--muted); font-size: 11px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+  .label { padding: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track { position: relative; height: 28px; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / 6 - 1px), var(--stripe) calc(100% / 6 - 1px) calc(100% / 6)); }
+  .bar { position: absolute; top: 4px; height: 20px; border-radius: 6px; color: #fff; font-size: 11px; line-height: 20px; padding-left: 6px; box-sizing: border-box; white-space: nowrap; overflow: hidden; cursor: pointer; border: none; text-align: left; }
+  .bar.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
+  .today { position: absolute; top: 0; bottom: 0; width: 2px; background: #ef4444; pointer-events: none; }
+  .detail { margin-top: 12px; padding: 10px 12px; background: var(--panel); border-radius: 8px; font-size: 13px; min-height: 36px; }
+</style>
+</head>
+<body>
+<h2>🗓️ Website Build — 6 Weeks</h2>
+<div class="gantt" id="g"></div>
+<div class="detail" id="detail">Tap a bar for details.</div>
+<script>
+  var tasks = [
+    { name: 'Discovery', start: 0, len: 1, color: '#6366f1', desc: 'Kick-off, requirements, sitemap' },
+    { name: 'Wireframes', start: 1, len: 1, color: '#8b5cf6', desc: 'Low-fidelity layouts for key pages' },
+    { name: 'Visual design', start: 1.5, len: 1.5, color: '#ec4899', desc: 'Style guide, high-fidelity mockups' },
+    { name: 'Development', start: 2.5, len: 2.5, color: '#10b981', desc: 'Front-end build, CMS integration' },
+    { name: 'Content', start: 3, len: 2, color: '#f59e0b', desc: 'Copywriting, images, SEO' },
+    { name: 'QA & launch', start: 5, len: 1, color: '#ef4444', desc: 'Cross-browser testing, go-live' },
+  ];
+  var g = document.getElementById('g');
+  var html = '<div></div><div class="head">';
+  for (var w = 1; w <= 6; w++) html += '<div>W' + w + '</div>';
+  html += '</div>';
+  tasks.forEach(function (t, i) {
+    html += '<div class="label">' + t.name + '</div><div class="track">' + (i === 0 ? '<div class="today" style="left:' + (2.3 / 6 * 100) + '%"></div>' : '') +
+      '<button class="bar" id="task-' + i + '" style="left:' + (t.start / 6 * 100) + '%;width:' + (t.len / 6 * 100) + '%;background:' + t.color + '">' + t.name + '</button></div>';
+  });
+  g.innerHTML = html;
+  g.addEventListener('click', function (e) {
+    var b = e.target.closest('.bar'); if (!b) return;
+    Array.prototype.forEach.call(g.querySelectorAll('.bar'), function (x) { x.classList.toggle('sel', x === b); });
+    var t = tasks[+b.id.split('-')[1]];
+    document.getElementById('detail').innerHTML = '<b>' + t.name + '</b> · week ' + (t.start + 1) + '–' + Math.ceil(t.start + t.len) + ' (' + t.len + ' wk)<br>' + t.desc;
+  });
+</script>
+</body>
+</html>

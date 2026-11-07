@@ -729,7 +729,8 @@ public final class AnimatedFileDrawable extends BitmapDrawable implements Animat
             stream.cancel(true);
             stream = null;
         }
-        invalidateInternal();
+        // recycle() is also called from ImageLoader / finalizer threads, parents may only be invalidated on the UI thread
+        AndroidUtilities.executeOnUIThread(this::invalidateInternal);
     }
 
     public void resetStream(boolean stop) {

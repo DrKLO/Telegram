@@ -1,0 +1,24 @@
+<!doctype html>
+<html data-test="visual/09-svg-a">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widget profile: inline SVG (1/2)</title>
+<!-- conformance {"title":"Inline SVG (1/2): shapes, structure and viewBox, gradients, text","hint":"Each picture should look like the reference picture posted next to this message.","covers":["svg.shapes","svg.structure","svg.gradients","svg.text"]} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}body{line-height:18px}.v-head{margin:6px 10px 2px;font-weight:600;font-size:15px;line-height:20px}.v-hint{margin:0 10px 4px;font-size:12px;line-height:16px}.v-row{display:flex;align-items:flex-start;margin:4px 10px 6px}.v-cap{margin-left:10px;font-size:12px;line-height:16px}[data-stage]{flex:none;width:150px;height:90px}</style><script>var T=function(){var m=document,g=m.documentElement,A=typeof TelegramWidget!="undefined",T=window.__conformanceMode||(A?"sandbox":"native"),i=[],x={},l=[];var q,s,u,c,b,f,h,d;var w=()=>{d=d||setTimeout(M,0)};function S(t,e,n,r,o){o=o||{};let a=n==null?"skip":n=="pending"?n:(o.xfail?"x":"")+(n?"pass":"fail"),p=x[t+"|"+e]||(x[t+"|"+e]=i[i.length]=[t,e]);return p[2]=a,p[3]=(r?(""+r).slice(0,160):"")+(o.xfail&&a[0]=="x"?" (expected to fail: "+o.xfail+")":""),w(),a}var j=()=>{},C=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function M(){d=0,u&&!c&&j();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let r of i)t[r[2]]++;let e=u&&!l.length,n=c||e&&!t.pending?"done":e&&b?"awaiting":"running";c=n=="done",g.setAttribute("data-conformance",JSON.stringify({v:1,id:g.getAttribute("data-test"),mode:T,status:n,n:t,checks:i,targets:q,stages:s})),y&&y(n,t)}var y;function k(){if(s||(s={},[].forEach.call(m.querySelectorAll("[data-stage]"),e=>{s[e.getAttribute("data-stage")]=C(e)})),!l.length)return u=1,f&&h&&setTimeout(h,f),w();let t;try{t=l.shift()()}catch(e){S("harness","step",!1,e)}setTimeout(k,t||0)}function D(t){t=t||{},b=t.awaitInput,f=t.awaitInput||t.deadline,M();let e=()=>{e=()=>{},setTimeout(k,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}return{run:D}}();</script><!-- /conformance:harness -->
+<style>
+[data-stage] svg{display:block}
+.ic{fill:#36c;stroke:#c33;stroke-width:3}
+.ic2{fill:none;stroke:#3a3;stroke-width:5;stroke-dasharray:8 4;stroke-linecap:round}
+.cand{font-size:10px;font-weight:600;padding:0 4px;border-radius:3px;background:#e8a20044}
+</style>
+</head>
+<body>
+<div class="v-head">09a · Inline SVG (1/2)</div>
+<div class="v-hint">Compare with the reference picture posted next to this message.</div>
+<div class="v-row"><div data-stage="shapes"><svg width="150" height="90"><rect x="6" y="6" width="44" height="30" rx="6" fill="#c33"/><circle cx="76" cy="21" r="16" fill="#36c" stroke="#222" stroke-width="2"/><ellipse cx="124" cy="21" rx="20" ry="12" fill="#3a3"/><line x1="6" y1="56" x2="60" y2="84" stroke="#e83" stroke-width="5" stroke-linecap="round"/><polyline points="70,84 84,52 98,84 112,52" fill="none" stroke="#a3a" stroke-width="3" stroke-linejoin="round"/><polygon points="122,84 146,84 134,52" fill="#333"/></svg></div><div class="v-cap">Rounded rectangle, circle with an outline, ellipse, thick line, zigzag, triangle</div></div>
+<div class="v-row"><div data-stage="structure-gradients"><svg width="150" height="90" viewBox="0 0 75 45"><defs><linearGradient id="vg1" x1="0" x2="1"><stop offset="0" stop-color="#c33"/><stop offset="1" stop-color="#36c"/></linearGradient><radialGradient id="vg2"><stop offset="0" stop-color="#ec3"/><stop offset="1" stop-color="#3a3"/></radialGradient><symbol id="vstar" viewBox="0 0 10 10"><path d="M5 0 6.2 3.6 10 3.8 7 6.2 8 10 5 7.8 2 10 3 6.2 0 3.8 3.8 3.6Z"/></symbol></defs><rect width="40" height="20" fill="url(#vg1)"/><circle cx="20" cy="33" r="11" fill="url(#vg2)"/><use href="#vstar" x="46" y="4" width="16" height="16" fill="#e83"/><g transform="translate(46 24) rotate(15)"><use href="#vstar" width="14" height="14" fill="#a3a"/></g></svg></div><div class="v-cap">Gradient bar and ball, two stars from one symbol (one rotated); everything scaled 2× by viewBox</div></div>
+<div class="v-row"><div data-stage="text"><svg width="150" height="90"><text x="8" y="34" font-family="sans-serif" font-size="26" font-weight="bold" fill="#222">SVG<tspan fill="#c33" dy="-8" font-size="14">2</tspan></text><text x="142" y="76" text-anchor="end" font-family="serif" font-size="20" fill="#36c">anchored</text></svg></div><div class="v-cap">Bold "SVG" with a raised red "2"; serif text anchored to the right</div></div>
+<script>T.run();</script>
+</body>
+</html>

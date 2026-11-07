@@ -19,6 +19,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 
@@ -52,7 +53,7 @@ public class ChecksHintView extends FrameLayout {
             backgroundView.addView(imageView[a], LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 0, a == 0 ? 0 : 24, 0, 0));
 
             textView[a] = new TextView(context);
-            textView[a].setTextColor(getThemedColor(Theme.key_chat_gifSaveHintText));
+            ThemeBind.textColor(textView[a], Theme.key_chat_gifSaveHintText, resourcesProvider);
             textView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView[a].setMaxLines(1);
             textView[a].setSingleLine(true);
@@ -73,7 +74,7 @@ public class ChecksHintView extends FrameLayout {
 
         arrowImageView = new ImageView(context);
         arrowImageView.setImageResource(R.drawable.tooltip_arrow);
-        arrowImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(arrowImageView, Theme.key_chat_gifSaveHintBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         addView(arrowImageView, LayoutHelper.createFrame(14, 6, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, 0));
     }
 

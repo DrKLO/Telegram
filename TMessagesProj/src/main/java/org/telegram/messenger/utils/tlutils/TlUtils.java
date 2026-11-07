@@ -4,6 +4,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 
@@ -18,6 +19,25 @@ import java.util.List;
 import java.util.zip.CRC32;
 
 public class TlUtils {
+
+    public static void validateEntities(ArrayList<TLRPC.MessageEntity> entities, String text) {
+        if (entities == null || entities.isEmpty() || ApplicationLoader.isAndroidTestEnvironment()) {
+            return;
+        }
+
+        int textLength = text != null ? text.length() : 0;
+        for (int i = 0; i < entities.size(); i++) {
+            TLRPC.MessageEntity entity = entities.get(i);
+            if (entity == null
+                    || entity.offset < 0
+                    || entity.offset > textLength
+                    || entity.length <= 0
+                    || entity.length > textLength - entity.offset) {
+                entities.clear();
+                return;
+            }
+        }
+    }
 
     public static TLRPC.InputPeer getInputPeerFromSendMessageRequest(TLObject request) {
         if (request instanceof TLRPC.TL_messages_sendMessage) {

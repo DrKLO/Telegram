@@ -2,6 +2,7 @@ package org.telegram.ui.Components.voip;
 
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
+import android.graphics.PorterDuff;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -57,6 +58,7 @@ import org.telegram.messenger.voip.VideoCapturerDevice;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -532,7 +534,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
             });
             contentFrameLayout.setClipToOutline(true);
         }
-        contentFrameLayout.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBar));
+        ThemeBind.backgroundColor(contentFrameLayout, Theme.key_voipgroup_actionBar);
 
         avatarImageView = new BackupImageView(context);
         contentFrameLayout.addView(avatarImageView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -606,7 +608,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
 
         ImageView closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.pip_video_close);
-        closeButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+        ThemeBind.colorFilter(closeButton, Theme.key_voipgroup_actionBarItems, PorterDuff.Mode.SRC_ATOP);
         closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         closeButton.setPadding(padding, padding, padding, padding);
         closeButton.setOnClickListener(v -> dismiss());
@@ -614,7 +616,7 @@ public class RTMPStreamPipOverlay implements NotificationCenter.NotificationCent
 
         ImageView expandButton = new ImageView(context);
         expandButton.setImageResource(R.drawable.pip_video_expand);
-        expandButton.setColorFilter(Theme.getColor(Theme.key_voipgroup_actionBarItems));
+        ThemeBind.colorFilter(expandButton, Theme.key_voipgroup_actionBarItems, PorterDuff.Mode.SRC_ATOP);
         expandButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
         expandButton.setPadding(padding, padding, padding, padding);
         expandButton.setOnClickListener(v -> {

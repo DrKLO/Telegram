@@ -1,0 +1,11 @@
+<div id="d">style.prop</div><script>
+var d = document.getElementById('d');
+d.style.backgroundImage = 'url(http://127.0.0.1:9999/hit/api-style-bg)';
+d.style.setProperty('cursor', 'url(http://127.0.0.1:9999/hit/api-style-cursor), auto');
+d.style.listStyleImage = 'url(http://127.0.0.1:9999/hit/api-style-list)';
+d.style.borderImage = 'url(http://127.0.0.1:9999/hit/api-style-border) 30 round';
+d.style.maskImage = 'url(http://127.0.0.1:9999/hit/api-style-mask)';
+d.style.content = 'url(http://127.0.0.1:9999/hit/api-style-content)';
+d.style.setProperty('--leak', 'url(http://127.0.0.1:9999/hit/api-style-var)');
+d.style.background = 'var(--leak)';
+</script>

@@ -17,7 +17,7 @@ public class TLClassStore {
         TLObject create();
     }
 
-    private SparseArray<TLObjectFactory> classStore;
+    private final SparseArray<TLObjectFactory> classStore;
 
     public TLClassStore() {
         classStore = new SparseArray<>();
@@ -35,14 +35,6 @@ public class TLClassStore {
         classStore.put(TLRPC.TL_message_secret_old.constructor, TLRPC.TL_message_secret_old::new);
         classStore.put(TLRPC.TL_messageEncryptedAction.constructor, TLRPC.TL_messageEncryptedAction::new);
         classStore.put(TLRPC.TL_null.constructor, TLRPC.TL_null::new);
-
-        classStore.put(TLRPC.TL_updateShortChatMessage.constructor, TLRPC.TL_updateShortChatMessage::new);
-        classStore.put(TLRPC.TL_updates.constructor, TLRPC.TL_updates::new);
-        classStore.put(TLRPC.TL_updateShortMessage.constructor, TLRPC.TL_updateShortMessage::new);
-        classStore.put(TLRPC.TL_updateShort.constructor, TLRPC.TL_updateShort::new);
-        classStore.put(TLRPC.TL_updatesCombined.constructor, TLRPC.TL_updatesCombined::new);
-        classStore.put(TLRPC.TL_updateShortSentMessage.constructor, TLRPC.TL_updateShortSentMessage::new);
-        classStore.put(TLRPC.TL_updatesTooLong.constructor, TLRPC.TL_updatesTooLong::new);
     }
 
     static TLClassStore store = null;

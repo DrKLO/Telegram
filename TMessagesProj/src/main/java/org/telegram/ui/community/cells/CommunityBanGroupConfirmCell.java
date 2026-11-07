@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -58,6 +59,8 @@ public class CommunityBanGroupConfirmCell extends FrameLayout {
                 @Override
                 protected void onDraw(@NonNull Canvas canvas) {
                     super.onDraw(canvas);
+                    pBg.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                    pRed.setColor(Theme.getColor(Theme.key_color_red, resourcesProvider));
                     rectF.set(0, 0, getWidth(), getHeight());
                     canvas.drawRoundRect(rectF, rectF.width() / 2f, rectF.height() / 2f, pBg);
                     rectF.inset(dp(1.33f), dp(1.33f));
@@ -72,7 +75,7 @@ public class CommunityBanGroupConfirmCell extends FrameLayout {
         titleView = new TextView(context);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
         titleView.setSingleLine(true);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,
@@ -80,7 +83,7 @@ public class CommunityBanGroupConfirmCell extends FrameLayout {
 
         subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         subtitleView.setSingleLine(true);
         subtitleView.setEllipsize(TextUtils.TruncateAt.END);
         addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT,

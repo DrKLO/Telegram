@@ -1,0 +1,49 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: an FAQ accordion driven by JS (no <details>): one section open at a time, a text chevron that flips between + and −
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .q { border-top: 1px solid var(--border); }
+  .q:first-child { border-top: none; }
+  .qh { display: flex; align-items: center; padding: 10px 0; cursor: pointer; font-weight: 700; }
+  .qh .ch { width: 22px; height: 22px; border-radius: 11px; background-color: var(--fill); text-align: center; line-height: 22px; font-weight: 800; margin-left: 8px; flex-shrink: 0; }
+  .q.open .qh .ch { background-color: var(--blue); color: #fff; }
+  .qb { padding: 0 0 12px 0; color: var(--muted); font-size: 13px; }
+  .qb code { font-family: ui-monospace, monospace; font-size: 12px; background-color: var(--fill); padding: 1px 4px; border-radius: 4px; }
+</style>
+<div class="card">
+  <div class="bold" style="font-size: 16px; margin-bottom: 4px">Rich messages: FAQ</div>
+  <div id="faq">
+    <div class="q open"><div class="qh" role="button"><span class="grow">What can a widget use?</span><span class="ch">−</span></div><div class="qb">One HTML file with inline CSS and JS. Flexbox, tables, gradients, custom properties. No network, no external fonts, no images except <code>data:</code>.</div></div>
+    <div class="q"><div class="qh" role="button"><span class="grow">How wide is a bubble?</span><span class="ch">+</span></div><div class="qb" hidden>About 360–420 px. Design for 400 px and let the height follow the content; what is taller than the client's cap is clipped, nothing scrolls inside the bubble.</div></div>
+    <div class="q"><div class="qh" role="button"><span class="grow">Can the widget talk to the bot?</span><span class="ch">+</span></div><div class="qb" hidden>Not directly: a widget never sends a message for the user. It keeps its state in <code>localStorage</code> for this message, and <code>TelegramWidget.openLink(url)</code> opens a page after a confirmation dialog.</div></div>
+    <div class="q"><div class="qh" role="button"><span class="grow">What happens if my script hangs?</span><span class="ch">+</span></div><div class="qb" hidden>The sandbox has a CPU budget of about 300 ms per second. Over budget, timers are deferred; a tight loop is killed and the last render stays on screen.</div></div>
+    <div class="q"><div class="qh" role="button"><span class="grow">Does dark mode work?</span><span class="ch">+</span></div><div class="qb" hidden>Use <code>@media (prefers-color-scheme: dark)</code>. It reflects the chat theme, not the OS setting, and switches live.</div></div>
+  </div>
+</div>
+<script>
+const faq = document.getElementById('faq');
+faq.addEventListener('click', e => {
+  const h = e.target.closest('.qh');
+  if (!h) return;
+  const q = h.parentNode, open = !q.classList.contains('open');
+  for (const item of faq.children) {
+    const on = item === q && open;
+    item.classList.toggle('open', on);
+    item.querySelector('.qb').hidden = !on;
+    item.querySelector('.ch').textContent = on ? '−' : '+';
+  }
+});
+</script>

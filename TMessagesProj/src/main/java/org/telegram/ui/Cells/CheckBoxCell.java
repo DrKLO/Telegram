@@ -42,6 +42,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -242,12 +243,12 @@ public class CheckBoxCell extends FrameLayout {
 
     public void updateTextColor() {
         if (textAnimated) {
-            animatedTextView.setTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(animatedTextView, currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         } else {
-            linksTextView.setTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
-            linksTextView.setLinkTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText));
+            ThemeBind.textColor(linksTextView, currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            ThemeBind.linkTextColor(linksTextView, currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         }
-        valueTextView.setTextColor(getThemedColor(currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText));
+        ThemeBind.textColor(valueTextView, currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextBlue : Theme.key_windowBackgroundWhiteValueText, resourcesProvider);
     }
 
     private View click1Container, click2Container;
@@ -260,7 +261,7 @@ public class CheckBoxCell extends FrameLayout {
         } else {
             if (click1Container == null) {
                 click1Container = new View(getContext());
-                click1Container.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
+                ThemeBind.selectorBackground(click1Container, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
                 addView(click1Container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
             }
             click1Container.setOnClickListener(onTextClick);
@@ -290,7 +291,7 @@ public class CheckBoxCell extends FrameLayout {
             if (collapsedArrow == null) {
                 collapsedArrow = new View(getContext());
                 Drawable drawable = getContext().getResources().getDrawable(R.drawable.arrow_more).mutate();
-                drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.drawableColorFilter(this, drawable, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 collapsedArrow.setBackground(drawable);
                 addView(collapsedArrow, LayoutHelper.createFrame(16, 16, Gravity.CENTER_VERTICAL));
             }
@@ -379,10 +380,18 @@ public class CheckBoxCell extends FrameLayout {
     }
 
     public void setTextColor(int color) {
+        // the caller owns the text color now: drop the default key binding so a theme switch does not overwrite it
         if (textAnimated) {
+            ThemeBind.clear(animatedTextView);
             animatedTextView.setTextColor(color);
         } else {
+            ThemeBind.clear(linksTextView);
             linksTextView.setTextColor(color);
+            // keep the link color binding (cleared above together with the text one) when it still shows the default key
+            final int linkKey = currentType == TYPE_CHECK_BOX_DEFAULT || currentType == TYPE_CHECK_BOX_URL ? Theme.key_dialogTextLink : Theme.key_windowBackgroundWhiteLinkText;
+            if (linksTextView.getLinkTextColors() != null && linksTextView.getLinkTextColors().getDefaultColor() == getThemedColor(linkKey)) {
+                ThemeBind.linkTextColor(linksTextView, linkKey, resourcesProvider);
+            }
         }
     }
 
@@ -604,19 +613,19 @@ public class CheckBoxCell extends FrameLayout {
 
             if (iconResId != 0) {
                 iconView = new ImageView(context);
-                iconView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                ThemeBind.colorFilter(iconView, Theme.key_windowBackgroundWhiteBlackText, CheckBoxCell.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 iconView.setImageResource(iconResId);
             }
 
             textView = new AnimatedTextView(context, false, true, false);
             textView.setTextSize(dp(13));
-            textView.setTextColor(color);
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, CheckBoxCell.this.resourcesProvider);
             textView.setIncludeFontPadding(false);
             textView.setTypeface(AndroidUtilities.bold());
 
             collapsedArrow = new View(context);
             Drawable drawable = getContext().getResources().getDrawable(R.drawable.arrow_more).mutate();
-            drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_windowBackgroundWhiteBlackText, CheckBoxCell.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
             collapsedArrow.setBackground(drawable);
 
             if (LocaleController.isRTL) {
@@ -633,7 +642,7 @@ public class CheckBoxCell extends FrameLayout {
                 addView(collapsedArrow, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
             }
 
-            setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 16, 16));
+            ThemeBind.selectorBackground(this, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 16, 16), null, ThemeBind.of(Theme.key_listSelector), CheckBoxCell.this.resourcesProvider);
             setClickable(true);
         }
 

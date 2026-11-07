@@ -1,0 +1,57 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: inline-layout stress — 300 tag chips in a wrapping flex container, seven colours, weighted sizes; tapping a chip highlights it and its colour group
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .cloud { display: flex; flex-wrap: wrap; margin-top: 8px; }
+  .c { padding: 3px 8px; margin: 0 5px 5px 0; border-radius: 8px; font-size: 11px; font-weight: 600; background-color: var(--fill); cursor: pointer; }
+  .c.s1 { font-size: 12px; } .c.s2 { font-size: 13px; padding: 4px 10px; } .c.s3 { font-size: 15px; padding: 5px 12px; font-weight: 800; }
+  .c.k0 { background-color: rgba(0,122,255,0.14); color: #0a5ad1; } .c.k1 { background-color: rgba(52,199,89,0.18); color: #1f8f3e; }
+  .c.k2 { background-color: rgba(255,59,48,0.14); color: #c62b22; } .c.k3 { background-color: rgba(255,149,0,0.2); color: #a85f00; }
+  .c.k4 { background-color: rgba(175,82,222,0.16); color: #7c2ca8; } .c.k5 { background-color: rgba(48,176,199,0.18); color: #167a8c; }
+  @media (prefers-color-scheme: dark) { .c.k0 { color: #7fb6ff; } .c.k1 { color: #7fe39a; } .c.k2 { color: #ff8a80; } .c.k3 { color: #ffc266; } .c.k4 { color: #d9a3ff; } .c.k5 { color: #7fdcee; } }
+  .cloud.focus .c { background-color: var(--fill); color: var(--muted); }
+  .cloud.focus .c.hit { color: #fff; }
+  .cloud.focus .c.hit.k0 { background-color: var(--blue); } .cloud.focus .c.hit.k1 { background-color: var(--green); } .cloud.focus .c.hit.k2 { background-color: var(--red); }
+  .cloud.focus .c.hit.k3 { background-color: var(--orange); } .cloud.focus .c.hit.k4 { background-color: var(--purple); } .cloud.focus .c.hit.k5 { background-color: var(--teal); } .cloud.focus .c.hit.k6 { background-color: #636366; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Topics this month</span><span class="tiny muted" id="note">300 tags · tap one</span></div>
+  <div class="cloud" id="cloud"></div>
+</div>
+<script>
+const WORDS = ['layout', 'flexbox', 'table', 'gradient', 'border', 'radius', 'padding', 'margin', 'inline', 'block', 'font', 'weight', 'color', 'theme', 'dark', 'light', 'chip', 'badge', 'card', 'bubble', 'chat', 'widget', 'sandbox', 'validator', 'quickjs', 'bytecode', 'timer', 'frame', 'paint', 'raster', 'display', 'list', 'text', 'width', 'height', 'measure', 'glyph', 'kerning', 'wrap', 'nowrap', 'overflow', 'hidden', 'relative', 'absolute', 'static', 'zebra', 'row', 'cell', 'header', 'footer', 'avatar', 'initials', 'poll', 'quiz', 'cart', 'receipt', 'ticker', 'clock', 'countdown', 'log', 'deploy', 'build', 'test', 'push', 'rollout', 'verify', 'smoke', 'p95', 'latency', 'memory', 'startup', 'process', 'thread', 'budget', 'quota', 'pause', 'resume', 'focus', 'blur', 'click', 'pointer', 'touch', 'tap', 'swipe', 'scroll', 'emoji', 'tofu', 'fallback', 'system', 'mono', 'serif', 'sans', 'bold', 'italic', 'caps', 'tiny', 'small', 'muted', 'primary', 'blue', 'green', 'red', 'orange', 'purple', 'teal', 'grey', 'white', 'black', 'lisbon', 'berlin', 'tbilisi', 'tokyo', 'dublin', 'madrid', 'warsaw', 'oslo', 'milan', 'paris'];
+let seed = 99;
+const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+const cloud = document.getElementById('cloud');
+let h = '';
+for (let i = 0; i < 300; i++) {
+  const w = WORDS[Math.floor(rnd() * WORDS.length)], k = Math.floor(rnd() * 7), r = rnd();
+  const s = r > 0.97 ? 3 : r > 0.88 ? 2 : r > 0.65 ? 1 : 0;
+  h += `<span class="c k${k} s${s}" data-k="${k}">${w}${r > 0.5 ? '' : ' ' + Math.floor(rnd() * 90 + 10)}</span>`;
+}
+cloud.innerHTML = h;
+let picked = -1;
+cloud.addEventListener('click', e => {
+  const c = e.target.closest('.c');
+  if (!c) return;
+  const k = Number(c.dataset.k);
+  picked = picked === k ? -1 : k;
+  cloud.classList.toggle('focus', picked >= 0);
+  let n = 0;
+  for (const el of cloud.children) { const hit = picked >= 0 && Number(el.dataset.k) === picked; el.classList.toggle('hit', hit); if (hit) n++; }
+  document.getElementById('note').textContent = picked >= 0 ? n + ' tags in this colour · tap again to clear' : '300 tags · tap one';
+});
+</script>

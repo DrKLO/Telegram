@@ -9,6 +9,7 @@ import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarGiftSheet.replaceUnderstood;
 
+import android.graphics.PorterDuff;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -51,6 +52,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
@@ -152,7 +154,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         titleView.setGravity(Gravity.CENTER);
         titleView.setText(title);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 6));
 
         subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
@@ -162,8 +164,8 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.Gift2AuctionInfoLearnMore), () -> showMoreInfo(context, resourcesProvider, starGift)), true, dp(8f / 3f), dp(1))
         ));
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        subtitleTextView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.linkTextColor(subtitleTextView, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         linearLayout.addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 4));
 
         TableView tableView = new TableView(context, resourcesProvider);
@@ -230,8 +232,8 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         itemsBought = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
         itemsBought.setGravity(Gravity.CENTER);
         itemsBought.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        itemsBought.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
-        itemsBought.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+        ThemeBind.textColor(itemsBought, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
+        ThemeBind.linkTextColor(itemsBought, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         itemsBought.setOnClickListener((v) -> {
             if (pending[0]) {
                 return;
@@ -414,8 +416,8 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             LinkSpanDrawable.LinksTextView itemsVariants = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
             itemsVariants.setGravity(Gravity.CENTER);
             itemsVariants.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            itemsVariants.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
-            itemsVariants.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            ThemeBind.textColor(itemsVariants, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
+            ThemeBind.linkTextColor(itemsVariants, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
             itemsVariants.setOnClickListener((v) -> {
                 new StarGiftPreviewSheet(context, resourcesProvider, currentAccount, auction.gift.title, auction.previewAttributes, false).show();
                 dismiss();
@@ -496,7 +498,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
 
         if (auction != null && auction.auctionStateFinished != null || starGift.sold_out) {
             subtitleTextView.setText(getString(R.string.Gift2AuctionEnded));
-            subtitleTextView.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ThemeBind.textColor(subtitleTextView, Theme.key_text_RedBold, resourcesProvider);
 
             auctionRowAveragePrice.setVisibility(View.VISIBLE);
 
@@ -561,7 +563,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         backupImageView.setImageResource(R.drawable.filled_gift_sell_24);
         ShapeDrawable shapeDrawable = new ShapeDrawable(new OvalShape());
         shapeDrawable.getPaint().setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        backupImageView.setBackground(shapeDrawable);
+        ThemeBind.fillBackground(backupImageView, shapeDrawable, ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
 
         linearLayout.addView(backupImageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER, 0, 21, 0, 16));
 
@@ -570,14 +572,14 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         titleView.setGravity(Gravity.CENTER);
         titleView.setText(getString(R.string.GiftAuctionInfoHeader));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linearLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 6));
 
         final TextView titleView2 = new TextView(context);
         titleView2.setGravity(Gravity.CENTER);
         titleView2.setText(getString(R.string.GiftAuctionInfoText));
         titleView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView2, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         linearLayout.addView(titleView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 16));
 
         {
@@ -586,7 +588,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             cell.description.setText(formatPluralString("GiftAuctionInfo1Text", starGift.gifts_per_round, starGift.gifts_per_round));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_top_bidders_24);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, -2));
         }
         {
@@ -595,7 +597,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             cell.description.setText(formatPluralString("GiftAuctionInfo2Text", starGift.gifts_per_round));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_carryover_24);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, -2));
         }
         {
@@ -604,7 +606,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             cell.description.setText(getString(R.string.GiftAuctionInfo3Text));
             cell.nextIcon.setVisibility(View.GONE);
             cell.imageView.setImageResource(R.drawable.menu_bid_refund_24);
-            cell.imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.colorFilter(cell.imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, 8));
         }
         {
@@ -717,7 +719,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
             TextView titleTextView = new TextView(context);
             NotificationCenter.listenEmojiLoading(titleTextView);
             titleTextView.setText(getString(R.string.Gift2AuctionsChangeRecipient));
-            titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(titleTextView, Theme.key_dialogTextBlack, resourcesProvider);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             titleTextView.setTypeface(AndroidUtilities.bold());
             titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -725,7 +727,7 @@ public class AuctionJoinSheet extends BottomSheetWithRecyclerListView implements
         }
         {
             final TextView textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setText(AndroidUtilities.replaceTags(
                     formatString(R.string.Gift2AuctionsChangeRecipient2, DialogObject.getShortName(fromDialogId), DialogObject.getShortName(toDialogId))

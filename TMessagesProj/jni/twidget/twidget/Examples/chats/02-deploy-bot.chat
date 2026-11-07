@@ -1,0 +1,504 @@
+@chat Deploy Bot
+@subtitle CI/CD notifications · interactive cards & buttons
+@icon shippingbox.fill
+@participant me | You | #007aff | me
+@participant bot | Deploy Bot | #5856d6
+
+--- bot 10:02 bare
+<style>
+  .bld { width: 390px; max-width: 100%; }
+  .bld .hd { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid rgba(127,127,127,0.2); }
+  .bld .hd img { margin-right: 10px; }
+  .bld .st { padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+  .bld .bd { padding: 8px 14px 0 14px; font-size: 13px; }
+  .bld .k { width: 64px; padding: 2px 0; color: #8e8e93; }
+  .bld .steps { margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(127,127,127,0.35); }
+  .bld .sr { display: flex; align-items: center; height: 21px; }
+  .bld .ic { display: inline-block; width: 20px; height: 16px; }
+  .bld .cap { margin-top: 8px; font-size: 11px; color: #8e8e93; }
+  .bld .job { margin: 8px 14px 0 14px; padding: 10px 12px; border-radius: 10px; background-color: rgba(127,127,127,0.10); font-size: 12.5px; }
+  .bld .prog { height: 8px; margin: 6px 0 8px 0; border-radius: 4px; background-color: rgba(127,127,127,0.22); }
+  .bld .prog div { height: 8px; border-radius: 4px; }
+  .bld .pods { display: flex; margin-bottom: 6px; }
+  .bld .pod { width: 27px; height: 10px; margin-right: 4px; border-radius: 3px; }
+  .bld .js { display: flex; align-items: center; height: 20px; }
+  .bld .spin { display: inline-block; width: 13px; height: 13px; border-radius: 7px; vertical-align: middle; }
+  .bld .logbar { display: flex; justify-content: space-between; margin: 10px 14px 4px 14px; font-size: 12px; }
+  .bld .log { margin: 0 14px; padding: 8px 10px; height: 150px; overflow: hidden; border-radius: 10px; background-color: #1e1e2e; color: #cdd6f4; font-family: ui-monospace; font-size: 11px; line-height: 15px; }
+  .bld .log div { white-space: nowrap; overflow: hidden; }
+  .bld .win { margin: 8px 14px 0 14px; padding: 12px; border-radius: 12px; text-align: center; color: #ffffff; }
+  .bld .win a { color: #ffffff; text-decoration: underline; }
+  .bld .stats { display: flex; justify-content: space-around; margin-top: 8px; }
+  .bld .stats b { font-size: 17px; }
+  .bld .acts { display: flex; padding: 10px 14px 12px 14px; }
+  .bld .b { flex-grow: 1; margin-right: 6px; padding: 7px 0; border-radius: 8px; text-align: center; font-weight: 600; }
+  .bld .b.last { margin-right: 0; }
+  .bld .go { color: #ffffff; background: linear-gradient(180deg, #3ad16a, #248a3d); }
+  .bld .go:hover { background: linear-gradient(180deg, #32c060, #1d7533); }
+  .bld .lg { background-color: rgba(127,127,127,0.14); }
+  .bld .lg:hover { background-color: rgba(127,127,127,0.26); }
+  .bld .lg.on { background-color: rgba(88,86,214,0.18); color: #5856d6; }
+  .lc-dark .bld .lg.on { color: #9d9bff; }
+  .bld .rb { color: #ff3b30; background-color: rgba(255,59,48,0.10); }
+  .bld .rb:hover { background-color: rgba(255,59,48,0.22); }
+  .bld .off { color: #8e8e93; background-color: rgba(127,127,127,0.08); }
+  .bld .warn { margin: 12px 14px 0 14px; padding: 12px 14px; border-radius: 12px; border: 2px dashed #ff9500; background-color: rgba(255,149,0,0.08); }
+  .bld .warn ul { margin: 0 0 10px 0; padding-left: 18px; font-size: 12px; }
+  .bld .yes { color: #ffffff; background-color: #ff3b30; }
+  .bld .yes:hover { background-color: #d92c22; }
+</style>
+<div class="card bld"><div class="hd"><img src="icon:seal-check-fill?size=29&color=34c759"><div class="grow"><b>Build #1842 passed</b><div class="small muted">litechat/main · 4m 12s · triggered by Leo</div></div><span class="st badge green">SUCCESS</span></div><div class="bd small muted" style="padding-bottom: 12px">412 tests passed · LiteChat.app (4.1 MB)</div></div>
+<script>
+const STEPS = [['Checkout', '2s'], ['Build (clang, -O2)', '1m 48s'], ['Unit tests', '1m 55s'], ['Package & notarize', '27s']];
+const SPARK = [30, 26, 28, 18, 22, 12, 16, 20, 10, 14, 8, 12];
+const LOG = [
+  ['cmd', '$ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release'],
+  ['', '-- The C compiler identification is AppleClang 17.0'],
+  ['', '-- Configuring done (0.4s)'],
+  ['cmd', '$ cmake --build build -j10'],
+  ['', '[ 12%] Building C object src/gumbo/CMakeFiles/gumbo.dir/parser.c.o'],
+  ['', '[ 47%] Building CXX object CMakeFiles/litehtml.dir/src/render_flex.cpp.o'],
+  ['', '[ 84%] Built target litehtml'],
+  ['', '[ 89%] Building OBJCXX object CMakeFiles/lhmac.dir/src/LHContainer.mm.o'],
+  ['', '[ 96%] Linking OBJCXX executable LiteChat.app/Contents/MacOS/LiteChat'],
+  ['', '[100%] Built target LiteChat'],
+  ['cmd', '$ ctest --output-on-failure'],
+  ['ok', '100% tests passed, 0 tests failed out of 412'],
+  ['warn', '3 skipped: test_bidi_*, test_print_media'],
+];
+const INK = { cmd: '#89b4fa', ok: '#a6e3a1', warn: '#f9e2af', err: '#f38ba8', info: '#cdd6f4' };
+const COMMITS = [['a1b2c3d', 'Render bubbles with litehtml'], ['9f8e7d6', 'Dark mode stylesheet'], ['5c4b3a2', 'Card components']];
+const POD = ['rgba(142,142,147,0.35)', '#5856d6', '#34c759', '#ff9500'];
+const BADGE = {
+  passed: ['SUCCESS', '#34c759', 'icon:seal-check-fill?size=29&color=34c759'],
+  deploying: ['DEPLOYING', '#5856d6', 'icon:arrows-clockwise?size=29&color=5856d6'],
+  live: ['LIVE', '#34c759', 'icon:seal-check-fill?size=29&color=34c759'],
+  rolling: ['ROLLING BACK', '#ff9500', 'icon:arrow-circle-left-fill?size=29&color=ff9500'],
+  rolledback: ['ROLLED BACK', '#ff3b30', 'icon:arrow-circle-left-fill?size=29&color=ff3b30'],
+};
+
+let intro = 0, state = 'passed', prod = '#1839', canary = '#1842', view = 'main', job = null, result = null, run = 0;
+let logOpen = false, logShown = 0, logTimer = 0, extra = [], sparkKey = '', sparkURI = '';
+const tests = { v: 0 }, stats = { v: 1 };
+
+setTimeout(() => {
+  animate(900, (_, t) => { intro = t; }, ease.linear);
+  tween(tests, { v: 412 }, 900, ease.outCubic);
+}, 250);
+
+const rollTarget = () => prod === '#1842' ? 'production' : 'canary';
+const canRoll = () => !job && (prod === '#1842' || canary === '#1842');
+const clockText = () => {
+  const s = 36720 + Math.floor(performance.now() / 1000);
+  return [s / 3600, (s / 60) % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, '0')).join(':');
+};
+function log(kind, text) {
+  extra.push([kind, `${clockText()} ${text}`]);
+  if (extra.length > 30) extra.shift();
+}
+
+function spark() {
+  const key = intro.toFixed(3);
+  if (key === sparkKey) return sparkURI;
+  const n = SPARK.length - 1, upto = intro * n, X = i => 3 + i * 354 / n;
+  const pts = [];
+  for (let i = 0; i <= Math.floor(upto); i++) pts.push([X(i), SPARK[i]]);
+  if (upto < n) { const i = Math.floor(upto), f = upto - i; pts.push([X(i + f), lerp(SPARK[i], SPARK[i + 1], f)]); }
+  const line = pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const [lx, ly] = pts[pts.length - 1];
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='44'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#5856d6' stop-opacity='0.35'/><stop offset='1' stop-color='#5856d6' stop-opacity='0'/></linearGradient></defs>` +
+    `<polygon fill='url(#g)' points='3,44 ${line} ${lx.toFixed(1)},44'/><polyline fill='none' stroke='#5856d6' stroke-width='2' stroke-linejoin='round' points='${line}'/><circle cx='${lx.toFixed(1)}' cy='${ly.toFixed(1)}' r='3' fill='#5856d6'/></svg>`;
+  sparkKey = key;
+  sparkURI = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  return sparkURI;
+}
+
+async function runJob(kind) {
+  const token = ++run, promote = kind === 'promote', target = promote ? 'production' : rollTarget();
+  const alive = () => token === run;
+  result = null;
+  state = promote ? 'deploying' : 'rolling';
+  job = {
+    kind, target, p: 0, step: 0,
+    title: promote ? 'Deploying #1842 → production' : `Rolling back ${target} → #1839`,
+    sub: promote ? 'Rolling update · 10 pods' : 'Reverting 3 commits · 10 pods',
+    steps: promote ? ['Drain canary', 'Rolling update', 'Health checks'] : ['Freeze traffic', 'Restore #1839', 'Verify health'],
+    pods: Array(10).fill(promote ? 0 : 2),
+  };
+  log(promote ? 'info' : 'warn', promote ? 'INFO  promote #1842 → production' : `WARN  rollback ${target} → #1839`);
+  await animate(700, p => { if (alive()) job.p = 0.12 * p; }, ease.inOutSine);
+  if (!alive()) return;
+  job.step = 1;
+  log('info', promote ? 'INFO  canary drained' : 'INFO  traffic frozen');
+  for (let i = 0; i < 10; i++) {
+    job.pods[i] = 1;
+    await animate(230, p => { if (alive()) job.p = 0.12 + 0.76 * (i + p) / 10; }, ease.linear);
+    if (!alive()) return;
+    job.pods[i] = promote ? 2 : 3;
+    if (i % 3 === 2) log('info', `INFO  pod-${i} → litechat:${promote ? 1842 : 1839} (${i + 1}/10)`);
+  }
+  job.step = 2;
+  await animate(800, p => { if (alive()) job.p = 0.88 + 0.12 * p; }, ease.inOutSine);
+  if (!alive()) return;
+  log('ok', promote ? 'OK    10/10 pods healthy ✔' : `OK    ${target} on #1839 ✔`);
+  transition('pop');
+  job = null;
+  if (promote) { prod = '#1842'; canary = '#1842'; state = 'live'; }
+  else { prod = '#1839'; canary = '#1839'; state = 'rolledback'; }
+  result = { kind, target };
+  stats.v = 0;
+  tween(stats, { v: 1 }, 900, ease.outCubic);
+}
+
+function streamLog() {
+  if (logTimer || logShown >= LOG.length) return;
+  logTimer = setInterval(() => {
+    logShown++;
+    if (logShown >= LOG.length) { clearInterval(logTimer); logTimer = 0; }
+  }, 110);
+}
+
+function onAction(name) {
+  if (name === 'promote' && !job && prod !== '#1842' && view === 'main') {
+    transition('slide-down');
+    runJob('promote');
+  } else if (name === 'rollback' && canRoll() && view === 'main') {
+    transition('slide-left');
+    view = 'confirm';
+  } else if (name === 'confirm' && view === 'confirm') {
+    transition('slide-right');
+    view = 'main';
+    if (canRoll()) runJob('rollback');
+  } else if (name === 'cancel' && view === 'confirm') {
+    transition('slide-right');
+    view = 'main';
+  } else if (name === 'logs' && view === 'main') {
+    transition(logOpen ? 'slide-up' : 'slide-down');
+    logOpen = !logOpen;
+    if (logOpen) streamLog();
+  } else if (name === 'replay') {
+    logShown = 0; extra = [];
+    streamLog();
+  } else if (name === 'dismiss') {
+    transition('fade');
+    result = null;
+  }
+}
+
+function header() {
+  const [label, c, icon] = BADGE[state];
+  return `<div class="hd"><img src="${icon}"><div class="grow"><b>Build #1842 passed</b><div class="small muted">litechat/main · 4m 12s · triggered by Leo</div></div>
+    <span class="st" style="color: ${c}; background-color: ${alpha(c, 0.16)}">${label}</span></div>`;
+}
+
+function details() {
+  const steps = STEPS.map(([name, time], i) => {
+    const k = clamp((intro * 900 - 120 - i * 150) / 240, 0, 1);
+    const d = Math.max(1, Math.round(13 * ease.outBack(k)));
+    const icon = k > 0 ? `<img src="icon:check-circle-fill?size=16&color=34c759" width="${d}" height="${d}">` : '<img src="icon:circle?size=16&color=c7c7cc" width="13" height="13">';
+    return `<div class="sr"><span class="ic">${icon}</span><span class="grow ${k > 0 ? '' : 'muted'}">${esc(name)}</span><span class="muted">${k >= 1 ? time : ''}</span></div>`;
+  }).join('');
+  const where = prod === '#1842' ? '<b>#1842</b> <span class="muted">· this build</span>'
+    : canary === '#1842' ? '<b>#1839</b> <span class="muted">· canary runs #1842 at 10%</span>'
+    : '<b>#1839</b> <span class="muted">· canary rolled back</span>';
+  return `<div class="bd">
+    <table style="width: 100%">
+      <tr><td class="k">Commit</td><td><code>a1b2c3d</code> Render bubbles with litehtml</td></tr>
+      <tr><td class="k">Tests</td><td><b class="t-green">${Math.round(tests.v)} passed</b> · <span class="t-orange">3 skipped</span> · 0 failed</td></tr>
+      <tr><td class="k">Artifact</td><td>LiteChat.app <span class="muted">(4.1 MB)</span></td></tr>
+      <tr><td class="k">Prod</td><td>${where}</td></tr>
+    </table>
+    <div class="steps">${steps}</div>
+    <div class="cap">Build time, last 12 runs</div>
+    <img src="${spark()}" width="360" height="44" style="margin-top: 2px">
+  </div>`;
+}
+
+function jobPanel() {
+  const j = job, now = performance.now();
+  const c = j.kind === 'promote' ? ['#5856d6', '#7a78e8'] : ['#ff9500', '#ffb340'];
+  const off = (now / 25) % 14;
+  const bar = `<div class="prog"><div style="width: ${(j.p * 100).toFixed(1)}%; background-image: linear-gradient(45deg, ${c[0]} 25%, ${c[1]} 25%, ${c[1]} 50%, ${c[0]} 50%, ${c[0]} 75%, ${c[1]} 75%); background-size: 14px 14px; background-position: ${off.toFixed(1)}px 0"></div></div>`;
+  const glow = 0.5 + 0.5 * Math.sin(now / 90);
+  const pods = j.pods.map(s => `<div class="pod" style="background-color: ${s === 1 ? mix(POD[1], '#c9c8ff', 0.6 * glow) : POD[s]}"></div>`).join('');
+  const spin = `<span class="spin" style="background: conic-gradient(from ${Math.round(now * 0.6) % 360}deg, ${alpha(c[0], 0)} 0deg, ${c[0]} 300deg, ${alpha(c[0], 0)} 300deg)"></span>`;
+  const moved = j.pods.filter(s => s === (j.kind === 'promote' ? 2 : 3)).length;
+  const steps = j.steps.map((s, i) => {
+    const icon = i < j.step ? '<img src="icon:check-circle-fill?size=16&color=34c759">' : i === j.step ? spin : '<img src="icon:circle?size=16&color=c7c7cc">';
+    const label = i === 1 ? `${s} <b>${moved}/10</b> pods` : s;
+    return `<div class="js"><span class="ic">${icon}</span><span class="${i > j.step ? 'muted' : ''}">${label}</span></div>`;
+  }).join('');
+  return `<div class="job"><div class="row between"><b>${j.title}</b><span class="small muted">${Math.round(j.p * 100)}%</span></div>
+    <div class="small muted">${j.sub}</div>${bar}<div class="pods">${pods}</div>${steps}</div>`;
+}
+
+function resultPanel() {
+  const k = stats.v;
+  if (result.kind === 'promote')
+    return `<div class="win" style="background: linear-gradient(135deg, #34c759, #30b0c7)">
+      <div style="font-size: 26px">🎉</div><div style="font-size: 17px; font-weight: 700">#1842 is live in production</div>
+      <div class="small" style="color: rgba(255,255,255,0.85)">10/10 pods healthy · 3m 05s · <a href="#" data-action="dismiss">dismiss</a></div>
+      <div class="stats"><div><b>${(0.01 * k).toFixed(2)}%</b><div class="tiny">errors</div></div><div><b>${Math.round(176 * k)}ms</b><div class="tiny">p95</div></div><div><b>+${Math.round(4 * k)}%</b><div class="tiny">throughput</div></div></div>
+    </div>`;
+  const where = result.target === 'production' ? 'Production' : 'Canary';
+  return `<div class="win" style="background: linear-gradient(135deg, #ff3b30, #ff9500)">
+    <div style="font-size: 17px; font-weight: 700">↩️ Rolled back</div>
+    <div class="small">${where} is on <b>#1839</b> again · <a href="#" data-action="dismiss">dismiss</a></div>
+    <div class="tiny" style="margin-top: 4px; color: rgba(255,255,255,0.85)">Incident <a href="https://github.com/litehtml/litehtml">INC-2207</a> opened automatically</div>
+  </div>`;
+}
+
+function logPanel() {
+  const lines = LOG.slice(0, logShown).concat(extra).slice(-9);
+  const live = !!logTimer || !!job;
+  const caret = live && Math.floor(performance.now() / 400) % 2 === 0 ? '▍' : '&nbsp;';
+  return `<div class="logbar"><b>build-1842.log</b><span>${live ? '<span class="t-green">● live</span> · ' : ''}<a href="#" data-action="replay">↻ Replay</a></span></div>
+    <div class="log">${lines.map(([k, t]) => `<div style="color: ${INK[k] || INK.info}">${esc(t)}</div>`).join('')}<div style="color: #f5c2e7">${caret}</div></div>`;
+}
+
+function buttons() {
+  const promote = !job && prod !== '#1842'
+    ? `<span class="b go" data-action="promote">🚀 ${state === 'rolledback' ? 'Promote again' : 'Promote'}</span>`
+    : `<span class="b off">${job && job.kind === 'promote' ? 'Deploying…' : job ? '🚀 Promote' : '✓ Promoted'}</span>`;
+  const logs = `<span class="b lg ${logOpen ? 'on' : ''}" data-action="logs">${logOpen ? 'Hide logs' : 'View logs'}</span>`;
+  const roll = canRoll()
+    ? '<span class="b rb last" data-action="rollback">Rollback</span>'
+    : `<span class="b off last">${job && job.kind === 'rollback' ? 'Rolling back…' : 'Rollback'}</span>`;
+  return `<div class="acts">${promote}${logs}${roll}</div>`;
+}
+
+function confirmPanel() {
+  const target = rollTarget();
+  return `<div class="warn">
+    <div style="font-weight: 700"><img src="icon:warning-fill?size=18&color=ff9500"> Roll back ${target} to #1839?</div>
+    <div class="small muted" style="margin: 4px 0 6px 0">This reverts 3 commits${target === 'canary' ? ' on the canary (10% of traffic)' : ''}:</div>
+    <ul>${COMMITS.map(([sha, msg]) => `<li><code>${sha}</code> ${esc(msg)}</li>`).join('')}</ul>
+    <div class="row"><span class="b yes" data-action="confirm">Yes, roll back</span><span class="b lg last" data-action="cancel">Cancel</span></div>
+  </div><div style="height: 14px"></div>`;
+}
+
+function render() {
+  if (view === 'confirm') return `<div class="card bld">${header()}${confirmPanel()}</div>`;
+  return `<div class="card bld">${header()}${details()}${job ? jobPanel() : ''}${result ? resultPanel() : ''}${logOpen ? logPanel() : ''}${buttons()}</div>`;
+}
+</script>
+
+--- me 10:05
+<code>/deploy status</code>
+
+--- bot 10:05 bare
+<style>
+  .env { width: 390px; max-width: 100%; }
+  .env .fl { display: inline-block; padding: 2px 9px; margin-right: 4px; border-radius: 11px; font-size: 11.5px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .env .fl:hover { background-color: rgba(127,127,127,0.24); }
+  .env .fl.on { background-color: #5856d6; color: #ffffff; }
+  .env .th { display: flex; padding: 8px 6px 3px 6px; font-size: 10px; font-weight: 600; color: #8e8e93; }
+  .env .rows { overflow: hidden; margin: 0 -6px; }
+  .env .r { display: flex; align-items: center; position: relative; height: 28px; padding: 0 6px; border-top: 1px solid rgba(127,127,127,0.14); font-size: 13px; }
+  .env .r:hover { background-color: rgba(127,127,127,0.08); }
+  .env .r.open { background-color: rgba(88,86,214,0.09); }
+  .env .c1 { flex-grow: 1; }
+  .env .c2 { width: 70px; }
+  .env .c3 { width: 84px; text-align: right; }
+  .env .c4 { width: 18px; text-align: right; color: #8e8e93; }
+  .env .ind { display: inline-block; width: 8px; height: 8px; padding: 3px; margin-right: 6px; border-radius: 7px; vertical-align: middle; }
+  .env .dot { display: block; width: 8px; height: 8px; border-radius: 4px; }
+  .env .det { margin: 0 6px 6px 6px; padding: 8px 10px; border-radius: 10px; background-color: rgba(127,127,127,0.09); font-size: 12px; }
+  .env .ub { display: flex; align-items: flex-end; height: 22px; margin: 4px 0 6px 0; }
+  .env .ub div { width: 8px; margin-right: 2px; border-radius: 2px; }
+  .env .kv { display: flex; justify-content: space-between; padding: 1px 0; }
+  .env .mini { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 8px; background-color: rgba(127,127,127,0.16); }
+  .env .mini:hover { background-color: rgba(127,127,127,0.28); }
+  .env .mini.off { color: #8e8e93; }
+  .env .split { display: flex; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(127,127,127,0.2); }
+  .env .donut { position: relative; width: 64px; height: 64px; margin-right: 12px; }
+  .env .donut div { position: absolute; left: 0; top: 24px; width: 64px; text-align: center; font-size: 10px; font-weight: 700; }
+  .env .stp { display: inline-block; width: 20px; line-height: 18px; margin-left: 3px; border-radius: 6px; text-align: center; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .env .stp:hover { background-color: rgba(127,127,127,0.28); }
+</style>
+<div class="card pad env"><b>Environments</b><div class="small muted" style="margin-top: 4px">production #1839 · staging #1842 · canary #1842 · dev-eu down</div></div>
+<script>
+const ENVS = [
+  { id: 'production', ver: '#1839', up: 99.98, st: 'ok', region: 'eu-west-1 · us-east-1', pods: 10, ready: 10, deploy: '2 days ago · Maya', err: '0.02%', p95: 182, bad: { 11: 1 } },
+  { id: 'staging', ver: '#1842', up: 100, st: 'ok', region: 'eu-west-1', pods: 4, ready: 4, deploy: '18 min ago · Leo', err: '0.00%', p95: 141, bad: {} },
+  { id: 'canary', ver: '#1842', up: 97.2, st: 'warn', region: 'us-east-1', pods: 2, ready: 2, deploy: '12 min ago · CI', err: '0.31%', p95: 238, bad: { 27: 1, 28: 1, 29: 1 }, note: 'pod-7 readiness probe slow (1.8s)' },
+  { id: 'dev-eu', ver: '#1830', up: 91.4, st: 'down', region: 'eu-central-1', pods: 3, ready: 0, deploy: '6 days ago · Priya', err: '—', p95: null, bad: { 24: 1, 25: 1, 28: 2, 29: 2 }, note: 'Health check failed: connection refused' },
+];
+const COLOR = { ok: '#34c759', warn: '#ff9500', down: '#ff3b30' };
+const FILTERS = [['all', 'All'], ['ok', 'Healthy'], ['warn', 'Degraded'], ['down', 'Down']];
+const WEIGHTS = [0, 5, 10, 25, 50, 100];
+ENVS.forEach(e => Object.assign(e, { shown: 0, pulse: 0, from: e.st, k: 1, checking: false, busy: null }));
+let intro = 0, filter = 'all', open = null, checking = false, checked = '2 min ago', wi = 2;
+const split = { w: 10 }, det = { k: 1 };
+
+setTimeout(() => {
+  animate(900, (_, t) => { intro = t; }, ease.linear);
+  ENVS.forEach(e => tween(e, { shown: e.up }, 900, ease.outCubic));
+}, 250);
+
+const match = e => filter === 'all' || e.st === filter;
+const byId = id => ENVS.find(e => e.id === id);
+function pulse(e) { animate(700, (_, t) => { e.pulse = Math.sin(t * Math.PI); }, ease.linear); }
+
+async function refresh() {
+  if (checking) return;
+  checking = true;
+  const list = ENVS.filter(e => !e.busy && !e.checking);
+  list.forEach(e => { e.checking = true; });
+  const total = 450 + list.length * 320;
+  await animate(total, (_, t) => {
+    list.forEach((e, i) => {
+      if (!e.checking || t * total < 450 + i * 320) return;
+      e.checking = false;
+      pulse(e);
+      if (e.st === 'warn') { e.up = Math.round((e.up + (Math.random() - 0.4) * 0.1) * 100) / 100; tween(e, { shown: e.up }, 500, ease.outCubic); }
+      if (e.p95) e.p95 = Math.max(90, Math.round(e.p95 + (Math.random() - 0.5) * 12));
+    });
+  }, ease.linear);
+  list.forEach(e => { e.checking = false; });
+  checking = false;
+  checked = 'just now';
+}
+
+async function ping(e) {
+  if (e.busy || e.checking) return;
+  e.checking = true;
+  await animate(650, () => {}, ease.linear);
+  e.checking = false;
+  pulse(e);
+  if (e.p95) e.p95 = Math.max(90, Math.round(e.p95 + (Math.random() - 0.5) * 12));
+}
+
+async function restart(e) {
+  if (e.busy || e.checking || e.st === 'ok') return;
+  const down = e.st === 'down', n = down ? e.pods : 1;
+  if (down) e.ready = 0;
+  for (let i = 0; i < n; i++) {
+    e.busy = `Restarting ${down ? `${i + 1}/${n}` : 'pod-7'}…`;
+    await animate(600, () => {}, ease.linear);
+    if (down) e.ready = i + 1;
+  }
+  e.busy = null;
+  const wasShown = match(e);
+  e.from = e.st; e.st = 'ok'; e.k = 0;
+  tween(e, { k: 1 }, 700, ease.outCubic);
+  e.note = null;
+  e.err = down ? '0.04%' : '0.03%';
+  e.p95 = down ? 205 : 191;
+  e.bad[29] = 0;
+  e.up = down ? 91.42 : 97.31;
+  tween(e, { shown: e.up }, 600, ease.outCubic);
+  pulse(e);
+  if (wasShown && !match(e)) { transition('fade'); if (open === e.id) open = null; }
+}
+
+function onAction(name, value) {
+  if (name === 'filter') {
+    if (value === filter) return;
+    const order = FILTERS.map(f => f[0]);
+    transition(order.indexOf(value) > order.indexOf(filter) ? 'slide-left' : 'slide-right');
+    filter = value;
+    if (open && !match(byId(open))) open = null;
+  } else if (name === 'row') {
+    transition(open === value ? 'slide-up' : open ? 'fade' : 'slide-down');
+    open = open === value ? null : value;
+    det.k = 0;
+    tween(det, { k: 1 }, 700, ease.linear);
+  } else if (name === 'refresh') refresh();
+  else if (name === 'ping' && byId(value)) ping(byId(value));
+  else if (name === 'restart' && byId(value)) restart(byId(value));
+  else if (name === 'w') {
+    wi = clamp(wi + Number(value), 0, WEIGHTS.length - 1);
+    tween(split, { w: WEIGHTS[wi] }, 650, ease.outCubic);
+  }
+}
+
+function indicator(e) {
+  if (e.checking || e.busy) {
+    const a = Math.round(performance.now() * 0.6) % 360;
+    return `<span class="ind" style="background: conic-gradient(from ${a}deg, rgba(88,86,214,0) 0deg, #5856d6 300deg, rgba(88,86,214,0) 300deg)"></span>`;
+  }
+  const c = mix(COLOR[e.from], COLOR[e.st], e.k);
+  return `<span class="ind" style="background-color: ${alpha(c, 0.4 * e.pulse)}"><span class="dot" style="background-color: ${c}"></span></span>`;
+}
+
+function detail(e) {
+  const bars = Array.from({ length: 30 }, (_, d) => {
+    const b = e.bad[d] || 0;
+    const g = ease.outCubic(clamp(det.k * 1.8 - d * 0.025, 0, 1));
+    return `<div style="height: ${Math.max(1, Math.round((b === 2 ? 7 : b === 1 ? 13 : 22) * g))}px; background-color: ${b === 2 ? '#ff3b30' : b === 1 ? '#ff9500' : '#34c759'}"></div>`;
+  }).join('');
+  let act;
+  if (e.busy) act = `<span class="mini off">${e.busy}</span>`;
+  else if (e.checking) act = '<span class="mini off">Checking…</span>';
+  else if (e.st === 'down') act = `<span class="mini t-red" data-action="restart" data-value="${e.id}">⟳ Restart pods</span>`;
+  else if (e.st === 'warn') act = `<span class="mini t-orange" data-action="restart" data-value="${e.id}">⟳ Restart pod-7</span>`;
+  else act = `<span class="mini" data-action="ping" data-value="${e.id}">Ping</span>`;
+  const note = e.note ? `<div class="${e.st === 'down' ? 't-red' : 't-orange'}" style="margin-top: 4px">⚠︎ ${esc(e.note)}</div>` : '';
+  return `<div class="det">
+    <div class="row between"><span class="muted">Last 30 days</span><b>${e.up.toFixed(2)}% uptime</b></div>
+    <div class="ub">${bars}</div>
+    <div class="kv"><span class="muted">Region</span><span>${e.region}</span></div>
+    <div class="kv"><span class="muted">Pods ready</span><span class="${e.ready < e.pods ? 't-red' : ''}">${e.ready}/${e.pods}</span></div>
+    <div class="kv"><span class="muted">Last deploy</span><span>${e.ver} · ${e.deploy}</span></div>
+    <div class="kv"><span class="muted">Errors · p95</span><span>${e.err} · ${e.p95 ? e.p95 + ' ms' : '—'}</span></div>
+    ${note}<div style="margin-top: 7px">${act}</div>
+  </div>`;
+}
+
+function row(e, i) {
+  const s = ease.outCubic(clamp((intro * 900 - i * 90) / 450, 0, 1));
+  const isOpen = open === e.id;
+  const up = e.st === 'down' ? '<b class="t-red">down</b>' : `<span class="${e.st === 'warn' ? 't-orange' : ''}">${e.shown.toFixed(2)}%</span>`;
+  return `<div class="r ${isOpen ? 'open' : ''}" data-action="row" data-value="${e.id}" style="left: ${Math.round((1 - s) * 400)}px">
+    <span class="c1">${indicator(e)}${e.id}</span><span class="c2"><code>${e.ver}</code></span><span class="c3">${up}</span><span class="c4">${isOpen ? '▾' : '›'}</span></div>${isOpen ? detail(e) : ''}`;
+}
+
+function arc(a0, a1, color) {
+  if (a1 - a0 < 0.3) return '';
+  if (a1 - a0 > 359.7) return `<circle cx='32' cy='32' r='26' fill='none' stroke='${color}' stroke-width='10'/>`;
+  const at = a => [32 + 26 * Math.sin(a * Math.PI / 180), 32 - 26 * Math.cos(a * Math.PI / 180)];
+  const [x0, y0] = at(a0), [x1, y1] = at(a1);
+  return `<path d='M${x0.toFixed(2)} ${y0.toFixed(2)} A26 26 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}' fill='none' stroke='${color}' stroke-width='10'/>`;
+}
+function donut(w, sweep) {
+  const a = 360 * (1 - w) * sweep, b = 360 * w * sweep;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>` +
+    `<circle cx='32' cy='32' r='26' fill='none' stroke='#8e8e93' stroke-opacity='0.2' stroke-width='10'/>${arc(0, a, '#5856d6')}${arc(a, a + b, '#ff9500')}</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function render() {
+  const counts = {};
+  FILTERS.forEach(([id]) => { counts[id] = ENVS.filter(e => id === 'all' || e.st === id).length; });
+  const chips = FILTERS.map(([id, label]) => `<span class="fl ${filter === id ? 'on' : ''}" data-action="filter" data-value="${id}">${label} ${counts[id]}</span>`).join('');
+  const shown = ENVS.filter(match);
+  const rows = shown.length ? shown.map(row).join('') : '<div class="r muted">Nothing in this state 🎉</div>';
+  const w = split.w, stable = Math.round(100 - w), can = Math.round(w);
+  const err = Math.max(0.01, 0.02 + (w - 10) * 0.0029), p95 = Math.round(182 + (w - 10) * 0.6);
+  return `<div class="card pad env">
+    <div class="row between"><b>Environments</b><span><span class="small muted">${checking ? 'Checking…' : `Checked ${checked}`}</span> <button data-action="refresh">↻ Refresh</button></span></div>
+    <div style="margin-top: 6px">${chips}</div>
+    <div class="th"><span class="c1">ENVIRONMENT</span><span class="c2">VERSION</span><span class="c3">UPTIME (30D)</span><span class="c4">&nbsp;</span></div>
+    <div class="rows">${rows}</div>
+    <div class="split">
+      <div class="donut"><img src="${donut(w / 100, ease.outCubic(intro))}" width="64" height="64"><div>${stable}/${can}</div></div>
+      <div class="grow small" style="line-height: 1.6">
+        <div><span style="color: #5856d6">●</span> Stable — ${stable}% of traffic</div>
+        <div class="row"><span class="grow"><span style="color: #ff9500">●</span> Canary — ${can}% of traffic</span><span class="stp" data-action="w" data-value="-1">−</span><span class="stp" data-action="w" data-value="1">+</span></div>
+        <div class="muted">Error rate <span class="${err > 0.1 ? 't-orange' : ''}">${err.toFixed(2)}%</span> · p95 latency ${p95} ms</div>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+
+--- bot 10:06
+<p style="margin-bottom: 4px"><b>deploy.log</b> <span style="color: #8e8e93; font-size: 12px">— last 6 lines</span></p>
+<pre style="background-color: #1e1e2e; color: #cdd6f4; font-size: 11.5px"><span style="color: #6c7086">10:01:58</span> <span style="color: #89b4fa">INFO </span> pulling image litechat:1842
+<span style="color: #6c7086">10:02:03</span> <span style="color: #89b4fa">INFO </span> starting 10 pods (rolling, maxSurge=2)
+<span style="color: #6c7086">10:02:41</span> <span style="color: #f9e2af">WARN </span> pod-7 readiness probe slow (1.8s)
+<span style="color: #6c7086">10:02:52</span> <span style="color: #f38ba8">ERROR</span> pod-9 OOMKilled — retrying with 512Mi
+<span style="color: #6c7086">10:03:20</span> <span style="color: #89b4fa">INFO </span> pod-9 healthy
+<span style="color: #6c7086">10:03:21</span> <span style="color: #a6e3a1">OK   </span> canary at 10% ✔</pre>
+<p style="font-size: 12px; color: #8e8e93">Tip: click <b>Promote</b>, <b>View logs</b> or <b>Rollback</b> on the build card above ☝️</p>

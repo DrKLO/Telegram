@@ -51,7 +51,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AiTonesController;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.CodeHighlighting;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -83,6 +83,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.LaunchActivity;
@@ -94,6 +95,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class AIEditorAlert extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
@@ -160,8 +162,8 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         closeView = new ImageView(context);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setImageResource(R.drawable.ic_close_white);
-        closeView.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        closeView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)));
+        ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
+        ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
         actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
         closeView.setOnClickListener(v -> this.dismiss());
@@ -169,7 +171,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         tabsContainer = new FrameLayout(context);
         tabs = new Tabs(context, currentAccount, false, resourcesProvider);
         tabs.setPadding(dp(4), dp(4), dp(4), dp(4));
-        tabs.setBackground(Theme.createRoundRectDrawable(dp(28), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(tabs, Theme.createRoundRectDrawable(dp(28), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         tabs.setRoundRadius(28);
         tabs.addTab(R.drawable.outline_ai_translate2, getString(R.string.AIEditorTabTranslate), this::selectTab);
         tabs.addTab(R.drawable.menu_rewrite, getString(R.string.AIEditorTabStyle), this::selectTab);
@@ -181,7 +183,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         promptCell = new EditTextCell(context, getString(R.string.ArticleAIPrompt), true, false, MessagesController.getInstance(currentAccount).config.aicomposeTonePromptLengthMax.get(), resourcesProvider);
         promptCell.editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         promptCell.editText.setMaxLines(5);
-        promptCell.setBackground(Theme.createRoundRectDrawable(dp(20), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(promptCell, Theme.createRoundRectDrawable(dp(20), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         promptCell.editText.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -390,7 +392,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
         AndroidUtilities.runOnUIThread(this::showStyleHint);
 
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.loadedAiComposeTones);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.loadedAiComposeTones);
     }
 
     private void updateButton() {
@@ -1891,6 +1893,12 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                     roundRadiusDp, roundRadiusDp
                 ));
             }
+            @Override
+            public void addColorKeys(HashSet<Integer> colors) {
+                colors.add(Theme.key_windowBackgroundWhiteBlackText);
+                colors.add(Theme.key_featuredStickers_addButton);
+                colors.add(Theme.key_listSelector);
+            }
         }
 
     }
@@ -1953,15 +1961,15 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             closeView = new ImageView(context);
             closeView.setScaleType(ImageView.ScaleType.CENTER);
             closeView.setImageResource(R.drawable.ic_close_white);
-            closeView.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            closeView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)));
+            ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
+            ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
             actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
             ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
             closeView.setOnClickListener(v -> this.dismiss());
 
             iconCell = new FrameLayout(context);
             iconButton = new FrameLayout(context);
-            iconButton.setBackground(Theme.createCircleDrawable(dp(100), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+            ThemeBind.fillBackground(iconButton, Theme.createCircleDrawable(dp(100), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
             ScaleStateListAnimator.apply(iconButton);
             iconCell.addView(iconButton, LayoutHelper.createFrame(100, 100, Gravity.CENTER));
             icon = new BackupImageView(context);
@@ -2000,7 +2008,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             checkboxLayout.setPadding(dp(12), dp(8), dp(12), dp(8));
             checkboxLayout.setClipToPadding(false);
             checkboxLayout.setOrientation(LinearLayout.HORIZONTAL);
-            checkboxLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 24, 24));
+            ThemeBind.selectorBackground(checkboxLayout, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 24, 24), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             checkbox = new CheckBox2(context, 24, resourcesProvider);
             checkbox.setColor(Theme.key_radioBackgroundChecked, Theme.key_checkboxDisabled, Theme.key_checkboxCheck);
             checkbox.setDrawUnchecked(true);
@@ -2008,7 +2016,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             checkbox.setDrawBackgroundAsArc(10);
             checkboxLayout.addView(checkbox, LayoutHelper.createLinear(26, 26, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
             final TextView checkboxTextView = new TextView(context);
-            checkboxTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray2, resourcesProvider));
+            ThemeBind.textColor(checkboxTextView, Theme.key_dialogTextGray2, resourcesProvider);
             checkboxTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             checkboxTextView.setText(getString(R.string.AIEditorStyleAddLink));
             checkboxLayout.addView(checkboxTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 9, 0, 0, 0));
@@ -2231,7 +2239,10 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             return this;
         }
 
+        private int themedIconColor;
+
         private void updateIcon() {
+            themedIconColor = 0;
             if (emoji_id == null) {
                 icon.setImageResource(R.drawable.menu_smile_add);
                 icon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
@@ -2277,7 +2288,39 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         protected CharSequence getTitle() {
             return editing != null ? getString(R.string.AIEditorEditStyle) : getString(R.string.AIEditorNewStyle);
         }
-    }
+    
+        private int themedGrayColor;
+        @Override
+        public void onThemeColorsChanged() {
+            try {
+                super.onThemeColorsChanged();
+                final int themedGray = getThemedColor(Theme.key_windowBackgroundGray);
+                if (themedGray != themedGrayColor) {
+                    themedGrayColor = themedGray;
+                    setBackgroundColor(themedGray);
+                    buttonContainer.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(themedGray, 0.0f), themedGray, themedGray }));
+                }
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            try {
+                if (icon != null) {
+                    final int iconColor = Theme.getColor(emoji_id == null ? Theme.key_dialogEmptyImage : Theme.key_dialogTextBlack, resourcesProvider);
+                    if (iconColor != themedIconColor) {
+                        themedIconColor = iconColor;
+                        if (emoji_id == null) {
+                            icon.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
+                        } else {
+                            icon.setEmojiColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     public static class AiStyleAlert extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
 
@@ -2312,8 +2355,8 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             closeView = new ImageView(context);
             closeView.setScaleType(ImageView.ScaleType.CENTER);
             closeView.setImageResource(R.drawable.ic_close_white);
-            closeView.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            closeView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)));
+            ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
+            ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
             containerView.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.TOP | Gravity.RIGHT, 0, 0, 8, 0));
             ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
             closeView.setOnClickListener(v -> this.dismiss());
@@ -2322,21 +2365,21 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             iconCell.setClipToPadding(false);
             iconCell.setClipChildren(false);
             iconButton = new FrameLayout(context);
-            iconButton.setBackground(Theme.createCircleDrawable(dp(100), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+            ThemeBind.fillBackground(iconButton, Theme.createCircleDrawable(dp(100), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
             iconCell.addView(iconButton, LayoutHelper.createFrame(100, 100, Gravity.CENTER, 0, 0, 0, 0));
             icon = new BackupImageView(context);
             icon.setAnimatedEmojiDrawable(new AnimatedEmojiDrawable(AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE, currentAccount, tone.emoji_id));
             iconButton.addView(icon, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
 
             title = new TextView(context);
-            title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTypeface(AndroidUtilities.bold());
             title.setGravity(Gravity.CENTER);
             title.setText(tone.title);
 
             subtitle = new TextView(context);
-            subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(subtitle, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             subtitle.setGravity(Gravity.CENTER);
             subtitle.setText(getString(R.string.AIEditorStyleText));
@@ -2450,7 +2493,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         @Override
         public void show() {
             super.show();
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.loadedAiComposeTones);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.loadedAiComposeTones);
         }
 
         @Override
@@ -2554,7 +2597,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                         items.add(UItem.asShadow(formatPluralString("AIEditorUsedBy", t.installs_count)));
                     }
                 } else {
-                    items.add(UItem.asShadow(AndroidUtilities.replaceSingleLink((t.installs_count > 0 ? formatPluralString("AIEditorUsedBy", t.installs_count) + " " : "") + (TextUtils.isEmpty(username) ? formatString(R.string.AIEditorCreatedBy, UserObject.getUserName(creator)) : formatString(R.string.AIEditorCreatedBy, "@" + username)), getThemedColor(Theme.key_chat_messageLinkIn), () -> {
+                    items.add(UItem.asShadow(AndroidUtilities.replaceSingleLinkKey((t.installs_count > 0 ? formatPluralString("AIEditorUsedBy", t.installs_count) + " " : "") + (TextUtils.isEmpty(username) ? formatString(R.string.AIEditorCreatedBy, UserObject.getUserName(creator)) : formatString(R.string.AIEditorCreatedBy, "@" + username)), Theme.key_chat_messageLinkIn, AiStyleAlert.this.resourcesProvider, () -> {
                         final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
                         if (fragment == null) return;
                         fragment.presentFragment(ProfileActivity.of(t.author_id));
@@ -2570,6 +2613,40 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         protected CharSequence getTitle() {
             return tone == null ? "" : tone.title;
         }
-    }
+    
+        private int themedGrayColor;
+        @Override
+        public void onThemeColorsChanged() {
+            try {
+                super.onThemeColorsChanged();
+                final int themedGray = getThemedColor(Theme.key_windowBackgroundGray);
+                if (themedGray != themedGrayColor) {
+                    themedGrayColor = themedGray;
+                    setBackgroundColor(themedGray);
+                    buttonContainer.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(themedGray, 0.0f), themedGray, themedGray }));
+                }
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
+
+    private int themedGrayColor;
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int themedGray = getThemedColor(Theme.key_windowBackgroundGray);
+            if (themedGray != themedGrayColor) {
+                themedGrayColor = themedGray;
+                setBackgroundColor(themedGray);
+                buttonContainer.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(themedGray, 0.0f), themedGray, themedGray }));
+            }
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 }

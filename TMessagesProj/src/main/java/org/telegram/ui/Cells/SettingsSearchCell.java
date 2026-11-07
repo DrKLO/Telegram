@@ -22,6 +22,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
@@ -82,7 +83,7 @@ public class SettingsSearchCell extends FrameLayout {
         super(context);
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         textView.setLines(1);
@@ -92,7 +93,7 @@ public class SettingsSearchCell extends FrameLayout {
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, LocaleController.isRTL ? 16 : 71, 10, LocaleController.isRTL ? 71 : 16, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteGrayText2);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setLines(1);
         valueTextView.setMaxLines(1);
@@ -102,7 +103,7 @@ public class SettingsSearchCell extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, PorterDuff.Mode.MULTIPLY);
         addView(imageView, LayoutHelper.createFrame(48, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 10, 8, 10, 0));
     }
 
@@ -124,7 +125,7 @@ public class SettingsSearchCell extends FrameLayout {
                     builder.append(" > ");
                     Drawable drawable = getContext().getResources().getDrawable(R.drawable.settings_arrow).mutate();
                     drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-                    drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.drawableColorFilter(this, drawable, Theme.key_windowBackgroundWhiteGrayText2, PorterDuff.Mode.MULTIPLY);
                     builder.setSpan(new VerticalImageSpan(drawable), builder.length() - 2, builder.length() - 1, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 builder.append(value[a]);
@@ -161,7 +162,7 @@ public class SettingsSearchCell extends FrameLayout {
                     builder.append(" > ");
                     Drawable drawable = getContext().getResources().getDrawable(R.drawable.settings_arrow).mutate();
                     drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-                    drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.drawableColorFilter(this, drawable, Theme.key_windowBackgroundWhiteBlackText, PorterDuff.Mode.MULTIPLY);
                     builder.setSpan(new VerticalImageSpan(drawable), builder.length() - 2, builder.length() - 1, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                 }
                 builder.append(value[a]);
@@ -178,7 +179,7 @@ public class SettingsSearchCell extends FrameLayout {
                         builder.append(" > ");
                         Drawable drawable = getContext().getResources().getDrawable(R.drawable.settings_arrow).mutate();
                         drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-                        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), PorterDuff.Mode.MULTIPLY));
+                        ThemeBind.drawableColorFilter(this, drawable, Theme.key_windowBackgroundWhiteGrayText2, PorterDuff.Mode.MULTIPLY);
                         builder.setSpan(new VerticalImageSpan(drawable), builder.length() - 2, builder.length() - 1, SpannableStringBuilder.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                     builder.append(value[a]);

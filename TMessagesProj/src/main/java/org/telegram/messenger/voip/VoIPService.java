@@ -394,10 +394,14 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			if (audioDeviceCallback != null) {
 				am.unregisterAudioDeviceCallback(audioDeviceCallback);
 			}
+			if (communicationDeviceListener != null) {
+				am.removeOnCommunicationDeviceChangedListener(communicationDeviceListener);
+				communicationDeviceListener = null;
+			}
 			if (!USE_CONNECTION_SERVICE && sharedInstance == null) {
 				if (isBtHeadsetConnected) {
-					am.stopBluetoothSco();
-					am.setBluetoothScoOn(false);
+					vam.stopBluetooth();
+					vam.setBluetoothOn(false);
 					bluetoothScoActive = false;
 					bluetoothScoConnecting = false;
 				}
@@ -451,6 +455,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	};
 
 	private AudioDeviceCallback audioDeviceCallback;
+	private AudioManager.OnCommunicationDeviceChangedListener communicationDeviceListener;
 
 	private BroadcastReceiver receiver = new BroadcastReceiver() {
 
@@ -462,11 +467,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					proximityWakelock.release();
 				}
 				if (isHeadsetPlugged) {
-					AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 					VoipAudioManager vam = VoipAudioManager.get();
 					if (vam.isSpeakerphoneOn()) {
 						previousAudioOutput = 0;
-					} else if (am.isBluetoothScoOn()) {
+					} else if (vam.isBluetoothOn()) {
 						previousAudioOutput = 2;
 					} else {
 						previousAudioOutput = 1;
@@ -493,7 +497,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					FileLog.e("Bluetooth SCO state updated: " + state);
 				}
 				if (state == AudioManager.SCO_AUDIO_STATE_DISCONNECTED && isBtHeadsetConnected) {
-					if (!btAdapter.isEnabled() || !PermissionRequest.hasPermission(Manifest.permission.BLUETOOTH_CONNECT) || btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) != BluetoothProfile.STATE_CONNECTED) {
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? VoipAudioManager.get().findBluetoothDevice() == null : (!btAdapter.isEnabled() || !PermissionRequest.hasPermission(Manifest.permission.BLUETOOTH_CONNECT) || btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET) != BluetoothProfile.STATE_CONNECTED)) {
 						updateBluetoothHeadsetState(false);
 						return;
 					}
@@ -504,10 +508,9 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					fetchBluetoothDeviceName();
 					if (needSwitchToBluetoothAfterScoActivates) {
 						needSwitchToBluetoothAfterScoActivates = false;
-						AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 						VoipAudioManager vam = VoipAudioManager.get();
 						vam.setSpeakerphoneOn(false);
-						am.setBluetoothScoOn(true);
+						vam.setBluetoothOn(true);
 					}
 				}
 				for (VoIPService.StateListener l : stateListeners) {
@@ -517,6 +520,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
 				if (TelephonyManager.EXTRA_STATE_OFFHOOK.equals(state)) {
 					hangUp();
+				}
+			} else if (AudioManager.RINGER_MODE_CHANGED_ACTION.equals(intent.getAction())) {
+				// the ringer mode is read once when the ringing starts: follow its changes while the call rings
+				if (currentState == STATE_WAITING_INCOMING && user != null) {
+					AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+					if (am.getRingerMode() == AudioManager.RINGER_MODE_SILENT) {
+						stopRinging();
+					} else if (ringtonePlayer == null) {
+						startRingtoneAndVibration(user.id);
+					}
 				}
 			} else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
 				for (int i = 0; i< stateListeners.size(); i++) {
@@ -3808,12 +3821,11 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				systemCallConnection.setAudioRoute(systemCallConnection.getCallAudioState().getRoute() == CallAudioState.ROUTE_BLUETOOTH ? CallAudioState.ROUTE_WIRED_OR_EARPIECE : CallAudioState.ROUTE_BLUETOOTH);
 			}
 		} else if (audioConfigured && !USE_CONNECTION_SERVICE) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 			VoipAudioManager vam = VoipAudioManager.get();
 			if (hasEarpiece()) {
 				vam.setSpeakerphoneOn(!vam.isSpeakerphoneOn());
 			} else {
-				am.setBluetoothScoOn(!am.isBluetoothScoOn());
+				vam.setBluetoothOn(!vam.isBluetoothOn());
 			}
 			vam.isBluetoothAndSpeakerOnAsync((isBluetoothOn, isSpeakerOn) -> {
 				updateOutputGainControlState();
@@ -3834,7 +3846,6 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		if (BuildVars.LOGS_ENABLED) {
 			FileLog.d("setAudioOutput " + which);
 		}
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		VoipAudioManager vam = VoipAudioManager.get();
 		if (USE_CONNECTION_SERVICE && systemCallConnection != null) {
 			switch (which) {
@@ -3854,12 +3865,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					if (!bluetoothScoActive) {
 						needSwitchToBluetoothAfterScoActivates = true;
 						try {
-							am.startBluetoothSco();
+							vam.startBluetooth();
 						} catch (Throwable e) {
 							FileLog.e(e);
 						}
 					} else {
-						am.setBluetoothScoOn(true);
+						vam.setBluetoothOn(true);
 						vam.setSpeakerphoneOn(false);
 					}
 					audioRouteToSet = AUDIO_ROUTE_BLUETOOTH;
@@ -3867,22 +3878,22 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				case 1:
 					needSwitchToBluetoothAfterScoActivates = false;
 					if (bluetoothScoActive || bluetoothScoConnecting) {
-						am.stopBluetoothSco();
+						vam.stopBluetooth();
 						bluetoothScoActive = false;
 						bluetoothScoConnecting = false;
 					}
 					vam.setSpeakerphoneOn(false);
-					am.setBluetoothScoOn(false);
+					vam.setBluetoothOn(false);
 					audioRouteToSet = AUDIO_ROUTE_EARPIECE;
 					break;
 				case 0:
 					needSwitchToBluetoothAfterScoActivates = false;
 					if (bluetoothScoActive || bluetoothScoConnecting) {
-						am.stopBluetoothSco();
+						vam.stopBluetooth();
 						bluetoothScoActive = false;
 						bluetoothScoConnecting = false;
 					}
-					am.setBluetoothScoOn(false);
+					vam.setBluetoothOn(false);
 					vam.setSpeakerphoneOn(true);
 					audioRouteToSet = AUDIO_ROUTE_SPEAKER;
 					break;
@@ -3914,9 +3925,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			int route = systemCallConnection.getCallAudioState().getRoute();
 			return hasEarpiece() ? route == CallAudioState.ROUTE_SPEAKER : route == CallAudioState.ROUTE_BLUETOOTH;
 		} else if (audioConfigured && !USE_CONNECTION_SERVICE) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 			VoipAudioManager vam = VoipAudioManager.get();
-			return hasEarpiece() ? vam.isSpeakerphoneOn() : am.isBluetoothScoOn();
+			return hasEarpiece() ? vam.isSpeakerphoneOn() : vam.isBluetoothOn();
 		}
 		return speakerphoneStateToSet;
 	}
@@ -3937,9 +3947,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			return audioRouteToSet;
 		}
 		if (audioConfigured) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 			VoipAudioManager vam = VoipAudioManager.get();
-			if (am.isBluetoothScoOn()) {
+			if (vam.isBluetoothOn()) {
 				return AUDIO_ROUTE_BLUETOOTH;
 			} else if (vam.isSpeakerphoneOn()) {
 				return AUDIO_ROUTE_SPEAKER;
@@ -4064,14 +4073,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					}
 				});
 				ringtonePlayer.setLooping(true);
-				if (isHeadsetPlugged) {
-					ringtonePlayer.setAudioStreamType(AudioManager.STREAM_VOICE_CALL);
-				} else {
-					ringtonePlayer.setAudioStreamType(AudioManager.STREAM_RING);
-					if (!USE_CONNECTION_SERVICE) {
-						int focusResult = am.requestAudioFocus(this, AudioManager.STREAM_RING, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-						hasAudioFocus = focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
-					}
+				final int ringStream = isHeadsetPlugged ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_RING;
+				ringtonePlayer.setAudioStreamType(ringStream);
+				if (!USE_CONNECTION_SERVICE) {
+					// with a headset too, or the music keeps playing over the ringtone
+					int focusResult = am.requestAudioFocus(this, ringStream, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+					hasAudioFocus = focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
 				}
 				try {
 					String notificationUri;
@@ -4207,8 +4214,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			VoipAudioManager vam = VoipAudioManager.get();
 			if (!USE_CONNECTION_SERVICE) {
 				if (isBtHeadsetConnected || bluetoothScoActive || bluetoothScoConnecting) {
-					am.stopBluetoothSco();
-					am.setBluetoothScoOn(false);
+					vam.stopBluetooth();
+					vam.setBluetoothOn(false);
 					vam.setSpeakerphoneOn(false);
 					bluetoothScoActive = false;
 					bluetoothScoConnecting = false;
@@ -4239,6 +4246,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 			if (audioDeviceCallback != null) {
 				am.unregisterAudioDeviceCallback(audioDeviceCallback);
+			}
+			if (communicationDeviceListener != null) {
+				am.removeOnCommunicationDeviceChangedListener(communicationDeviceListener);
+				communicationDeviceListener = null;
 			}
 
 			Utilities.globalQueue.postRunnable(() -> {
@@ -4651,6 +4662,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				filter.addAction(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
 				filter.addAction(Intent.ACTION_SCREEN_ON);
 				filter.addAction(Intent.ACTION_SCREEN_OFF);
+				filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
 			}
 			registerReceiver(receiver, filter);
 			fetchBluetoothDeviceName();
@@ -4676,6 +4688,20 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			}
 			if (audioDeviceCallback != null) {
 				am.registerAudioDeviceCallback(audioDeviceCallback, new Handler(Looper.getMainLooper()));
+			}
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && communicationDeviceListener == null) {
+				communicationDeviceListener = device -> {
+					bluetoothScoConnecting = false;
+					bluetoothScoActive = VoipAudioManager.isBluetoothDevice(device);
+					if (bluetoothScoActive) {
+						needSwitchToBluetoothAfterScoActivates = false;
+						currentBluetoothDeviceName = device.getProductName().toString();
+					}
+					for (StateListener l : stateListeners) {
+						l.onAudioSettingsChanged();
+					}
+				};
+				am.addOnCommunicationDeviceChangedListener(AndroidUtilities::runOnUIThread, communicationDeviceListener);
 			}
 			am.registerMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 
@@ -4724,7 +4750,16 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			try {
 				MediaRouter mr = (MediaRouter) getSystemService(Context.MEDIA_ROUTER_SERVICE);
 				AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-				if (Build.VERSION.SDK_INT < 24) {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+					AudioDeviceInfo device = VoipAudioManager.get().findBluetoothDevice();
+					if (device != null) {
+						currentBluetoothDeviceName = device.getProductName().toString();
+					}
+					updateBluetoothHeadsetState(device != null);
+					for (StateListener l : stateListeners) {
+						l.onAudioSettingsChanged();
+					}
+				} else if (Build.VERSION.SDK_INT < 24) {
 					int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
 					updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
 					for (StateListener l : stateListeners) {
@@ -4827,7 +4862,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				try {
 					if (hasRtmpStream()) {
 						am.setMode(AudioManager.MODE_NORMAL);
-						am.setBluetoothScoOn(false);
+						VoipAudioManager.get().setBluetoothOn(false);
 						AndroidUtilities.runOnUIThread(() -> {
 							if (!MediaController.getInstance().isMessagePaused()) {
 								MediaController.getInstance().pauseMessage(MediaController.getInstance().getPlayingMessageObject());
@@ -4850,26 +4885,26 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 								if (!bluetoothScoActive) {
 									needSwitchToBluetoothAfterScoActivates = true;
 									try {
-										am.startBluetoothSco();
+										vam.startBluetooth();
 									} catch (Throwable e) {
 										FileLog.e(e);
 									}
 								} else {
-									am.setBluetoothScoOn(true);
+									vam.setBluetoothOn(true);
 									vam.setSpeakerphoneOn(false);
 								}
 								break;
 							case AUDIO_ROUTE_EARPIECE:
-								am.setBluetoothScoOn(false);
+								vam.setBluetoothOn(false);
 								vam.setSpeakerphoneOn(false);
 								break;
 							case AUDIO_ROUTE_SPEAKER:
-								am.setBluetoothScoOn(false);
+								vam.setBluetoothOn(false);
 								vam.setSpeakerphoneOn(true);
 								break;
 						}
 					} else if (isBluetoothHeadsetConnected()) {
-						am.setBluetoothScoOn(speakerphoneStateToSet);
+						vam.setBluetoothOn(speakerphoneStateToSet);
 					} else {
 						vam.setSpeakerphoneOn(speakerphoneStateToSet);
 						if (speakerphoneStateToSet) {
@@ -4925,9 +4960,8 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			return;
 		}
 		if (event.sensor.getType() == Sensor.TYPE_PROXIMITY) {
-			AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 			VoipAudioManager vam = VoipAudioManager.get();
-			if (audioRouteToSet != AUDIO_ROUTE_EARPIECE || isHeadsetPlugged || vam.isSpeakerphoneOn() || (isBluetoothHeadsetConnected() && am.isBluetoothScoOn())) {
+			if (audioRouteToSet != AUDIO_ROUTE_EARPIECE || isHeadsetPlugged || vam.isSpeakerphoneOn() || (isBluetoothHeadsetConnected() && vam.isBluetoothOn())) {
 				return;
 			}
 			boolean newIsNear = event.values[0] < Math.min(event.sensor.getMaximumRange(), 3);
@@ -4989,6 +5023,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		}
 		isBtHeadsetConnected = connected;
 		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		final VoipAudioManager vam = VoipAudioManager.get();
 		if (connected && !isRinging() && currentState != 0) {
 			if (bluetoothScoActive) {
 				if (BuildVars.LOGS_ENABLED) {
@@ -4996,7 +5031,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 				if (!hasRtmpStream()) {
 					am.setSpeakerphoneOn(false);
-					am.setBluetoothScoOn(true);
+					vam.setBluetoothOn(true);
 				}
 			} else {
 				if (BuildVars.LOGS_ENABLED) {
@@ -5006,7 +5041,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 					needSwitchToBluetoothAfterScoActivates = true;
 					AndroidUtilities.runOnUIThread(() -> {
 						try {
-							am.startBluetoothSco();
+							vam.startBluetooth();
 						} catch (Throwable ignore) {
 
 						}
@@ -5017,7 +5052,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			bluetoothScoActive = false;
 			bluetoothScoConnecting = false;
 
-			am.setBluetoothScoOn(false);
+			vam.setBluetoothOn(false);
 		}
 		for (StateListener l : stateListeners) {
 			l.onAudioSettingsChanged();
@@ -5489,8 +5524,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public boolean isBluetoothOn() {
-		final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-		return am.isBluetoothScoOn();
+		return VoipAudioManager.get().isBluetoothOn();
 	}
 
 	public boolean isBluetoothWillOn() {

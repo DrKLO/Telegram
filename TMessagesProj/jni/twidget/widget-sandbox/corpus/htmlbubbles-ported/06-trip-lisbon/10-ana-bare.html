@@ -1,0 +1,235 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 10
+  author: ana 08:50 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; min-width: 0; }
+  .t-green { color: var(--green); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  .cat, .item, .banner { cursor: pointer; }
+
+  .pk { width: 100%; box-sizing: border-box; position: relative; overflow: hidden; }
+  .pk #items { width: 100%; box-sizing: border-box; }
+  .pk .ring { position: relative; width: 60px; height: 60px; margin-right: 12px; flex-shrink: 0; }
+  .pk .ring svg { display: block; }
+  .pk .ring .pc { position: absolute; left: 0; top: 0; width: 60px; line-height: 60px; text-align: center; font-size: 14px; font-weight: 800; }
+  .pk .cats { display: flex; margin: 12px 0 6px 0; }
+  .pk .cat { flex-grow: 1; flex-basis: 0; min-width: 0; box-sizing: border-box; text-align: center; padding: 4px 0; margin-right: 5px; border-radius: 9px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .pk .cat:last-child { margin-right: 0; }
+  .pk .cat:hover { background-color: rgba(127,127,127,0.24); }
+  .pk .cat.on { background-color: #34c759; color: #ffffff; }
+  .pk .cat .n { font-size: 10px; font-weight: 700; }
+  .pk .item { width: 100%; min-width: 0; box-sizing: border-box; display: flex; align-items: center; padding: 7px 4px; border-top: 1px solid rgba(127,127,127,0.15); }
+  .pk .item:hover { background-color: rgba(127,127,127,0.08); }
+  .pk .box { box-sizing: border-box; flex: 0 0 20px; min-width: 20px; max-width: 20px; width: 20px; height: 20px; border-radius: 9px; border: 2px solid rgba(127,127,127,0.5); margin-right: 10px; text-align: center; line-height: 16px; font-size: 11px; color: #ffffff; font-weight: 800; flex-shrink: 0; }
+  .pk .box.on { background-color: #34c759; border-color: #34c759; }
+  .pk .txt.done { text-decoration: line-through; color: #8e8e93; }
+  .pk .who { flex: none; max-width: 30%; overflow: hidden; text-overflow: ellipsis; font-size: 11px; margin-left: 8px; white-space: nowrap; }
+  .pk .banner { display: flex; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background-color: rgba(52,199,89,0.15); }
+  .pk .banner:hover { background-color: rgba(52,199,89,0.24); }
+  .pk .plane { display: inline-block; font-size: 26px; margin-right: 10px; }
+  .pk .bit { position: absolute; border-radius: 2px; pointer-events: none; }
+  .pk .lnk { font-weight: 600; color: #0a84ff; }
+  .pk .lnk:hover { text-decoration: underline; }
+
+  .tr-fade { animation: tr-fade 260ms ease-out; }
+  .tr-pop { animation: tr-pop 300ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-left { animation: tr-slide-left 280ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 280ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-pop { from { opacity: 0; transform: scale(.94); } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } }
+</style>
+<div class="card pad pk" id="root">
+  <div class="row">
+    <div class="ring">
+      <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="25" fill="none" stroke="rgba(127,127,127,0.22)" stroke-width="7"/><circle id="arc" cx="30" cy="30" r="25" fill="none" stroke="#34c759" stroke-width="7" stroke-linecap="round" stroke-dasharray="0 157.08" transform="rotate(-90 30 30)" style="display: none"/></svg>
+      <div class="pc" id="pc">0%</div></div>
+    <div class="grow"><b style="font-size: 16px">🧳 Packing list</b><div class="small muted" id="sub"></div></div>
+    <button class="primary" id="all">Pack everything</button><button id="reset" hidden>↺ Unpack</button>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div id="items"></div>
+  <div class="banner" id="banner" hidden><span class="plane" id="plane">🛫</span>
+    <div class="grow"><b class="t-green">All packed — ready for Lisbon!</b><div class="tiny muted">Tap for more confetti · space for 18 pastéis confirmed</div></div></div>
+</div>
+<script>
+const ITEMS = [
+  { id: 1, cat: 'docs', text: 'Passport / ID', who: 'everyone' },
+  { id: 2, cat: 'gear', text: 'Phone charger + adapter (type F)', who: 'everyone' },
+  { id: 3, cat: 'clothes', text: 'Comfortable shoes — Lisbon is all hills', who: '!!!' },
+  { id: 4, cat: 'clothes', text: 'Rain jacket for Sintra', who: 'Tom says' },
+  { id: 5, cat: 'gear', text: 'Sunscreen SPF 50', who: 'Ana' },
+  { id: 6, cat: 'docs', text: 'Viva Viagem card (buy at airport)', who: 'You' },
+  { id: 7, cat: 'docs', text: 'Cash for tascas (many are card-free)', who: 'You' },
+  { id: 8, cat: 'clothes', text: 'Swimsuit — Cascais beach maybe?', who: 'Ana' },
+  { id: 9, cat: 'gear', text: 'Card game for the flight 🃏', who: 'Tom' },
+  { id: 10, cat: 'gear', text: 'Empty space for 18 pastéis de nata', who: 'critical' },
+];
+const CATS = [['all', 'All'], ['docs', '🛂 Docs'], ['clothes', '👟 Clothes'], ['gear', '🎒 Gear']];
+const PAL = [[255, 45, 85], [255, 204, 0], [52, 199, 89], [10, 132, 255], [191, 90, 242], [255, 159, 10]];
+const START = [1, 2, 5];
+let cat = 'all', packing = false, party = false, bits = [], flying = false, last = 0;
+let ring = 0, glow = 0, ringRun = 0;
+const done = new Set(START);
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3) };
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => 'rgb(' + rgb(a).map((q, i) => Math.round(clamp(q + (rgb(b)[i] - q) * t, 0, 255))).join(',') + ')';
+
+
+// --- progress ring ---
+const C = 2 * Math.PI * 25;
+function drawRing() {
+  const arc = $('arc');
+  arc.style.display = ring <= 0.001 ? 'none' : ''; // SVG has no hidden attribute (dropped by the validator)
+  arc.setAttribute('stroke-dasharray', `${(C * ring).toFixed(2)} ${C.toFixed(2)}`);
+  arc.setAttribute('stroke', mix('#34c759', '#ffcc00', glow));
+  $('pc').textContent = Math.round(ring * 100) + '%';
+}
+function ringTo() {
+  ring = done.size / ITEMS.length;
+  drawRing();
+}
+
+// --- confetti ---
+function burst() {
+  const born = performance.now();
+  for (let i = 0; i < 48; i++) {
+    const el = document.createElement('div');
+    el.className = 'bit';
+    root.appendChild(el);
+    bits.push({ el, x: Math.random() * 370, y: -10 - Math.random() * 70, vx: (Math.random() - 0.5) * 70, vy: 90 + Math.random() * 150,
+      w: 5 + Math.random() * 4, h: 8 + Math.random() * 5, spin: Math.random() * 6, rate: 4 + Math.random() * 8,
+      rgb: PAL[i % PAL.length], born, life: 1700 + Math.random() * 900 });
+  }
+  while (bits.length > 120) bits.shift().el.remove();
+  if (!flying) { flying = true; last = performance.now(); requestAnimationFrame(step); }
+}
+function step(t) {
+  const dt = Math.min(0.05, (t - last) / 1000);
+  last = t;
+  const alive = [];
+  for (const b of bits) {
+    b.vy += 260 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.spin += b.rate * dt;
+    if (t - b.born >= b.life) { b.el.remove(); continue; }
+    alive.push(b);
+    const age = (t - b.born) / b.life, a = age > 0.7 ? Math.max(0, (1 - age) / 0.3) : 1;
+    const w = Math.max(1.5, b.w * Math.abs(Math.cos(b.spin)));
+    const s = b.el.style;
+    s.left = (b.x - w / 2).toFixed(1) + 'px'; s.top = b.y.toFixed(1) + 'px';
+    s.width = w.toFixed(1) + 'px'; s.height = b.h.toFixed(0) + 'px';
+    s.backgroundColor = `rgba(${b.rgb.join(',')},${a.toFixed(2)})`;
+  }
+  bits = alive;
+  if (bits.length) requestAnimationFrame(step); else flying = false;
+}
+
+// --- rendering ---
+function renderHeader() {
+  const n = done.size, all = n === ITEMS.length;
+  $('sub').textContent = `${n} of ${ITEMS.length} packed${all ? ' · nothing left!' : ''}`;
+  $('reset').hidden = !all;
+  $('all').hidden = all;
+  $('all').textContent = packing ? 'Packing…' : 'Pack everything';
+  $('banner').hidden = !all;
+  $('cats').innerHTML = CATS.map(([k, label]) => {
+    const list = ITEMS.filter(i => k === 'all' || i.cat === k), m = list.filter(i => done.has(i.id)).length;
+    return `<div class="cat ${k === cat ? 'on' : 'fg'}" data-cat="${k}">${label}<div class="n">${m === list.length ? '✓ packed' : `${m} / ${list.length}`}</div></div>`;
+  }).join('');
+}
+function renderRows() {
+  $('items').innerHTML = ITEMS.filter(i => cat === 'all' || i.cat === cat).map(i => {
+    const on = done.has(i.id);
+    return `<div class="item fg" data-id="${i.id}"><span class="box${on ? ' on' : ''}">${on ? '✓' : '&nbsp;'}</span>
+      <span class="grow txt${on ? ' done' : ''}">${esc(i.text)}</span><span class="who muted">${esc(i.who)}</span></div>`;
+  }).join('');
+}
+function renderRow(id, popped) {
+  const row = $('items').querySelector(`.item[data-id="${id}"]`);
+  if (!row) return;
+  const on = done.has(id), box = row.querySelector('.box');
+  box.classList.toggle('on', on);
+  box.innerHTML = on ? '✓' : '&nbsp;';
+  row.querySelector('.txt').classList.toggle('done', on);
+}
+
+function celebrate() {
+  party = true;
+  renderHeader();
+  burst();
+  animate(1500, p => { glow = Math.abs(Math.sin(p * Math.PI * 3)) * (1 - p); drawRing(); }, ease.linear);
+}
+function tick(id, on) {
+  if (on === undefined) on = !done.has(id);
+  if (on === done.has(id)) return;
+  if (on) done.add(id); else done.delete(id);
+  renderRow(id, on);
+  ringTo(500);
+  if (done.size === ITEMS.length && !party) celebrate();
+  else if (done.size < ITEMS.length && party) { party = false; renderHeader(); }
+  else renderHeader();
+}
+async function packAll() {
+  if (packing) return;
+  const todo = ITEMS.filter(i => !done.has(i.id));
+  if (!todo.length) return burst();
+  packing = true; renderHeader();
+  if (cat !== 'all') { cat = 'all'; renderHeader(); renderRows(); }
+  for (const it of todo) { await sleep(120); tick(it.id, true); }
+  packing = false; renderHeader();
+}
+
+renderHeader(); renderRows(); ringTo();
+
+root.addEventListener('click', e => {
+  const t = e.target;
+  const item = t.closest('[data-id]');
+  if (item) { tick(Number(item.dataset.id)); return; }
+  const c = t.closest('[data-cat]');
+  if (c) {
+    const v = c.dataset.cat;
+    if (v === cat) return;
+    const order = CATS.map(x => x[0]);
+    cat = v; renderHeader(); renderRows();
+    return;
+  }
+  if (t.closest('#all')) { packAll(); return; }
+  if (t.closest('#banner')) { burst(); return; }
+  if (t.closest('#reset')) {
+    if (packing) return;
+    done.clear(); START.forEach(i => done.add(i)); party = false;
+    renderHeader(); renderRows(); ringTo(600);
+  }
+});
+</script>

@@ -1,0 +1,24 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 01-design-crew.chat, message 1
+  author: maya 09:12
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#000, #fff); --blue: #007aff; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  ul, ol { margin: 4px 0 8px 0; padding-left: 22px; }
+  li { margin: 2px 0; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  mark { background-color: #ffe066; color: #1c1c1e; padding: 0 2px; border-radius: 3px; }
+  body > *:first-child { margin-top: 0; }
+  body > *:last-child { margin-bottom: 0; }
+</style>
+<p>Morning team ☀️ Quick recap of yesterday's <b>design review</b>:</p>
+<ol>
+  <li>Chat bubbles are now rendered by <a href="https://github.com/litehtml/litehtml">litehtml</a> — real HTML&nbsp;+&nbsp;CSS</li>
+  <li>Dark mode needs <mark>another pass</mark></li>
+  <li>Ship the <u>card components</u> by <i>Friday</i></li>
+</ol>

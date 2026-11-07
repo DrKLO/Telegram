@@ -1,0 +1,238 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 08-analytics.chat, message 10
+  author: bot 09:15 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --green: #34c759; --red: #ff3b30; --purple: #af52de; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .grow { flex-grow: 1; }
+  .muted { color: var(--muted); } .tiny { font-size: 11px; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); } .t-purple { color: var(--purple); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.purple { background-color: rgba(175,82,222,0.16); color: var(--purple); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  a { text-decoration: none; } a:hover { text-decoration: underline; }
+  [data-act] { cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  .lb { width: 404px; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+  .lb .hd { padding: 12px 14px 8px 14px; }
+  .lb .seg { display: inline-block; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.14); }
+  .lb .seg span { display: inline-block; padding: 3px 8px; border-radius: 7px; font-size: 11.5px; font-weight: 700; }
+  .lb .seg span:hover { background-color: rgba(127,127,127,0.22); }
+  .lb .seg span.on { background-color: #5856d6; color: #ffffff; }
+  .lb .th { display: flex; margin: 0 8px; padding: 4px 0; font-size: 10px; color: #8e8e93; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid rgba(127,127,127,0.3); }
+  .lb .list { position: relative; overflow: hidden; margin: 0 8px; }
+  .lb .rw { position: absolute; left: 0; width: 388px; max-width: 100%; overflow: hidden; border-radius: 8px; }
+  .lb .rw:hover { background-color: rgba(88,86,214,0.07); }
+  .lb .rw.open { background-color: rgba(88,86,214,0.11); }
+  .lb .mn { display: flex; align-items: center; height: 37px; border-bottom: 1px solid rgba(127,127,127,0.12); font-size: 13px; }
+  .lb .rk { width: 30px; text-align: center; font-weight: 700; color: #8e8e93; }
+  .lb .nm { flex-grow: 1; white-space: nowrap; overflow: hidden; }
+  .lb .mini { width: 80px; height: 6px; border-radius: 3px; background-color: rgba(127,127,127,0.18); margin: 0 10px; }
+  .lb .mini div { height: 6px; border-radius: 3px; }
+  .lb .pts { width: 64px; text-align: right; font-family: ui-monospace, monospace; font-size: 12px; }
+  .lb .tr { width: 34px; text-align: right; font-size: 11px; font-weight: 700; padding-right: 4px; }
+  .lb .more { display: flex; align-items: center; padding: 6px 4px 0 30px; }
+  .lb .more > div { flex-grow: 1; flex-basis: 0; margin-right: 5px; padding: 3px 6px; border-radius: 7px; background-color: rgba(127,127,127,0.1); font-size: 11px; }
+  .lb .more svg { display: block; flex-shrink: 0; }
+  .lb .sh { display: block; text-align: center; padding: 8px; font-weight: 600; border-top: 1px solid rgba(127,127,127,0.2); margin-top: 4px; }
+  .lb .sh:hover { background-color: rgba(88,86,214,0.07); text-decoration: none; }
+</style>
+<div class="card lb" id="root">
+  <div class="hd"><div class="row"><b class="grow" style="font-size: 16px">🏆 Sales leaderboard</b><span class="badge purple" id="pbadge"></span></div>
+    <div class="row between" style="margin-top: 8px"><span class="seg" id="metrics"></span><span class="seg" id="periods"></span></div></div>
+  <div class="th"><span style="width: 30px; text-align: center">#</span><span class="grow">Rep · click for stats</span><span style="width: 100px">vs leader</span><span style="width: 64px; text-align: right" id="mlabel"></span><span style="width: 38px">&nbsp;</span></div>
+  <div class="list" id="list"></div>
+  <a class="sh t-purple" href="#" data-act="more" id="more">Show top 20 ▾</a>
+</div>
+<script>
+const REPS = [
+  ['Ava Chen', '#ff2d55', 9800], ['Liam Haddad', '#ff9500', 9699], ['Mia Nielsen', '#34c759', 9477], ['Noah Okafor', '#007aff', 9352],
+  ['Zoe Larsen', '#5856d6', 9274], ['Ethan Ivanova', '#af52de', 9195], ['Ivy Novak', '#30b0c7', 9051], ['Lucas Tanaka', '#a2845e', 8996],
+  ['Nora Costa', '#ff3b30', 8759], ['Omar Silva', '#32ade6', 8622], ['Priya Dubois', '#ff2d55', 8506], ['Kenji Weber', '#ff9500', 8275],
+  ['Lena Kim', '#34c759', 8179], ['Mateo Kowalski', '#007aff', 8132], ['Sara Singh', '#5856d6', 7919], ['Theo Müller', '#af52de', 7847],
+  ['Yara Ahmed', '#30b0c7', 7656], ['Hugo Moreau', '#a2845e', 7452], ['Aisha Rossi', '#ff3b30', 7366], ['Felix Garcia', '#32ade6', 7243],
+  ['Chloe Chen', '#ff2d55', 7117], ['Diego Haddad', '#ff9500', 7013], ['Elif Nielsen', '#34c759', 6782], ['Finn Okafor', '#007aff', 6685],
+].map(([name, color, pts]) => ({ name, color, pts, init: name.split(' ').map(s => s[0]).join('') }));
+let seed = 40;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const group = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const esc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const METRICS = [
+  { label: 'Points', color: '#5856d6', fmt: v => group(v) },
+  { label: 'Deals', color: '#34c759', fmt: v => String(Math.round(v)) },
+  { label: 'Revenue', color: '#ff9500', fmt: v => '€' + (v / 1000).toFixed(v >= 100000 ? 0 : 1) + 'k' },
+];
+const PERIODS = [
+  { label: 'Week', badge: 'Week 40', k: 0.24 },
+  { label: 'Month', badge: 'October', k: 1 },
+  { label: 'Quarter', badge: 'Q3 2026', k: 2.85 },
+];
+REPS.forEach(r => {
+  const skill = r.pts / 9800;
+  r.vals = PERIODS.map((P, p) => {
+    const pts = p === 1 ? r.pts : r.pts * P.k * (0.86 + 0.28 * rnd());
+    const deals = Math.max(1, Math.round(44 * P.k * skill * (0.75 + 0.5 * rnd())));
+    return [pts, deals, deals * (3200 + 2200 * rnd())];
+  });
+  r.prev = r.vals.map(v => v.map(x => x * (0.85 + 0.3 * rnd())));
+  r.win = 22 + Math.round(rnd() * 18);
+  r.hist = Array.from({ length: 8 }, () => 0.45 + 0.55 * rnd());
+});
+
+const ease = { linear: t => t, outCubic: t => 1 - Math.pow(1 - t, 3), inOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 };
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+function animate(duration, onFrame, easing) {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step);
+  };
+  step();
+}
+
+const ROW = 38, EXP = 46;
+let metric = 0, period = 1, limit = 10, open = -1, order = [], trend = [], run = 0, limRun = 0, lim = 10;
+const S = REPS.map(() => 0), V = REPS.map(() => 0), B = REPS.map(() => 0), EX = REPS.map(() => ({ e: 0, run: 0 }));
+
+const rankBy = key => REPS.map((_, i) => i).sort((a, b) => REPS[b][key][period][metric] - REPS[a][key][period][metric]);
+function rerank() {
+  order = rankBy('vals');
+  const prev = rankBy('prev');
+  trend = REPS.map((_, i) => prev.indexOf(i) - order.indexOf(i));
+}
+rerank();
+order.forEach((i, pos) => { S[i] = pos + 10; });
+
+// --- static markup: one row per rep, built once and moved/resized in place ---
+const root = document.getElementById('root');
+const $ = id => document.getElementById(id);
+const list = $('list');
+const spark = (vals, color) => {
+  const pts = vals.map((v, i) => `${(2 + i * 60 / (vals.length - 1)).toFixed(1)},${(26 - v * 22).toFixed(1)}`).join(' ');
+  return `<svg width="64" height="28" viewBox="0 0 64 28"><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts}"/></svg>`;
+};
+const rows = REPS.map((r, i) => {
+  const d = document.createElement('div');
+  d.className = 'rw'; d.dataset.act = 'open'; d.dataset.value = String(i);
+  const box = (k, v) => `<div><div class="tiny muted">${k}</div><b>${v}</b></div>`;
+  d.innerHTML = `<div class="mn"><span class="rk"></span><span class="nm"><span class="av" style="background-color: ${r.color}; margin-right: 8px">${esc(r.init)}</span>${esc(r.name)}</span>
+      <div class="mini"><div></div></div><span class="pts"></span><span class="tr"></span></div>
+    <div class="more" hidden>${box('Deals', '')}${box('Avg deal', '')}${box('Win rate', r.win + '%')}${box('Quota', '')}${spark(r.hist, r.color)}</div>`;
+  list.appendChild(d);
+  return { el: d, rk: d.querySelector('.rk'), bar: d.querySelector('.mini div'), pts: d.querySelector('.pts'), tr: d.querySelector('.tr'), more: d.querySelector('.more'), stats: [...d.querySelectorAll('.more b')] };
+});
+const tabs = (box, items, action) => { box.innerHTML = items.map((x, k) => `<span data-act="${action}" data-value="${k}">${x.label}</span>`).join(''); };
+tabs($('metrics'), METRICS, 'metric');
+tabs($('periods'), PERIODS, 'period');
+
+// --- targeted updates ---
+function paintControls() {
+  [...$('metrics').children].forEach((s, k) => s.classList.toggle('on', k === metric));
+  [...$('periods').children].forEach((s, k) => s.classList.toggle('on', k === period));
+  $('pbadge').textContent = PERIODS[period].badge;
+  $('mlabel').textContent = METRICS[metric].label;
+  $('more').textContent = limit === 10 ? 'Show top 20 ▾' : 'Show top 10 ▴';
+}
+function paintRanks() {
+  rows.forEach((R, i) => {
+    const pos = order.indexOf(i), t = trend[i];
+    R.rk.textContent = pos < 3 ? ['🥇', '🥈', '🥉'][pos] : String(pos + 1);
+    R.tr.className = 'tr ' + (t > 0 ? 't-green' : t < 0 ? 't-red' : 'muted');
+    R.tr.textContent = t > 0 ? '▲' + t : t < 0 ? '▼' + (-t) : '–';
+    R.bar.style.backgroundColor = METRICS[metric].color;
+    const [pts, deals, rev] = REPS[i].vals[period];
+    R.stats[0].textContent = deals;
+    R.stats[1].textContent = '€' + (rev / deals / 1000).toFixed(1) + 'k';
+    R.stats[3].textContent = Math.round(pts / (PERIODS[period].k * 9000) * 100) + '%';
+  });
+}
+function yOf(i) {
+  let y = S[i] * ROW;
+  for (let k = 0; k < REPS.length; k++) if (k !== i && EX[k].e > 0) y += EXP * EX[k].e * clamp(S[i] - S[k], 0, 1);
+  return y;
+}
+function paintLayout() {
+  const M = METRICS[metric];
+  let extra = 0;
+  for (let k = 0; k < REPS.length; k++) if (EX[k].e > 0) extra += EXP * EX[k].e * clamp(lim - S[k], 0, 1);
+  const height = lim * ROW + extra;
+  list.style.height = height.toFixed(1) + 'px';
+  rows.forEach((R, i) => {
+    const y = yOf(i), e = EX[i].e;
+    R.el.hidden = y >= height;
+    if (y >= height) return;
+    R.el.style.top = y.toFixed(1) + 'px';
+    R.el.style.height = (ROW + EXP * e).toFixed(1) + 'px';
+    R.el.classList.toggle('open', i === open);
+    R.bar.style.width = (B[i] * 100).toFixed(1) + '%';
+    R.pts.textContent = M.fmt(V[i]);
+    R.more.hidden = !(e > 0.02);
+  });
+}
+
+function relayout(ms, stagger, fresh, easing) {
+  rerank();
+  paintRanks();
+  const lead = REPS[order[0]].vals[period][metric];
+  const fromS = S.slice(), fromV = fresh ? REPS.map(() => 0) : V.slice(), fromB = B.slice();
+  const toS = [], toV = REPS.map(r => r.vals[period][metric]), toB = toV.map(v => v / lead);
+  order.forEach((i, pos) => { toS[i] = pos; });
+  const me = ++run, total = ms + stagger * 12;
+  animate(total, (_, t) => {
+    if (me !== run) return;
+    for (let i = 0; i < REPS.length; i++) {
+      const p = easing(clamp((t * total - Math.min(toS[i], 12) * stagger) / ms, 0, 1));
+      S[i] = lerp(fromS[i], toS[i], p);
+      V[i] = lerp(fromV[i], toV[i], p);
+      B[i] = lerp(fromB[i], toB[i], p);
+    }
+    paintLayout();
+  }, ease.linear);
+}
+function tweenExpand(i, to, ms, easing) {
+  const x = EX[i], me = ++x.run, from = x.e;
+  animate(ms, e => { if (me === x.run) { x.e = lerp(from, to, e); paintLayout(); } }, easing);
+}
+
+root.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-act]');
+  if (!t || !root.contains(t)) return;
+  const name = t.dataset.act, value = t.dataset.value;
+  if (name === 'more') ev.preventDefault();
+  if (name === 'metric' || name === 'period') {
+    const v = Number(value);
+    if (v === (name === 'metric' ? metric : period)) return;
+    if (name === 'metric') metric = v; else period = v;
+    paintControls();
+    relayout(600, 22, name === 'metric', ease.inOutCubic);
+  } else if (name === 'open') {
+    const i = Number(value);
+    if (!(i >= 0 && i < REPS.length)) return;
+    if (open >= 0) tweenExpand(open, 0, 300, ease.inOutCubic);
+    open = open === i ? -1 : i;
+    if (open >= 0) tweenExpand(open, 1, 380, ease.outCubic);
+    paintLayout();
+  } else if (name === 'more') {
+    limit = limit === 10 ? 20 : 10;
+    paintControls();
+    const me = ++limRun, from = lim;
+    animate(520, e => { if (me === limRun) { lim = lerp(from, limit, e); paintLayout(); } }, ease.inOutCubic);
+  }
+});
+
+paintControls();
+paintRanks();
+paintLayout();
+setTimeout(() => relayout(560, 26, true, ease.outCubic), 250);
+</script>

@@ -1,0 +1,199 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 05-long-reads.chat, message 4
+  author: weekly 08:03 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14)); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; }
+  [hidden] { display: none !important; }
+
+  .faq { width: 420px; max-width: 100%; }
+  .faq .chips { display: flex; flex-wrap: wrap; margin-top: 8px; }
+  .faq .ch { padding: 2px 10px; margin: 0 6px 4px 0; border-radius: 12px; font-size: 12px; font-weight: 600; border: 1px solid rgba(127,127,127,0.30); cursor: pointer; }
+  .faq .ch:hover { background-color: rgba(255,107,53,0.10); }
+  .faq .ch.on { background-color: #ff6b35; border-color: #ff6b35; color: #ffffff; }
+  .faq .q { display: flex; align-items: center; padding: 10px 14px; border-top: 1px solid rgba(127,127,127,0.22); font-weight: 600; cursor: pointer; border-left: 0 solid #ff6b35; }
+  .faq .q:hover { background-color: rgba(127,127,127,0.08); }
+  /* tween(fx, { bar: 1 }, 420, ease.outBack): border-left 0 → 4px, padding-left 14 → 10px; closing is instant */
+  .faq .q.open { background-color: rgba(255,107,53,0.07); border-left-width: 4px; padding-left: 10px; transition: border-left-width 420ms cubic-bezier(.34,1.56,.64,1), padding-left 420ms cubic-bezier(.34,1.56,.64,1); }
+  .faq .qt { position: relative; left: 0; }
+  .faq .sign { width: 18px; text-align: center; font-weight: 800; color: #ff6b35; }
+  .faq .tag { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #8e8e93; margin-right: 8px; }
+  .faq .a { padding: 0 14px 10px 14px; font-size: 14px; line-height: 1.45; background-color: rgba(255,107,53,0.07); }
+  .faq .help { display: flex; align-items: center; margin-top: 8px; font-size: 12px; }
+  .faq .v { padding: 2px 9px; margin-left: 6px; line-height: 20px; border-radius: 10px; background-color: rgba(127,127,127,0.14); cursor: pointer; }
+  .faq .v:hover { background-color: rgba(127,127,127,0.26); }
+  .faq .v.up { background-color: rgba(52,199,89,0.22); }
+  .faq .v.down { background-color: rgba(255,59,48,0.18); }
+  .faq .v .e { display: inline-block; font-size: 13px; }
+  /* tween(fx, { pop: 1 }, 420, ease.outBack) from 1.7, font-size = 13 * pop */
+  @keyframes pop { 0% { font-size: 22px } 20% { font-size: 16px } 40% { font-size: 13px } 60% { font-size: 12px } 80% { font-size: 13px } 100% { font-size: 13px } }
+  .faq .v .e.pop { animation: pop 420ms linear; }
+  .faq .empty { padding: 14px; border-top: 1px solid rgba(127,127,127,0.22); text-align: center; }
+  /* transition(kind) on the whole bubble */
+  @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slide-down { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: none } }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+  .faq.fade { animation: fade 220ms ease-out; }
+  .faq.slide-down { animation: slide-down 240ms cubic-bezier(.33,1,.68,1); }
+  .faq.slide-up { animation: slide-up 240ms cubic-bezier(.33,1,.68,1); }
+</style>
+<div class="card faq" id="faq">
+  <div class="pad" style="padding-bottom: 8px">
+    <div class="row between"><span style="font-size: 17px; font-weight: 800">Frequently asked questions</span><span class="tiny muted" id="rated"></span></div>
+    <div class="tiny muted">Showing <span id="shown">8</span> of 8 · one answer open at a time</div>
+    <div class="chips" id="chips">
+      <span class="ch on" data-cat="0">All 8</span><span class="ch" data-cat="1">Scripts 4</span><span class="ch" data-cat="2">Rendering 3</span><span class="ch" data-cat="3">Authoring 1</span>
+    </div>
+  </div>
+  <div id="list">
+    <div class="q" data-id="0" data-cat="Scripts"><span class="grow qt">Can a message run JavaScript?</span><span class="tag">Scripts</span><span class="sign">+</span></div>
+    <div class="a" data-id="0" hidden>Yes, in a sandbox. litehtml itself never runs scripts; a message's <code>&lt;script&gt;</code> runs in its own JavaScriptCore context with no network and no DOM. All it can do is return HTML from <code>render()</code> and react to clicks in <code>onAction</code>.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">41</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">2</span></span></div></div>
+
+    <div class="q" data-id="1" data-cat="Scripts"><span class="grow qt">How does this accordion work?</span><span class="tag">Scripts</span><span class="sign">+</span></div>
+    <div class="a" data-id="1" hidden>Every question has <code>data-action="open"</code>. A click calls <code>onAction('open', id)</code>; the script keeps a single <code>openId</code>, so opening one answer closes the other, calls <code>transition('slide-down')</code>, and <code>render()</code> returns the new HTML for this same bubble.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">28</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">1</span></span></div></div>
+
+    <div class="q" data-id="2" data-cat="Rendering"><span class="grow qt">Do styles from one message leak into another?</span><span class="tag">Rendering</span><span class="sign">+</span></div>
+    <div class="a" data-id="2" hidden>Never. Each bubble is a separate litehtml document with its own stylesheet list, so a <code>&lt;style&gt;p { color: red }&lt;/style&gt;</code> only affects its own bubble.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">19</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">0</span></span></div></div>
+
+    <div class="q" data-id="3" data-cat="Rendering"><span class="grow qt">How long can a message be?</span><span class="tag">Rendering</span><span class="sign">+</span></div>
+    <div class="a" data-id="3" hidden>There is no hard limit. The article above carries around 20&nbsp;KB of HTML; the leaderboard in “Analytics” has fifty table rows. Layout cost grows roughly linearly with the number of words and boxes, and a script may return up to 256&nbsp;KB per render.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">12</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">3</span></span></div></div>
+
+    <div class="q" data-id="4" data-cat="Authoring"><span class="grow qt">Can I write my own messages like these?</span><span class="tag">Authoring</span><span class="sign">+</span></div>
+    <div class="a" data-id="4" hidden>Yes — paste HTML into the composer, with <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code> if you like, or edit the <code>.chat</code> files in <code>Resources/chats</code>. Anything you send shows fullsize; wrap it in <code>&lt;div class="widget"&gt;</code> to show it inside a bubble.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">33</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">1</span></span></div></div>
+
+    <div class="q" data-id="5" data-cat="Scripts"><span class="grow qt">What stops a script from freezing the app?</span><span class="tag">Scripts</span><span class="sign">+</span></div>
+    <div class="a" data-id="5" hidden>Every call into a script is capped at 50&nbsp;ms, and a message gets at most 200&nbsp;ms of CPU per second. Break either rule and the script is stopped; the card keeps its last HTML and offers a Restart link.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">25</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">0</span></span></div></div>
+
+    <div class="q" data-id="6" data-cat="Rendering"><span class="grow qt">Which CSS can't litehtml draw?</span><span class="tag">Rendering</span><span class="sign">+</span></div>
+    <div class="a" data-id="6" hidden>No transitions, transforms, <code>opacity</code>, <code>box-shadow</code> or grid. Scripts animate with what is left — <code>rgba()</code> colours, margins, sizes and absolute positions — re-rendering up to 60 times a second.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">17</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">2</span></span></div></div>
+
+    <div class="q" data-id="7" data-cat="Scripts"><span class="grow qt">Do animations run while I scroll away?</span><span class="tag">Scripts</span><span class="sign">+</span></div>
+    <div class="a" data-id="7" hidden>No. Timers and frames pause while a bubble is off screen and catch up when it comes back, so a long chat full of live cards costs nothing.
+      <div class="help"><span class="muted grow msg">Was this helpful?</span><span class="v" data-vote="up"><span class="e">👍</span> <span class="n">14</span></span><span class="v" data-vote="down"><span class="e">👎</span> <span class="n">1</span></span></div></div>
+  </div>
+  <div class="empty muted" id="empty" hidden>Nothing here yet.</div>
+</div>
+<script>
+(function () {
+  const CATS = ['All', 'Scripts', 'Rendering', 'Authoring'];
+  const root = document.getElementById('faq');
+  const qs = Array.from(root.querySelectorAll('.q'));
+  const as = Array.from(root.querySelectorAll('.a'));
+  const chips = Array.from(root.querySelectorAll('.ch'));
+  const shownEl = document.getElementById('shown'), ratedEl = document.getElementById('rated'), emptyEl = document.getElementById('empty');
+  const BASE = as.map(a => ({ up: Number(a.querySelector('[data-vote=up] .n').textContent), down: Number(a.querySelector('[data-vote=down] .n').textContent) }));
+
+  const outCubic = t => 1 - Math.pow(1 - t, 3);
+  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+
+  let cat = 0, openId = null;
+  const votes = {};
+  const fx = { intro: 0 };
+
+  function visibleRows() { return qs.filter(q => !cat || q.dataset.cat === CATS[cat]); }
+
+  // Stagger: question text slides in from 28 px as fx.intro runs
+  function paintIntro() {
+    visibleRows().forEach((q, k) => {
+      const off = (1 - outCubic(clamp(fx.intro * 1.8 - k * 0.1, 0, 1))) * 28;
+      q.querySelector('.qt').style.left = off.toFixed(1) + 'px';
+    });
+  }
+  let introRun = 0;
+  function tweenIntro(duration) {
+    const me = ++introRun, from = fx.intro, start = performance.now();
+    const step = () => {
+      if (me !== introRun) return;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      fx.intro = from + (1 - from) * outCubic(t);
+      paintIntro();
+      if (t < 1) requestAnimationFrame(step);
+    };
+    step();
+  }
+
+  // transition(kind) on the bubble: restart the root animation
+  function bubble(kind) {
+    root.classList.remove('fade', 'slide-up', 'slide-down');
+    requestAnimationFrame(() => root.classList.add(kind));
+  }
+  root.addEventListener('animationend', e => { if (e.target === root) root.classList.remove('fade', 'slide-up', 'slide-down'); });
+
+  function applyFilter() {
+    const list = visibleRows();
+    qs.forEach(q => { q.hidden = !list.includes(q); q.querySelector('.tag').hidden = cat !== 0; });
+    as.forEach(a => { a.hidden = openId === null || Number(a.dataset.id) !== openId; });
+    shownEl.textContent = String(list.length);
+    emptyEl.hidden = list.length > 0;
+  }
+  function applyOpen() {
+    qs.forEach(q => {
+      const isOpen = Number(q.dataset.id) === openId;
+      q.classList.toggle('open', isOpen);
+      q.querySelector('.sign').textContent = isOpen ? '−' : '+';
+    });
+    as.forEach(a => { a.hidden = Number(a.dataset.id) !== openId; });
+  }
+  function applyVotes(id) {
+    const a = as[id], vote = votes[id];
+    a.querySelector('.msg').textContent = vote ? 'Thanks for the feedback!' : 'Was this helpful?';
+    for (const kind of ['up', 'down']) {
+      const v = a.querySelector(`[data-vote=${kind}]`);
+      v.classList.toggle(kind, vote === kind);
+      v.querySelector('.n').textContent = String(BASE[id][kind] + (vote === kind ? 1 : 0));
+    }
+    const rated = Object.values(votes).filter(Boolean).length;
+    ratedEl.textContent = rated ? `you rated ${rated}` : '';
+  }
+
+  chips.forEach(ch => ch.addEventListener('click', () => {
+    const next = Number(ch.dataset.cat);
+    if (next === cat) return;
+    bubble('fade');
+    cat = next;
+    chips.forEach(c => c.classList.toggle('on', Number(c.dataset.cat) === cat));
+    if (openId !== null && cat && qs[openId].dataset.cat !== CATS[cat]) { openId = null; applyOpen(); }
+    applyFilter();
+    fx.intro = 0.35; paintIntro(); tweenIntro(600);
+  }));
+
+  qs.forEach(q => q.addEventListener('click', () => {
+    const id = Number(q.dataset.id);
+    bubble(openId === id ? 'slide-up' : 'slide-down');
+    openId = openId === id ? null : id;
+    applyOpen();
+  }));
+
+  as.forEach(a => a.querySelectorAll('.v').forEach(v => v.addEventListener('click', e => {
+    e.stopPropagation();
+    const id = Number(a.dataset.id), kind = v.dataset.vote;
+    votes[id] = votes[id] === kind ? undefined : kind;
+    applyVotes(id);
+    const emoji = v.querySelector('.e');
+    emoji.classList.remove('pop');
+    requestAnimationFrame(() => emoji.classList.add('pop'));
+  })));
+  root.addEventListener('animationend', e => { if (e.target.classList.contains('e')) e.target.classList.remove('pop'); });
+
+  applyFilter();
+  paintIntro();
+  setTimeout(() => tweenIntro(900), 250);
+})();
+</script>

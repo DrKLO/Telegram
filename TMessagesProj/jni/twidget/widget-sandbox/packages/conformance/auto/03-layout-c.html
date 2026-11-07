@@ -1,0 +1,108 @@
+<!doctype html>
+<html data-test="auto/03-layout-c">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: layout and box model (3/3)</title>
+<!-- conformance {"title":"Layout and box model (3/3): table, flow-root, contents, radius, positioning, z-index, overflow, visibility, opacity"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages{height:76px}</style><script>var T=function(){var u=document,m=u.documentElement,k=typeof TelegramWidget!="undefined",D=window.__conformanceMode||(k?"sandbox":"native"),a=[],y={},l=[];var O,c,p,f,M,d,b,g,q=t=>typeof t=="string"?u.querySelector(t):t,w=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),A=()=>{g=g||setTimeout(S,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),h=y[t+"|"+e]||(y[t+"|"+e]=a[a.length]=[t,e]);return h[2]=s,h[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),A(),s}function T(t,e,n,o){if(o&&o.sandboxOnly&&!k)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>T(t,e,[n,o],r),B=(t,e,n,o,r)=>T(t,e,[n===o,"got "+w(n)+", want "+w(o)],r);var E=(t,e,n)=>getComputedStyle(q(t),n).getPropertyValue(e).trim();function I(t){let e=q(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var F=t=>{l.push(t)};var J=()=>{},N=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function S(){g=0,p&&!f&&J();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of a)t[o[2]]++;let e=p&&!l.length,n=f||e&&!t.pending?"done":e&&M?"awaiting":"running";f=n=="done",m.setAttribute("data-conformance",JSON.stringify({v:1,id:m.getAttribute("data-test"),mode:D,status:n,n:t,checks:a,targets:O,stages:c})),x&&x(n,t)}var x;function j(){x=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);u.getElementById("conf-list").textContent=[n.join(" · ")].concat(a.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function C(){if(c||(c={},[].forEach.call(u.querySelectorAll("[data-stage]"),e=>{c[e.getAttribute("data-stage")]=N(e)})),!l.length)return p=1,d&&b&&setTimeout(b,d),A();let t;try{t=l.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(C,t||0)}function _(t){t=t||{},M=t.awaitInput,d=t.awaitInput||t.deadline,S();let e=()=>{e=()=>{},setTimeout(C,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}j();return{cs:E,eq:B,ok:R,rect:I,run:_,step:F}}();</script><!-- /conformance:harness -->
+<style>
+.p{position:relative;width:200px;margin:0 0 3px;background:#eef}
+.b{height:10px;background:#46c}
+.w40{width:40px}
+#tbl{display:table;width:200px}
+#tbl>div{display:table-cell;height:10px}
+#flowroot{display:flow-root}
+#flowroot>.f{float:left;width:20px;height:24px;background:#c64}
+#contents{display:flex}
+#contents>span{display:contents}
+#pos .abs{position:absolute;left:7px;top:5px;width:10px;height:10px;background:#c33}
+#pos .ins{position:absolute;inset:0;background:#3c33}
+#pos .rb{position:absolute;right:3px;bottom:2px;width:10px;height:10px;background:#33c}
+.rel{position:relative;left:12px;top:3px;width:10px}
+#fixed{position:fixed;left:3px;top:4px;width:2px;height:2px}
+#sticky{position:sticky;top:0}
+#z{height:30px}
+#z .lo,#z .hi{position:absolute;top:0;left:0;width:30px;height:30px}
+#z .hi{z-index:2;background:#c33}
+#z .lo{z-index:1;background:#33c}
+#ov{width:50px;height:20px;overflow:hidden}
+#ov>div{height:60px;background:#c93}
+#ovc{width:50px;height:20px;overflow:clip}
+#ovc>div{height:60px;background:#c93}
+#ovs{width:50px;height:20px;overflow:auto}
+#ovs>div{height:60px;background:#c93}
+#vis{height:20px}
+#vis .under{position:absolute;inset:0;background:#9cf}
+#vis .hid{position:absolute;inset:0;visibility:hidden;background:#f00}
+#op{opacity:.5;width:20px}
+/* stages */
+.s-radius{position:absolute;left:10px;top:5px;width:60px;height:50px;border-radius:12px 25px;overflow:hidden;background:#36c}
+.s-radius>div{width:60px;height:25px;background:#e83}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="radius" data-covers="css.box.radius css.overflow.clip"><div class="s-radius"><div></div></div></div>
+</div>
+<div class="conf-head">03c · Layout and box model (3/3)</div>
+<div class="conf-probes">
+  <div class="p" id="z"><div class="hi"></div><div class="lo"></div></div>
+  <div class="p"><div id="ov"><div></div></div></div>
+  <div class="p" id="vis"><div class="under"></div><div class="hid"></div></div>
+  <div class="p" id="tbl"><div style="width:50px;background:#c33"></div><div style="background:#33c"></div></div>
+  <div class="p" id="flowroot"><div class="f"></div></div>
+  <div class="p" id="contents"><span><div class="b w40"></div><div class="b w40"></div></span></div>
+  <div class="p" id="pos" style="height:30px"><div class="abs"></div><div class="ins"></div><div class="rb"></div></div>
+  <div class="p" id="pos-rel"><div class="b rel" id="relb"></div></div>
+  <div id="fixed"></div>
+  <div class="p"><div class="b" id="sticky"></div></div>
+  <div class="p"><div id="ovc"><div></div></div></div>
+  <div class="p"><div id="ovs"><div></div></div></div>
+  <div class="p"><div class="b" id="op"></div></div>
+</div>
+<div id="conf-list"></div>
+<script>
+var R = T.rect;
+function kids(sel) { return Array.prototype.map.call(document.querySelector(sel).children, R); }
+function inside(sel) { var p = R(sel); return kids(sel).map(function (k) { return { x: k.x - p.x, y: k.y - p.y, w: k.w, h: k.h, r: k.r - p.x, b: k.b - p.y }; }); }
+
+T.step(function () {
+  var tb = inside('#tbl');
+  T.ok('css.display.table', 'table cells side by side, the second takes the rest', Math.abs(tb[0].w - 50) < 1 && Math.abs(tb[1].x - tb[0].r) < 1 && Math.abs(tb[1].r - 200) < 1, tb.map(function (k) { return k.x + '/' + k.w; }).join(' '));
+  T.ok('css.display.other', 'display: flow-root is dropped: the float is not contained (profile 1: out)', R('#flowroot').h < 1, 'h ' + R('#flowroot').h);
+  var ct = inside('#contents');
+  T.ok('css.display.other', 'display: contents is dropped: the span stays one flex item', (function () { var k = document.querySelector('#contents span').children; return Math.abs(R(k[1]).x - R(k[0]).x) < 0.5; })(), '');
+
+  var ps = inside('#pos');
+  T.ok('css.position.relative-absolute', 'absolute: left/top inside a relative parent', Math.abs(ps[0].x - 7) < 0.5 && Math.abs(ps[0].y - 5) < 0.5, ps[0].x + ',' + ps[0].y);
+  T.ok('css.position.relative-absolute', 'inset: 0 fills the parent', Math.abs(ps[1].w - 200) < 0.5 && Math.abs(ps[1].h - 30) < 0.5, ps[1].w + 'x' + ps[1].h);
+  T.ok('css.position.relative-absolute', 'right/bottom anchor to the far edges', Math.abs(ps[2].r - 197) < 0.5 && Math.abs(ps[2].b - 28) < 0.5, ps[2].r + ',' + ps[2].b);
+  var rl = R('#relb'), rp = R('#pos-rel');
+  T.ok('css.position.relative-absolute', 'relative: left/top shift the box', Math.abs(rl.x - rp.x - 12) < 0.5 && Math.abs(rl.y - rp.y - 3) < 0.5, (rl.x - rp.x) + ',' + (rl.y - rp.y));
+  var fx = R('#fixed');
+  T.ok('css.position.fixed', 'fixed is placed against the bubble', Math.abs(fx.x - 3) < 0.5 && Math.abs(fx.y - 4) < 0.5, fx.x + ',' + fx.y);
+  T.ok('css.position.sticky', 'sticky is neutralised to relative', T.cs('#sticky', 'position') !== 'sticky', T.cs('#sticky', 'position'));
+
+  var z = R('#z');
+  var top = document.elementFromPoint(z.x + 10, z.y + 10);
+  T.ok('css.position.z-index', 'the higher z-index is on top', !!top && top.className === 'hi', top ? top.className : 'null');
+
+  var ov = R('#ov');
+  var hit = document.elementFromPoint(ov.x + 10, ov.y + 30);
+  T.ok('css.overflow.clip', 'overflow: hidden clips hit testing', !hit || hit.parentNode !== document.getElementById('ov'), hit ? hit.id || hit.className || hit.tagName : 'null');
+  T.eq('css.overflow.clip', 'overflow: hidden is computed', T.cs('#ov', 'overflow-y'), 'hidden');
+  T.eq('css.overflow.clip', 'overflow: clip is computed', T.cs('#ovc', 'overflow-y'), 'clip');
+  T.ok('css.overflow.scroll', 'overflow: auto is neutralised to hidden', T.cs('#ovs', 'overflow-y') === 'hidden', T.cs('#ovs', 'overflow-y'));
+
+  var vh = R('#vis');
+  var under = document.elementFromPoint(vh.x + 10, vh.y + 10);
+  T.ok('css.visibility', 'visibility: hidden is skipped by hit testing', !!under && under.className === 'under', under ? under.className : 'null');
+  T.ok('css.visibility', 'a hidden box keeps its size', R('#vis .hid').w === 200, '');
+  T.eq('css.opacity', 'computed opacity', T.cs('#op', 'opacity'), '0.5');
+});
+T.run();
+</script>
+</body>
+</html>

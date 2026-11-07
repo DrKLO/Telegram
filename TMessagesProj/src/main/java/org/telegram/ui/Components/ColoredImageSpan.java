@@ -90,9 +90,10 @@ public class ColoredImageSpan extends ReplacementSpan {
         translateY = ty;
     }
 
-    public void translate(float tx, float ty) {
+    public ColoredImageSpan translate(float tx, float ty) {
         translateX = tx;
         translateY = ty;
+        return this;
     }
 
     public void rotate(float r) {
@@ -178,9 +179,10 @@ public class ColoredImageSpan extends ReplacementSpan {
         canvas.restore();
     }
 
-    public void setColorKey(int colorKey) {
+    public ColoredImageSpan setColorKey(int colorKey) {
         this.colorKey = colorKey;
         usePaintColor = colorKey < 0;
+        return this;
     }
 
     public void setTopOffset(int topOffset) {
@@ -191,17 +193,20 @@ public class ColoredImageSpan extends ReplacementSpan {
         this.checkColorDelegate = checkColorDelegate;
     }
 
-    public void setScale(float sx) {
+    public ColoredImageSpan setScale(float sx) {
         scaleX = sx;
+        return this;
     }
 
-    public void setScale(float sx, float sy) {
+    public ColoredImageSpan setScale(float sx, float sy) {
         scaleX = sx;
         scaleY = sy;
+        return this;
     }
 
-    public void setOverrideColor(int red) {
+    public ColoredImageSpan setOverrideColor(int red) {
         overrideColor = red;
+        return this;
     }
 
     public void setAlpha(float v) {

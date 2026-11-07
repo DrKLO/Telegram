@@ -124,6 +124,16 @@ class PeerConnectionSdpMethods {
   // Tears down the data channel transport state and clears the `sctp_mid()` and
   // `sctp_transport_name()` properties.
   virtual void DestroyDataChannelTransport(RTCError error) = 0;
+  // TGCALLS SEAM (rollback releases an unnegotiated sctp_mid): clears
+  // `sctp_mid()`, `sctp_transport_name()` and the network-side mid WITHOUT
+  // closing the data channels, so the next offer can carry a fresh data
+  // m-section. Rollback() calls it when the description that set up the data
+  // channel transport is rolled back before any stable description carried
+  // its m-section: the stale mid would otherwise both alias whatever m-section
+  // the peer's offer gives that mid and stop GetOptionsForUnifiedPlanOffer
+  // from adding a data section while CheckIfNegotiationIsNeeded keeps asking
+  // for one - an endless offer/answer loop. Default no-op for fakes.
+  virtual void ResetSctpDataMidAfterRollback() {}
   virtual const FieldTrialsView& trials() const = 0;
 
   virtual void ClearStatsCache() = 0;

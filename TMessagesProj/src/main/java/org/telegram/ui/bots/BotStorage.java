@@ -6,6 +6,7 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Environment;
@@ -36,6 +37,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -498,10 +500,13 @@ public class BotStorage {
         linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 32, 0, 32, 19));
 
         TextInfoPrivacyCell separator = new TextInfoPrivacyCell(context, resourcesProvider);
+        // white fill + SRC_IN filter = exactly the key color, and the filter follows theme changes
+        final ColorDrawable separatorFill = new ColorDrawable(0xFFFFFFFF);
         separator.setBackground(new CombinedDrawable(
-            new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)),
+            separatorFill,
             Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow, resourcesProvider)
         ));
+        ThemeBind.drawableColorFilter(separator, separatorFill, Theme.key_windowBackgroundGray, resourcesProvider, PorterDuff.Mode.SRC_IN);
         separator.setFixedSize(12);
         linearLayout.addView(separator, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 12, Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
 
@@ -520,7 +525,7 @@ public class BotStorage {
 
                 radioButton = new RadioButton(context);
                 radioButton.setSize(dp(20));
-                radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+                ThemeBind.radioColors(radioButton, Theme.key_dialogRadioBackground, Theme.key_dialogRadioBackgroundChecked);
                 addView(radioButton, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
 
                 TextView textView = TextHelper.makeTextView(context, 16, Theme.key_windowBackgroundWhiteBlackText, true);
@@ -552,7 +557,7 @@ public class BotStorage {
         for (int i = 0; i < storages.size(); ++i) {
             final StorageConfig storage = storages.get(i);
             StorageCell cell = new StorageCell(storage, i < storages.size() - 1);
-            cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL));
+            ThemeBind.selectorBackground(cell, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_ALL), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             cell.setOnClickListener(v -> {
                 selected[0] = storage.storage_id;
                 for (StorageCell _cell : cells) {
@@ -572,7 +577,7 @@ public class BotStorage {
 
         final BottomSheet sheet = b.create();
 
-        sheet.fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        sheet.fixNavigationBarKey(Theme.key_dialogBackground);
         button.setOnClickListener(v -> {
             if (!sentDone[0] && whenDone != null) {
                 sentDone[0] = true;

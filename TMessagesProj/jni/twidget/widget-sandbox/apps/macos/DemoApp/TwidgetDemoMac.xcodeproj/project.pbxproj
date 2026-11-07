@@ -1,0 +1,522 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		11342CA49D316585F772E0BD /* CompareRunnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56B1396189A96FA1D9EEC5C /* CompareRunnerView.swift */; };
+		118B38597B29487617D59AB8 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31E93141050F201E4344116 /* ContentView.swift */; };
+		260C0E6F165DF1D464023C37 /* TwidgetDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77BBD29B7C63566FCA514873 /* TwidgetDemoApp.swift */; };
+		40C2D55443C52914C14A7DC9 /* WidgetSandbox in Frameworks */ = {isa = PBXBuildFile; productRef = 688E4EC269A51B3EB24CAF74 /* WidgetSandbox */; };
+		4693C7E91CED3339B2D5CFBE /* FeedMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F1E67D928BEA810215B78FC /* FeedMetrics.swift */; };
+		4BE6B5BD97B2D451EF646D78 /* AttackRunnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3A26BA2D7E86EDDA247923C /* AttackRunnerView.swift */; };
+		5F8AB9317FEFC45A8D1A3BF7 /* LitehtmlRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A2C4F8A85B8C2EC8E53C708 /* LitehtmlRenderer.swift */; };
+		6365A78A61FB36ED8007F89E /* BlitzRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7BD983234660DCC5438D27E /* BlitzRenderer.swift */; };
+		63D6AE173F42B36FDEA3781A /* NativeRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43A95975E64EC9AB57914ADA /* NativeRenderer.swift */; };
+		6645A4DDF601384E8FBE4DD5 /* Corpus in Resources */ = {isa = PBXBuildFile; fileRef = 732F2EB8E3AF10D594AC0FAF /* Corpus */; };
+		6C6DDDE7960CE75FB563D363 /* ChatFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834868E1118EFA2950F60A9E /* ChatFeedView.swift */; };
+		9A5C2DDFD56C94F93838EA87 /* FeedModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7974D5A9A2E40D31D829D2 /* FeedModel.swift */; };
+		9BDA8A4F5847E32788A23E21 /* FeedConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4815FD3BB6318806CE9D262 /* FeedConfig.swift */; };
+		C02F801832C3B14788DD8D19 /* ReferenceWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92373A34788135DFE6040D59 /* ReferenceWebView.swift */; };
+		C4A6FE4A36A8DE97DD0C054F /* ChatFeedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC0A8D36EF242CCF7551439 /* ChatFeedViewController.swift */; };
+		CA2B5035C54294FCF1990B87 /* DemoPlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85CF9C3F50EB7CC61F0B139 /* DemoPlatform.swift */; };
+		E17C3D70FC6BCE9843823222 /* Corpus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6951CA35B8BC5C38233E2000 /* Corpus.swift */; };
+		EB8BFA294786F67F56A2D63B /* GeneratedRunnerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5228CE0A3ECDFDF773B75F7D /* GeneratedRunnerView.swift */; };
+		FBA69CD35006CEAD488D25D6 /* PauseProbeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C812CB27326ABD3836618E26 /* PauseProbeView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2F1E67D928BEA810215B78FC /* FeedMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedMetrics.swift; sourceTree = "<group>"; };
+		43A95975E64EC9AB57914ADA /* NativeRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeRenderer.swift; sourceTree = "<group>"; };
+		4A2C4F8A85B8C2EC8E53C708 /* LitehtmlRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LitehtmlRenderer.swift; sourceTree = "<group>"; };
+		5228CE0A3ECDFDF773B75F7D /* GeneratedRunnerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedRunnerView.swift; sourceTree = "<group>"; };
+		5F7974D5A9A2E40D31D829D2 /* FeedModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedModel.swift; sourceTree = "<group>"; };
+		6951CA35B8BC5C38233E2000 /* Corpus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Corpus.swift; sourceTree = "<group>"; };
+		732F2EB8E3AF10D594AC0FAF /* Corpus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Corpus; path = ../../ios/DemoApp/Corpus; sourceTree = SOURCE_ROOT; };
+		77BBD29B7C63566FCA514873 /* TwidgetDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwidgetDemoApp.swift; sourceTree = "<group>"; };
+		834868E1118EFA2950F60A9E /* ChatFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFeedView.swift; sourceTree = "<group>"; };
+		846B555EDD297B77E0F4A651 /* TwidgetDemoMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TwidgetDemoMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DC0A8D36EF242CCF7551439 /* ChatFeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatFeedViewController.swift; sourceTree = "<group>"; };
+		92373A34788135DFE6040D59 /* ReferenceWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferenceWebView.swift; sourceTree = "<group>"; };
+		B3A26BA2D7E86EDDA247923C /* AttackRunnerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttackRunnerView.swift; sourceTree = "<group>"; };
+		B56B1396189A96FA1D9EEC5C /* CompareRunnerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompareRunnerView.swift; sourceTree = "<group>"; };
+		B6360C5B16B97DB7AB2352D6 /* twidget */ = {isa = PBXFileReference; lastKnownFileType = folder; name = twidget; path = ../../..; sourceTree = SOURCE_ROOT; };
+		B7BD983234660DCC5438D27E /* BlitzRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlitzRenderer.swift; sourceTree = "<group>"; };
+		C4815FD3BB6318806CE9D262 /* FeedConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedConfig.swift; sourceTree = "<group>"; };
+		C812CB27326ABD3836618E26 /* PauseProbeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseProbeView.swift; sourceTree = "<group>"; };
+		C85CF9C3F50EB7CC61F0B139 /* DemoPlatform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoPlatform.swift; sourceTree = "<group>"; };
+		D31E93141050F201E4344116 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		85DD128F211AB8B36E19FF7B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40C2D55443C52914C14A7DC9 /* WidgetSandbox in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1B60869C2AE81BE71B134BB9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				846B555EDD297B77E0F4A651 /* TwidgetDemoMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3ADA26F075DAE47A7E2E6149 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				B3A26BA2D7E86EDDA247923C /* AttackRunnerView.swift */,
+				B7BD983234660DCC5438D27E /* BlitzRenderer.swift */,
+				B56B1396189A96FA1D9EEC5C /* CompareRunnerView.swift */,
+				D31E93141050F201E4344116 /* ContentView.swift */,
+				6951CA35B8BC5C38233E2000 /* Corpus.swift */,
+				C85CF9C3F50EB7CC61F0B139 /* DemoPlatform.swift */,
+				5228CE0A3ECDFDF773B75F7D /* GeneratedRunnerView.swift */,
+				4A2C4F8A85B8C2EC8E53C708 /* LitehtmlRenderer.swift */,
+				43A95975E64EC9AB57914ADA /* NativeRenderer.swift */,
+				C812CB27326ABD3836618E26 /* PauseProbeView.swift */,
+				92373A34788135DFE6040D59 /* ReferenceWebView.swift */,
+				77BBD29B7C63566FCA514873 /* TwidgetDemoApp.swift */,
+				8764905EA848C184308A275B /* ChatFeed */,
+			);
+			name = Sources;
+			path = ../../ios/DemoApp/Sources;
+			sourceTree = "<group>";
+		};
+		5E034AB3EA6257790BC97642 = {
+			isa = PBXGroup;
+			children = (
+				732F2EB8E3AF10D594AC0FAF /* Corpus */,
+				F91ABEFBA08D6EAFD5DA4810 /* Packages */,
+				3ADA26F075DAE47A7E2E6149 /* Sources */,
+				1B60869C2AE81BE71B134BB9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8764905EA848C184308A275B /* ChatFeed */ = {
+			isa = PBXGroup;
+			children = (
+				834868E1118EFA2950F60A9E /* ChatFeedView.swift */,
+				8DC0A8D36EF242CCF7551439 /* ChatFeedViewController.swift */,
+				C4815FD3BB6318806CE9D262 /* FeedConfig.swift */,
+				2F1E67D928BEA810215B78FC /* FeedMetrics.swift */,
+				5F7974D5A9A2E40D31D829D2 /* FeedModel.swift */,
+			);
+			path = ChatFeed;
+			sourceTree = "<group>";
+		};
+		F91ABEFBA08D6EAFD5DA4810 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				B6360C5B16B97DB7AB2352D6 /* twidget */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		096EB11AB2F8B805CB68A345 /* TwidgetDemoMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B36CEEAD9036CE9EE14ECA6 /* Build configuration list for PBXNativeTarget "TwidgetDemoMac" */;
+			buildPhases = (
+				919731974C2D9B862076B749 /* Build the Blitz renderer (cargo; TW_NATIVE_RENDERERS=YES only) */,
+				1DED7AB6C717E73E3AEA73E7 /* Build the litehtml renderer (cmake; TW_NATIVE_RENDERERS=YES only) */,
+				CCFD329BD7EC14BD12A76783 /* Sources */,
+				4C4A0A3E4C44F7E3849F47C7 /* Resources */,
+				85DD128F211AB8B36E19FF7B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TwidgetDemoMac;
+			packageProductDependencies = (
+				688E4EC269A51B3EB24CAF74 /* WidgetSandbox */,
+			);
+			productName = TwidgetDemoMac;
+			productReference = 846B555EDD297B77E0F4A651 /* TwidgetDemoMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		73D9A0C405C5C6FF5AB0A7F7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					096EB11AB2F8B805CB68A345 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 2F1F3F8AA60A36B89D391E74 /* Build configuration list for PBXProject "TwidgetDemoMac" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5E034AB3EA6257790BC97642;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D58EC5C56F50EE56F2A659D2 /* XCLocalSwiftPackageReference "../../.." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1B60869C2AE81BE71B134BB9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				096EB11AB2F8B805CB68A345 /* TwidgetDemoMac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4C4A0A3E4C44F7E3849F47C7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6645A4DDF601384E8FBE4DD5 /* Corpus in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1DED7AB6C717E73E3AEA73E7 /* Build the litehtml renderer (cmake; TW_NATIVE_RENDERERS=YES only) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build the litehtml renderer (cmake; TW_NATIVE_RENDERERS=YES only)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "[ \"$TW_NATIVE_RENDERERS\" = YES ] || exit 0; \"$SRCROOT/../../renderer-litehtml/build-apple.sh\"";
+		};
+		919731974C2D9B862076B749 /* Build the Blitz renderer (cargo; TW_NATIVE_RENDERERS=YES only) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build the Blitz renderer (cargo; TW_NATIVE_RENDERERS=YES only)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "[ \"$TW_NATIVE_RENDERERS\" = YES ] || exit 0; \"$SRCROOT/../../renderer-blitz/build-apple.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CCFD329BD7EC14BD12A76783 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4BE6B5BD97B2D451EF646D78 /* AttackRunnerView.swift in Sources */,
+				6365A78A61FB36ED8007F89E /* BlitzRenderer.swift in Sources */,
+				6C6DDDE7960CE75FB563D363 /* ChatFeedView.swift in Sources */,
+				C4A6FE4A36A8DE97DD0C054F /* ChatFeedViewController.swift in Sources */,
+				11342CA49D316585F772E0BD /* CompareRunnerView.swift in Sources */,
+				118B38597B29487617D59AB8 /* ContentView.swift in Sources */,
+				E17C3D70FC6BCE9843823222 /* Corpus.swift in Sources */,
+				CA2B5035C54294FCF1990B87 /* DemoPlatform.swift in Sources */,
+				9BDA8A4F5847E32788A23E21 /* FeedConfig.swift in Sources */,
+				4693C7E91CED3339B2D5CFBE /* FeedMetrics.swift in Sources */,
+				9A5C2DDFD56C94F93838EA87 /* FeedModel.swift in Sources */,
+				EB8BFA294786F67F56A2D63B /* GeneratedRunnerView.swift in Sources */,
+				5F8AB9317FEFC45A8D1A3BF7 /* LitehtmlRenderer.swift in Sources */,
+				63D6AE173F42B36FDEA3781A /* NativeRenderer.swift in Sources */,
+				FBA69CD35006CEAD488D25D6 /* PauseProbeView.swift in Sources */,
+				C02F801832C3B14788DD8D19 /* ReferenceWebView.swift in Sources */,
+				260C0E6F165DF1D464023C37 /* TwidgetDemoApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1793B930BE802C8B77BE371C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../renderer-blitz/target/apple/$(PLATFORM_NAME)",
+					"$(SRCROOT)/../../renderer-litehtml/target/apple/$(PLATFORM_NAME)",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"$(TW_NATIVE_RENDERER_LDFLAGS_$(TW_NATIVE_RENDERERS))",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.telegram.widgetsandbox.TwidgetDemoMac;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					"$(TW_NATIVE_RENDERER_CONDITION_$(TW_NATIVE_RENDERERS))",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = ../../ios/DemoApp/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+				TW_NATIVE_RENDERERS = NO;
+				TW_NATIVE_RENDERER_CONDITION_YES = TW_NATIVE_RENDERERS;
+				TW_NATIVE_RENDERER_LDFLAGS_YES = (
+					"-ltwidget_blitz",
+					"-ltwidget_litehtml",
+					"-lc++",
+					"-framework",
+					CoreText,
+					"-framework",
+					CoreGraphics,
+					"-framework",
+					ImageIO,
+					"-liconv",
+				);
+			};
+			name = Release;
+		};
+		4EA225D3FBF4C4DDCB5DAF85 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6F1DE32A1E10AFC3001A843F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		E08567EF62D5626BFF707067 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../../renderer-blitz/target/apple/$(PLATFORM_NAME)",
+					"$(SRCROOT)/../../renderer-litehtml/target/apple/$(PLATFORM_NAME)",
+				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"$(TW_NATIVE_RENDERER_LDFLAGS_$(TW_NATIVE_RENDERERS))",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.telegram.widgetsandbox.TwidgetDemoMac;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
+					"$(inherited)",
+					"$(TW_NATIVE_RENDERER_CONDITION_$(TW_NATIVE_RENDERERS))",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = ../../ios/DemoApp/BridgingHeader.h;
+				SWIFT_VERSION = 5.0;
+				TW_NATIVE_RENDERERS = NO;
+				TW_NATIVE_RENDERER_CONDITION_YES = TW_NATIVE_RENDERERS;
+				TW_NATIVE_RENDERER_LDFLAGS_YES = (
+					"-ltwidget_blitz",
+					"-ltwidget_litehtml",
+					"-lc++",
+					"-framework",
+					CoreText,
+					"-framework",
+					CoreGraphics,
+					"-framework",
+					ImageIO,
+					"-liconv",
+				);
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0B36CEEAD9036CE9EE14ECA6 /* Build configuration list for PBXNativeTarget "TwidgetDemoMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E08567EF62D5626BFF707067 /* Debug */,
+				1793B930BE802C8B77BE371C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2F1F3F8AA60A36B89D391E74 /* Build configuration list for PBXProject "TwidgetDemoMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4EA225D3FBF4C4DDCB5DAF85 /* Debug */,
+				6F1DE32A1E10AFC3001A843F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		D58EC5C56F50EE56F2A659D2 /* XCLocalSwiftPackageReference "../../.." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		688E4EC269A51B3EB24CAF74 /* WidgetSandbox */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WidgetSandbox;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 73D9A0C405C5C6FF5AB0A7F7 /* Project object */;
+}

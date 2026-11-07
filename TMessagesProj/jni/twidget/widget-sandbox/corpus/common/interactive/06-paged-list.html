@@ -1,0 +1,62 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a paged contact list — 30 rows, 6 per page, the list is rebuilt with innerHTML on every page turn; sort toggle
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .p { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .av { width: 36px; height: 36px; border-radius: 18px; margin-right: 10px; color: #fff; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .role { font-size: 11px; color: var(--muted); }
+  .tz { font-size: 11px; padding: 2px 7px; border-radius: 7px; background-color: var(--fill); }
+  .on { width: 8px; height: 8px; border-radius: 4px; margin-left: 8px; background-color: var(--fill2); }
+  .on.y { background-color: var(--green); }
+  .pager { display: flex; align-items: center; margin-top: 10px; }
+  .pager .pg { width: 26px; height: 26px; border-radius: 13px; text-align: center; line-height: 26px; font-size: 12px; font-weight: 700; margin: 0 2px; cursor: pointer; }
+  .pager .pg.cur { background-color: var(--blue); color: #fff; }
+  .sort { font-size: 12px; color: var(--blue); font-weight: 600; cursor: pointer; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Team directory</span><span class="sort" role="button" id="sort">Sort: name</span></div>
+  <div id="list"></div>
+  <div class="pager"><span class="tiny muted grow" id="range"></span><span class="btn" role="button" data-step="-1" style="padding: 4px 10px">Prev</span><span id="pages"></span><span class="btn" role="button" data-step="1" style="padding: 4px 10px">Next</span></div>
+</div>
+<script>
+const FIRST = ['Maya', 'Leo', 'Priya', 'Tom', 'Ana', 'Noah', 'Sofia', 'Kai', 'Elena', 'Omar', 'Zoe', 'Ivan', 'Lena', 'Max', 'Nina', 'Oscar', 'Rosa', 'Sam', 'Tara', 'Uri', 'Vera', 'Will', 'Xenia', 'Yuri', 'Zara', 'Ben', 'Cleo', 'Dan', 'Eva', 'Finn'];
+const LAST = ['Kowalski', 'Marin', 'Shah', 'Berg', 'Costa', 'Lind', 'Rossi', 'Tanaka', 'Novak', 'Haddad', 'Chen', 'Petrov', 'Fischer', 'Moreau', 'Jensen', 'Silva', 'Ortiz', 'Walsh', 'Nair', 'Levi', 'Popova', 'Hart', 'Ioannou', 'Volkov', 'Khan', 'Adler', 'Dubois', 'Meyer', 'Lund', 'Byrne'];
+const ROLE = ['Design', 'Engineering', 'Product', 'Support', 'Marketing'];
+const TZ = ['UTC−5', 'UTC+1', 'UTC+5:30', 'UTC+9', 'UTC+0'];
+const COL = ['#5856d6', '#ff9500', '#34c759', '#ff2d55', '#007aff', '#af52de', '#30b0c7'];
+const people = FIRST.map((f, i) => ({ name: f + ' ' + LAST[i], role: ROLE[(i * 7) % 5], tz: TZ[(i * 3) % 5], col: COL[i % 7], online: (i * 5) % 3 === 0, ini: f[0] + LAST[i][0] }));
+const PER = 6, PAGES = Math.ceil(people.length / PER);
+let page = 0, byRole = false;
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function render() {
+  const rows = byRole ? [...people].sort((a, b) => a.role < b.role ? -1 : a.role > b.role ? 1 : 0) : people;
+  const slice = rows.slice(page * PER, page * PER + PER);
+  document.getElementById('list').innerHTML = slice.map(p =>
+    `<div class="p"><div class="av" style="background-color: ${p.col}">${esc(p.ini)}</div><div class="grow"><div class="bold">${esc(p.name)}</div><div class="role">${esc(p.role)}</div></div><span class="tz">${esc(p.tz)}</span><span class="on${p.online ? ' y' : ''}"></span></div>`).join('');
+  document.getElementById('range').textContent = (page * PER + 1) + '–' + Math.min(people.length, page * PER + PER) + ' of ' + people.length;
+  document.getElementById('pages').innerHTML = Array.from({ length: PAGES }, (_, i) => `<span class="pg${i === page ? ' cur' : ''}" data-page="${i}">${i + 1}</span>`).join('');
+  document.getElementById('sort').textContent = byRole ? 'Sort: team' : 'Sort: name';
+}
+document.querySelector('.card').addEventListener('click', e => {
+  const s = e.target.closest('[data-step]'), g = e.target.closest('[data-page]');
+  if (s) page = (page + Number(s.dataset.step) + PAGES) % PAGES;
+  else if (g) page = Number(g.dataset.page);
+  else if (e.target.closest('#sort')) { byRole = !byRole; page = 0; }
+  else return;
+  render();
+});
+render();
+</script>

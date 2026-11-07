@@ -1,0 +1,86 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a flash sale — a flip-clock countdown (2D: the new digit unfolds with scaleY), a stock bar that depletes as "others buy", product tiles with a hover lift, Buy turns into a quantity stepper; the cart is kept locally, Checkout links out
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --red: #ff3b30; --orange: #ff9500; --green: #34c759;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; background: var(--card); overflow: hidden; }
+  .hero { padding: 16px 18px 14px; background: linear-gradient(120deg, #ff416c, #ff4b2b 60%, #ff9500); color: #fff; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: -40% -20%; background: conic-gradient(from 0deg, transparent 0 70%, rgba(255,255,255,.18) 75%, transparent 80%); animation: sweep 6s linear infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .hero > * { position: relative; }
+  .kicker { font-size: 11px; font-weight: 800; letter-spacing: .14em; opacity: .9; } .hero h3 { margin: 2px 0 10px; font-size: 22px; letter-spacing: -.01em; }
+  .clock { display: flex; align-items: center; gap: 6px; }
+  .unit { text-align: center; } .unit small { display: block; font-size: 9px; letter-spacing: .1em; opacity: .85; margin-top: 3px; }
+  .flip { display: inline-flex; gap: 2px; } .dg { position: relative; width: 22px; height: 32px; }
+  .dg .f { position: absolute; inset: 0; background: rgba(0,0,0,.35); border-radius: 6px; display: grid; place-items: center; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .dg .f::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(255,255,255,.18); }
+  .dg .f.new, .dg .f.new2 { animation: flipIn .35s cubic-bezier(.3,.7,.4,1); transform-origin: center bottom; }
+  @keyframes flipIn { from { transform: scaleY(0); opacity: .4; } }
+  .colon { font-size: 22px; font-weight: 800; padding: 0 2px 10px; animation: blink 1s steps(2) infinite; } @keyframes blink { to { opacity: .4; } }
+  .stock { padding: 12px 18px 4px; } .stock .row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; } .stock .row b { color: var(--red); font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; border-radius: 4px; background: var(--card2); overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, #ff9500, #ff3b30); border-radius: 4px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px 18px 18px; }
+  .p { border-radius: 14px; background: var(--card2); padding: 10px; transition: transform .25s, box-shadow .25s; position: relative; }
+  .p:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .img { height: 80px; border-radius: 10px; margin-bottom: 8px; position: relative; overflow: hidden; } .img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,.35), transparent 50%); }
+  .off { position: absolute; top: 6px; left: 6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px; z-index: 1; }
+  .p .n { font-weight: 600; font-size: 13px; line-height: 1.2; min-height: 32px; } .p .pr { margin: 4px 0 8px; font-weight: 800; } .p .pr s { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 4px; }
+  .buy { width: 100%; height: 32px; border-radius: 9px; border: 0; background: var(--fg); color: var(--card); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; transition: transform .15s; } .buy:active { transform: scale(.96); }
+  .qty { display: none; height: 32px; align-items: center; justify-content: space-between; background: var(--fg); color: var(--card); border-radius: 9px; font-weight: 800; animation: in .25s; }
+  .qty button { width: 32px; height: 32px; border: 0; background: transparent; color: inherit; font-size: 18px; cursor: pointer; } .p.in .qty { display: flex; } .p.in .buy { display: none; }
+  @keyframes in { from { transform: scale(.9); opacity: 0; } }
+  .p.gone { opacity: .5; } .p.gone .buy { background: var(--muted); cursor: default; }
+  .sum { display: flex; justify-content: space-between; align-items: center; padding: 0 18px 16px; font-weight: 700; } .sum[hidden] { display: none; } .sum span:last-child { font-size: 16px; } .sum .co { padding: 9px 14px; border-radius: 10px; background: var(--red); color: #fff; border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+</style>
+<div class="card">
+  <div class="hero"><div class="kicker">FLASH SALE · ENDS SOON</div><h3>Up to 60% off outdoor gear</h3>
+    <div class="clock" id="clock"></div>
+  </div>
+  <div class="stock"><div class="row"><span>Claimed so far</span><b><span id="claimed">0</span>% · <span id="left">0</span> left</b></div><div class="bar"><i id="bar" style="width:0"></i></div></div>
+  <div class="grid" id="grid"></div>
+  <div class="sum" id="sum" hidden><span><span id="count">0</span> in cart</span><span>€<span id="total">0</span></span><button class="co" id="co">Checkout</button></div>
+</div>
+<script>
+  // SDK v1: no sendMessage. The cart is local state in localStorage (kept by the client per message, it survives the
+  // widget being re-created); Checkout opens the shop's page. window.TelegramWidget is absent in reference mode.
+  const tw = window.TelegramWidget, KEY = 'flash-sale-cart';
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const ITEMS = [
+    { id: 'trail-runner-2', n: 'Trail runner 2.0', p: 79, o: 139, g: 'linear-gradient(135deg,#43cea2,#185a9d)', stock: 7 }, { id: 'ul-tent-1p', n: 'Ultralight 1P tent', p: 189, o: 329, g: 'linear-gradient(135deg,#f7971e,#ffd200)', stock: 3 },
+    { id: 'down-hoodie-800', n: 'Down hoodie 800fp', p: 119, o: 249, g: 'linear-gradient(135deg,#8e2de2,#4a00e0)', stock: 12 }, { id: 'ti-cook-set', n: 'Titanium cook set', p: 49, o: 89, g: 'linear-gradient(135deg,#00b09b,#96c93d)', stock: 5 },
+  ];
+  const grid = document.getElementById('grid');
+  grid.innerHTML = ITEMS.map((it, i) => '<div class="p" data-i="' + i + '"><span class="off">−' + Math.round(100 - it.p / it.o * 100) + '%</span><div class="img" style="background:' + it.g + '"></div><div class="n">' + it.n + '</div><div class="pr">€' + it.p + '<s>€' + it.o + '</s></div><button class="buy" role="button">Buy</button><div class="qty"><button data-d="-1">−</button><span>1</span><button data-d="1">+</button></div></div>').join('');
+  const savedQty = store.get(KEY, []);
+  const qty = ITEMS.map((it, i) => Math.max(0, Math.min(it.stock, Number(savedQty[i]) || 0)));
+  function cart() {
+    const n = qty.reduce((a, b) => a + b, 0), total = qty.reduce((a, q, i) => a + q * ITEMS[i].p, 0);
+    document.getElementById('sum').hidden = n === 0; document.getElementById('count').textContent = n; document.getElementById('total').textContent = total;
+  }
+  qty.forEach((q, i) => { if (q) { const p = grid.children[i]; p.classList.add('in'); p.querySelector('.qty span').textContent = q; } });
+  cart();
+  grid.addEventListener('click', e => {
+    const p = e.target.closest('.p'); if (!p || p.classList.contains('gone')) return; const i = Number(p.dataset.i);
+    if (e.target.closest('.buy')) { qty[i] = 1; p.classList.add('in'); }
+    else if (e.target.dataset.d) { qty[i] = Math.max(0, Math.min(ITEMS[i].stock, qty[i] + Number(e.target.dataset.d))); if (!qty[i]) p.classList.remove('in'); }
+    p.querySelector('.qty span').textContent = qty[i]; cart(); store.set(KEY, qty);
+  });
+  document.getElementById('co').addEventListener('click', () => tw?.openLink('https://outdoor.example.com/checkout?items=' + qty.map((q, i) => q ? ITEMS[i].id + ':' + q : '').filter(Boolean).join(',')));
+  // Countdown 01:48:07 with flipping digits
+  const clock = document.getElementById('clock');
+  let left = 1 * 3600 + 48 * 60 + 7;
+  clock.innerHTML = [['h', 'HRS'], ['m', 'MIN'], ['s', 'SEC']].map(([k, l], i) => (i ? '<span class="colon">:</span>' : '') + '<div class="unit"><div class="flip" id="u' + k + '"><div class="dg"><div class="f">0</div></div><div class="dg"><div class="f">0</div></div></div><small>' + l + '</small></div>').join('');
+  function setDigits(id, v) { const s = String(v).padStart(2, '0'); [...document.getElementById(id).children].forEach((dg, i) => { const f = dg.firstElementChild; if (f.textContent !== s[i]) { f.textContent = s[i]; const was = f.classList.contains('new'); f.classList.toggle('new', !was); f.classList.toggle('new2', was); /* alternate two class names: restarts the animation without a reflow query */ } }); }
+  function tickClock() { setDigits('uh', Math.floor(left / 3600)); setDigits('um', Math.floor(left / 60) % 60); setDigits('us', left % 60); if (left > 0) left--; }
+  tickClock(); setInterval(tickClock, 1000);
+  // Stock: 68 % claimed, creeping up as "others buy" every few seconds
+  let claimed = 68, total = 120;
+  function stock() { document.getElementById('claimed').textContent = claimed; document.getElementById('left').textContent = Math.round(total * (100 - claimed) / 100); document.getElementById('bar').style.width = claimed + '%'; }
+  stock();
+  const buyers = setInterval(() => { claimed = Math.min(97, claimed + 1 + (Math.random() < .3 ? 1 : 0)); stock(); if (claimed >= 90 && !ITEMS[1].gone) { ITEMS[1].gone = true; const p = grid.children[1]; p.classList.add('gone'); p.classList.remove('in'); qty[1] = 0; p.querySelector('.buy').textContent = 'Sold out'; cart(); store.set(KEY, qty); } if (claimed >= 97) clearInterval(buyers); }, 3500);
+</script>

@@ -1,0 +1,57 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: layout stress — a 60-row × 6-column <table> built from a string (one innerHTML), zebra rows, numeric columns, a sort-by-column toggle that rebuilds it
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  th { text-align: left; font-size: 10px; text-transform: uppercase; color: var(--muted); padding: 5px 4px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; }
+  th.on { color: var(--blue); }
+  td { padding: 4px 4px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tr.z td { background-color: rgba(127,127,127,0.06); }
+  th.r, td.r { text-align: right; font-family: ui-monospace, monospace; }
+  td.id { color: var(--muted); font-family: ui-monospace, monospace; }
+  .st { display: inline-block; width: 7px; height: 7px; border-radius: 4px; margin-right: 4px; }
+  .st.ok { background-color: var(--green); } .st.warn { background-color: var(--orange); } .st.bad { background-color: var(--red); }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Edge nodes</span><span class="tiny muted" id="note">60 rows · tap a header to sort</span></div>
+  <table id="tbl"></table>
+</div>
+<script>
+const CITIES = ['Lisbon', 'Berlin', 'Tbilisi', 'Tokyo', 'Dublin', 'Madrid', 'Warsaw', 'Oslo', 'Milan', 'Paris', 'Vienna', 'Prague', 'Zurich', 'Athens', 'Sofia'];
+let seed = 7;
+const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+const rows = Array.from({ length: 60 }, (_, i) => ({ id: 'edge-' + String(i + 1).padStart(2, '0'), city: CITIES[i % CITIES.length], p95: Math.round(40 + rnd() * 260), rps: Math.round(200 + rnd() * 4800), err: +(rnd() * 2.4).toFixed(2), up: +(97 + rnd() * 3).toFixed(2) }));
+const COLS = [['id', 'Node', false], ['city', 'City', false], ['p95', 'p95 ms', true], ['rps', 'req/s', true], ['err', 'err %', true], ['up', 'up %', true]];
+let sortKey = 'id', asc = true;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function render() {
+  const data = [...rows].sort((a, b) => (a[sortKey] < b[sortKey] ? -1 : a[sortKey] > b[sortKey] ? 1 : 0) * (asc ? 1 : -1));
+  let h = '<tr>' + COLS.map(([k, l, num]) => `<th class="${num ? 'r' : ''}${k === sortKey ? ' on' : ''}" data-k="${k}">${l}${k === sortKey ? (asc ? ' +' : ' −') : ''}</th>`).join('') + '</tr>';
+  data.forEach((r, i) => {
+    const st = r.err > 1.6 ? 'bad' : r.err > 0.8 ? 'warn' : 'ok';
+    h += `<tr${i % 2 ? ' class="z"' : ''}><td class="id">${esc(r.id)}</td><td><span class="st ${st}"></span>${esc(r.city)}</td><td class="r">${r.p95}</td><td class="r">${r.rps.toLocaleString('en-US')}</td><td class="r">${r.err.toFixed(2)}</td><td class="r">${r.up.toFixed(2)}</td></tr>`;
+  });
+  document.getElementById('tbl').innerHTML = h;
+}
+document.getElementById('tbl').addEventListener('click', e => {
+  const th = e.target.closest('th');
+  if (!th) return;
+  if (th.dataset.k === sortKey) asc = !asc; else { sortKey = th.dataset.k; asc = true; }
+  document.getElementById('note').textContent = '60 rows · sorted by ' + COLS.find(c => c[0] === sortKey)[1] + (asc ? ' ascending' : ' descending');
+  render();
+});
+render();
+</script>

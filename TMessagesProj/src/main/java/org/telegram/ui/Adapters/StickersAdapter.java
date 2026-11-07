@@ -56,7 +56,7 @@ public class StickersAdapter extends RecyclerListView.SelectionAdapter implement
         this.resourcesProvider = resourcesProvider;
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_MASK);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.newEmojiSuggestionsAvailable);
     }
 
     public void onDestroy() {

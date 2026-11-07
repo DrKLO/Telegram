@@ -1,0 +1,354 @@
+@chat Playground
+@subtitle Type your own HTML in the composer below
+@icon wand.and.stars
+@participant me | You | #007aff | me
+@participant guide | litehtml | #2cb67d
+
+--- guide 12:00 bare
+<style>
+  .pgw { width: 420px; max-width: 100%; }
+  .pgw .hd { display: flex; align-items: center; padding: 14px; border-radius: 13px 13px 0 0; background: linear-gradient(135deg, #7f5af0, #2cb67d); color: #ffffff; }
+  .pgw .logo { margin-right: 12px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.6); }
+  .pgw .tabs { display: flex; margin: 10px 16px 0 16px; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.14); }
+  .pgw .tab { flex-grow: 1; padding: 4px 0; border-radius: 7px; text-align: center; font-size: 12.5px; font-weight: 600; }
+  .pgw .tab:hover { background-color: rgba(127,127,127,0.16); }
+  .pgw .tab.on { background-color: #7f5af0; color: #ffffff; }
+  .pgw .bd { padding: 8px 16px 14px 16px; font-size: 13px; }
+  .pgw .list { overflow: hidden; margin: 0 -6px; }
+  .pgw .tip { display: flex; position: relative; padding: 5px 6px; border-radius: 8px; }
+  .pgw .tip:hover { background-color: rgba(127,127,127,0.09); }
+  .pgw .ck { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 9px; text-align: center; line-height: 18px; font-size: 10.5px; font-weight: 800; }
+  .pgw .tx { flex-grow: 1; width: 340px; }
+  .pgw .meter { height: 6px; margin-top: 4px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pgw .meter div { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #7f5af0, #2cb67d); }
+  .pgw .demo { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background-color: rgba(127,90,240,0.10); }
+  .pgw .num { display: inline-block; width: 44px; height: 30px; line-height: 30px; text-align: center; font-weight: 800; }
+  .pgw .thumbs { display: flex; justify-content: space-between; margin-top: 6px; }
+  .pgw .th { padding: 2px; border-radius: 9px; }
+  .pgw .th:hover { background-color: rgba(127,127,127,0.25); }
+  .pgw .th.on { background-color: #7f5af0; }
+  .pgw .prev { position: relative; height: 120px; margin-top: 8px; overflow: hidden; border-radius: 10px; background-color: rgba(127,127,127,0.12); text-align: center; }
+  .pgw .prev code { position: absolute; left: 8px; top: 92px; background-color: rgba(0,0,0,0.55); color: #ffffff; }
+  .pgw .syms { display: flex; margin-top: 6px; }
+  .pgw .sym { width: 40px; height: 34px; margin-right: 6px; border-radius: 9px; text-align: center; line-height: 34px; background-color: rgba(127,127,127,0.10); }
+  .pgw .sym:hover { background-color: rgba(127,127,127,0.22); }
+  .pgw .sym.on { background-color: rgba(127,90,240,0.22); }
+  .pgw .note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; border-left: 3px solid #007aff; background-color: rgba(0,122,255,0.08); font-size: 12px; }
+</style>
+<div class="card pgw"><div class="hd"><img class="logo" src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E" width="44" height="44"><div><div style="font-size: 18px; font-weight: 800">Welcome to the playground</div><div class="small" style="color: rgba(255,255,255,0.85)">Every bubble in this app is an HTML document rendered by litehtml</div></div></div><div class="bd">Type HTML in the composer and press <b>Return</b>.</div></div>
+<script>
+const TABS = [['basics', '✍️ Basics'], ['scripts', '⚡️ Scripts'], ['assets', '🖼 Assets']];
+const BASICS = [
+  'Type HTML in the composer and press <b>Return</b> (Shift-Return for a newline).',
+  'Use <b>Insert Snippet</b> for ready-made cards, tables, buttons…',
+  'Toggle <b>Send as Them</b> to see the incoming bubble style.',
+  'Messages show fullsize, without a bubble. Wrap one in <code>&lt;div class="widget"&gt;</code> to show it inside a bubble.',
+  '<b>Hover</b> a bubble for parse/layout timings, <b>right-click</b> to view its source.',
+  '<b>⌘O</b> opens any <code>.html</code> file as a message, or a <code>.chat</code> conversation.',
+];
+const SCRIPTS = [
+  'Add a <code>&lt;script&gt;</code>: <code>render()</code> returns the HTML, <code>onAction(name, value)</code> handles clicks on <code>data-action</code>.',
+  'Animate with <code>tween()</code>, <code>animate()</code> and <code>transition()</code>. litehtml itself has no CSS transitions.',
+  '<b>Without JS:</b> <code>chat:toggle?key=x</code> and <code>chat:select?key=tab-2&amp;group=tab</code> links add <code>on-x</code> classes to the bubble\'s &lt;body&gt;.',
+  '<b>CSS kit</b> in every bubble (dark-mode aware): <code>.card .pad .row .badge .btn .chip .panel .muted kbd</code>.',
+];
+const IMAGES = ['aurora', 'ocean', 'dunes', 'forest', 'sunset', 'map', 'logo'];
+const ART = { sunset: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27180%27%20viewBox=%270%200%20360%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%232b1055%27/%3E%3Cstop%20offset=%270.33%27%20stop-color=%27%237597de%27/%3E%3Cstop%20offset=%270.67%27%20stop-color=%27%23ff9a8b%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ffd194%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27360%27%20height=%27180%27%20fill=%27url%28%23g%29%27/%3E%3Ccircle%20cx=%27252%27%20cy=%27110%27%20r=%2732%27%20fill=%27%23fff3c4%27/%3E%3Cpolygon%20points=%270,180%200,130%200,112%2030,110%2060,107%2090,105%20120,102%20150,123%20180,97%20210,118%20240,92%20270,113%20300,110%20330,108%20360,105%20360,180%27%20fill=%27%236a3d7c%27%20fill-opacity=%270.9%27/%3E%3Cpolygon%20points=%270,180%200,150%200,132%2030,130%2060,127%2090,125%20120,122%20150,143%20180,117%20210,138%20240,112%20270,133%20300,130%20330,128%20360,125%20360,180%27%20fill=%27%233f2a5c%27/%3E%3C/svg%3E', aurora: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%230b1d3a%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2310294d%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%230d3b4f%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%2050C60%200%20140%20110%20210%2070%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.55%27%20stroke-width=%2718%27/%3E%3Cpath%20d=%27M-10%2078C60%2028%20140%20138%20210%2098%27%20fill=%27none%27%20stroke=%27%235ef2c4%27%20stroke-opacity=%270.43%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M-10%20106C60%2056%20140%20166%20210%20126%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.31%27%20stroke-width=%2710%27/%3E%3Cpath%20d=%27M0.8%200a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M53.8%2029a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M106.8%2058a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M159.8%2087a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M12.8%206a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M65.8%2035a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M118.8%2064a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M171.8%2093a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M24.8%2012a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M77.8%2041a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M130.8%2070a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M183.8%2099a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M36.8%2018a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M89.8%2047a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M142.8%2076a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M195.8%20105a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M48.8%2024a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M101.8%2053a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M154.8%2082a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M7.8%201a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M60.8%2030a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M113.8%2059a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M166.8%2088a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M19.8%207a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M72.8%2036a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M125.8%2065a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M178.8%2094a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M31.8%2013a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M84.8%2042a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M137.8%2071a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M190.8%20100a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M43.8%2019a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M96.8%2048a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M149.8%2077a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M2.8%20106a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M55.8%2025a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M108.8%2054a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M161.8%2083a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M14.8%202a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M67.8%2031a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6%27%20fill=%27%23ffffff%27%20fill-opacity=%270.8%27/%3E%3Cpath%20d=%27M0%20200V165C70%20140%20130%20185%20200%20160V200Z%27%20fill=%27%23081322%27/%3E%3C/svg%3E', ocean: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E', dunes: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E', forest: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23d4fc79%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2396e6a1%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%233a7d44%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%20200L10%20130L30%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M16%20200L36%2093L56%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M42%20200L62%20106L82%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M68%20200L88%20119L108%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M94%20200L114%2082L134%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M120%20200L140%2095L160%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M146%20200L166%20108L186%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M172%20200L192%20121L212%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M198%20200L218%2084L238%20200Z%27%20fill=%27%232d6a4f%27/%3E%3C/svg%3E', map: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27150%27%20viewBox=%270%200%20360%20150%27%3E%3Crect%20width=%27360%27%20height=%27150%27%20fill=%27%23f2efe9%27/%3E%3Crect%20x=%2730%27%20y=%2720%27%20width=%2790%27%20height=%2760%27%20rx=%2718%27%20fill=%27%23c8e6c9%27/%3E%3Cpath%20d=%27M0%20120C120%2080%20240%20150%20360%20100%27%20fill=%27none%27%20stroke=%27%23aad3df%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M0%2060L360%2050M200%200L230%20150M90%200L140%20150M0%20140L360%2030%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%276%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%2711%27%20fill=%27%23ff3b30%27/%3E%3Cpath%20d=%27M199%2056L207%2072L215%2056Z%27%20fill=%27%23ff3b30%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%274%27%20fill=%27%23ffffff%27/%3E%3C/svg%3E', logo: 'data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E' };
+const SYMBOLS = [['heart-fill', 'ff2d55'], ['star-fill', 'ff9500'], ['lightning-fill', 'ffcc00'], ['leaf-fill', '34c759'], ['drop-fill', '007aff'], ['moon-stars-fill', 'af52de']];
+let tab = 'basics', intro = 0, count = 0, last = null, img = 'aurora', sym = 0;
+const tried = new Set(), meter = { v: 0 }, pop = { s: 1 }, symPop = { s: 1 }, checks = BASICS.map(() => ({ s: 1 }));
+
+setTimeout(() => animate(900, (_, t) => { intro = t; }, ease.linear), 250);
+
+const stagger = i => ease.outCubic(clamp((intro * 900 - i * 80) / 420, 0, 1));
+
+function basics() {
+  const rows = BASICS.map((t, i) => {
+    const on = tried.has(i), s = checks[i].s;
+    const d = Math.max(1, Math.round(18 * s));
+    const ck = on
+      ? `<span class="ck" style="width: ${d}px; height: ${d}px; line-height: ${d}px; margin: ${(18 - d) / 2}px ${8 + (18 - d) / 2}px 0 ${(18 - d) / 2}px; background-color: #2cb67d; color: #ffffff">✓</span>`
+      : `<span class="ck" style="background-color: rgba(127,90,240,0.16); color: #7f5af0">${i + 1}</span>`;
+    return `<div class="tip" data-action="try" data-value="${i}" style="left: ${Math.round((1 - stagger(i)) * 440)}px">${ck}<span class="tx">${t}</span></div>`;
+  }).join('');
+  const n = tried.size;
+  return `<div class="list">${rows}</div>
+    <div class="row between small" style="margin-top: 8px"><span class="muted">${n === BASICS.length ? '🎉 You tried them all' : 'Click a tip once you\'ve tried it'}</span><b>${n} / ${BASICS.length}</b></div>
+    <div class="meter"><div style="width: ${(meter.v * 100).toFixed(1)}%"></div></div>`;
+}
+
+function scripts() {
+  const rows = SCRIPTS.map((t, i) => `<div class="tip" style="left: ${Math.round((1 - stagger(i)) * 440)}px"><span class="ck" style="background-color: rgba(44,182,125,0.18); color: #2cb67d">${i + 1}</span><span class="tx">${t}</span></div>`).join('');
+  const size = Math.round(20 * pop.s);
+  return `<div class="list">${rows}</div>
+    <div class="demo"><span class="small"><b>This card is a script too.</b><br><span class="muted">${last === null ? 'Try the buttons →' : `last call: onAction('add', '${last}')`}</span></span>
+      <span><button data-action="add" data-value="-1">−</button><span class="num ${count > 0 ? 't-green' : count < 0 ? 't-red' : ''}" style="font-size: ${size}px">${count}</span><button class="primary" data-action="add" data-value="1">+</button></span></div>`;
+}
+
+function assets() {
+  const thumbs = IMAGES.map(n => `<span class="th ${n === img ? 'on' : ''}" data-action="img" data-value="${n}"><img src="${ART[n]}" width="44" height="44" style="border-radius: 7px"></span>`).join('');
+  const big = img === 'logo' ? '<img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E" width="120" height="120">' : `<img src="${ART[img]}" width="388" height="120">`;
+  const syms = SYMBOLS.map(([name, c], i) => {
+    const d = i === sym ? Math.max(1, Math.round(22 * symPop.s)) : 20;
+    return `<span class="sym ${i === sym ? 'on' : ''}" data-action="sym" data-value="${i}"><img src="icon:${name}?size=26&color=${c}" width="${d}" height="${d}"></span>`;
+  }).join('');
+  const [sn, sc] = SYMBOLS[sym];
+  return `<div class="small muted">Bundled pictures · click one</div>
+    <div class="thumbs">${thumbs}</div>
+    <div class="prev">${big}<code>${img}.svg</code></div>
+    <div class="small muted" style="margin-top: 10px">Icons · any name, size and colour</div>
+    <div class="syms">${syms}</div>
+    <div style="margin-top: 6px"><code>icon:${sn}?size=29&amp;color=${sc}</code></div>
+    <div class="note">Also <code>data:</code> URIs (PNG/JPEG/SVG). Links: <code>https:</code> opens the browser, <code>chat:send?text=…</code> sends a reply.</div>`;
+}
+
+function render() {
+  const tabs = TABS.map(([id, label]) => `<span class="tab ${tab === id ? 'on' : ''}" data-action="tab" data-value="${id}">${label}</span>`).join('');
+  const body = tab === 'basics' ? basics() : tab === 'scripts' ? scripts() : assets();
+  return `<div class="card pgw">
+    <div class="hd"><img class="logo" src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E" width="44" height="44"><div>
+      <div style="font-size: 18px; font-weight: 800">Welcome to the playground</div>
+      <div class="small" style="color: rgba(255,255,255,0.85)">Every bubble in this app is an HTML document rendered by litehtml</div></div></div>
+    <div class="tabs">${tabs}</div>
+    <div class="bd">${body}</div>
+  </div>`;
+}
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    if (value === tab) return;
+    const order = TABS.map(t => t[0]);
+    transition(order.indexOf(value) > order.indexOf(tab) ? 'slide-left' : 'slide-right');
+    tab = value;
+  } else if (name === 'try') {
+    const i = Number(value);
+    if (tried.has(i)) tried.delete(i);
+    else { tried.add(i); checks[i].s = 0; tween(checks[i], { s: 1 }, 420, ease.outBack); }
+    tween(meter, { v: tried.size / BASICS.length }, 500, ease.outCubic);
+  } else if (name === 'add') {
+    count += Number(value);
+    last = value;
+    pop.s = 1.5;
+    tween(pop, { s: 1 }, 420, ease.outBack);
+  } else if (name === 'img') {
+    if (value === img || !IMAGES.includes(value)) return;
+    transition('fade');
+    img = value;
+  } else if (name === 'sym') {
+    sym = clamp(Number(value), 0, SYMBOLS.length - 1);
+    symPop.s = 0.4;
+    tween(symPop, { s: 1 }, 420, ease.outBack);
+  }
+}
+</script>
+
+--- guide 12:01
+<style>
+  .pg { width: 320px; max-width: 100%; }
+  .pg .ask { display: inline-block; position: relative; margin: 2px 4px 2px 0; padding: 3px 12px; border-radius: 14px; border: 1px solid #2cb67d; color: #2cb67d; }
+  .pg .ask:hover { background-color: rgba(44,182,125,0.14); }
+  .pg .ask.on { background-color: #2cb67d; color: #ffffff; }
+  .pg .ask.x { padding: 3px 9px; border-color: rgba(127,127,127,0.4); color: #8e8e93; }
+  .pg .stage { margin-top: 8px; }
+  .pg .tbl { overflow: hidden; border-radius: 10px; border: 1px solid rgba(127,127,127,0.25); }
+  .pg .thd { display: flex; align-items: center; height: 28px; padding: 0 10px; background-color: rgba(44,182,125,0.18); font-size: 12.5px; font-weight: 700; }
+  .pg .srt:hover { color: #2cb67d; }
+  .pg .rws { height: 182px; }
+  .pg .tr { display: flex; align-items: center; position: relative; height: 26px; padding: 0 10px; font-size: 13px; }
+  .pg .tr.alt { background-color: rgba(127,127,127,0.07); }
+  .pg .tr:hover { background-color: rgba(44,182,125,0.10); }
+  .pg .tr.sel { background-color: rgba(44,182,125,0.22); }
+  .pg .sup { width: 104px; text-align: center; }
+  .pg .tip { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background-color: rgba(127,127,127,0.10); font-size: 12px; }
+  .pg .fc { width: 298px; height: 238px; overflow: hidden; }
+  .pg .fav { position: absolute; left: 256px; top: 10px; width: 30px; height: 30px; border-radius: 15px; background-color: rgba(0,0,0,0.35); text-align: center; line-height: 30px; }
+  .pg .fav:hover { background-color: rgba(0,0,0,0.55); }
+  .pg .lnk { color: #2cb67d; font-weight: 600; }
+  .pg .lnk:hover { text-decoration: underline; }
+  .pg .stp { display: inline-block; width: 22px; line-height: 20px; border-radius: 6px; text-align: center; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .pg .stp:hover { background-color: rgba(127,127,127,0.28); }
+  .pg .undo { display: inline-block; padding: 1px 9px; border-radius: 8px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.14); }
+  .pg .undo:hover { background-color: rgba(127,127,127,0.28); }
+  .pg .book { padding: 6px 14px; border-radius: 16px; background: linear-gradient(135deg, #ff9500, #ff2d55); color: #ffffff; font-weight: 700; }
+  .pg .book:hover { background: linear-gradient(135deg, #e68600, #e0264b); }
+  .pg .rb { width: 210px; height: 6px; margin-top: 3px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pg .rb div { height: 6px; border-radius: 3px; background-color: #ff9500; }
+  .pg .seg { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .pg .seg:hover { background-color: rgba(127,127,127,0.24); }
+  .pg .seg.on { background-color: #2cb67d; color: #ffffff; }
+  .pg .bars { display: flex; align-items: flex-end; height: 116px; margin-top: 6px; }
+  .pg .days { display: flex; }
+  .pg .col { width: 40px; text-align: center; }
+  .pg .b { width: 24px; margin: 0 8px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #2cb67d, #1a7f57); }
+  .pg .b:hover { background: linear-gradient(180deg, #4fd99b, #2cb67d); }
+  .pg .b.pk { background: linear-gradient(180deg, #7f5af0, #5a3fc0); }
+  .pg .b.pk:hover { background: linear-gradient(180deg, #9d80ff, #7f5af0); }
+  .pg .b.sel { background: linear-gradient(180deg, #ffb340, #ff9500); }
+</style>
+<p>Try one of these 👇</p>
+<div><span class="ask">Show a table</span><span class="ask">Show a card</span><span class="ask">Draw a chart</span></div>
+<script>
+const TABS = [['table', 'Show a table'], ['card', 'Show a card'], ['chart', 'Draw a chart']];
+const FEATURES = [
+  { name: 'Block & inline layout', ok: 2, tip: 'Paragraphs, lists and inline formatting: what every bubble is made of.' },
+  { name: 'Tables, floats, positioning', ok: 2, tip: 'rowspan, colspan, float: left, position: relative and absolute.' },
+  { name: 'Flexbox', ok: 2, tip: 'justify-content, align-items, flex-wrap and flex-grow all work.' },
+  { name: 'Gradients (linear/radial/conic)', ok: 2, tip: 'All three. Rings and pie charts are conic gradients.' },
+  { name: 'JavaScript', ok: 1, tip: 'A sandboxed <script> per message with render() and onAction(). This card is one.' },
+  { name: 'CSS grid', ok: 0, tip: 'Not supported: use flex or a table instead.' },
+  { name: 'CSS transitions', ok: 0, tip: 'Not supported: animate from a script with tween() and transition().' },
+];
+const MARK = ['❌', '✅ sandboxed', '✅'];
+const ROW = 26;
+const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const LONG = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const WEEKS = { now: [124, 192, 158, 248, 217, 87, 56], last: [110, 150, 186, 170, 205, 120, 64] };
+const REVIEWS = [[5, 72], [4, 18], [3, 6], [2, 3], [1, 1]];
+
+let cur = null, intro = 0;
+let order = FEATURES.map((_, i) => i), sortKey = null, sortDir = 1, shift = {}, sel = null;
+let nights = 3, fav = false, booked = false, face = 'front', flipping = false;
+let week = 'now', bar = null, hs = Array(7).fill(0), barRun = 0;
+const move = { p: 1 }, rowsIn = { v: 1 }, price = { v: 420 }, heart = { s: 1 }, flip = { w: 1 }, rev = { k: 1 };
+
+setTimeout(() => animate(700, (_, t) => { intro = t; }, ease.linear), 250);
+
+function growBars() {
+  const from = hs.slice(), to = WEEKS[week], me = ++barRun;
+  animate(800, (_, t) => {
+    if (me === barRun) hs = to.map((v, i) => lerp(from[i], v, ease.outCubic(clamp((t * 800 - i * 50) / 500, 0, 1))));
+  }, ease.linear);
+}
+
+function resort(key) {
+  const before = order.slice();
+  if (sortKey === key) sortDir = -sortDir; else { sortKey = key; sortDir = 1; }
+  order = FEATURES.map((_, i) => i).sort((a, b) => {
+    const A = FEATURES[a], B = FEATURES[b];
+    const c = key === 'name' ? A.name.localeCompare(B.name) : B.ok - A.ok;
+    return c * sortDir || a - b;
+  });
+  shift = {};
+  order.forEach((id, idx) => { shift[id] = (before.indexOf(id) - idx) * ROW; });
+  move.p = 0;
+  tween(move, { p: 1 }, 520, ease.outCubic);
+}
+
+async function flipCard() {
+  if (flipping) return;
+  flipping = true;
+  await tween(flip, { w: 0 }, 160, ease.inQuad);
+  face = face === 'front' ? 'back' : 'front';
+  if (face === 'back') { rev.k = 0; tween(rev, { k: 1 }, 700, ease.outCubic); }
+  await tween(flip, { w: 1 }, 220, ease.outCubic);
+  flipping = false;
+}
+
+function onAction(name, value) {
+  if (name === 'tab') {
+    if (value === cur || !TABS.some(t => t[0] === value)) return;
+    const ids = TABS.map(t => t[0]);
+    transition(cur === null ? 'slide-down' : ids.indexOf(value) > ids.indexOf(cur) ? 'slide-left' : 'slide-right');
+    cur = value;
+    if (value === 'chart') { hs = hs.map(() => 0); growBars(); }
+    if (value === 'table') { rowsIn.v = 0; tween(rowsIn, { v: 1 }, 700, ease.linear); }
+  } else if (name === 'close') {
+    transition('slide-up');
+    cur = null;
+  } else if (name === 'sort') resort(value === 'ok' ? 'ok' : 'name');
+  else if (name === 'row') {
+    transition('fade');
+    const id = Number(value);
+    sel = sel === id ? null : id;
+  } else if (name === 'fav') {
+    fav = !fav;
+    heart.s = 0.3;
+    tween(heart, { s: 1 }, 450, ease.outBack);
+  } else if (name === 'nights' && !booked) {
+    nights = clamp(nights + Number(value), 1, 7);
+    tween(price, { v: nights * 140 }, 450, ease.outCubic);
+  } else if (name === 'book' && !booked) { transition('pop'); booked = true; }
+  else if (name === 'unbook' && booked) { transition('fade'); booked = false; }
+  else if (name === 'flip') flipCard();
+  else if (name === 'week') {
+    if (value === week || !WEEKS[value]) return;
+    week = value;
+    growBars();
+  } else if (name === 'bar') {
+    const i = Number(value);
+    bar = bar === i ? null : i;
+  }
+}
+
+function table() {
+  const arrow = k => sortKey === k ? (sortDir > 0 ? ' ▲' : ' ▼') : ' ↕';
+  const rows = order.map((id, idx) => {
+    const f = FEATURES[id];
+    const off = Math.round((shift[id] || 0) * (1 - move.p));
+    const left = Math.round((1 - ease.outCubic(clamp(rowsIn.v * 1.6 - idx * 0.09, 0, 1))) * 330);
+    return `<div class="tr ${idx % 2 ? 'alt' : ''} ${sel === id ? 'sel' : ''}" data-action="row" data-value="${id}" style="top: ${off}px; left: ${left}px"><span class="grow">${esc(f.name)}</span><span class="sup">${MARK[f.ok]}</span></div>`;
+  }).join('');
+  const f = sel !== null ? FEATURES[sel] : null;
+  return `<div class="tbl"><div class="thd"><span class="grow srt" data-action="sort" data-value="name">Feature${arrow('name')}</span><span class="sup srt" data-action="sort" data-value="ok">Supported${arrow('ok')}</span></div>
+    <div class="rws">${rows}</div></div>
+    <div class="tip">${f ? `💡 <b>${esc(f.name)}</b> · ${esc(f.tip)}` : '<span class="muted">Click a header to sort, a row for details</span>'}</div>`;
+}
+
+function front() {
+  const n = nights, plural = n > 1 ? 's' : '';
+  const buy = booked
+    ? `<span class="t-green"><b>✓ Booked</b> · ${n} night${plural} · $${n * 140}</span><span class="undo" data-action="unbook">Undo</span>`
+    : `<span><b style="font-size: 18px">$${Math.round(price.v)}</b> <s class="small muted">$${n * 170}</s></span>
+       <span><span class="stp" data-action="nights" data-value="-1">−</span><span class="small" style="display: inline-block; width: 28px; text-align: center">${n} n</span><span class="stp" data-action="nights" data-value="1">+</span></span>
+       <span class="book" data-action="book">Book</span>`;
+  return `<div class="card fc">
+    <div style="position: relative; height: 120px"><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E" width="298" height="120" style="display: block; border-radius: 13px 13px 0 0">
+      <span class="fav" data-action="fav"><span style="font-size: ${Math.max(1, Math.round(16 * heart.s))}px">${fav ? '❤️' : '🤍'}</span></span></div>
+    <div style="padding: 9px 14px 0 14px">
+      <div class="caps t-orange">Travel · ${n} night${plural}</div>
+      <div style="font-size: 17px; font-weight: 700">Desert Retreat, Merzouga</div>
+      <div class="small muted" style="margin: 2px 0 9px 0">★★★★☆ 4.6 · 1,204 reviews · <span class="lnk" data-action="flip">Details ↻</span></div>
+      <div class="row between">${buy}</div>
+    </div></div>`;
+}
+
+function back() {
+  const rows = REVIEWS.map(([s, p]) => `<div class="row tiny"><span style="width: 22px">${s}★</span><div class="rb"><div style="width: ${(p * rev.k).toFixed(1)}%"></div></div><span class="muted" style="width: 34px; text-align: right">${p}%</span></div>`).join('');
+  return `<div class="card fc"><div style="padding: 12px 14px">
+    <div class="row between"><b>What's included</b><span class="lnk small" data-action="flip">↻ Photo</span></div>
+    <div class="small" style="margin-top: 4px; line-height: 1.6">🐪 Camel trek at sunset<br>⛺ Luxury tent with en-suite<br>🍲 Dinner &amp; breakfast<br>🌌 Stargazing with a guide</div>
+    <div class="caps" style="margin: 8px 0 2px 0">Reviews · 4.6 ★</div>${rows}
+  </div></div>`;
+}
+
+function card() {
+  const W = 300, w = Math.max(0, Math.round(W * flip.w)), off = Math.round((W - w) / 2);
+  return `<div style="height: 240px; padding-left: ${off}px"><div style="width: ${w}px; height: 240px; overflow: hidden"><div style="width: ${W}px; margin-left: ${-off}px">${face === 'front' ? front() : back()}</div></div></div>`;
+}
+
+function chart() {
+  const data = WEEKS[week], peak = data.indexOf(Math.max(...data));
+  const cols = hs.map((v, i) => `<div class="col" data-action="bar" data-value="${i}"><div class="tiny" style="height: 16px">${i === bar ? `<b>${Math.round(v)}</b>` : '&nbsp;'}</div><div class="b ${i === bar ? 'sel' : i === peak ? 'pk' : ''}" style="height: ${Math.max(2, Math.round(v / 260 * 96))}px"></div></div>`).join('');
+  const days = DAYS.map((d, i) => `<span class="col tiny ${i === peak ? 't-purple' : 'muted'}">${i === peak ? `<b>${d}</b>` : d}</span>`).join('');
+  let info = `<span class="muted">Click a bar · busiest day is ${LONG[peak]}</span>`;
+  if (bar !== null) {
+    const v = data[bar], other = WEEKS[week === 'now' ? 'last' : 'now'][bar], d = Math.round((v - other) / other * 100);
+    info = `<b>${LONG[bar]}</b> · ${v} messages · <span class="${d >= 0 ? 't-green' : 't-red'}">${d >= 0 ? '+' : ''}${d}%</span> <span class="muted">vs ${week === 'now' ? 'last' : 'this'} week</span>`;
+  }
+  return `<div class="row between"><b>Weekly messages</b><span><span class="seg ${week === 'now' ? 'on' : ''}" data-action="week" data-value="now">This week</span> <span class="seg ${week === 'last' ? 'on' : ''}" data-action="week" data-value="last">Last week</span></span></div>
+    <div class="bars">${cols}</div><div class="days">${days}</div>
+    <div class="small" style="margin-top: 6px">${info}</div>
+    <div class="tiny muted">Total <b>${Math.round(hs.reduce((s, v) => s + v, 0))}</b> · pure HTML/CSS bars</div>`;
+}
+
+function render() {
+  const chips = TABS.map(([id, label], i) => {
+    const e = clamp((intro * 700 - i * 110) / 350, 0, 1);
+    const style = e < 1 ? ` style="top: ${Math.round((1 - ease.outBack(e)) * 12)}px; border-color: ${alpha('#2cb67d', e)}; color: ${alpha('#2cb67d', e)}"` : '';
+    return `<span class="ask ${cur === id ? 'on' : ''}" data-action="tab" data-value="${id}"${style}>${label}</span>`;
+  }).join('') + (cur ? '<span class="ask x" data-action="close">✕</span>' : '');
+  const body = cur === 'table' ? table() : cur === 'card' ? card() : cur === 'chart' ? chart() : '';
+  return `<div class="pg"><p style="margin-bottom: 4px">${cur ? 'Here you go, all live 👇' : 'Try one of these 👇'}</p>
+    <div>${chips}</div>${body ? `<div class="stage">${body}</div>` : ''}</div>`;
+}
+</script>

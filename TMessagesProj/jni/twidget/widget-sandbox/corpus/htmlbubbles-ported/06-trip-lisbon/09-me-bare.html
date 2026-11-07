@@ -1,0 +1,295 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 9
+  author: me 08:46 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  table { border-collapse: collapse; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .nowrap { white-space: nowrap; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.blue { background-color: rgba(0,122,255,0.16); color: var(--blue); }
+  .chip { display: inline-block; padding: 3px 12px; border-radius: 14px; border: 1px solid var(--blue); color: var(--blue); margin: 2px 4px 2px 0; text-decoration: none; cursor: pointer; }
+  .chip:hover { background-color: rgba(127,127,127,0.12); text-decoration: none; }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  .x, .lnk { cursor: pointer; }
+
+  .ex { width: 420px; max-width: 100%; }
+  .ex table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .ex th { text-align: left; font-size: 10px; text-transform: uppercase; padding: 6px 4px; border-bottom: 1px solid rgba(127,127,127,0.3); }
+  .ex td { padding: 5px 4px; border-bottom: 1px solid rgba(127,127,127,0.15); }
+  .ex tr:hover td { background-color: rgba(0,122,255,0.07); }
+  .ex tr.flash td { animation: rowflash 1400ms ease-in; }
+  @keyframes rowflash { from { background-color: rgba(255,204,0,0.32); } to { background-color: rgba(255,204,0,0); } }
+  .ex .amt { text-align: right; font-family: ui-monospace, monospace; font-size: 12px; }
+  .ex .mini { width: 18px; height: 18px; line-height: 18px; font-size: 8px; }
+  .ex .x { width: 18px; text-align: center; color: #8e8e93; font-size: 15px; border-radius: 6px; }
+  .ex .x:hover { color: #ff3b30; background-color: rgba(255,59,48,0.12); }
+  .ex .presets { margin-top: 8px; }
+  .ex .chip { font-size: 12px; padding: 2px 10px; }
+  .ex .lnk { font-weight: 600; color: #0a84ff; }
+  .ex .lnk:hover { text-decoration: underline; }
+  .ex .bal { display: flex; align-items: center; margin: 5px 0; font-size: 13px; }
+  .ex .bal .who { width: 44px; }
+  .ex .bal .track { flex-grow: 1; position: relative; height: 10px; border-radius: 5px; background-color: rgba(127,127,127,0.15); margin: 0 10px; }
+  .ex .bal .mid { position: absolute; left: 50%; top: -3px; height: 16px; border-left: 1px solid rgba(127,127,127,0.6); }
+  .ex .bal .fill { position: absolute; top: 0; height: 10px; }
+  .ex .bal .amt2 { width: 78px; text-align: right; font-weight: 700; }
+  .ex .owe { display: flex; align-items: center; padding: 6px 0; border-top: 1px solid rgba(127,127,127,0.15); font-size: 13px; }
+  .ex .owe .nm { margin-left: 4px; width: 32px; }
+  .ex .path { position: relative; flex-grow: 1; height: 20px; margin: 0 8px; }
+  .ex .dots { position: absolute; left: 0; right: 0; top: 9px; border-top: 2px dotted rgba(127,127,127,0.45); }
+  .ex .coin { position: absolute; margin-left: -9px; font-size: 15px; line-height: 20px; }
+  .ex .owe .amt3 { width: 70px; text-align: right; margin-right: 8px; }
+  .ex .paid { padding: 2px 0; }
+  .ex .toast { display: flex; align-items: center; margin-top: 8px; padding: 6px 10px; border-radius: 14px; background-color: rgba(255,149,0,0.12); }
+  .ex .square { margin-top: 8px; padding: 10px 12px; border-radius: 12px; background-color: rgba(52,199,89,0.14); }
+  .ex .party { display: inline-block; font-size: 22px; margin-right: 10px; }
+  .ex .party.pop { animation: party-pop 700ms linear; }
+  @keyframes party-pop { 0% { transform: scale(.05); } 25% { transform: scale(.82); } 50% { transform: scale(1.09); } 60% { transform: scale(1.1); } 75% { transform: scale(1.06); } 85% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+  .tr-fade { animation: tr-fade 260ms ease-out; }
+  .tr-pop { animation: tr-pop 300ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-pop { from { opacity: 0; transform: scale(.94); } }
+</style>
+<div class="card pad ex" id="root">
+  <div class="row"><b class="grow" style="font-size: 16px">💶 Trip expenses</b><span class="badge blue" id="badge"></span></div>
+  <table style="margin-top: 8px">
+    <thead><tr><th>What</th><th>Paid by</th><th style="text-align: right">Amount</th><th>&nbsp;</th></tr></thead>
+    <tbody id="rows"></tbody>
+    <tfoot><tr><td colspan="2"><b>Total</b> <span class="muted small">· split 3 ways, €<span id="t-each"></span> each</span></td><td class="amt"><b id="t-total"></b></td><td>&nbsp;</td></tr></tfoot>
+  </table>
+  <div class="presets" id="presets"></div>
+  <div class="tiny muted" id="undo" style="margin-top: 4px" hidden>Removed <span id="undo-what"></span> · <span class="lnk" id="restore">Undo</span></div>
+  <div class="caps" style="margin: 12px 0 4px 0">Balances</div>
+  <div id="balances"></div>
+  <div class="row" style="margin: 12px 0 2px 0"><span class="caps grow">Who owes whom</span><span class="lnk small" id="settleall" hidden>Settle all</span></div>
+  <div id="owes"></div>
+  <div class="square row" id="square" hidden><span class="party" id="party">🎉</span><div><b class="t-green">All square!</b><div class="tiny muted">Nobody owes anybody. Obrigado, team.</div></div></div>
+  <div style="margin-top: 8px" id="log" hidden></div>
+  <div class="toast" id="toast" hidden><span class="av mini" style="background-color: #ff9500">AS</span><span class="small" style="margin-left: 8px"><b>Ana:</b> Recebido! 💸 Obrigada — see you at the gate 🛫</span></div>
+</div>
+<script>
+const P = { ana: { name: 'Ana', ini: 'AS', color: '#ff9500' }, tom: { name: 'Tom', ini: 'TB', color: '#30b0c7' }, me: { name: 'You', ini: 'ME', color: '#007aff' } };
+const WHO = ['ana', 'tom', 'me'];
+let items = [
+  { id: 1, what: '🏨 Casa do Largo (3 nights)', by: 'ana', amt: 852 },
+  { id: 2, what: '✈️ Seat selection', by: 'tom', amt: 87 },
+  { id: 3, what: '🏰 Castle tickets', by: 'me', amt: 45 },
+  { id: 4, what: '🚆 Sintra train + bus', by: 'me', amt: 38.4 },
+  { id: 5, what: '🎸 Fado night', by: 'tom', amt: 96 },
+  { id: 6, what: '🍤 Cervejaria Ramiro', by: 'ana', amt: 171.6 },
+  { id: 7, what: '🥐 Pastéis (×18, no regrets)', by: 'me', amt: 23.4 },
+  { id: 8, what: '🚕 Taxi to the airport', by: 'tom', amt: 90.6 },
+];
+const PRESETS = [
+  { id: 11, what: '🍷 Wine at the miradouro', by: 'tom', amt: 24 },
+  { id: 12, what: '🚋 Tram 28 day passes', by: 'ana', amt: 19.2 },
+  { id: 13, what: '🍦 Gelato at Santini', by: 'me', amt: 13.5 },
+  { id: 14, what: '⛱ Cascais beach chairs', by: 'ana', amt: 30 },
+];
+let paid = [], removed = null, settling = null, thanks = false, coin = 0, balRun = 0;
+const bal = { ana: 0, tom: 0, me: 0, total: 0 };
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const ease = { outCubic: t => 1 - Math.pow(1 - t, 3), inOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 };
+const lerp = (a, b, t) => a + (b - a) * t;
+const animate = (duration, onFrame, easing) => new Promise(resolve => {
+  const start = performance.now();
+  const step = () => {
+    const t = Math.min(1, (performance.now() - start) / Math.max(1, duration));
+    onFrame(easing(t), t);
+    if (t < 1) requestAnimationFrame(step); else resolve();
+  };
+  step();
+});
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const money = n => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const av = w => `<span class="av mini" style="background-color: ${P[w].color}">${P[w].ini}</span>`;
+
+const TR = ['tr-fade', 'tr-pop'];
+function bubble(kind) {
+  if (TR.some(c => root.classList.contains(c))) { root.classList.remove(...TR); void root.offsetWidth; }
+  root.classList.add('tr-' + kind);
+}
+root.addEventListener('animationend', e => {
+  if (e.target === root) { root.classList.remove(...TR); return; }
+  const tr = e.target.closest && e.target.closest('tr.flash');
+  if (tr) tr.classList.remove('flash');
+  else if (e.target.classList) e.target.classList.remove('pop');
+});
+
+function nets() {
+  const total = items.reduce((s, i) => s + i.amt, 0), share = total / 3;
+  const n = { ana: -share, tom: -share, me: -share, total };
+  for (const i of items) n[i.by] += i.amt;
+  for (const t of paid) { n[t.from] += t.amt; n[t.to] -= t.amt; }
+  return n;
+}
+function debts(n) {
+  const cred = WHO.filter(w => n[w] > 0.005).map(w => ({ w, v: n[w] })).sort((a, b) => b.v - a.v);
+  const debt = WHO.filter(w => n[w] < -0.005).map(w => ({ w, v: -n[w] })).sort((a, b) => b.v - a.v);
+  const out = [];
+  let i = 0, j = 0;
+  while (i < debt.length && j < cred.length) {
+    const amt = Math.min(debt[i].v, cred[j].v);
+    if (amt > 0.005) out.push({ from: debt[i].w, to: cred[j].w, amt });
+    debt[i].v -= amt; cred[j].v -= amt;
+    if (debt[i].v < 0.005) i++;
+    if (cred[j].v < 0.005) j++;
+  }
+  return out;
+}
+
+// --- rendering ---
+function renderRows(flashId) {
+  $('rows').innerHTML = items.map(i => `<tr${flashId === i.id ? ' class="flash"' : ''}><td>${esc(i.what)}</td><td class="nowrap">${av(i.by)} ${P[i.by].name}</td><td class="amt">${i.amt.toFixed(2)}</td><td class="x" data-remove="${i.id}">×</td></tr>`).join('');
+  const chips = PRESETS.filter(p => !items.some(i => i.id === p.id))
+    .map(p => `<span class="chip" data-add="${p.id}">+ ${esc(p.what)} · €${p.amt.toFixed(2)}</span>`).join('');
+  $('presets').innerHTML = chips;
+  $('presets').hidden = !chips;
+  $('undo').hidden = !removed;
+  if (removed) $('undo-what').textContent = removed.item.what;
+}
+function renderTotals() {
+  $('badge').textContent = `${items.length} items · €${Math.round(bal.total).toLocaleString('en-US')}`;
+  $('t-each').textContent = money(bal.total / 3);
+  $('t-total').textContent = money(bal.total);
+}
+$('balances').innerHTML = WHO.map(w => `<div class="bal"><span class="who">${P[w].name}</span><div class="track"><div class="mid"></div><div class="fill" id="fill-${w}" hidden></div></div><span class="amt2" id="amt-${w}"></span></div>`).join('');
+function renderBalances() {
+  for (const w of WHO) {
+    const v = bal[w], pc = Math.min(50, Math.abs(v) / 600 * 50), f = $('fill-' + w), a = $('amt-' + w);
+    f.hidden = Math.abs(v) < 0.005;
+    if (v > 0) { f.style.left = '50%'; f.style.right = ''; f.style.borderRadius = '0 5px 5px 0'; f.style.backgroundColor = '#34c759'; }
+    else { f.style.right = '50%'; f.style.left = ''; f.style.borderRadius = '5px 0 0 5px'; f.style.backgroundColor = '#ff3b30'; }
+    f.style.width = pc.toFixed(2) + '%';
+    a.className = 'amt2 ' + (v > 0.005 ? 't-green' : v < -0.005 ? 't-red' : 'muted');
+    a.textContent = `${v > 0.005 ? '+' : v < -0.005 ? '−' : ''}€${money(v)}`;
+  }
+}
+function renderOwes() {
+  const list = debts(bal);
+  $('owes').innerHTML = list.map(d => {
+    const key = d.from + ':' + d.to;
+    const c = settling === key ? `<span class="coin" style="left: ${(coin * 100).toFixed(1)}%; top: ${Math.round(-12 * Math.sin(Math.PI * coin))}px">💶</span>` : '';
+    return `<div class="owe">${av(d.from)}<span class="nm">${P[d.from].name}</span><div class="path"><div class="dots"></div>${c}</div>${av(d.to)}<span class="nm">${P[d.to].name}</span>
+      <b class="amt3">€${money(d.amt)}</b>${settling ? '' : `<button class="primary" data-settle="${key}">Settle</button>`}</div>`;
+  }).join('');
+  $('settleall').hidden = !(list.length > 1 && !settling);
+}
+function renderSquare(pop) {
+  const square = !settling && debts(nets()).length === 0;
+  $('square').hidden = !square;
+  if (square && pop) { const p = $('party'); p.classList.remove('pop'); void p.offsetWidth; p.classList.add('pop'); }
+}
+function renderLog() {
+  $('log').innerHTML = paid.map((t, k) => `<div class="paid small"><span class="t-green">✓</span> <b>${P[t.from].name}</b> paid <b>${P[t.to].name}</b> €${money(t.amt)} · <span class="lnk tiny" data-unpay="${k}">undo</span></div>`).join('');
+  $('log').hidden = !paid.length;
+  $('toast').hidden = !thanks;
+}
+function moveCoin() {
+  const c = $('owes').querySelector('.coin');
+  if (!c) return;
+  c.style.left = (coin * 100).toFixed(1) + '%';
+  c.style.top = Math.round(-12 * Math.sin(Math.PI * coin)) + 'px';
+}
+
+function retarget(ms = 700) {
+  const me = ++balRun, from = Object.assign({}, bal), to = nets();
+  return animate(ms, p => {
+    if (me !== balRun) return;
+    for (const k in to) bal[k] = lerp(from[k], to[k], p);
+    renderTotals(); renderBalances(); renderOwes();
+  }, ease.outCubic);
+}
+
+renderRows(); renderTotals(); renderBalances(); renderOwes(); renderSquare(); renderLog();
+setTimeout(() => retarget(900), 250);
+
+// --- actions ---
+async function settle(key) {
+  if (settling) return;
+  const [from, to] = key.split(':');
+  const d = debts(nets()).find(x => x.from === from && x.to === to);
+  if (!d) return;
+  settling = key; coin = 0;
+  renderOwes(); renderSquare();
+  await animate(650, p => { coin = p; moveCoin(); }, ease.inOutCubic);
+  paid.push({ from, to, amt: Math.round(d.amt * 100) / 100 });
+  await retarget(650);
+  settling = null;
+  const square = debts(nets()).length === 0;
+  bubble(square ? 'pop' : 'fade');
+  if (from === 'me' && to === 'ana') thanks = true;
+  renderOwes(); renderLog(); renderSquare(square);
+}
+async function settleAll() {
+  for (const d of debts(nets())) await settle(d.from + ':' + d.to);
+}
+
+root.addEventListener('click', e => {
+  const t = e.target;
+  const add = t.closest('[data-add]');
+  if (add) {
+    const p = PRESETS.find(x => x.id === Number(add.dataset.add));
+    if (!p || items.some(i => i.id === p.id)) return;
+    bubble('fade');
+    items.push(Object.assign({}, p));
+    if (removed && removed.item.id === p.id) removed = null;
+    renderRows(p.id); retarget(); renderSquare();
+    return;
+  }
+  const rm = t.closest('[data-remove]');
+  if (rm) {
+    const k = items.findIndex(i => i.id === Number(rm.dataset.remove));
+    if (k < 0) return;
+    bubble('fade');
+    removed = { item: items[k], k };
+    items.splice(k, 1);
+    renderRows(); retarget(); renderSquare();
+    return;
+  }
+  if (t.closest('#restore')) {
+    if (!removed) return;
+    bubble('fade');
+    let flashId = null;
+    if (!items.some(i => i.id === removed.item.id)) {
+      items.splice(Math.min(removed.k, items.length), 0, removed.item);
+      flashId = removed.item.id;
+    }
+    removed = null;
+    renderRows(flashId); retarget(); renderSquare();
+    return;
+  }
+  const s = t.closest('[data-settle]');
+  if (s) { settle(s.dataset.settle); return; }
+  if (t.closest('#settleall')) { settleAll(); return; }
+  const u = t.closest('[data-unpay]');
+  if (u) {
+    const k = Number(u.dataset.unpay), tr = paid[k];
+    if (!tr || settling) return;
+    bubble('fade');
+    paid.splice(k, 1);
+    if (tr.from === 'me' && tr.to === 'ana') thanks = false;
+    renderLog(); retarget(); renderSquare();
+  }
+});
+</script>

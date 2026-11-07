@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laptop Comparison</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #0f172a; --muted: #64748b; --head: #1e293b; --headfg: #fff; --line: #e2e8f0; --hover: #f1f5f9; --best: #16a34a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f172a; --fg: #f1f5f9; --muted: #94a3b8; --head: #334155; --line: #334155; --hover: #1e293b; --best: #4ade80; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: var(--bg); color: var(--fg); }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 9px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: var(--head); color: var(--headfg); cursor: pointer; white-space: nowrap; }
+  th:first-child { border-radius: 8px 0 0 0; } th:last-child { border-radius: 0 8px 0 0; }
+  th .arrow { opacity: .5; font-size: 10px; margin-left: 3px; }
+  th.active .arrow { opacity: 1; }
+  tr:hover td { background: var(--hover); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .best { color: var(--best); font-weight: 600; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .pick { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .pick button { flex: 1; padding: 8px; font-size: 12px; border: 1px solid var(--line); background: transparent; color: inherit; border-radius: 8px; cursor: pointer; }
+  .pick button.on { border-color: var(--best); color: var(--best); font-weight: 600; }
+  tr.mine td:first-child { font-weight: 600; }
+  tr.mine td:first-child::after { content: ' ✓'; color: var(--best); }
+  .choice { font-size: 13px; margin-top: 8px; min-height: 18px; text-align: center; }
+</style>
+</head>
+<body>
+<h2>💻 Laptop Comparison</h2>
+<table id="t">
+  <thead><tr>
+    <th data-key="name">Model<span class="arrow">↕</span></th>
+    <th data-key="price">Price<span class="arrow">↕</span></th>
+    <th data-key="weight">Weight<span class="arrow">↕</span></th>
+    <th data-key="battery">Battery<span class="arrow">↕</span></th>
+    <th data-key="screen">Screen<span class="arrow">↕</span></th>
+  </tr></thead>
+  <tbody></tbody>
+</table>
+<p class="hint">Tap a column header to sort. Green = best in that column.</p>
+<div class="pick" id="pick"></div>
+<div class="choice" id="choice"></div>
+<script>
+  var laptops = [
+    { name: 'MacBook Air 13', price: 1099, weight: 1.24, battery: 18, screen: 13.6 },
+    { name: 'Dell XPS 13', price: 999, weight: 1.17, battery: 12, screen: 13.4 },
+    { name: 'ThinkPad X1 Carbon', price: 1449, weight: 1.12, battery: 15, screen: 14.0 },
+  ];
+  var lowerIsBetter = { price: true, weight: true, battery: false, screen: false };
+  var sortKey = 'price', asc = true;
+  // The pick is kept in this message's localStorage and shown in the table (restored on re-creation).
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var mine = store.get('laptop-pick');
+  var tbody = document.querySelector('tbody');
+  function isBest(key, l) {
+    var vals = laptops.map(function (x) { return x[key]; });
+    var best = lowerIsBetter[key] ? Math.min.apply(null, vals) : Math.max.apply(null, vals);
+    return l[key] === best ? 'best' : '';
+  }
+  function render() {
+    var rows = laptops.slice().sort(function (a, b) {
+      var x = a[sortKey], y = b[sortKey];
+      var r = typeof x === 'string' ? x.localeCompare(y) : x - y;
+      return asc ? r : -r;
+    });
+    tbody.innerHTML = rows.map(function (l) {
+      return '<tr' + (l.name === mine ? ' class="mine"' : '') + '><td>' + l.name + '</td><td class="num ' + isBest('price', l) + '">$' + l.price.toLocaleString() + '</td><td class="num ' + isBest('weight', l) + '">' + l.weight + ' kg</td><td class="num ' + isBest('battery', l) + '">' + l.battery + ' h</td><td class="num ' + isBest('screen', l) + '">' + l.screen + '"</td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(document.querySelectorAll('th'), function (th) {
+      th.classList.toggle('active', th.getAttribute('data-key') === sortKey);
+      th.querySelector('.arrow').textContent = th.getAttribute('data-key') === sortKey ? (asc ? '▲' : '▼') : '↕';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.pick button'), function (b, i) { b.classList.toggle('on', laptops[i].name === mine); });
+    var l = laptops.filter(function (x) { return x.name === mine; })[0];
+    document.getElementById('choice').textContent = l ? 'Your pick: ' + l.name + ' ($' + l.price.toLocaleString('en-US') + ')' : '';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('th'), function (th) {
+    th.addEventListener('click', function () {
+      var k = th.getAttribute('data-key');
+      if (sortKey === k) asc = !asc; else { sortKey = k; asc = true; }
+      render();
+    });
+  });
+  document.getElementById('pick').innerHTML = laptops.map(function (l, i) { return '<button id="pick-' + i + '">Choose ' + l.name.split(' ')[0] + '</button>'; }).join('');
+  document.getElementById('pick').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    mine = laptops[+b.id.split('-')[1]].name;
+    store.set('laptop-pick', mine);
+    render();
+  });
+  render();
+</script>
+</body>
+</html>

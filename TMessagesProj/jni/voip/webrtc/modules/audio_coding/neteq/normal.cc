@@ -16,12 +16,32 @@
 
 #include "common_audio/signal_processing/include/signal_processing_library.h"
 #include "modules/audio_coding/neteq/audio_multi_vector.h"
+#include "modules/audio_coding/neteq/audio_vector.h"
 #include "modules/audio_coding/neteq/background_noise.h"
 #include "modules/audio_coding/neteq/decoder_database.h"
 #include "modules/audio_coding/neteq/expand.h"
 #include "rtc_base/checks.h"
 
 namespace webrtc {
+namespace {
+
+void Crossfade(const AudioVector& from, AudioVector& to, size_t win_length) {
+  const size_t win_length_clamped =
+      std::min({win_length, from.Size(), to.Size()});
+  if (win_length_clamped == 0) {
+    return;
+  }
+  int16_t win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length_clamped);
+  int16_t win_up_Q14 = 0;
+  for (size_t i = 0; i < win_length_clamped; i++) {
+    win_up_Q14 += win_slope_Q14;
+    to[i] =
+        (win_up_Q14 * to[i] + ((1 << 14) - win_up_Q14) * from[i] + (1 << 13)) >>
+        14;
+  }
+}
+
+}  // namespace
 
 int Normal::Process(const int16_t* input,
                     size_t length,
@@ -132,23 +152,7 @@ int Normal::Process(const int16_t* input,
 
       // Interpolate the expanded data into the new vector.
       // (NB/WB/SWB32/SWB48 8/16/32/48 samples.)
-      size_t win_length = samples_per_ms_;
-      int16_t win_slope_Q14 = default_win_slope_Q14_;
-      RTC_DCHECK_LT(channel_ix, output->Channels());
-      if (win_length > output->Size()) {
-        win_length = output->Size();
-        win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length);
-      }
-      int16_t win_up_Q14 = 0;
-      for (size_t i = 0; i < win_length; i++) {
-        win_up_Q14 += win_slope_Q14;
-        (*output)[channel_ix][i] =
-            (win_up_Q14 * (*output)[channel_ix][i] +
-             ((1 << 14) - win_up_Q14) * expanded[channel_ix][i] + (1 << 13)) >>
-            14;
-      }
-      RTC_DCHECK_GT(win_up_Q14,
-                    (1 << 14) - 32);  // Worst case rouding is a length of 34
+      Crossfade(expanded[channel_ix], (*output)[channel_ix], samples_per_ms_);
     }
   } else if (last_mode == NetEq::Mode::kRfc3389Cng) {
     RTC_DCHECK_EQ(output->Channels(), 1);  // Not adapted for multi-channel yet.
@@ -170,22 +174,9 @@ int Normal::Process(const int16_t* input,
     }
     // Interpolate the CNG into the new vector.
     // (NB/WB/SWB32/SWB48 8/16/32/48 samples.)
-    size_t win_length = samples_per_ms_;
-    int16_t win_slope_Q14 = default_win_slope_Q14_;
-    if (win_length > kCngLength) {
-      win_length = kCngLength;
-      win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length);
-    }
-    int16_t win_up_Q14 = 0;
-    for (size_t i = 0; i < win_length; i++) {
-      win_up_Q14 += win_slope_Q14;
-      (*output)[0][i] =
-          (win_up_Q14 * (*output)[0][i] +
-           ((1 << 14) - win_up_Q14) * cng_output[i] + (1 << 13)) >>
-          14;
-    }
-    RTC_DCHECK_GT(win_up_Q14,
-                  (1 << 14) - 32);  // Worst case rouding is a length of 34
+    AudioVector temp_vector(kCngLength);
+    temp_vector.OverwriteAt(cng_output, kCngLength, 0);
+    Crossfade(temp_vector, (*output)[0], samples_per_ms_);
   }
 
   return static_cast<int>(length);

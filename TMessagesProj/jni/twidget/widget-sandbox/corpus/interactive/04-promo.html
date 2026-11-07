@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="tw-bot" content="promo">
+<style>
+  .card { border-radius: 14px; padding: 14px; background: linear-gradient(135deg, var(--tg-theme-button-color), var(--tg-theme-accent-text-color)); color: var(--tg-theme-button-text-color); }
+  .off { font: 700 34px/1.1 system-ui, sans-serif; }
+  .code { display: inline-block; margin-top: 8px; padding: 4px 10px; border: 1px dashed currentColor; border-radius: 8px; font: 600 15px/1.4 ui-monospace, monospace; letter-spacing: .06em; }
+  .bar { display: flex; gap: 8px; margin-top: 10px; }
+  .bar button { flex: 1; }
+  #note { margin-top: 6px; color: var(--tg-theme-hint-color); font-size: .87em; }
+</style></head>
+<body>
+<div class="card"><div class="off" id="off"></div><div>off your next order</div><div class="code" id="code"></div></div>
+<div class="bar"><button id="copy">Copy code</button><button id="redeem">Redeem</button></div>
+<div id="note"></div>
+<script>
+var T = TelegramWidget;
+function $(id) { return document.getElementById(id); }
+function parse(s) { try { return JSON.parse(s || 'null') || {}; } catch (e) { return {}; } }
+// publicData {code, off}: what a forward carries too; chatData {redeemed}: this chat's only.
+function render() {
+  var offer = parse(T.publicData), mine = parse(T.chatData);
+  $('off').textContent = (offer.off || 0) + '%';
+  $('code').textContent = offer.code || '—';
+  $('redeem').disabled = !!mine.redeemed;
+  $('redeem').textContent = mine.redeemed ? 'Redeemed' : 'Redeem';
+  $('note').textContent = mine.redeemed ? 'Redeemed on ' + mine.redeemed.replace('T', ' at ') : '';
+}
+// copyText: the client copies and shows what it copied; one call per tap.
+$('copy').addEventListener('click', function () { var code = parse(T.publicData).code; if (code) T.copyText(code); });
+$('redeem').addEventListener('click', function () {
+  $('note').textContent = 'Redeeming…';
+  T.request('redeem').then(function (a) { $('note').textContent = a.result === 'already' ? 'Already redeemed' : a.result === 'ok' ? 'Redeemed' : ''; }, function (e) {
+    $('note').textContent = e.code === 'NOT_ALLOWED' && T.isForward ? 'Forwarded: copy the code; redeem it in the chat with the bot.' : 'Not sent: ' + e.code;
+  });
+});
+T.onEvent('chatDataChanged', render);
+T.onEvent('publicDataChanged', render);
+render();
+</script>
+</body></html>

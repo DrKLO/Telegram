@@ -1,0 +1,108 @@
+<!--
+  showcase: widget profile 1, SDK v1 (corpus/showcase/README.md)
+  idea: a weather card — an animated SVG sky (sun rays, drifting clouds, rain), an hourly temperature curve that morphs when a day is tapped, a 5-day strip
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#0a0a0a, #f5f5f7); --muted: light-dark(#6e6e73, #98989d); --card: light-dark(#fff, #1c1c1e); --card2: light-dark(#f2f2f7, #2c2c2e);
+    --border: light-dark(rgba(0,0,0,.08), rgba(255,255,255,.12)); --blue: #007aff;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.10); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.35; color: var(--fg); -webkit-font-smoothing: antialiased; }
+  .card { width: 100%; box-sizing: border-box; overflow: hidden; background: var(--card); }
+  .sky { position: relative; height: 170px; color: #fff; transition: background 1s; background: linear-gradient(180deg, #2a7de1, #7fc1ff); overflow: hidden; }
+  .sky.rain { background: linear-gradient(180deg, #4b5c75, #8d9cb3); } .sky.cloud { background: linear-gradient(180deg, #5c8fd6, #a9c8ee); } .sky.night { background: linear-gradient(180deg, #0b1a3a, #2b3f72); }
+  .sky svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sun { transform-origin: 300px 60px; animation: spin 40s linear infinite; transition: fill-opacity .8s, stroke-opacity .8s; } @keyframes spin { to { transform: rotate(360deg); } }
+  .cloud { animation: drift 14s ease-in-out infinite alternate; transition: fill .8s; } .cloud.c2 { animation-duration: 19s; animation-delay: -6s; }
+  @keyframes drift { to { transform: translateX(34px); } }
+  .drops { transition: stroke .6s; } .drops line { stroke-width: 2; stroke-linecap: round; animation: fall 1s linear infinite; }
+  @keyframes fall { from { transform: translateY(-30px); stroke-opacity: 0; } 20% { stroke-opacity: 1; } to { transform: translateY(60px); stroke-opacity: 0; } }
+  .now { position: absolute; left: 18px; top: 16px; } .now .t { font-size: 56px; font-weight: 300; line-height: 1; letter-spacing: -.03em; } .now .t sup { font-size: 24px; vertical-align: top; margin-top: 6px; display: inline-block; }
+  .now .d { font-size: 14px; color: rgba(255,255,255,.9); margin-top: 4px; } .now .c { font-size: 13px; color: rgba(255,255,255,.8); margin-top: 2px; }
+  .place { position: absolute; right: 16px; top: 14px; text-align: right; font-weight: 700; font-size: 15px; } .place small { display: block; font-weight: 400; color: rgba(255,255,255,.85); font-size: 11px; }
+  .chart { padding: 14px 10px 0; } .chart svg { width: 100%; height: 110px; display: block; overflow: visible; }
+  .curve { fill: none; stroke: var(--blue); stroke-width: 2.5; stroke-linecap: round; transition: d .8s cubic-bezier(.4,0,.2,1); }
+  .area { fill: url(#areaG); transition: d .8s cubic-bezier(.4,0,.2,1); }
+  .pt { fill: var(--card); stroke: var(--blue); stroke-width: 2; transition: cy .8s cubic-bezier(.4,0,.2,1); }
+  .lab { font-size: 11px; font-weight: 700; fill: var(--fg); text-anchor: middle; transition: y .8s cubic-bezier(.4,0,.2,1); }
+  .hr { font-size: 10px; fill: var(--muted); text-anchor: middle; }
+  .week { display: flex; padding: 8px 10px 14px; gap: 6px; }
+  .day { flex: 1; text-align: center; padding: 8px 4px; border-radius: 12px; cursor: pointer; transition: background .25s, transform .25s; }
+  .day:hover { background: var(--card2); } .day.on { background: var(--card2); transform: translateY(-2px); }
+  .day .n { font-size: 11px; color: var(--muted); font-weight: 600; } .day.on .n { color: var(--fg); }
+  .day .i { font-size: 20px; margin: 4px 0; display: block; line-height: 1; }
+  .day .hi { font-weight: 700; font-size: 13px; } .day .lo { color: var(--muted); font-size: 11px; }
+  .bar { height: 4px; border-radius: 2px; margin: 6px 6px 0; background: linear-gradient(90deg, rgba(79,195,247,.9), rgba(255,183,77,.9)); position: relative; }
+</style>
+<div class="card">
+  <div class="sky" id="sky">
+    <svg viewBox="0 0 392 170">
+      <g class="sun" id="sun"><circle cx="300" cy="60" r="28" fill="#ffe27a"/><g stroke="rgba(255,226,122,.9)" stroke-width="3" stroke-linecap="round"><line x1="300" y1="18" x2="300" y2="8"/><line x1="300" y1="102" x2="300" y2="112"/><line x1="258" y1="60" x2="248" y2="60"/><line x1="342" y1="60" x2="352" y2="60"/><line x1="270" y1="30" x2="263" y2="23"/><line x1="330" y1="90" x2="337" y2="97"/><line x1="330" y1="30" x2="337" y2="23"/><line x1="270" y1="90" x2="263" y2="97"/></g></g>
+      <g class="cloud" id="cloud1" fill="rgba(255,255,255,.92)"><ellipse cx="250" cy="110" rx="46" ry="20"/><circle cx="235" cy="96" r="22"/><circle cx="265" cy="92" r="26"/><circle cx="290" cy="106" r="18"/></g>
+      <g class="cloud c2" id="cloud2" fill="rgba(255,255,255,.6)"><ellipse cx="120" cy="135" rx="38" ry="14"/><circle cx="110" cy="125" r="16"/><circle cx="135" cy="120" r="19"/></g>
+      <g class="drops" id="drops" stroke="rgba(255,255,255,0)"><line x1="230" y1="125" x2="226" y2="140"/><line x1="250" y1="128" x2="246" y2="143" style="animation-delay:-.3s"/><line x1="270" y1="124" x2="266" y2="139" style="animation-delay:-.6s"/><line x1="290" y1="130" x2="286" y2="145" style="animation-delay:-.15s"/><line x1="110" y1="150" x2="106" y2="165" style="animation-delay:-.5s"/><line x1="135" y1="152" x2="131" y2="167" style="animation-delay:-.8s"/></g>
+    </svg>
+    <div class="now"><div class="t"><span id="temp">21</span><sup>°</sup></div><div class="d" id="desc">Sunny intervals</div><div class="c" id="hilo">H 24° · L 14° · Wind 12 km/h</div></div>
+    <div class="place">Lisbon<small id="when">Today, 14:30</small></div>
+  </div>
+  <div class="chart"><svg viewBox="0 0 372 110" id="chart"><defs><linearGradient id="areaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#007aff" stop-opacity=".25"/><stop offset="1" stop-color="#007aff" stop-opacity="0"/></linearGradient></defs></svg></div>
+  <div class="week" id="week"></div>
+</div>
+<script>
+  const DAYS = [
+    { n: 'Today', i: '⛅', k: 'sun', hi: 24, lo: 14, desc: 'Sunny intervals', hours: [15, 14, 16, 19, 22, 24, 23, 19] },
+    { n: 'Fri', i: '☀️', k: 'sun', hi: 27, lo: 15, desc: 'Clear and warm', hours: [16, 15, 18, 22, 25, 27, 26, 21] },
+    { n: 'Sat', i: '🌧', k: 'rain', hi: 18, lo: 12, desc: 'Showers, clearing late', hours: [13, 12, 13, 15, 17, 18, 16, 14] },
+    { n: 'Sun', i: '☁️', k: 'cloud', hi: 20, lo: 13, desc: 'Overcast', hours: [14, 13, 15, 17, 19, 20, 19, 16] },
+    { n: 'Mon', i: '☀️', k: 'sun', hi: 25, lo: 14, desc: 'Sunny', hours: [15, 14, 17, 21, 24, 25, 24, 19] },
+  ];
+  const HOURS = ['0', '3', '6', '9', '12', '15', '18', '21'];
+  const chart = document.getElementById('chart'), W = 372, H = 110, L = 14, R = 14, TOP = 22, BOT = 20;
+  const allT = DAYS.flatMap(d => d.hours), minT = Math.min(...allT) - 1, maxT = Math.max(...allT) + 1;
+  const X = i => L + i * (W - L - R) / 7, Y = t => TOP + (maxT - t) / (maxT - minT) * (H - TOP - BOT);
+  function pathFor(h) {
+    // Catmull-Rom → cubic Bézier for a smooth curve
+    const p = h.map((t, i) => [X(i), Y(t)]);
+    let d = 'M' + p[0][0] + ' ' + p[0][1].toFixed(1);
+    for (let i = 0; i < p.length - 1; i++) {
+      const p0 = p[Math.max(0, i - 1)], p1 = p[i], p2 = p[i + 1], p3 = p[Math.min(p.length - 1, i + 2)];
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ' C' + c1[0].toFixed(1) + ' ' + c1[1].toFixed(1) + ' ' + c2[0].toFixed(1) + ' ' + c2[1].toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    return d;
+  }
+  let inner = '<path class="area" id="area"/><path class="curve" id="curve"/>';
+  for (let i = 0; i < 8; i++) inner += '<circle class="pt" cx="' + X(i) + '" cy="' + Y(20) + '" r="3.5" id="p' + i + '"/><text class="lab" x="' + X(i) + '" y="' + Y(20) + '" id="l' + i + '"></text><text class="hr" x="' + X(i) + '" y="' + (H - 4) + '">' + HOURS[i] + '</text>';
+  chart.innerHTML = inner;
+  const area = document.getElementById('area'), curve = document.getElementById('curve'), sky = document.getElementById('sky');
+  function show(day, animate) {
+    const d = pathFor(day.hours);
+    curve.setAttribute('d', d);
+    area.setAttribute('d', d + ' V' + (H - BOT) + ' H' + X(0) + ' Z');
+    day.hours.forEach((t, i) => { const p = document.getElementById('p' + i), l = document.getElementById('l' + i); p.setAttribute('cy', Y(t).toFixed(1)); l.setAttribute('y', (Y(t) - 9).toFixed(1)); l.textContent = t + '°'; });
+    sky.className = 'sky ' + (day.k === 'sun' ? '' : day.k);
+    // faded with fill and stroke alpha rather than opacity: a heavy box each otherwise (docs/widget-runtime-profile.md)
+    const sun = document.getElementById('sun').style, on = day.k === 'sun' ? '1' : '0';
+    sun.setProperty('fill-opacity', on); sun.setProperty('stroke-opacity', on);
+    document.getElementById('cloud1').style.fill = day.k === 'sun' ? 'rgba(255,255,255,.83)' : 'rgba(255,255,255,.92)';
+    document.getElementById('cloud2').style.fill = day.k === 'cloud' || day.k === 'rain' ? 'rgba(255,255,255,.51)' : 'rgba(255,255,255,.36)';
+    document.getElementById('drops').style.stroke = day.k === 'rain' ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,0)';
+    document.getElementById('desc').textContent = day.desc;
+    document.getElementById('hilo').textContent = 'H ' + day.hi + '° · L ' + day.lo + '° · Wind ' + (day.k === 'rain' ? 26 : 12) + ' km/h';
+    document.getElementById('when').textContent = day.n === 'Today' ? 'Today, 14:30' : day.n + ', forecast';
+    tweenTemp(day.n === 'Today' ? 21 : Math.round((day.hi + day.lo) / 2 + 2));
+  }
+  const tempEl = document.getElementById('temp'); let tempRun = 0;
+  function tweenTemp(to) {
+    const from = Number(tempEl.textContent), me = ++tempRun, t0 = performance.now();
+    (function step() { if (me !== tempRun) return; const t = Math.min(1, (performance.now() - t0) / 600); tempEl.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - t, 3))); if (t < 1) requestAnimationFrame(step); })();
+  }
+  const week = document.getElementById('week');
+  week.innerHTML = DAYS.map((d, i) => '<div class="day' + (i === 0 ? ' on' : '') + '" data-i="' + i + '" role="button"><div class="n">' + d.n + '</div><span class="i">' + d.i + '</span><div class="hi">' + d.hi + '°</div><div class="lo">' + d.lo + '°</div><div class="bar" style="margin-left:' + ((d.lo - 10) * 6) + '%;margin-right:' + ((30 - d.hi) * 6) + '%"></div></div>').join('');
+  week.addEventListener('click', e => {
+    const el = e.target.closest('.day'); if (!el) return;
+    week.querySelectorAll('.day').forEach(x => x.classList.toggle('on', x === el));
+    show(DAYS[Number(el.dataset.i)], true);
+  });
+  show(DAYS[0], false);
+</script>

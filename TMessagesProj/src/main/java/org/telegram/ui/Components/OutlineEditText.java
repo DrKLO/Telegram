@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -9,8 +10,9 @@ import android.view.Gravity;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
-public class OutlineEditText extends OutlineTextContainerView {
+public class OutlineEditText extends OutlineTextContainerView implements Theme.Colorable {
 
     EditTextBoldCursor editText;
 
@@ -25,13 +27,13 @@ public class OutlineEditText extends OutlineTextContainerView {
             }
         };
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+        ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteHintText);
         editText.setBackground(null);
         editText.setSingleLine(true);
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
         editText.setTypeface(Typeface.DEFAULT);
-        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+        ThemeBind.cursorColor(editText, Theme.key_windowBackgroundWhiteInputFieldActivated);
         editText.setCursorWidth(1.5f);
         editText.setPadding(
                 AndroidUtilities.dp(15), 0, AndroidUtilities.dp(15), 0
@@ -48,5 +50,16 @@ public class OutlineEditText extends OutlineTextContainerView {
 
     public EditTextBoldCursor getEditText() {
         return editText;
+    }
+
+    @Override
+    public void updateColors() {
+        super.updateColors();
+        try {
+            invalidate();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

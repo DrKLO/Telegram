@@ -1,0 +1,43 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 05-long-reads.chat, message 2
+  author: weekly 08:01 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14)); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+
+  .digest { width: 560px; max-width: 100%; counter-reset: story; }
+  .story { counter-increment: story; position: relative; padding: 12px 14px 12px 54px; border-top: 1px solid rgba(127,127,127,0.22); min-height: 64px; }
+  .story::before { content: "0" counter(story); position: absolute; left: 14px; top: 10px; font-size: 24px; font-weight: 800; color: #ff6b35; }
+  .story .pic { float: right; width: 76px; height: 76px; margin: 2px 0 4px 12px; border-radius: 10px; }
+  .story .t { font-weight: 700; font-size: 15px; }
+  .story .m { font-size: 11px; margin-top: 4px; }
+  .story:hover { background-color: rgba(255,107,53,0.06); }
+  .pic.aurora { background: linear-gradient(135deg, #0b1b3a 0%, #1a5c6b 35%, #3fd0a0 62%, #7f5af0 100%); }
+  .pic.ocean  { background: linear-gradient(160deg, #4fb3ff 0%, #1b6fd6 40%, #0a3d91 75%, #06264f 100%); }
+  .pic.dunes  { background: linear-gradient(160deg, #ffe3a3 0%, #f6c66b 30%, #e08a3c 65%, #b85a1f 100%); }
+  .pic.forest { background: linear-gradient(160deg, #a8e6a1 0%, #6fcf7a 30%, #2f8f45 65%, #163d20 100%); }
+  .pic.sunset { background: linear-gradient(170deg, #ffd166 0%, #ff8c42 40%, #ff3b6b 70%, #7a1f5c 100%); }
+  .pic.map    { background: repeating-linear-gradient(45deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 12px), linear-gradient(135deg, #ece5cf 0%, #cfe0c2 60%, #a9cfe6 100%); }
+</style>
+<div class="card digest">
+  <div class="pad row">
+    <svg width="22" height="22" viewBox="0 0 22 22" style="margin-right: 10px; flex-shrink: 0" aria-hidden="true"><path fill="#ff6b35" d="M3 3h14a1 1 0 0 1 1 1v11a1 1 0 0 0 2 0V7h1v8.5A2.5 2.5 0 0 1 18.5 18h-14A2.5 2.5 0 0 1 2 15.5V4a1 1 0 0 1 1-1zm2 3v5h5V6H5zm7 0v1.5h4V6h-4zm0 3.5V11h4V9.5h-4zM5 13v1.5h11V13H5z"/></svg>
+    <div class="grow"><div style="font-size: 18px; font-weight: 800">This week in rendering</div><div class="tiny muted">Issue #142 · 6 stories · CSS counters number them, floats place the thumbnails</div></div>
+  </div>
+  <div class="story"><div class="pic aurora"></div><div class="t">Variable fonts land in the system font</div><div class="small muted">Optical sizes and every weight from 100 to 900 are now one file. In this app, <code>font-weight: 650</code> picks the nearest system weight; scroll up in “Stress Test” to see all nine.</div><div class="m muted">Typography · 4 min</div></div>
+  <div class="story"><div class="pic ocean"></div><div class="t">Why your chat app does not need a web view</div><div class="small muted">A web view per message costs a process, async height callbacks and a cold start. A layout engine costs a C++ object. We measured both so you don't have to.</div><div class="m muted">Architecture · 7 min</div></div>
+  <div class="story"><div class="pic dunes"></div><div class="t">Conic gradients, finally everywhere</div><div class="small muted">Pie charts, donuts, colour wheels and loading spinners from a single CSS property — and a single CoreGraphics call.</div><div class="m muted">Graphics · 3 min</div></div>
+  <div class="story"><div class="pic forest"></div><div class="t">Gumbo at 10: lessons from an HTML5 parser</div><div class="small muted">The parser that repairs your unclosed tags turns ten. Its authors look back at the spec's adoption agency algorithm and the bugs it hid.</div><div class="m muted">Parsing · 9 min</div></div>
+  <div class="story"><div class="pic sunset"></div><div class="t">Dark mode is a stylesheet, not a feature</div><div class="small muted">Swap one user stylesheet, re-render, done. Every bubble here gets <code>lc-dark</code> or <code>lc-light</code> on its body so cards can adapt.</div><div class="m muted">Design · 2 min</div></div>
+  <div class="story"><div class="pic map"></div><div class="t">The surprising cost of a text width</div><div class="small muted">Layout calls <code>text_width()</code> once per word. Cache it, and re-layout on window resize becomes free. Forget to, and resizing stutters.</div><div class="m muted">Performance · 5 min</div></div>
+</div>

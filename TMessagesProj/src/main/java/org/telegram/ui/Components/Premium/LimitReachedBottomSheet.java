@@ -45,6 +45,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.ChannelBoostsController;
 import org.telegram.messenger.ChatObject;
@@ -66,6 +67,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.AdminedChannelCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
@@ -321,9 +323,28 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
     private int requiredLvl = 0;
     private ButtonWithCounterView boostToUnlockGroupBtn;
 
+    private int fixedNavBarColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (navBarColorKey < 0 && navBarColor == fixedNavBarColor) {
+                final int color = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+                if (color != navBarColor) {
+                    fixedNavBarColor = navBarColor = color;
+                    setOverlayNavBarColor(color);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public LimitReachedBottomSheet(BaseFragment fragment, Context context, int type, int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         super(context, fragment, false, hasFixedSize(type), false, resourcesProvider);
         fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, this.resourcesProvider));
+        fixedNavBarColor = navBarColor;
         this.parentFragment = fragment;
         this.currentAccount = currentAccount;
         this.type = type;
@@ -367,12 +388,12 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             actionBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             actionBtn.setTypeface(AndroidUtilities.bold());
             actionBtn.setText(premiumButtonView.getTextView().getText());
-            actionBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            ThemeBind.textColor(actionBtn, Theme.key_featuredStickers_buttonText, resourcesProvider);
             actionBtn.setOnClickListener(v -> {
                 AndroidUtilities.addToClipboard(getBoostLink());
                 dismiss();
             });
-            actionBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), 120)));
+            ThemeBind.selectorBackground(actionBtn, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), 120)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120), resourcesProvider);
         }
 
         if (type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS) {
@@ -460,7 +481,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     }
                 }
             };
-            divider.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            ThemeBind.backgroundColor(divider, Theme.key_dialogBackground, resourcesProvider);
             containerView.addView(divider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 72, Gravity.BOTTOM, 0, 0, 0, 0));
         }
         containerView.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16 + backgroundPaddingLeft / AndroidUtilities.density, 0, 16 + backgroundPaddingLeft / AndroidUtilities.density, 12));
@@ -575,7 +596,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
                     ImageView imageView = new ImageView(getContext());
                     imageView.setImageResource(R.drawable.msg_arrow_avatar);
-                    imageView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon));
+                    ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, PorterDuff.Mode.SRC_ATOP);
                     frameLayout.addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
 
                     BackupImageView toAvatar = new BackupImageView(getContext());
@@ -588,7 +609,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         textView.setLetterSpacing(0.025f);
                     }
-                    textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     containerLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 24, 80, 24, 0));
 
@@ -993,7 +1014,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ThemeBind.textColor(button, Theme.key_text_RedBold, resourcesProvider);
         }
     }
 
@@ -1120,9 +1141,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.boostByChannelCreated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.boostedChannelByUser);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didStartedMultiGiftsSelector);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.boostByChannelCreated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.boostedChannelByUser);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.didStartedMultiGiftsSelector);
     }
 
     @Override
@@ -1316,9 +1337,9 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                         textView.setLineSpacing(dp(3), 1.0f);
                         if (resourcesProvider instanceof DarkThemeResourceProvider) {
-                            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                         } else {
-                            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                         }
                         textView.setGravity(Gravity.CENTER_HORIZONTAL);
                         textView.setOnClickListener(v -> BoostPagerBottomSheet.show(getBaseFragment(), dialogId, resourcesProvider));
@@ -1359,17 +1380,17 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         linkView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
                         linkView.setSingleLine(true);
                         frameLayout.addView(linkView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 0, 11, 0));
-                        linkView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
-                        linkView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                        ThemeBind.selectorBackground(linkView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_graySection, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))), ThemeBind.of(Theme.key_graySection), ThemeBind.alpha(Theme.key_listSelector, (int) (255 * 0.3f)), resourcesProvider);
+                        ThemeBind.textColor(linkView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                         linkView.setOnClickListener(v -> {
                             AndroidUtilities.addToClipboard(getBoostLink());
                         });
                         if (statisticClickRunnable != null) {
                             ImageView imageView = new ImageView(getContext());
                             imageView.setImageResource(R.drawable.msg_stats);
-                            imageView.setColorFilter(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                            ThemeBind.colorFilter(imageView, Theme.key_dialogTextBlack, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
                             imageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-                            imageView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))));
+                            ThemeBind.selectorBackground(imageView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(20), 0, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_listSelector, resourcesProvider), (int) (255 * 0.3f))), null, ThemeBind.alpha(Theme.key_listSelector, (int) (255 * 0.3f)), resourcesProvider);
                             frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 15, 0, 15, 0));
                             imageView.setOnClickListener(v -> {
                                 statisticClickRunnable.run();
@@ -1397,6 +1418,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         break;
                     case VIEW_TYPE_SHADOW:
                         view = new ShadowSectionCell(context, 12, Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                        ThemeBind.backgroundColor(view, Theme.key_windowBackgroundGray, resourcesProvider);
                         break;
                     case VIEW_TYPE_HEADER_CELL:
                         view = new HeaderCell(context);
@@ -1862,14 +1884,14 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 title.setGravity(Gravity.CENTER);
                 title.setTypeface(AndroidUtilities.bold());
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                ThemeBind.textColor(title, Theme.key_dialogTextBlack, resourcesProvider);
                 title.setText(getString(R.string.InvitePremiumBlockedTitle));
                 addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 9));
 
                 TextView description = new TextView(context);
                 description.setGravity(Gravity.CENTER);
                 description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                ThemeBind.textColor(description, Theme.key_dialogTextBlack, resourcesProvider);
                 addView(description, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 19));
 
                 final boolean calls = type == TYPE_CALL_RESTRICTED;
@@ -1939,7 +1961,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                         }
                     };
                     or.setGravity(Gravity.CENTER);
-                    or.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+                    ThemeBind.textColor(or, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
                     or.setText(" " + getString(R.string.InvitePremiumBlockedOr) + " ");
                     or.setTextSize(14);
                     addView(or, LayoutHelper.createLinear(190, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 0, 12, 20));
@@ -1948,14 +1970,14 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     title.setGravity(Gravity.CENTER);
                     title.setTypeface(AndroidUtilities.bold());
                     title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                    title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                    ThemeBind.textColor(title, Theme.key_dialogTextBlack, resourcesProvider);
                     title.setText(getString(R.string.InviteBlockedTitle));
                     addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 9));
 
                     description = new TextView(context);
                     description.setGravity(Gravity.CENTER);
                     description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                    description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                    ThemeBind.textColor(description, Theme.key_dialogTextBlack, resourcesProvider);
                     if (premiumInviteBlockedUsers.size() <= 1) {
                         description.setText(getString(R.string.InviteBlockedOneMessage));
                     } else {
@@ -2014,7 +2036,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 ImageView imageView = new ImageView(context);
                 imageView.setImageDrawable(ContextCompat.getDrawable(getContext(), R.drawable.large_boosts));
                 frameLayout.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
-                frameLayout.setBackground(Theme.createCircleDrawable(dp(79), Theme.getColor(Theme.key_featuredStickers_addButton)));
+                ThemeBind.fillBackground(frameLayout, Theme.createCircleDrawable(dp(79), Theme.getColor(Theme.key_featuredStickers_addButton)), ThemeBind.of(Theme.key_featuredStickers_addButton));
                 addView(frameLayout, LayoutHelper.createLinear(79, 79, Gravity.CENTER_HORIZONTAL, 0, 23, 0, 0));
             }
 
@@ -2074,7 +2096,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 title.setText(getString(R.string.LimitReached));
             }
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             title.setGravity(Gravity.CENTER);
 
             if (type == TYPE_BOOSTS_FOR_USERS || type == TYPE_BOOSTS_FOR_REMOVE_RESTRICTIONS || isMiniBoostBtnForAdminAvailable()) {
@@ -2098,7 +2120,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     rootLayout.setClipChildren(false);
 
                     FrameLayout frameLayout = new FrameLayout(getContext());
-                    frameLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(14), Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)));
+                    ThemeBind.fillBackground(frameLayout, Theme.createRoundRectDrawable(AndroidUtilities.dp(14), Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundGray), resourcesProvider);
                     BackupImageView backupImageView = new BackupImageView(getContext());
                     backupImageView.setRoundRadius(AndroidUtilities.dp(14));
                     TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
@@ -2114,7 +2136,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                     textView.setMaxLines(1);
                     textView.setEllipsize(TextUtils.TruncateAt.END);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-                    textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                    ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                     frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 36, 0, 12, 0));
 
                     rootLayout.addView(frameLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 28, Gravity.BOTTOM, 18, 0, 18, 0));
@@ -2142,12 +2164,12 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             description.setLineSpacing(description.getLineSpacingExtra(), description.getLineSpacingMultiplier() * 1.1f);
             if (type == TYPE_BOOSTS_FOR_POSTING) {
                 if (resourcesProvider instanceof DarkThemeResourceProvider) {
-                    description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                    ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                 } else {
-                    description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                    ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 }
             } else {
-                description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             }
             if (type == TYPE_BOOSTS_FOR_USERS) {
                 addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, -2, 24, 17));
@@ -2183,7 +2205,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 title = new TextView(getContext());
                 title.setTypeface(AndroidUtilities.bold());
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 title.setGravity(Gravity.CENTER);
                 addView(title, titleIndex, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 22, 0, 0));
             }
@@ -2193,7 +2215,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setLineSpacing(description.getLineSpacingExtra(), description.getLineSpacingMultiplier() * 1.1f);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
-            description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             addView(description, descriptionIndex, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, -2, 24, 17));
         }
     }
@@ -2652,7 +2674,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
         alertDialog.show();
         TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (button != null) {
-            button.setTextColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            ThemeBind.textColor(button, Theme.key_text_RedBold, resourcesProvider);
         }
     }
 
@@ -2847,12 +2869,12 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_premiumGradient1, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(imageView, Theme.key_premiumGradient1, resourcesProvider, PorterDuff.Mode.SRC_IN);
             addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 24, 0, 24, 0));
 
             textView = new SimpleTextView(context);
             textView.setWidthWrapContent(true);
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
             textView.setTextSize(14);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 30 : 60, 0, LocaleController.isRTL ? 60 : 30, 0));
 

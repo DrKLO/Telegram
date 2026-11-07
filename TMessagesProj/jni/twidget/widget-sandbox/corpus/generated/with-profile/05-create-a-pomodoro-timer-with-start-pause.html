@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #991b1b; --track: #fecaca; --ring: #ef4444; --btn: #ef4444; --chip: #fff; --chipfg: #7f1d1d; --chipline: #fecaca; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1c1917; --fg: #fca5a5; --track: #450a0a; --ring: #f87171; --btn: #dc2626; --chip: #292524; --chipfg: #fca5a5; --chipline: #57534e; } }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; background: var(--bg); color: var(--fg); display: flex; flex-direction: column; align-items: center; }
+  .modes { display: flex; gap: 6px; margin-bottom: 14px; }
+  .modes button { background: var(--chip); color: var(--chipfg); border: 1px solid var(--chipline); padding: 6px 12px; font-size: 13px; border-radius: 10px; cursor: pointer; }
+  .modes button.active { background: var(--btn); color: #fff; border-color: var(--btn); }
+  .ring { position: relative; width: 200px; height: 200px; }
+  svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  circle { fill: none; stroke-width: 12; }
+  .bg { stroke: var(--track); }
+  .fg { stroke: var(--ring); stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+  .time { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .time small { font-size: 12px; font-weight: 500; letter-spacing: 1px; }
+  .controls { display: flex; gap: 10px; margin-top: 16px; }
+  .controls button { padding: 10px 18px; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; background: var(--btn); color: #fff; }
+  .controls button.secondary { background: var(--chip); color: var(--chipfg); border: 1px solid var(--chipline); }
+  .done { margin-top: 10px; font-size: 14px; min-height: 20px; }
+  .count { font-size: 12px; opacity: .75; min-height: 16px; }
+</style>
+</head>
+<body>
+<div class="modes">
+  <button class="active" data-min="25" id="mode-focus">Focus</button>
+  <button data-min="5" id="mode-short">Short break</button>
+  <button data-min="15" id="mode-long">Long break</button>
+</div>
+<div class="ring">
+  <svg viewBox="0 0 220 220">
+    <circle class="bg" cx="110" cy="110" r="100"/>
+    <circle class="fg" id="fg" cx="110" cy="110" r="100" stroke-dasharray="628.3" stroke-dashoffset="0"/>
+  </svg>
+  <div class="time"><span id="clock">25:00</span><small id="label">FOCUS</small></div>
+</div>
+<div class="controls">
+  <button id="start">Start</button>
+  <button class="secondary" id="reset">Reset</button>
+</div>
+<div class="done" id="done"></div>
+<div class="count" id="count"></div>
+<script>
+  var total = 25 * 60, left = total, timer = null;
+  var clock = document.getElementById('clock'), fg = document.getElementById('fg'), startBtn = document.getElementById('start'), doneEl = document.getElementById('done');
+  var C = 2 * Math.PI * 100;
+  // Finished sessions are counted in this message's localStorage (kept when the widget is re-created).
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  };
+  var sessions = store.get('pomodoro-sessions') || { focus: 0, breaks: 0 };
+  function showCount() {
+    document.getElementById('count').textContent = sessions.focus || sessions.breaks ? '🍅 ' + sessions.focus + ' focus session' + (sessions.focus === 1 ? '' : 's') + ' · ' + sessions.breaks + ' break' + (sessions.breaks === 1 ? '' : 's') + ' done' : '';
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function render() {
+    clock.textContent = pad(Math.floor(left / 60)) + ':' + pad(left % 60);
+    fg.style.strokeDashoffset = C * (1 - left / total);
+  }
+  function tick() {
+    if (left > 0) { left--; render(); }
+    if (left === 0) {
+      clearInterval(timer); timer = null; startBtn.textContent = 'Start';
+      doneEl.textContent = '⏰ Time is up!';
+      if (document.getElementById('label').textContent === 'FOCUS') sessions.focus++; else sessions.breaks++;
+      store.set('pomodoro-sessions', sessions);
+      showCount();
+    }
+  }
+  startBtn.onclick = function () {
+    doneEl.textContent = '';
+    if (timer) { clearInterval(timer); timer = null; startBtn.textContent = 'Resume'; }
+    else { timer = setInterval(tick, 1000); startBtn.textContent = 'Pause'; }
+  };
+  document.getElementById('reset').onclick = function () { clearInterval(timer); timer = null; left = total; startBtn.textContent = 'Start'; doneEl.textContent = ''; render(); };
+  Array.prototype.forEach.call(document.querySelectorAll('.modes button'), function (b) {
+    b.onclick = function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.modes button'), function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      total = left = b.getAttribute('data-min') * 60;
+      document.getElementById('label').textContent = b.textContent.toUpperCase();
+      clearInterval(timer); timer = null; startBtn.textContent = 'Start'; doneEl.textContent = ''; render();
+    };
+  });
+  render();
+  showCount();
+</script>
+</body>
+</html>

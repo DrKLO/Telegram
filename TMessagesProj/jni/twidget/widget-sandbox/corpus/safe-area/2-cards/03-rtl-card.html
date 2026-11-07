@@ -1,0 +1,33 @@
+<!--
+  safe-area: a right-to-left card: the corner follows the client's interface, not the widget's direction (corpus/safe-area/README.md)
+  idea: the trip offer in Hebrew, dir=rtl. The corner is a physical side: in a left-to-right client the time sits at this widget's start (its right), in a right-to-left client at its end (its left). The bottom row pads both physical sides with --tg-content-safe-area-corner-left and -right, never inline-start or -end, so the Book button keeps out of the time in either client.
+-->
+<title>סוף שבוע בליסבון</title>
+<style>
+  /* padding: 0 too: this widget handles the band itself, so the renderer's default bottom padding would be a second band. */
+  body { margin: 0; padding: 0 }
+  .card { padding: 16px 16px 0; background: linear-gradient(200deg, var(--tg-theme-accent-text-color), var(--tg-theme-button-color)); color: var(--tg-theme-button-text-color) }
+  .an { margin: 0 0 12px; padding: 6px 10px; border-radius: 8px; font-size: 12px; line-height: 1.4; background: var(--tg-theme-bg-color); color: var(--tg-theme-hint-color) }
+  .an b { color: var(--tg-theme-text-color) }
+  .k { font-size: 12px; opacity: .8 }
+  h1 { margin: 4px 0 2px; font-size: 22px; line-height: 1.2 }
+  .d { font-size: 14px; opacity: .9 }
+  .p { margin: 14px 0 0; font-size: 28px; font-weight: 700 }
+  .p small { font-size: 13px; font-weight: 500; opacity: .85 }
+  /* Physical sides: the client's time is on its interface's side, whatever this widget's direction; 0px where a client
+     older than v0.4.0 has no such variables. */
+  .row { display: flex; gap: 8px; align-items: center; margin: 0 -16px; padding-top: 14px; padding-bottom: 6px; padding-right: max(16px, var(--tg-content-safe-area-corner-right, 0px)); padding-left: max(16px, var(--tg-content-safe-area-corner-left, 0px)) }
+  .row button { padding: 7px 16px; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); font-weight: 600 }
+  .row .s { flex: 1; text-align: end; font-size: 12px; opacity: .85 }
+</style>
+<div class="card" dir="rtl" lang="he">
+  <div class="an" dir="ltr"><b>A right-to-left widget.</b> In a left-to-right client the time is on its right (its start), in a right-to-left one on its left: the row keeps out of either.</div>
+  <div class="k">טאפ אייר · 3 לילות</div>
+  <h1>סוף שבוע בליסבון</h1>
+  <div class="d">14–17 בנובמבר · מלון באלפמה · ארוחת בוקר</div>
+  <div class="p">₪1,690 <small>לאדם</small></div>
+  <div class="row"><button id="b">להזמין</button><span class="s" id="st">נשארו 2 מקומות</span></div>
+</div>
+<script>
+  document.getElementById('b').onclick = function () { document.getElementById('st').textContent = 'שמור ל-15 דקות'; };
+</script>

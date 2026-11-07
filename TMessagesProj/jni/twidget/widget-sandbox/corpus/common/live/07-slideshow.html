@@ -1,0 +1,79 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: a photo-story slideshow — four gradient slides advance every 2.5 s (class swap, no transitions), dots and caption update, pause/play, stops after 16 advances
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .frame { position: relative; height: 200px; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+  .slide { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+  .slide.aurora { background: linear-gradient(135deg, #0b1b3a 0%, #1a5c6b 35%, #3fd0a0 62%, #7f5af0 100%); }
+  .slide.dunes { background: linear-gradient(160deg, #ffe3a3 0%, #f6c66b 30%, #e08a3c 65%, #b85a1f 100%); }
+  .slide.ocean { background: linear-gradient(160deg, #4fb3ff 0%, #1b6fd6 40%, #0a3d91 75%, #06264f 100%); }
+  .slide.sunset { background: linear-gradient(170deg, #ffd166 0%, #ff8c42 40%, #ff3b6b 70%, #7a1f5c 100%); }
+  .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px; color: #fff; background-color: rgba(0,0,0,0.45); }
+  .cap b { display: block; font-size: 15px; }
+  .cap span { font-size: 12px; }
+  .counter { position: absolute; right: 10px; top: 10px; padding: 2px 8px; border-radius: 8px; background-color: rgba(0,0,0,0.45); color: #fff; font-size: 11px; font-weight: 700; }
+  .bar { position: absolute; left: 0; top: 0; height: 3px; background-color: #fff; width: 0; }
+  .dots { display: flex; justify-content: center; margin-top: 8px; }
+  .dots i { width: 7px; height: 7px; border-radius: 4px; margin: 0 3px; background-color: var(--fill2); }
+  .dots i.on { background-color: var(--blue); }
+  .ctl { display: flex; align-items: center; margin-top: 8px; }
+  .ctl .btn { padding: 4px 10px; font-size: 12px; margin-left: 6px; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">Lisbon, day 3</span><span class="tiny muted">4 photos · Ana</span></div>
+  <div class="frame" id="frame">
+    <div class="slide aurora"></div>
+    <div class="bar" id="bar"></div>
+    <div class="counter" id="counter">1 / 4</div>
+    <div class="cap" id="cap"><b></b><span></span></div>
+  </div>
+  <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+  <div class="ctl"><span class="tiny muted grow" id="st">auto-advancing</span><span class="btn" role="button" data-go="-1">Prev</span><span class="btn" role="button" id="pp">Pause</span><span class="btn" role="button" data-go="1">Next</span></div>
+</div>
+<script>
+const SLIDES = [['aurora', 'Night over the Tagus', 'The 25 de Abril bridge from Almada, 23:10'],
+  ['dunes', 'Costa da Caparica', 'Sand all the way to the horizon, no one around'],
+  ['ocean', 'Cascais tide pools', 'Cold water, warm rocks, one crab'],
+  ['sunset', 'Miradouro da Graça', 'Everyone came for this one']];
+let i = 0, playing = true, advances = 0, timer = 0, raf = 0, t0 = 0;
+const frame = document.getElementById('frame'), cap = document.getElementById('cap'), dots = document.getElementById('dots').children, bar = document.getElementById('bar');
+function show() {
+  frame.querySelector('.slide').className = 'slide ' + SLIDES[i][0];
+  cap.querySelector('b').textContent = SLIDES[i][1]; cap.querySelector('span').textContent = SLIDES[i][2];
+  document.getElementById('counter').textContent = (i + 1) + ' / 4';
+  for (let k = 0; k < 4; k++) dots[k].classList.toggle('on', k === i);
+}
+function schedule() {
+  clearTimeout(timer); cancelAnimationFrame(raf);
+  bar.style.width = '0';
+  if (!playing) return;
+  t0 = performance.now();
+  const tickBar = () => { const p = Math.min(1, (performance.now() - t0) / 2500); bar.style.width = (p * 100).toFixed(1) + '%'; if (p < 1 && playing) raf = requestAnimationFrame(tickBar); };
+  raf = requestAnimationFrame(tickBar);
+  timer = setTimeout(() => { i = (i + 1) % 4; show(); if (++advances >= 16) { playing = false; document.getElementById('st').textContent = 'stopped after 16 slides'; document.getElementById('pp').textContent = 'Play'; schedule(); return; } schedule(); }, 2500);
+}
+document.querySelector('.ctl').addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if (g) { i = (i + Number(g.dataset.go) + 4) % 4; show(); schedule(); return; }
+  if (e.target.closest('#pp')) {
+    playing = !playing; advances = 0;
+    document.getElementById('pp').textContent = playing ? 'Pause' : 'Play';
+    document.getElementById('st').textContent = playing ? 'auto-advancing' : 'paused';
+    schedule();
+  }
+});
+show(); schedule();
+</script>

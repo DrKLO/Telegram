@@ -44,6 +44,9 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     protected List<SpoilerEffect> spoilers = new ArrayList<>();
     private Stack<SpoilerEffect> spoilersPool = new Stack<>();
     private boolean isSpoilersRevealed;
+    private boolean revealPending;
+    private boolean revealInProgress;
+    private int revealGeneration;
     private Path path = new Path();
     public boolean allowClickSpoilers = true;
 
@@ -81,17 +84,42 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
         this.resourcesProvider = resourcesProvider;
 
         clickDetector = new SpoilersClickDetector(this, spoilers, (eff, x, y) -> {
-            if (isSpoilersRevealed || !revealOnClick) return;
-
-            eff.setOnRippleEndCallback(()->post(()->{
-                isSpoilersRevealed = true;
-                invalidateSpoilers();
-            }));
-
-            float rad = (float) Math.sqrt(Math.pow(getWidth(), 2) + Math.pow(getHeight(), 2));
-            for (SpoilerEffect ef : spoilers)
-                ef.startRipple(x, y, rad);
+            if (isSpoilersRevealed || revealPending || revealInProgress || !revealOnClick) return;
+            startReveal(x, y);
         });
+    }
+
+    public void reveal() {
+        if (isSpoilersRevealed || revealInProgress) return;
+        // setText() can leave the old layout in place until the next traversal.
+        revealPending = true;
+        if (getLayout() == null || isLayoutRequested()) return;
+
+        startReveal(getWidth() / 2f - getPaddingLeft(),
+            getHeight() / 2f - getPaddingTop() + getScrollY());
+    }
+
+    private void startReveal(float x, float y) {
+        revealPending = false;
+        if (spoilers.isEmpty()) {
+            isSpoilersRevealed = true;
+            invalidateSpoilers();
+            return;
+        }
+
+        revealInProgress = true;
+        final int generation = ++revealGeneration;
+        spoilers.get(0).setOnRippleEndCallback(() -> post(() -> {
+            if (generation != revealGeneration) return;
+            revealInProgress = false;
+            isSpoilersRevealed = true;
+            invalidateSpoilers();
+        }));
+
+        final float radius = (float) Math.hypot(getWidth(), getHeight());
+        for (SpoilerEffect spoiler : spoilers) {
+            spoiler.startRipple(x, y, radius);
+        }
     }
 
     private CharacterStyle currentLinkLoading;
@@ -186,6 +214,9 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
 
     @Override
     public void setText(CharSequence text, BufferType type) {
+        revealGeneration++;
+        revealPending = false;
+        revealInProgress = false;
         isSpoilersRevealed = false;
         super.setText(text, type);
     }
@@ -309,6 +340,11 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         invalidateSpoilers();
+        if (revealPending) {
+            // onLayout may still report isLayoutRequested(), so start directly.
+            startReveal(getWidth() / 2f - getPaddingLeft(),
+                getHeight() / 2f - getPaddingTop() + getScrollY());
+        }
     }
 
     private Layout lastLayout = null;

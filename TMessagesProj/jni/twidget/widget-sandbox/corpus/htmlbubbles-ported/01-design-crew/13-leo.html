@@ -1,0 +1,48 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 01-design-crew.chat, message 13
+  author: leo 09:55
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+  chat:send?text=… links become buttons; SDK v1 has no sendMessage, so the answer is the widget's
+  local state: kept in localStorage (per message, survives re-creation), shown under the question and
+  restored on load. The host's `then=leo-ack|leo-wait` follow-up is the demo chat script, not part of the widget.
+-->
+<style>
+  :root { color-scheme: light dark; --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  body > *:first-child { margin-top: 0; }
+  body > *:last-child { margin-bottom: 0; }
+  .chip { display: inline-block; padding: 3px 12px; border-radius: 14px; border: 1px solid #007aff; color: #007aff; margin: 2px 4px 0 0; background: none; font: inherit; cursor: pointer; }
+  .chip.grey { border-color: #8e8e93; color: #8e8e93; }
+  .chip:hover { background-color: rgba(127,127,127,0.12); }
+  .chip.sent { background-color: rgba(127,127,127,0.12); }
+  .answer { margin: 6px 0 0 0; font-size: 12px; color: var(--muted); }
+</style>
+<p>Should I kick off a build of the new bubbles?</p>
+<div id="choices">
+  <button class="chip" type="button" data-text="Yes, ship it 🚀">Yes, ship it 🚀</button>
+  <button class="chip grey" type="button" data-text="Not yet — one more pass">Not yet</button>
+</div>
+<p class="answer" id="answer" hidden></p>
+<script>
+  // Local state instead of TelegramWidget.sendMessage (removed in SDK v1): the choice stays with this message.
+  const KEY = 'leo-build-answer';
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable or full: keep it in memory */ } },
+  };
+  const answerEl = document.getElementById('answer');
+  function show(text) {
+    for (const c of document.querySelectorAll('.chip')) c.classList.toggle('sent', c.dataset.text === text);
+    answerEl.hidden = !text;
+    answerEl.textContent = text ? 'Your answer: ' + text : '';
+  }
+  document.getElementById('choices').addEventListener('click', e => {
+    const b = e.target.closest('button[data-text]');
+    if (!b) return;
+    store.set(KEY, b.dataset.text);
+    show(b.dataset.text);
+  });
+  show(store.get(KEY));
+</script>

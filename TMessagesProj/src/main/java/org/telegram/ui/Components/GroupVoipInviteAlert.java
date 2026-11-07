@@ -35,6 +35,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.ManageChatTextCell;
@@ -660,7 +661,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     break;
                 case 1:
                     GraySectionCell cell = new GraySectionCell(mContext);
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBarUnscrolled));
+                    ThemeBind.backgroundColor(cell, Theme.key_voipgroup_actionBarUnscrolled);
                     cell.setTextColor(Theme.key_voipgroup_searchPlaceholder);
                     view = cell;
                     break;
@@ -832,7 +833,7 @@ public class GroupVoipInviteAlert extends UsersAlertBase {
                     break;
                 case 2:
                     GraySectionCell cell = new GraySectionCell(mContext);
-                    cell.setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBarUnscrolled));
+                    ThemeBind.backgroundColor(cell, Theme.key_voipgroup_actionBarUnscrolled);
                     cell.setTextColor(Theme.key_voipgroup_searchPlaceholder);
                     view = cell;
                     break;

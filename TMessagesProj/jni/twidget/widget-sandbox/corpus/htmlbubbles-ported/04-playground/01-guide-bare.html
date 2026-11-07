@@ -1,0 +1,254 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 04-playground.chat, message 1
+  author: guide 12:00 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --red: #ff3b30; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+
+  /* kit rules this file uses */
+  code { font-family: ui-monospace, monospace; font-size: 13px; padding: 1px 4px; border-radius: 4px; background-color: rgba(127,127,127,0.15); }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .card code { background-color: rgba(127,127,127,0.15); }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; }
+  .t-green { color: var(--green); } .t-red { color: var(--red); }
+  [data-action] { cursor: pointer; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+
+  /* original stylesheet */
+  .pgw { width: 420px; max-width: 100%; }
+  .pgw .hd { display: flex; align-items: center; padding: 14px; border-radius: 13px 13px 0 0; background: linear-gradient(135deg, #7f5af0, #2cb67d); color: #ffffff; }
+  .pgw .logo { margin-right: 12px; border-radius: 11px; border: 2px solid rgba(255,255,255,0.6); }
+  .pgw .tabs { display: flex; margin: 10px 16px 0 16px; padding: 2px; border-radius: 9px; background-color: rgba(127,127,127,0.14); }
+  .pgw .tab { flex-grow: 1; padding: 4px 0; border-radius: 7px; text-align: center; font-size: 12.5px; font-weight: 600; }
+  .pgw .tab:hover { background-color: rgba(127,127,127,0.16); }
+  .pgw .tab.on { background-color: #7f5af0; color: #ffffff; }
+  .pgw .bd { padding: 8px 16px 14px 16px; font-size: 13px; }
+  .pgw .list { overflow: hidden; margin: 0 -6px; }
+  .pgw .tip { display: flex; position: relative; padding: 5px 6px; border-radius: 8px; }
+  .pgw .tip:hover { background-color: rgba(127,127,127,0.09); }
+  .pgw .ck { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 9px; text-align: center; line-height: 18px; font-size: 10.5px; font-weight: 800; flex-shrink: 0; }
+  .pgw .tx { flex-grow: 1; width: 340px; }
+  .pgw .meter { height: 6px; margin-top: 4px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pgw .meter div { height: 6px; border-radius: 3px; background: linear-gradient(90deg, #7f5af0, #2cb67d); }
+  .pgw .demo { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background-color: rgba(127,90,240,0.10); }
+  .pgw .num { display: inline-block; width: 44px; height: 30px; line-height: 30px; text-align: center; font-weight: 800; }
+  .pgw .thumbs { display: flex; justify-content: space-between; margin-top: 6px; }
+  .pgw .th { padding: 2px; border-radius: 9px; }
+  .pgw .th:hover { background-color: rgba(127,127,127,0.25); }
+  .pgw .th.on { background-color: #7f5af0; }
+  .pgw .prev { position: relative; height: 120px; margin-top: 8px; overflow: hidden; border-radius: 10px; background-color: rgba(127,127,127,0.12); text-align: center; }
+  .pgw .prev code { position: absolute; left: 8px; top: 92px; background-color: rgba(0,0,0,0.55); color: #ffffff; }
+  .pgw .syms { display: flex; margin-top: 6px; }
+  .pgw .sym { width: 40px; height: 34px; margin-right: 6px; border-radius: 9px; text-align: center; line-height: 34px; background-color: rgba(127,127,127,0.10); }
+  .pgw .sym:hover { background-color: rgba(127,127,127,0.22); }
+  .pgw .sym.on { background-color: rgba(127,90,240,0.22); }
+  .pgw .note { margin-top: 10px; padding: 8px 10px; border-radius: 8px; border-left: 3px solid #007aff; background-color: rgba(0,122,255,0.08); font-size: 12px; }
+
+  /* port: bundled pictures (app:*) as gradient blocks */
+  .pic { display: inline-block; vertical-align: middle; background-color: #8e8e93; }
+  .pic.aurora { background: linear-gradient(160deg, #0b1d3a 0%, #1a5e63 35%, #3ddc97 62%, #7f5af0 100%); }
+  .pic.ocean { background: linear-gradient(180deg, #7fd3ff 0%, #1e88e5 55%, #0b3d91 100%); }
+  .pic.dunes { background: linear-gradient(180deg, #ffe3a3 0%, #f2a65a 50%, #b86a2e 100%); }
+  .pic.forest { background: linear-gradient(180deg, #b7e36b 0%, #2e7d32 55%, #163b25 100%); }
+  .pic.sunset { background: linear-gradient(180deg, #ffd166 0%, #ff7a3d 45%, #c0306a 80%, #3b1f5e 100%); }
+  .pic.map { background: repeating-linear-gradient(0deg, rgba(255,255,255,0.55) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(255,255,255,0.55) 0 1px, transparent 1px 24px), linear-gradient(135deg, #d6ead9, #ecdcc2); }
+  .pic.logo { background: radial-gradient(circle at 38% 38%, #ffffff 0 22%, transparent 23%), radial-gradient(circle at 62% 62%, rgba(255,255,255,0.7) 0 14%, transparent 15%), linear-gradient(135deg, #7f5af0, #2cb67d); border-radius: 22%; }
+  .pgw .logo { width: 44px; height: 44px; display: block; flex-shrink: 0; }
+  .pgw .th .pic { width: 44px; height: 44px; border-radius: 7px; display: block; }
+  .pgw .prev .pic.big { width: 388px; max-width: 100%; height: 120px; display: block; }
+  .pgw .prev .pic.big.logo { width: 120px; height: 120px; display: inline-block; border-radius: 22%; }
+  .pgw .sym svg { vertical-align: middle; }
+  .pgw .sym.on svg { animation: sym-pop 420ms cubic-bezier(.34,1.56,.64,1); }
+
+  /* port: the prelude's animate/tween/transition as CSS */
+  .pgw.intro .tip { animation: tip-in 420ms cubic-bezier(.33,1,.68,1) both; animation-delay: calc(250ms + var(--i) * 80ms); }
+  @keyframes tip-in { from { left: 440px; } to { left: 0; } }
+  .pgw .ck.pop { animation: ck-pop 420ms cubic-bezier(.34,1.56,.64,1); }
+  @keyframes ck-pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .pgw .meter div { transition: width 500ms cubic-bezier(.33,1,.68,1); }
+  .pgw .num.pop { animation: num-pop 420ms cubic-bezier(.33,1,.68,1); }
+  @keyframes num-pop { 0% { transform: scale(1.5); } 70% { transform: scale(0.95); } 100% { transform: scale(1); } }
+  @keyframes sym-pop { from { transform: scale(0.4); } to { transform: scale(1); } }
+  .pgw.tr-fade { animation: tr-fade 220ms ease-out; }
+  .pgw.tr-slide-left { animation: tr-slide-left 240ms cubic-bezier(.33,1,.68,1); }
+  .pgw.tr-slide-right { animation: tr-slide-right 240ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0.3; } to { opacity: 1; } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+</style>
+<div class="card pgw intro" id="pgw">
+  <div class="hd"><span class="pic logo"></span><div>
+    <div style="font-size: 18px; font-weight: 800">Welcome to the playground</div>
+    <div class="small" style="color: rgba(255,255,255,0.85)">Every bubble in this app is an HTML document rendered by litehtml</div></div></div>
+  <div class="tabs" id="tabs">
+    <span class="tab on" data-action="tab" data-value="basics">✍️ Basics</span>
+    <span class="tab" data-action="tab" data-value="scripts">⚡️ Scripts</span>
+    <span class="tab" data-action="tab" data-value="assets">🖼 Assets</span>
+  </div>
+  <div class="bd">
+    <div id="p-basics">
+      <div class="list" id="tips"></div>
+      <div class="row between small" style="margin-top: 8px"><span class="muted" id="hint">Click a tip once you've tried it</span><b id="count">0 / 6</b></div>
+      <div class="meter"><div id="meter" style="width: 0%"></div></div>
+    </div>
+    <div id="p-scripts" hidden>
+      <div class="list" id="srows"></div>
+      <div class="demo"><span class="small"><b>This card is a script too.</b><br><span class="muted" id="last">Try the buttons →</span></span>
+        <span><button data-action="add" data-value="-1">−</button><span class="num" id="num">0</span><button class="primary" data-action="add" data-value="1">+</button></span></div>
+    </div>
+    <div id="p-assets" hidden>
+      <div class="small muted">Bundled pictures · click one</div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="prev"><span class="pic big aurora" id="big"></span><code id="bigName">app:aurora</code></div>
+      <div class="small muted" style="margin-top: 10px">SF Symbols · any name, size and colour</div>
+      <div class="syms" id="syms"></div>
+      <div style="margin-top: 6px"><code id="symName">sf:heart.fill?size=24&amp;color=ff2d55</code></div>
+      <div class="note">Also <code>data:</code> URIs (PNG/JPEG/SVG). Links: <code>https:</code> opens the browser, <code>chat:send?text=…</code> sends a reply.</div>
+    </div>
+  </div>
+</div>
+<script>
+const TABS = ['basics', 'scripts', 'assets'];
+const BASICS = [
+  'Type HTML in the composer and press <b>Return</b> (Shift-Return for a newline).',
+  'Use <b>Insert Snippet</b> for ready-made cards, tables, buttons…',
+  'Toggle <b>Send as Them</b> to see the incoming bubble style.',
+  'Messages show fullsize, without a bubble. Wrap one in <code>&lt;div class="widget"&gt;</code> to show it inside a bubble.',
+  '<b>Hover</b> a bubble for parse/layout timings, <b>right-click</b> to view its source.',
+  '<b>⌘O</b> opens any <code>.html</code> file as a message, or a <code>.chat</code> conversation.',
+];
+const SCRIPTS = [
+  'Add a <code>&lt;script&gt;</code>: <code>render()</code> returns the HTML, <code>onAction(name, value)</code> handles clicks on <code>data-action</code>.',
+  'Animate with <code>tween()</code>, <code>animate()</code> and <code>transition()</code>. litehtml itself has no CSS transitions.',
+  '<b>Without JS:</b> <code>chat:toggle?key=x</code> and <code>chat:select?key=tab-2&amp;group=tab</code> links add <code>on-x</code> classes to the bubble\'s &lt;body&gt;.',
+  '<b>CSS kit</b> in every bubble (dark-mode aware): <code>.card .pad .row .badge .btn .chip .panel .muted kbd</code>.',
+];
+const IMAGES = ['aurora', 'ocean', 'dunes', 'forest', 'sunset', 'map', 'logo'];
+// sf:<name>?size=22&color=<hex> → inline SVG icons (24-unit paths)
+const SYMBOLS = [
+  ['heart.fill', 'ff2d55', 'M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9z'],
+  ['star.fill', 'ff9500', 'M12 2l3 6.5 7 .8-5.2 4.8 1.4 7-6.2-3.5L5.8 21l1.4-7L2 9.3l7-.8z'],
+  ['bolt.fill', 'ffcc00', 'M13 2L4 14h6l-1 8 9-12h-6z'],
+  ['leaf.fill', '34c759', 'M20 4C10 4 5 9 5 16c0 1 .2 2 .5 3L3 21l1.5 1 2.5-3c1 .5 2 1 3 1 7 0 10-7 10-16zM7.5 18c2-5 4.5-8 9-10.5-3.5 3.5-6 6.5-9 10.5z'],
+  ['drop.fill', '007aff', 'M12 2C8 8 6 11 6 14.5a6 6 0 0 0 12 0C18 11 16 8 12 2z'],
+  ['moon.stars.fill', 'af52de', 'M13 2.5a9.5 9.5 0 1 0 8.5 14.3A8 8 0 0 1 13 2.5zM19 3l.7 1.8 1.8.7-1.8.7L19 8l-.7-1.8-1.8-.7 1.8-.7zM21 10l.5 1.2 1.2.5-1.2.5L21 13.4l-.5-1.2-1.2-.5 1.2-.5z'],
+];
+const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const esc = v => String(v === undefined || v === null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const $ = id => document.getElementById(id);
+const root = $('pgw');
+
+let tab = 'basics', count = 0, last = null, img = 'aurora', sym = 0;
+const tried = new Set();
+
+// transition(kind): a short animation on the widget root, restarted via a reflow
+function bubble(kind) {
+  root.classList.remove('tr-fade', 'tr-slide-left', 'tr-slide-right');
+  void root.offsetWidth;
+  root.classList.add('tr-' + kind);
+}
+// restart a one-shot CSS animation on an element
+function pop(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+// intro: rows slide in (CSS, staggered); after the original's 250 + 900 ms the class goes away
+setTimeout(() => root.classList.remove('intro'), 1200);
+
+// --- basics ---
+$('tips').innerHTML = BASICS.map((t, i) =>
+  `<div class="tip" data-action="try" data-value="${i}" style="--i: ${i}"><span class="ck" style="background-color: rgba(127,90,240,0.16); color: #7f5af0">${i + 1}</span><span class="tx">${t}</span></div>`).join('');
+
+function updateBasics(i) {
+  const tip = $('tips').children[i];
+  if (tip) {
+    const ck = document.createElement('span');
+    ck.className = 'ck';
+    if (tried.has(i)) { ck.classList.add('pop'); ck.style.backgroundColor = '#2cb67d'; ck.style.color = '#ffffff'; ck.textContent = '✓'; }
+    else { ck.style.backgroundColor = 'rgba(127,90,240,0.16)'; ck.style.color = '#7f5af0'; ck.textContent = String(i + 1); }
+    tip.firstChild.replaceWith(ck);
+  }
+  const n = tried.size;
+  $('hint').textContent = n === BASICS.length ? '🎉 You tried them all' : 'Click a tip once you\'ve tried it';
+  $('count').textContent = `${n} / ${BASICS.length}`;
+  $('meter').style.width = (n / BASICS.length * 100).toFixed(1) + '%';
+}
+
+// --- scripts ---
+$('srows').innerHTML = SCRIPTS.map((t, i) =>
+  `<div class="tip" style="--i: ${i}"><span class="ck" style="background-color: rgba(44,182,125,0.18); color: #2cb67d">${i + 1}</span><span class="tx">${t}</span></div>`).join('');
+
+function updateCounter() {
+  const num = $('num');
+  num.textContent = String(count);
+  num.classList.toggle('t-green', count > 0);
+  num.classList.toggle('t-red', count < 0);
+  pop(num, 'pop');
+  $('last').textContent = last === null ? 'Try the buttons →' : `last call: onAction('add', '${last}')`;
+}
+
+// --- assets ---
+$('thumbs').innerHTML = IMAGES.map(n => `<span class="th ${n === img ? 'on' : ''}" data-action="img" data-value="${n}"><span class="pic ${n}"></span></span>`).join('');
+const icon = (d, c, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24"><path d="${d}" fill="#${c}"/></svg>`;
+$('syms').innerHTML = SYMBOLS.map(([name, c, d], i) => `<span class="sym ${i === sym ? 'on' : ''}" data-action="sym" data-value="${i}">${icon(d, c, 22)}</span>`).join('');
+
+function updateImage() {
+  for (const th of $('thumbs').children) th.classList.toggle('on', th.dataset.value === img);
+  const big = $('big');
+  big.className = 'pic big ' + img;
+  $('bigName').textContent = 'app:' + img;
+}
+function updateSymbol() {
+  const syms = $('syms').children;
+  for (let i = 0; i < syms.length; i++) {
+    const on = i === sym;
+    syms[i].classList.toggle('on', on);
+    if (on) { const svg = syms[i].firstChild; svg.replaceWith(svg.cloneNode(true)); } // restart the pop
+  }
+  const [sn, sc] = SYMBOLS[sym];
+  $('symName').textContent = `sf:${sn}?size=24&color=${sc}`;
+}
+
+// --- tabs ---
+function showTab(value) {
+  if (value === tab || !TABS.includes(value)) return;
+  bubble(TABS.indexOf(value) > TABS.indexOf(tab) ? 'slide-left' : 'slide-right');
+  tab = value;
+  for (const t of $('tabs').children) t.classList.toggle('on', t.dataset.value === tab);
+  for (const id of TABS) $('p-' + id).hidden = id !== tab;
+}
+
+root.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (!el || !root.contains(el)) return;
+  const name = el.dataset.action, value = el.dataset.value;
+  if (name === 'tab') showTab(value);
+  else if (name === 'try') {
+    const i = Number(value);
+    if (tried.has(i)) tried.delete(i); else tried.add(i);
+    updateBasics(i);
+  } else if (name === 'add') {
+    count += Number(value);
+    last = value;
+    updateCounter();
+  } else if (name === 'img') {
+    if (value === img || !IMAGES.includes(value)) return;
+    bubble('fade');
+    img = value;
+    updateImage();
+  } else if (name === 'sym') {
+    sym = clamp(Number(value), 0, SYMBOLS.length - 1);
+    updateSymbol();
+  }
+});
+</script>

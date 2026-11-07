@@ -1,0 +1,596 @@
+@chat Design Crew
+@subtitle Maya, Leo, Priya & you · group chat with rich cards
+@icon person.3.fill
+@participant me | You | #007aff | me
+@participant maya | Maya Chen | #ff2d55
+@participant leo | Leo Park | #34c759
+@participant priya | Priya Nair | #af52de
+
+--- maya 09:12
+<p>Morning team ☀️ Quick recap of yesterday's <b>design review</b>:</p>
+<ol>
+  <li>Chat bubbles are now rendered by <a href="https://github.com/litehtml/litehtml">litehtml</a> — real HTML&nbsp;+&nbsp;CSS</li>
+  <li>Dark mode needs <mark>another pass</mark></li>
+  <li>Ship the <u>card components</u> by <i>Friday</i></li>
+</ol>
+
+--- leo 09:14
+<blockquote><b>Maya:</b> Dark mode needs another pass</blockquote>
+<p>On it. Every bubble just re-renders with a different user stylesheet — see <code>ChatBubbleCSS()</code> 👀</p>
+
+--- me 09:15
+Love it! Each bubble is its <b>own</b> HTML document, so styles never leak between messages 🙌
+
+--- priya 09:20 bare
+<style>
+  .spr { width: 360px; max-width: 100%; }
+  .spr .hd { padding: 12px 14px; border-radius: 13px 13px 0 0; background: linear-gradient(135deg, #7f5af0, #2cb67d); color: #ffffff; }
+  .spr .kick { font-size: 11px; text-transform: uppercase; font-weight: 600; color: rgba(255,255,255,0.8); }
+  .spr .ttl { font-size: 20px; font-weight: 700; }
+  .spr .state { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; background-color: rgba(255,255,255,0.22); color: #ffffff; }
+  .spr .bd { padding: 10px 14px 12px 14px; }
+  .spr .fl { display: inline-block; padding: 2px 10px; margin-right: 4px; border-radius: 12px; font-size: 12px; font-weight: 600; background-color: rgba(127,127,127,0.12); }
+  .spr .fl:hover { background-color: rgba(127,127,127,0.24); }
+  .spr .fl.on { background-color: #7f5af0; color: #ffffff; }
+  .spr .list { overflow: hidden; margin: 6px -6px 0 -6px; }
+  .spr .task { display: flex; align-items: center; position: relative; height: 28px; padding: 0 6px; border-radius: 8px; font-size: 13px; }
+  .spr .task:hover { background-color: rgba(127,127,127,0.10); }
+  .spr .nm { flex-grow: 1; white-space: nowrap; }
+  .spr .pt { width: 34px; margin-right: 8px; text-align: right; font-size: 11px; color: #8e8e93; }
+  .spr .who { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border-radius: 9px; text-align: center; line-height: 18px; font-size: 9px; font-weight: 700; color: #ffffff; }
+  .spr .pill { display: inline-block; width: 84px; padding: 1px 0; border-radius: 9px; text-align: center; font-size: 10.5px; font-weight: 700; }
+  .spr .meter { height: 8px; margin-top: 4px; border-radius: 4px; background-color: rgba(127,127,127,0.2); }
+  .spr .meter div { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #7f5af0, #2cb67d); }
+  .spr .step { display: inline-block; width: 22px; line-height: 20px; border-radius: 6px; text-align: center; font-weight: 700; background-color: rgba(127,127,127,0.14); }
+  .spr .step:hover { background-color: rgba(127,127,127,0.28); }
+  .spr .day { display: inline-block; width: 96px; text-align: center; }
+  .spr .goal { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background-color: rgba(44,182,125,0.16); font-size: 13px; }
+  .spr .reset { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 8px; }
+  .spr .reset:hover { background-color: rgba(127,127,127,0.14); text-decoration: none; }
+</style>
+<div class="card spr"><div class="hd"><div class="kick">Sprint 42 · day 6 of 10</div><div class="ttl">Chat Redesign</div></div><div class="bd small muted">Story points burned 34 / 50</div></div>
+<script>
+const STATUS = [
+  { label: 'TODO', c: '#8e8e93' },
+  { label: 'IN PROGRESS', c: '#2f7cf6' },
+  { label: 'IN REVIEW', c: '#e08a00' },
+  { label: 'DONE', c: '#25a244' },
+];
+const PEOPLE = { M: '#ff2d55', L: '#34c759', P: '#af52de' };
+const TASKS = [
+  { id: 'rnd', icon: '🫧', name: 'Bubble renderer', pts: 13, who: 'M', s: 3 },
+  { id: 'kit', icon: '🧩', name: 'Kit classes', pts: 8, who: 'L', s: 3 },
+  { id: 'lay', icon: '📐', name: 'Layout cache', pts: 13, who: 'M', s: 3 },
+  { id: 'drk', icon: '🌙', name: 'Dark mode', pts: 5, who: 'L', s: 2 },
+  { id: 'crd', icon: '🃏', name: 'Card components', pts: 8, who: 'P', s: 1 },
+  { id: 'a11y', icon: '♿️', name: 'Accessibility audit', pts: 3, who: 'P', s: 0 },
+];
+const TOTAL = 50, TODAY = 6, DAYS = 10, HIST = [50, 48, 44, 41, 33, 24];
+const START = TASKS.map(t => t.s);
+const FILTERS = [['all', 'All'], ['open', 'Open'], ['done', 'Done']];
+TASKS.forEach(t => { t.from = t.s; t.k = 1; t.flash = 0; });
+let filter = 'all', day = TODAY, intro = 0, sweep = 0;
+const sticky = new Set(), meter = { v: 0 }, cur = { d: TODAY };
+
+const burned = () => TASKS.reduce((s, t) => s + (t.s === 3 ? t.pts : 0), 0);
+const match = t => filter === 'all' || (filter === 'done') === (t.s === 3);
+const velocity = left => (TOTAL - left) / TODAY;
+const finish = left => left <= 0 ? TODAY : velocity(left) > 0 ? TODAY + left / velocity(left) : Infinity;
+
+function remaining(d) {
+  const left = TOTAL - meter.v;
+  if (d <= TODAY) {
+    const pts = HIST.concat([left]);
+    const i = Math.min(TODAY - 1, Math.floor(d));
+    return lerp(pts[i], pts[i + 1], d - i);
+  }
+  return Math.max(0, left - velocity(left) * (d - TODAY));
+}
+
+setTimeout(() => {
+  animate(900, (_, t) => { intro = t; }, ease.linear);
+  tween(meter, { v: burned() }, 900, ease.outCubic);
+}, 250);
+
+const X = d => 6 + d * 32, Y = r => 6 + (1 - r / TOTAL) * 54;
+function chart() {
+  const upto = Math.max(0.01, intro * TODAY);
+  const pts = [];
+  for (let d = 0; d < upto; d++) pts.push(`${X(d).toFixed(1)},${Y(remaining(d)).toFixed(1)}`);
+  pts.push(`${X(upto).toFixed(1)},${Y(remaining(upto)).toFixed(1)}`);
+  const line = pts.join(' ');
+  let ticks = '', extra = '';
+  for (let d = 0; d <= DAYS; d++) ticks += `<line x1='${X(d)}' y1='60' x2='${X(d)}' y2='${d === TODAY ? 65 : 63}' stroke='#8e8e93' stroke-opacity='0.6'/>`;
+  if (intro >= 1) {
+    const left = TOTAL - meter.v, end = Math.min(DAYS, finish(left));
+    if (end > TODAY + 0.01)
+      extra += `<line x1='${X(TODAY)}' y1='${Y(left).toFixed(1)}' x2='${X(end).toFixed(1)}' y2='${Y(remaining(end)).toFixed(1)}' stroke='#2cb67d' stroke-width='2' stroke-dasharray='4 3'/>`;
+    const cx = X(cur.d).toFixed(1), cy = Y(remaining(cur.d)).toFixed(1);
+    extra += `<line x1='${cx}' y1='2' x2='${cx}' y2='60' stroke='#8e8e93' stroke-opacity='0.5'/><circle cx='${cx}' cy='${cy}' r='4.5' fill='#7f5af0' stroke='#ffffff' stroke-width='2'/>`;
+  }
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='332' height='66' viewBox='0 0 332 66'>` +
+    `<line x1='0' y1='60.5' x2='332' y2='60.5' stroke='#8e8e93' stroke-opacity='0.35'/>${ticks}` +
+    `<line x1='${X(0)}' y1='${Y(TOTAL)}' x2='${X(DAYS)}' y2='${Y(0)}' stroke='#8e8e93' stroke-opacity='0.55' stroke-width='1.5' stroke-dasharray='3 3'/>` +
+    `<polygon points='${X(0)},60 ${line} ${X(upto).toFixed(1)},60' fill='#7f5af0' fill-opacity='0.16'/>` +
+    `<polyline points='${line}' fill='none' stroke='#7f5af0' stroke-width='2.5' stroke-linejoin='round' stroke-linecap='round'/>${extra}</svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function row(t, i) {
+  const e = ease.outCubic(clamp((intro * 900 - i * 90) / 450, 0, 1));
+  const a = STATUS[t.from].c, b = STATUS[t.s].c;
+  const flash = t.flash > 0.01 ? ` background-color: ${alpha(b, 0.22 * t.flash)};` : '';
+  return `<div class="task" data-action="cycle" data-value="${t.id}" style="left: ${Math.round((1 - e) * 380)}px;${flash}">
+    <span class="nm ${t.s === 3 ? 'muted' : ''}">${t.icon} ${esc(t.name)}</span>
+    <span class="pt">${t.pts} pt</span><span class="who" style="background-color: ${PEOPLE[t.who]}">${t.who}</span>
+    <span class="pill" style="background-color: ${mix(alpha(a, 0.16), alpha(b, 0.16), t.k)}; color: ${mix(a, b, t.k)}">${STATUS[t.s].label}</span></div>`;
+}
+
+function render() {
+  const done = burned();
+  const pct = meter.v / TOTAL * 100;
+  const fin = finish(TOTAL - done);
+  const state = done === TOTAL ? 'Goal met 🎉' : fin <= DAYS + 0.01 ? `On track · day ${Math.ceil(fin - 0.01)}` : 'At risk ⚠︎';
+  const counts = { all: TASKS.length, open: TASKS.filter(t => t.s !== 3).length, done: TASKS.filter(t => t.s === 3).length };
+  const chips = FILTERS.map(([id, label]) => `<span class="fl ${filter === id ? 'on' : ''}" data-action="filter" data-value="${id}">${label} ${counts[id]}</span>`).join('');
+  const shown = TASKS.filter(t => sticky.has(t.id) || match(t));
+  const rows = shown.length ? shown.map(row).join('') : '<div class="task muted">Nothing here yet</div>';
+  const changed = TASKS.some((t, i) => t.s !== START[i]);
+  const note = day === TODAY ? 'today' : day > TODAY ? 'forecast' : day === 0 ? 'start' : 'history';
+  return `<div class="card spr">
+    <div class="hd"><div class="row between"><span class="kick">Sprint 42 · day ${TODAY} of ${DAYS}</span><span class="state">${state}</span></div>
+      <div class="ttl">Chat Redesign</div></div>
+    <div class="bd">
+      <div class="row between"><span>${chips}</span>${changed ? '<a class="reset" href="#" data-action="reset">↺ Reset</a>' : ''}</div>
+      <div class="list">${rows}</div>
+      ${done === TOTAL ? `<div class="goal"><b class="t-green">🎉 Sprint goal met</b> <span class="muted">· all ${TOTAL} points burned</span></div>` : ''}
+      <div class="row between small" style="margin-top: 10px"><span class="muted">Story points burned <b class="fg">${Math.round(meter.v)} / ${TOTAL}</b></span><span class="muted">${Math.round(pct)}%</span></div>
+      <div class="meter"><div style="width: ${pct.toFixed(1)}%"></div></div>
+      <div class="row between small" style="margin-top: 10px"><span class="muted">Burn-down · <b class="fg">${Math.round(remaining(cur.d))}</b> pts left</span>
+        <span><span class="step" data-action="day" data-value="-1">‹</span><span class="day"><b>Day ${day}</b> <span class="muted">${note}</span></span><span class="step" data-action="day" data-value="1">›</span></span></div>
+      <img src="${chart()}" width="332" height="66" style="margin-top: 4px">
+      <div class="tiny muted">Click a task to move it along · grey dashes are the ideal pace</div>
+    </div>
+  </div>`;
+}
+
+function onAction(name, value) {
+  if (name === 'filter') {
+    if (value === filter) return;
+    const order = FILTERS.map(f => f[0]);
+    transition(order.indexOf(value) > order.indexOf(filter) ? 'slide-left' : 'slide-right');
+    filter = value;
+    sticky.clear(); clearTimeout(sweep);
+  } else if (name === 'cycle') {
+    const t = TASKS.find(x => x.id === value);
+    if (!t) return;
+    const was = burned() === TOTAL;
+    t.from = t.s; t.s = (t.s + 1) % STATUS.length; t.k = 0; t.flash = 1;
+    tween(t, { k: 1 }, 450, ease.outCubic);
+    tween(t, { flash: 0 }, 800, ease.outQuad);
+    tween(meter, { v: burned() }, 700, ease.outCubic);
+    const now = burned() === TOTAL;
+    if (now !== was) transition(now ? 'pop' : 'fade');
+    if (!match(t)) {
+      sticky.add(t.id);
+      clearTimeout(sweep);
+      sweep = setTimeout(() => {
+        if (TASKS.some(x => sticky.has(x.id) && !match(x))) transition('slide-up');
+        sticky.clear();
+      }, 900);
+    }
+  } else if (name === 'day') {
+    day = clamp(day + Number(value), 0, DAYS);
+    tween(cur, { d: day }, 450, ease.outCubic);
+  } else if (name === 'reset') {
+    transition('fade');
+    TASKS.forEach((t, i) => {
+      if (t.s === START[i]) return;
+      t.from = t.s; t.s = START[i]; t.k = 0;
+      tween(t, { k: 1 }, 450, ease.outCubic);
+    });
+    sticky.clear(); clearTimeout(sweep);
+    tween(meter, { v: burned() }, 700, ease.outCubic);
+    day = TODAY;
+    tween(cur, { d: TODAY }, 450, ease.outCubic);
+  }
+}
+</script>
+
+--- maya 09:31
+<p>Found the engine we're using 👇 worth a read</p>
+<a href="https://github.com/litehtml/litehtml" style="display: block; text-decoration: none; color: inherit">
+  <div style="width: 300px; border-radius: 12px; background-color: rgba(127,127,127,0.12); border: 1px solid rgba(127,127,127,0.25)">
+    <img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27180%27%20viewBox=%270%200%20360%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%232b1055%27/%3E%3Cstop%20offset=%270.33%27%20stop-color=%27%237597de%27/%3E%3Cstop%20offset=%270.67%27%20stop-color=%27%23ff9a8b%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ffd194%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27360%27%20height=%27180%27%20fill=%27url%28%23g%29%27/%3E%3Ccircle%20cx=%27252%27%20cy=%27110%27%20r=%2732%27%20fill=%27%23fff3c4%27/%3E%3Cpolygon%20points=%270,180%200,130%200,112%2030,110%2060,107%2090,105%20120,102%20150,123%20180,97%20210,118%20240,92%20270,113%20300,110%20330,108%20360,105%20360,180%27%20fill=%27%236a3d7c%27%20fill-opacity=%270.9%27/%3E%3Cpolygon%20points=%270,180%200,150%200,132%2030,130%2060,127%2090,125%20120,122%20150,143%20180,117%20210,138%20240,112%20270,133%20300,130%20330,128%20360,125%20360,180%27%20fill=%27%233f2a5c%27/%3E%3C/svg%3E" style="width: 300px; height: 150px; border-radius: 11px 11px 0 0; display: block">
+    <div style="padding: 8px 10px 10px 10px">
+      <div style="font-weight: 700">litehtml — lightweight HTML/CSS rendering engine</div>
+      <div style="font-size: 12px; color: #8e8e93; margin-top: 2px">Fast HTML/CSS layout in C++. You bring the drawing (we use CoreGraphics + CoreText).</div>
+      <div style="font-size: 11px; color: #8e8e93; margin-top: 4px">🔗 github.com</div>
+    </div>
+  </div>
+</a>
+
+--- leo 09:33
+<p>Here's roughly how a bubble gets its size:</p>
+<pre><code><span style="color:#af52de">let</span> doc  = <span style="color:#007aff">LHDocument</span>(html: msg.html, css: bubbleCSS)
+<span style="color:#af52de">let</span> size = doc.<span style="color:#ff9500">layout</span>(maxWidth: <span style="color:#34c759">480</span>) <span style="color:#8e8e93">// shrink-to-fit</span>
+bubble.frame.size = size + insets</code></pre>
+<p style="font-size: 12px; color: #8e8e93">(it's Objective-C++ really, but you get the idea)</p>
+
+--- me 09:34
+🔥🔥🔥
+
+--- priya 09:40 bare
+<style>
+  .pl { width: 330px; max-width: 100%; }
+  .pl .q { font-size: 16px; font-weight: 700; margin: 2px 0 8px 0; }
+  .pl .opt { padding: 5px 8px 7px 8px; margin: 0 -8px 2px -8px; border-radius: 10px; }
+  .pl .opt:hover { background-color: rgba(127,127,127,0.10); }
+  .pl .res { padding: 5px 0 7px 0; }
+  .pl .top { display: flex; align-items: center; height: 22px; font-size: 13px; }
+  .pl .lbl { flex-grow: 1; }
+  .pl .pc { width: 40px; text-align: right; font-weight: 700; }
+  .pl .vt { display: inline-block; margin-left: 2px; border-radius: 10px; text-align: center; color: #ffffff; font-weight: 700; vertical-align: middle; }
+  .pl .track { height: 6px; margin-top: 3px; border-radius: 3px; background-color: rgba(127,127,127,0.2); }
+  .pl .track div { height: 6px; border-radius: 3px; }
+  .pl .names { margin-top: 3px; font-size: 11px; color: #8e8e93; }
+  .pl .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .pl .lnk { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; }
+  .pl .lnk:hover { background-color: rgba(127,127,127,0.14); }
+  .pl .say { margin-top: 8px; padding: 6px 10px; border-radius: 10px; background-color: rgba(127,127,127,0.10); font-size: 12.5px; }
+  .pl .say span { position: relative; }
+  .pl .win { margin: 2px 0 8px 0; padding: 10px 12px; border-radius: 12px; color: #ffffff; }
+  .pl .rank { width: 18px; font-weight: 800; color: #8e8e93; }
+</style>
+<div class="card pad pl"><div class="caps">📊 Poll · 3 votes</div><div class="q">Where should we go for the offsite?</div><div class="small muted">🇵🇹 Lisbon 67% · 🇯🇵 Kyoto 33% · 🇮🇸 Reykjavík 0%</div></div>
+<script>
+const PEOPLE = { maya: ['Maya', '#ff2d55'], leo: ['Leo', '#34c759'], priya: ['Priya', '#af52de'], me: ['You', '#007aff'] };
+const OPTIONS = [
+  { id: 'lis', label: '🇵🇹 Lisbon', color: '#007aff', voters: ['maya', 'leo'] },
+  { id: 'kyo', label: '🇯🇵 Kyoto', color: '#ff2d55', voters: ['priya'] },
+  { id: 'rey', label: '🇮🇸 Reykjavík', color: '#30b0c7', voters: [] },
+];
+const LINES = {
+  lis: ['priya', 'Lisbon it is! 🎉 Pastéis de nata on me'],
+  kyo: ['priya', "It's a tie! 🍣 vs 🐟 Tie-breaker at standup tomorrow"],
+  rey: ['leo', "Northern lights or bust 🌌 I'm with you"],
+};
+let mine = null, closed = false, names = false, shown = [0, 0, 0], barRun = 0, say = null, sayRun = 0;
+const count = { v: 0 }, you = { s: 1 }, reveal = { v: 1 };
+
+const total = () => OPTIONS.reduce((s, o) => s + o.voters.length, 0);
+const shares = () => { const t = total() || 1; return OPTIONS.map(o => o.voters.length / t); };
+
+function moveBars(ms) {
+  const from = shown.slice(), to = shares(), me = ++barRun;
+  animate(ms, p => { if (me === barRun) shown = from.map((f, i) => lerp(f, to[i], p)); }, ease.outCubic);
+}
+setTimeout(() => { moveBars(850); tween(count, { v: total() }, 850, ease.outCubic); }, 250);
+
+async function chime(id) {
+  const me = ++sayRun;
+  if (!id) { say = null; return; }
+  say = { who: LINES[id][0], text: LINES[id][1], typing: true, k: 0 };
+  await animate(1000, () => {}, ease.linear);
+  if (me !== sayRun) return;
+  say.typing = false;
+  tween(say, { k: 1 }, 400, ease.outCubic);
+}
+
+function vote(id) {
+  const o = OPTIONS.find(x => x.id === id);
+  if (!o) return;
+  const had = !!say;
+  if (mine) { const m = OPTIONS.find(x => x.id === mine); m.voters = m.voters.filter(v => v !== 'me'); }
+  if (mine === id) mine = null;
+  else { mine = id; o.voters.push('me'); you.s = 0; tween(you, { s: 1 }, 450, ease.outBack); }
+  if (had !== !!mine) transition('fade');
+  chime(mine);
+  moveBars(650);
+  tween(count, { v: total() }, 450, ease.outCubic);
+}
+
+function onAction(name, value) {
+  if (name === 'vote' && !closed) vote(value);
+  else if (name === 'names') { transition(names ? 'slide-up' : 'slide-down'); names = !names; }
+  else if (name === 'close' && !closed) {
+    transition('pop');
+    closed = true; sayRun++; say = null;
+    reveal.v = 0;
+    tween(reveal, { v: 1 }, 1000, ease.linear);
+  } else if (name === 'reopen' && closed) { transition('slide-right'); closed = false; }
+}
+
+function avatar(v, s) {
+  const d = Math.max(1, Math.round(18 * s));
+  return `<span class="vt" style="width: ${d}px; height: ${d}px; line-height: ${d}px; font-size: ${Math.max(1, Math.round(9 * s))}px; background-color: ${PEOPLE[v][1]}">${PEOPLE[v][0][0]}</span>`;
+}
+const who = list => list.map(v => PEOPLE[v][0]).join(' · ');
+const votes = n => `${n} vote${n === 1 ? '' : 's'}`;
+
+function ballot() {
+  const rows = OPTIONS.map((o, i) => {
+    const pc = shown[i] * 100, me = mine === o.id;
+    const avs = o.voters.map(v => avatar(v, v === 'me' ? you.s : 1)).join('');
+    return `<div class="opt" data-action="vote" data-value="${o.id}"${me ? ` style="background-color: ${alpha(o.color, 0.10)}"` : ''}>
+      <div class="top"><span class="lbl">${o.label}${me ? ` <b style="color: ${o.color}">✓</b>` : ''}</span>${avs}<span class="pc">${Math.round(pc)}%</span></div>
+      <div class="track"><div style="width: ${pc.toFixed(1)}%; background-color: ${o.color}"></div></div>
+      ${names ? `<div class="names">${o.voters.length ? who(o.voters) : 'No votes yet'}</div>` : ''}
+    </div>`;
+  }).join('');
+  let chat = '';
+  if (say) {
+    const [n, c] = PEOPLE[say.who];
+    chat = `<div class="say"><b style="color: ${c}">${n}</b> ${say.typing
+      ? `<span class="muted">is typing ${'•'.repeat(1 + Math.floor(performance.now() / 250) % 3)}</span>`
+      : `<span style="left: ${Math.round((1 - say.k) * 14)}px">${esc(say.text)}</span>`}</div>`;
+  }
+  return `<div class="card pad pl">
+    <div class="row between"><span class="caps">📊 Poll · ${votes(Math.round(count.v))}</span>${mine ? '<span class="badge blue">voted</span>' : ''}</div>
+    <div class="q">Where should we go for the offsite?</div>
+    ${rows}${chat}
+    <div class="foot" data-pin="bottom"><span class="tiny muted">${mine ? 'Click your choice again to retract' : 'Click an option to vote ↑'}</span>
+      <span><span class="lnk t-blue" data-action="names">${names ? 'Hide voters' : '👥 Voters'}</span><span class="lnk t-red" data-action="close">Close poll</span></span></div>
+  </div>`;
+}
+
+function results() {
+  const t = total();
+  const ranked = OPTIONS.map(o => ({ o, n: o.voters.length })).sort((a, b) => b.n - a.n);
+  const top = ranked.filter(r => r.n === ranked[0].n);
+  const tie = top.length > 1;
+  const c = tie ? '#8e8e93' : top[0].o.color;
+  const rows = ranked.map((r, k) => {
+    const grow = ease.outCubic(clamp(reveal.v * 1.5 - k * 0.22, 0, 1));
+    const pc = (t ? r.n / t : 0) * 100 * grow;
+    return `<div class="res">
+      <div class="top"><span class="rank">${k + 1}</span><span class="lbl">${r.o.label}</span><span class="small muted">${votes(r.n)}</span><span class="pc">${Math.round(pc)}%</span></div>
+      <div class="track"><div style="width: ${pc.toFixed(1)}%; background-color: ${r.o.color}"></div></div>
+      <div class="names">${r.n ? who(r.o.voters) : 'No votes'}</div></div>`;
+  }).join('');
+  return `<div class="card pad pl">
+    <div class="row between"><span class="caps">📊 Poll closed · ${votes(t)}</span><span class="badge">final</span></div>
+    <div class="q">Where should we go for the offsite?</div>
+    <div class="win" style="background: linear-gradient(135deg, ${c}, ${mix(c, '#000000', 0.3)})">
+      <b style="font-size: 16px">${tie ? "🤝 It's a tie" : `🏆 ${top[0].o.label} wins`}</b>
+      <div class="small" style="color: rgba(255,255,255,0.85)">${tie ? top.map(r => r.o.label).join(' vs ') + ' · tie-breaker at standup' : `${votes(top[0].n)} of ${t} · ${Math.round(top[0].n / t * 100)}%`}</div>
+    </div>
+    ${rows}
+    <div class="foot" data-pin="bottom"><span class="tiny muted">Closed by you</span><span class="lnk t-blue" data-action="reopen">↺ Reopen poll</span></div>
+  </div>`;
+}
+
+function render() { return closed ? results() : ballot(); }
+</script>
+
+--- maya 09:45
+<p>Moodboard for the offsite deck 🎨</p>
+<table style="border-collapse: separate; border-spacing: 4px; margin: -4px">
+  <tr><td><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%230b1d3a%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2310294d%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%230d3b4f%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%2050C60%200%20140%20110%20210%2070%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.55%27%20stroke-width=%2718%27/%3E%3Cpath%20d=%27M-10%2078C60%2028%20140%20138%20210%2098%27%20fill=%27none%27%20stroke=%27%235ef2c4%27%20stroke-opacity=%270.43%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M-10%20106C60%2056%20140%20166%20210%20126%27%20fill=%27none%27%20stroke=%27%2338d39f%27%20stroke-opacity=%270.31%27%20stroke-width=%2710%27/%3E%3Cpath%20d=%27M0.8%200a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M53.8%2029a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M106.8%2058a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M159.8%2087a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M12.8%206a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M65.8%2035a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M118.8%2064a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M171.8%2093a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M24.8%2012a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M77.8%2041a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M130.8%2070a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M183.8%2099a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M36.8%2018a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M89.8%2047a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M142.8%2076a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M195.8%20105a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M48.8%2024a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M101.8%2053a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M154.8%2082a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M7.8%201a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M60.8%2030a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M113.8%2059a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M166.8%2088a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M19.8%207a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M72.8%2036a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M125.8%2065a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M178.8%2094a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M31.8%2013a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M84.8%2042a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M137.8%2071a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M190.8%20100a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M43.8%2019a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M96.8%2048a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M149.8%2077a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M2.8%20106a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M55.8%2025a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M108.8%2054a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M161.8%2083a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M14.8%202a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6M67.8%2031a.8%20.8%200%201%200%200%201.6a.8%20.8%200%201%200%200-1.6%27%20fill=%27%23ffffff%27%20fill-opacity=%270.8%27/%3E%3Cpath%20d=%27M0%20200V165C70%20140%20130%20185%20200%20160V200Z%27%20fill=%27%23081322%27/%3E%3C/svg%3E" width="118" height="118" style="border-radius: 12px 4px 4px 4px"></td><td><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%2389f7fe%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2366a6ff%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232a5298%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%2070C10%2062%2030%2078%2040%2070C50%2062%2070%2078%2080%2070C90%2062%20110%2078%20120%2070C130%2062%20150%2078%20160%2070C170%2062%20190%2078%20200%2070M0%2094C10%2086%2030%20102%2040%2094C50%2086%2070%20102%2080%2094C90%2086%20110%20102%20120%2094C130%2086%20150%20102%20160%2094C170%2086%20190%20102%20200%2094M0%20118C10%20110%2030%20126%2040%20118C50%20110%2070%20126%2080%20118C90%20110%20110%20126%20120%20118C130%20110%20150%20126%20160%20118C170%20110%20190%20126%20200%20118M0%20142C10%20134%2030%20150%2040%20142C50%20134%2070%20150%2080%20142C90%20134%20110%20150%20120%20142C130%20134%20150%20150%20160%20142C170%20134%20190%20150%20200%20142M0%20166C10%20158%2030%20174%2040%20166C50%20158%2070%20174%2080%20166C90%20158%20110%20174%20120%20166C130%20158%20150%20174%20160%20166C170%20158%20190%20174%20200%20166M0%20190C10%20182%2030%20198%2040%20190C50%20182%2070%20198%2080%20190C90%20182%20110%20198%20120%20190C130%20182%20150%20198%20160%20190C170%20182%20190%20198%20200%20190%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-opacity=%270.35%27%20stroke-width=%272%27/%3E%3C/svg%3E" width="118" height="118" style="border-radius: 4px 12px 4px 4px"></td></tr>
+  <tr><td><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23ffe29f%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%23ffa99f%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%23ff719a%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M0%20200V110C60%2070%20120%20140%20200%20100V200Z%27%20fill=%27%23f6a05c%27/%3E%3Cpath%20d=%27M0%20200V140C60%20100%20120%20170%20200%20138V200Z%27%20fill=%27%23e07b39%27/%3E%3Cpath%20d=%27M0%20200V170C60%20130%20120%20200%20200%20176V200Z%27%20fill=%27%23b85a26%27/%3E%3C/svg%3E" width="118" height="118" style="border-radius: 4px 4px 4px 12px"></td><td><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27200%27%20height=%27200%27%20viewBox=%270%200%20200%20200%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%270%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%23d4fc79%27/%3E%3Cstop%20offset=%270.5%27%20stop-color=%27%2396e6a1%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%233a7d44%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%27200%27%20height=%27200%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M-10%20200L10%20130L30%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M16%20200L36%2093L56%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M42%20200L62%20106L82%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M68%20200L88%20119L108%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M94%20200L114%2082L134%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M120%20200L140%2095L160%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M146%20200L166%20108L186%20200Z%27%20fill=%27%232d6a4f%27/%3E%3Cpath%20d=%27M172%20200L192%20121L212%20200Z%27%20fill=%27%231e5631%27/%3E%3Cpath%20d=%27M198%20200L218%2084L238%20200Z%27%20fill=%27%232d6a4f%27/%3E%3C/svg%3E" width="118" height="118" style="border-radius: 4px 4px 12px 4px"></td></tr>
+</table>
+
+--- leo 09:47
+<div><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2764%27%20height=%2764%27%20viewBox=%270%200%2064%2064%27%3E%3Cdefs%3E%3ClinearGradient%20id=%27g%27%20x1=%270%27%20y1=%271%27%20x2=%271%27%20y2=%270%27%3E%3Cstop%20offset=%270%27%20stop-color=%27%237f5af0%27/%3E%3Cstop%20offset=%271%27%20stop-color=%27%232cb67d%27/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width=%2764%27%20height=%2764%27%20rx=%2714%27%20fill=%27url%28%23g%29%27/%3E%3Cpath%20d=%27M24.5%2024.5L16%2032L24.5%2039.5M39.5%2024.5L48%2032L39.5%2039.5M35.5%2022L28.5%2042%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%273.6%27%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27/%3E%3C/svg%3E" width="44" height="44" style="float: left; margin: 3px 10px 2px 0; border-radius: 11px"><b>Floats work too.</b> This paragraph wraps around the logo on the left exactly like a browser would, and once the text runs past the bottom of the image it flows back to the full width of the bubble.</div>
+
+--- me 09:50
+Moving the review from <s>Friday</s> to <b>Thursday</b> — faster iteration ⚡️
+
+--- maya 09:52 bare
+<style>
+  .inv { width: 320px; max-width: 100%; }
+  .inv .top { display: flex; padding: 12px; }
+  .inv .cal { width: 52px; margin-right: 12px; border-radius: 10px; border: 1px solid rgba(127,127,127,0.3); text-align: center; }
+  .inv .mon { padding: 2px 0; border-radius: 9px 9px 0 0; background-color: #ff3b30; color: #ffffff; font-size: 10px; font-weight: 700; }
+  .inv .dwin { height: 32px; overflow: hidden; }
+  .inv .dnum { height: 32px; line-height: 32px; font-size: 24px; font-weight: 700; }
+  .inv .ti { font-size: 15px; font-weight: 700; }
+  .inv .map { position: relative; height: 132px; overflow: hidden; }
+  .inv .pin { position: absolute; font-size: 26px; }
+  .inv .ppl { display: flex; align-items: center; height: 26px; padding: 6px 12px; border-top: 1px solid rgba(127,127,127,0.2); }
+  .inv .ppl:hover { background-color: rgba(127,127,127,0.07); }
+  .inv .face { display: inline-block; margin-right: 3px; border-radius: 12px; text-align: center; color: #ffffff; font-weight: 700; vertical-align: middle; }
+  .inv .faces { display: inline-block; width: 110px; }
+  .inv .who { display: flex; align-items: center; position: relative; padding: 4px 12px; font-size: 13px; }
+  .inv .acts { display: flex; border-top: 1px solid rgba(127,127,127,0.2); }
+  .inv .act { flex-grow: 1; padding: 9px 0; text-align: center; font-weight: 600; }
+  .inv .act:hover { background-color: rgba(127,127,127,0.10); }
+  .inv .act.bl { border-left: 1px solid rgba(127,127,127,0.2); }
+  .inv .act.dis:hover { background-color: transparent; }
+  .inv .strip { display: flex; align-items: center; padding: 9px 12px; border-top: 1px solid rgba(127,127,127,0.2); font-size: 13px; }
+  .inv .reply { margin: 0 12px 10px 12px; padding: 6px 10px; border-radius: 10px; background-color: rgba(127,127,127,0.10); font-size: 12.5px; }
+  .inv .reply span { position: relative; }
+  .inv .mini { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 8px; background-color: rgba(127,127,127,0.14); }
+  .inv .mini:hover { background-color: rgba(127,127,127,0.26); }
+  .inv .prop { display: block; padding: 8px 12px; border-top: 1px solid rgba(127,127,127,0.2); font-size: 12.5px; font-weight: 600; }
+  .inv .prop:hover { background-color: rgba(127,127,127,0.07); }
+  .inv .days { display: flex; padding: 0 9px; }
+  .inv .day { flex-grow: 1; margin: 0 3px; padding: 5px 0; border-radius: 10px; text-align: center; background-color: rgba(127,127,127,0.10); }
+  .inv .day:hover { background-color: rgba(127,127,127,0.20); }
+  .inv .day.on { background-color: #007aff; color: #ffffff; }
+  .inv .slot { display: flex; align-items: center; margin: 6px 12px 0 12px; padding: 7px 10px; border-radius: 10px; border: 1px solid rgba(127,127,127,0.25); font-size: 13px; }
+  .inv .slot.free:hover { background-color: rgba(0,122,255,0.08); }
+  .inv .slot.off { color: #8e8e93; }
+</style>
+<div class="card inv"><div class="top"><div class="cal"><div class="mon">OCT</div><div class="dnum">09</div></div><div class="grow"><div class="ti">Design review — Bubbles v2</div><div class="small muted">🕑 Thu 14:00 – 15:00</div><div class="small muted">📍 Room “Ada”, 4th floor</div></div></div></div>
+<script>
+const DAYS = [
+  { name: 'Wed', long: 'Wednesday', date: 8, busy: { '11:30': 'Leo busy', '16:30': 'Priya busy' } },
+  { name: 'Thu', long: 'Thursday', date: 9, busy: { '10:00': 'Maya busy' } },
+  { name: 'Fri', long: 'Friday', date: 10, busy: { '14:00': 'Leo busy' } },
+];
+const TIMES = ['10:00', '11:30', '14:00', '16:30'];
+const END = { '10:00': '11:00', '11:30': '12:30', '14:00': '15:00', '16:30': '17:30' };
+const TEAM = [
+  { name: 'Maya Chen', i: 'M', c: '#ff2d55', rsvp: 'yes', org: true },
+  { name: 'Leo Park', i: 'L', c: '#34c759', rsvp: 'yes' },
+  { name: 'Priya Nair', i: 'P', c: '#af52de', rsvp: 'maybe' },
+];
+const RSVP = {
+  yes: { label: "✓ You're going", c: '#28a745', badge: 'green', word: 'Going' },
+  maybe: { label: '? You might come', c: '#e08a00', badge: 'orange', word: 'Maybe' },
+  no: { label: '✕ You declined', c: '#ff3b30', badge: 'red', word: 'Declined' },
+};
+const REPLY = {
+  yes: d => `Great, see you ${d}! I'll bring 🍩`,
+  maybe: () => 'No pressure, just let me know by tomorrow 🙏',
+  no: () => "No worries, I'll share the notes afterwards 📝",
+};
+let when = { d: 1, t: '14:00' }, prevDate = '', rsvp = null, view = 'main', people = false, pickDay = 1, pick = null;
+let proposal = null, reply = null, replyRun = 0, propRun = 0;
+const flip = { p: 0 }, pin = { y: -40 }, faces = TEAM.map(() => ({ s: 0 })), me = { s: 0 }, sel = { k: 1 }, list = { k: 1 };
+
+setTimeout(() => {
+  tween(flip, { p: 1 }, 650, ease.outBack);
+  tween(pin, { y: 44 }, 900, ease.outBounce);
+  animate(900, (_, t) => faces.forEach((f, i) => { f.s = ease.outBack(clamp((t * 900 - 250 - i * 130) / 350, 0, 1)); }), ease.linear);
+}, 250);
+
+const two = n => String(n).padStart(2, '0');
+const slotLabel = (d, t) => `${DAYS[d].name} ${DAYS[d].date} · ${t}`;
+const dots = () => '•'.repeat(1 + Math.floor(performance.now() / 250) % 3);
+function face(i, c, s) {
+  const d = Math.max(1, Math.round(22 * s));
+  return `<span class="face" style="width: ${d}px; height: ${d}px; line-height: ${d}px; font-size: ${Math.max(1, Math.round(10 * s))}px; background-color: ${c}">${i}</span>`;
+}
+
+async function typeReply(text) {
+  const token = ++replyRun;
+  reply = { text, typing: true, k: 0 };
+  await animate(1100, () => {}, ease.linear);
+  if (token !== replyRun) return;
+  reply.typing = false;
+  tween(reply, { k: 1 }, 380, ease.outCubic);
+}
+
+async function waitForMaya() {
+  const token = ++propRun;
+  await animate(1800, () => {}, ease.linear);
+  if (token !== propRun || !proposal) return;
+  prevDate = DAYS[when.d].date;
+  when = { d: proposal.d, t: proposal.t };
+  proposal.state = 'accepted';
+  flip.p = 0;
+  tween(flip, { p: 1 }, 650, ease.outBack);
+}
+
+function onAction(name, value) {
+  if (name === 'rsvp' && RSVP[value] && !rsvp) {
+    transition('pop');
+    rsvp = value;
+    if (value !== 'no') { me.s = 0; tween(me, { s: 1 }, 450, ease.outBack); }
+    typeReply(REPLY[value](DAYS[when.d].long));
+  } else if (name === 'undo') {
+    transition('fade');
+    rsvp = null; reply = null; replyRun++;
+  } else if (name === 'people') {
+    transition(people ? 'slide-up' : 'slide-down');
+    people = !people;
+    list.k = 0;
+    tween(list, { k: 1 }, 600, ease.linear);
+  } else if (name === 'propose') {
+    transition('slide-left');
+    view = 'slots'; pickDay = when.d; pick = null;
+  } else if (name === 'back') {
+    transition('slide-right');
+    view = 'main';
+  } else if (name === 'pday') {
+    const i = Number(value);
+    if (i === pickDay || !DAYS[i]) return;
+    transition(i > pickDay ? 'slide-left' : 'slide-right');
+    pickDay = i;
+  } else if (name === 'slot') {
+    pick = { d: pickDay, t: value };
+    sel.k = 0;
+    tween(sel, { k: 1 }, 320, ease.outCubic);
+  } else if (name === 'send' && pick) {
+    transition('slide-right');
+    view = 'main';
+    proposal = { d: pick.d, t: pick.t, state: 'pending' };
+    waitForMaya();
+  } else if (name === 'cancel' || name === 'dismiss') {
+    transition('fade');
+    proposal = null; propRun++;
+  }
+}
+
+function attendees() {
+  const rows = TEAM.map(p => [p.i, p.c, esc(p.name) + (p.org ? ' <span class="muted">· organizer</span>' : ''), p.rsvp]).concat([['Y', '#007aff', 'You', rsvp]]);
+  return rows.map((r, k) => {
+    const e = ease.outCubic(clamp(list.k * 1.6 - k * 0.18, 0, 1));
+    const st = r[3] ? RSVP[r[3]] : null;
+    return `<div class="who" style="left: ${Math.round((1 - e) * 40)}px">${face(r[0], r[1], 1)}<span class="grow">&nbsp;${r[2]}</span><span class="badge ${st ? st.badge : ''}">${st ? st.word : 'No reply'}</span></div>`;
+  }).join('');
+}
+
+function mainView() {
+  const D = DAYS[when.d];
+  const all = TEAM.map(p => p.rsvp).concat(rsvp ? [rsvp] : []);
+  const n = k => all.filter(r => r === k).length;
+  const summary = [`${n('yes')} going`, n('maybe') ? `${n('maybe')} maybe` : '', n('no') ? `${n('no')} declined` : ''].filter(Boolean).join(' · ');
+  const avs = TEAM.map((p, i) => face(p.i, p.c, faces[i].s)).join('') + (rsvp && rsvp !== 'no' ? face('Y', '#007aff', me.s) : '');
+  let prop = '';
+  if (proposal && proposal.state === 'pending')
+    prop = `<div class="strip" style="background-color: rgba(0,122,255,0.10)"><span class="grow">⏳ Proposed <b>${slotLabel(proposal.d, proposal.t)}</b> · waiting for Maya ${dots()}</span><span class="mini" data-action="cancel">Cancel</span></div>`;
+  else if (proposal)
+    prop = `<div class="strip" style="background-color: rgba(52,199,89,0.12)"><span class="grow"><b class="t-green">✓ Maya moved it</b> to ${D.long} ${when.t}</span><span class="mini" data-action="dismiss">OK</span></div>`;
+  let bottom;
+  if (rsvp) {
+    const R = RSVP[rsvp];
+    const text = !reply ? '' : reply.typing ? `<span class="muted">is typing ${dots()}</span>` : `<span style="left: ${Math.round((1 - reply.k) * 14)}px">${esc(reply.text)}</span>`;
+    bottom = `<div class="strip" style="background-color: ${alpha(R.c, 0.13)}"><b class="grow" style="color: ${R.c}">${R.label}</b><span class="mini" data-action="undo">Undo</span></div>
+      ${reply ? `<div class="reply"><b style="color: #ff2d55">Maya</b> ${text}</div>` : ''}
+      <div class="prop t-blue" data-action="propose">🗓 Propose new time ›</div>`;
+  } else {
+    bottom = `<div class="acts"><span class="act t-blue" data-action="rsvp" data-value="yes">Accept</span><span class="act bl t-orange" data-action="rsvp" data-value="maybe">Maybe</span><span class="act bl t-red" data-action="rsvp" data-value="no">Decline</span></div>
+      <div class="prop t-blue" data-action="propose">🗓 Propose new time ›</div>`;
+  }
+  return `<div class="card inv">
+    <div class="top">
+      <div class="cal"><div class="mon">OCT</div><div class="dwin"><div class="dnum" style="margin-top: ${-Math.round(32 * flip.p)}px">${prevDate === '' ? '&nbsp;' : two(prevDate)}</div><div class="dnum">${two(D.date)}</div></div></div>
+      <div class="grow"><div class="ti">Design review — Bubbles v2</div>
+        <div class="small muted" style="margin-top: 2px">🕑 ${D.name} ${when.t} – ${END[when.t]}</div>
+        <div class="small muted">📍 Room “Ada”, 4th floor</div></div>
+    </div>
+    <div class="map"><img src="data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27360%27%20height=%27150%27%20viewBox=%270%200%20360%20150%27%3E%3Crect%20width=%27360%27%20height=%27150%27%20fill=%27%23f2efe9%27/%3E%3Crect%20x=%2730%27%20y=%2720%27%20width=%2790%27%20height=%2760%27%20rx=%2718%27%20fill=%27%23c8e6c9%27/%3E%3Cpath%20d=%27M0%20120C120%2080%20240%20150%20360%20100%27%20fill=%27none%27%20stroke=%27%23aad3df%27%20stroke-width=%2714%27/%3E%3Cpath%20d=%27M0%2060L360%2050M200%200L230%20150M90%200L140%20150M0%20140L360%2030%27%20fill=%27none%27%20stroke=%27%23ffffff%27%20stroke-width=%276%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%2711%27%20fill=%27%23ff3b30%27/%3E%3Cpath%20d=%27M199%2056L207%2072L215%2056Z%27%20fill=%27%23ff3b30%27/%3E%3Ccircle%20cx=%27207%27%20cy=%2751%27%20r=%274%27%20fill=%27%23ffffff%27/%3E%3C/svg%3E" style="width: 320px; height: 132px; display: block"><div class="pin" style="left: 146px; top: ${Math.round(pin.y)}px">📍</div></div>
+    <div class="ppl" data-action="people"><span class="faces">${avs}</span><span class="small muted grow">${summary}</span><span class="small muted">${people ? 'Hide ▴' : 'Attendees ▾'}</span></div>
+    ${people ? `<div style="padding-bottom: 6px">${attendees()}</div>` : ''}
+    ${prop}${bottom}
+  </div>`;
+}
+
+function slotsView() {
+  const D = DAYS[pickDay];
+  const days = DAYS.map((d, i) => `<div class="day ${i === pickDay ? 'on' : ''}" data-action="pday" data-value="${i}"><div class="tiny">${d.name}</div><b>${d.date}</b></div>`).join('');
+  const slots = TIMES.map(t => {
+    const current = pickDay === when.d && t === when.t, busy = D.busy[t];
+    if (current || busy) return `<div class="slot off"><b class="grow">${t} – ${END[t]}</b><span class="small">${current ? 'current time' : busy}</span></div>`;
+    const chosen = pick && pick.d === pickDay && pick.t === t;
+    const st = chosen ? ` style="border-color: #007aff; background-color: ${alpha('#007aff', 0.16 * sel.k)}"` : '';
+    return `<div class="slot free" data-action="slot" data-value="${t}"${st}><b class="grow">${t} – ${END[t]}</b><span class="small ${chosen ? 't-blue' : 't-green'}">${chosen ? '✓ selected' : 'everyone free'}</span></div>`;
+  }).join('');
+  return `<div class="card inv">
+    <div class="row between" style="padding: 10px 12px"><span class="mini" data-action="back">‹ Back</span><b>Propose a new time</b><span style="width: 52px">&nbsp;</span></div>
+    <div class="days">${days}</div>
+    <div style="padding-bottom: 12px">${slots}</div>
+    <div class="acts"><span class="act ${pick ? 't-blue' : 'muted dis'}"${pick ? ' data-action="send"' : ''}>${pick ? `Send proposal · ${slotLabel(pick.d, pick.t)}` : 'Pick a free slot'}</span></div>
+  </div>`;
+}
+
+function render() { return view === 'slots' ? slotsView() : mainView(); }
+</script>
+
+--- leo 09:55
+<p>Should I kick off a build of the new bubbles?</p>
+<div>
+  <a href="chat:send?text=Yes%2C%20ship%20it%20%F0%9F%9A%80&then=leo-ack" style="display: inline-block; padding: 3px 12px; border-radius: 14px; border: 1px solid #007aff; color: #007aff; margin: 2px 4px 0 0">Yes, ship it 🚀</a>
+  <a href="chat:send?text=Not%20yet%20%E2%80%94%20one%20more%20pass&then=leo-wait" style="display: inline-block; padding: 3px 12px; border-radius: 14px; border: 1px solid #8e8e93; color: #8e8e93; margin: 2px 4px 0 0">Not yet</a>
+</div>
+
+@on leo-ack
+--- leo delay=1.4
+Build kicked off ⏳ — follow along in <b>Deploy Bot</b> <span style="color: #8e8e93">(sidebar)</span>
+
+@on leo-wait
+--- leo delay=1.0
+Got it, holding off 👍

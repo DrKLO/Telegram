@@ -53,7 +53,22 @@ import org.telegram.ui.FilteredSearchView;
 
 import java.io.File;
 
-public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate {
+public class SharedAudioCell extends FrameLayout implements DownloadController.FileDownloadProgressListener, NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        try {
+            if (titlePaint != null) {
+                titlePaint.setColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            }
+            if (radialProgress != null && hasMiniProgress != 0 && currentMessageObject != null) {
+                radialProgress.setMiniProgressBackgroundColor(getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outLoader : Theme.key_chat_inLoader));
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private SpannableStringBuilder dotSpan;
     private CheckBox2 checkBox;
@@ -298,9 +313,9 @@ public class SharedAudioCell extends FrameLayout implements DownloadController.F
         super.onAttachedToWindow();
         radialProgress.onAttachedToWindow();
         updateButtonState(false, false);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidStart);
 
         titleLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, titleLayoutEmojis, titleLayout);
         descriptionLayoutEmojis = AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, descriptionLayoutEmojis, descriptionLayout);

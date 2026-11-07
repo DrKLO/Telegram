@@ -25,6 +25,8 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -32,10 +34,6 @@ import android.widget.Space;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.view.NestedScrollingParent3;
-import androidx.core.view.NestedScrollingParentHelper;
-import androidx.core.view.ViewCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -59,6 +57,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.Bulletin;
@@ -70,7 +69,14 @@ import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
+import org.telegram.ui.Components.SiblingRecyclerPagerLayout;
+import org.telegram.ui.Components.RecyclerPagerView;
+import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.utils.Blur3Utils;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
+import me.vkryl.android.animator.BoolAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -97,6 +103,11 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
     private ChatAvatarContainer avatarContainer;
     private UniversalRecyclerView listView;
+    private SiblingRecyclerPagerLayout scrollCoordinator;
+    private View transactionsBoundary;
+    private int transactionsRow = RecyclerView.NO_POSITION;
+    private View listTopOverlay;
+    private BoolAnimator tabsPinnedAnimator;
 
     private TLRPC.TL_payments_starsRevenueStats lastStats;
     private TLRPC.TL_starsRevenueStatus lastStatsStatus;
@@ -113,6 +124,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     private final CharSequence withdrawInfo;
 
     private StarsIntroActivity.StarsTransactionsLayout transactionsLayout;
+    private FrameLayout tonTransactionsLayout;
+    private FrameLayout transactionTabs;
+    private ViewPagerFixed transactionPager;
+    private boolean destroyed;
 
     private int balanceBlockedUntil;
     private LinearLayout balanceLayout;
@@ -157,28 +172,56 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
+        final FrameLayout frameLayout;
+        if (type == TYPE_TON || !self) {
+            scrollCoordinator = new SiblingRecyclerPagerLayout(context);
+            scrollCoordinator.setCommonInsetsManagedExternally(true);
+            scrollCoordinator.setGeometry(new SiblingRecyclerPagerLayout.Geometry() {
+                @Override
+                public float tabsPinnedTop(SiblingRecyclerPagerLayout parent) {
+                    // the glass of the tabs (inset by 9.66dp) 7dp under the header's buttons
+                return Math.max(0, BaseFragmentSimpleGlass.getPillGlassTop(mSystemInsets.top) - dp(9.66f));
+                }
 
-        NestedFrameLayout frameLayout = new NestedFrameLayout(context);
+                @Override
+                public int pageBottomInset(SiblingRecyclerPagerLayout parent) {
+                    return mSystemInsets.bottom;
+                }
 
-        avatarContainer = new ChatAvatarContainer(context, null, false);
-        avatarContainer.setOccupyStatusBar(!AndroidUtilities.isTablet());
-        avatarContainer.getAvatarImageView().setScaleX(0.9f);
-        avatarContainer.getAvatarImageView().setScaleY(0.9f);
-        avatarContainer.setRightAvatarPadding(-dp(3));
-        actionBar.addView(avatarContainer, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT, !inPreviewMode ? 50 : 0, 0, 40, 0));
+                @Override
+                public void onTabsPinnedChanged(boolean pinned) {
+                    if (tabsPinnedAnimator != null) tabsPinnedAnimator.setValue(pinned, true);
+                }
+            });
+            transactionsBoundary = scrollCoordinator.createBoundarySpacer(context);
+            frameLayout = scrollCoordinator;
+        } else {
+            scrollCoordinator = null;
+            transactionsBoundary = null;
+            frameLayout = new FrameLayout(context);
+        }
+        frameLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+
+        // Use the container only to configure the avatar; titles belong to ActionBar.
+        avatarContainer = new ChatAvatarContainer(context, null, false, getResourceProvider());
 
         TLRPC.User bot = getMessagesController().getUser(bot_id);
         avatarContainer.setUserAvatar(bot, true);
-        avatarContainer.setTitle(UserObject.getUserName(bot));
+        simpleActionBar.setTitle(UserObject.getUserName(bot));
         if (type == BotStarsActivity.TYPE_STARS) {
-            avatarContainer.setSubtitle(LocaleController.getString(R.string.BotStatsStars));
+            simpleActionBar.setSubtitle(LocaleController.getString(R.string.BotStatsStars));
         } else {
-            avatarContainer.setSubtitle(LocaleController.getString(R.string.BotStatsTON));
+            simpleActionBar.setSubtitle(LocaleController.getString(R.string.BotStatsTON));
         }
 
-        actionBar.setBackButtonDrawable(new BackDrawable(false));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setBackButtonDrawable(new BackDrawable(false));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(final int id) {
                 if (id == -1) {
@@ -186,30 +229,34 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                 }
             }
         });
-        avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle), true);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        simpleActionBar.setBackground(null);
 
-        transactionsLayout = new StarsIntroActivity.StarsTransactionsLayout(context, currentAccount, false, bot_id, getClassGuid(), getResourceProvider());
+        transactionsLayout = type == TYPE_STARS && scrollCoordinator != null
+                ? new StarsIntroActivity.StarsTransactionsLayout(context, currentAccount, false, bot_id,
+                getClassGuid(), getResourceProvider(), scrollCoordinator) : null;
+        if (type == TYPE_TON) {
+            createTonTransactions(context);
+        } else if (transactionsLayout != null) {
+            transactionPager = transactionsLayout.getViewPager();
+            transactionTabs = transactionsLayout.getTabsContainer();
+        }
 
         balanceLayout = new LinearLayout(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(
-                    MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                    heightMeasureSpec
+                        MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                        heightMeasureSpec
                 );
             }
         };
         balanceLayout.setOrientation(LinearLayout.VERTICAL);
-        balanceLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
+        ThemeBind.backgroundColor(balanceLayout, Theme.key_windowBackgroundWhite, getResourceProvider());
         balanceLayout.setPadding(0, 0, 0, dp(17));
 
         balanceTitle = new AnimatedTextView(context, false, true, true);
         balanceTitle.setTypeface(AndroidUtilities.bold());
-        balanceTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, getResourceProvider()));
+        ThemeBind.textColor(balanceTitle, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
         balanceTitle.setTextSize(dp(32));
         balanceTitle.setGravity(Gravity.CENTER);
         balanceTitleSizeSpan = new RelativeSizeSpan(65f / 96f);
@@ -217,7 +264,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
         balanceSubtitle = new AnimatedTextView(context, true, true, true);
         balanceSubtitle.setGravity(Gravity.CENTER);
-        balanceSubtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, getResourceProvider()));
+        ThemeBind.textColor(balanceSubtitle, Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
         balanceSubtitle.setTextSize(dp(14));
         balanceLayout.addView(balanceSubtitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 17, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 22, 4, 22, 0));
 
@@ -247,7 +294,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             }
         };
         balanceEditText.setFocusable(false);
-        balanceEditText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(balanceEditText, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
         balanceEditText.setCursorSize(AndroidUtilities.dp(20));
         balanceEditText.setCursorWidth(1.5f);
         balanceEditText.setBackground(null);
@@ -257,8 +304,8 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         balanceEditText.setPadding(dp(6), padding, padding, padding);
         balanceEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
         balanceEditText.setTypeface(Typeface.DEFAULT);
-        balanceEditText.setHighlightColor(getThemedColor(Theme.key_chat_inTextSelectionHighlight));
-        balanceEditText.setHandlesColor(getThemedColor(Theme.key_chat_TextSelectionCursor));
+        ThemeBind.highlightColor(balanceEditText, Theme.key_chat_inTextSelectionHighlight, getResourceProvider());
+        ThemeBind.editHandlesColor(balanceEditText, Theme.key_chat_TextSelectionCursor, getResourceProvider());
         balanceEditText.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         balanceEditText.setOnFocusChangeListener((v, hasFocus) -> balanceEditTextContainer.animateSelection(hasFocus ? 1f : 0f));
         balanceEditText.addTextChangedListener(new TextWatcher() {
@@ -354,12 +401,12 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             }
         };
         tonBalanceLayout.setOrientation(LinearLayout.VERTICAL);
-        tonBalanceLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        ThemeBind.backgroundColor(tonBalanceLayout, Theme.key_windowBackgroundWhite, resourceProvider);
         tonBalanceLayout.setPadding(0, 0, 0, dp(17));
 
         tonBalanceTitle = new AnimatedTextView(context, false, true, true);
         tonBalanceTitle.setTypeface(AndroidUtilities.bold());
-        tonBalanceTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(tonBalanceTitle, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         tonBalanceTitle.setTextSize(dp(32));
         tonBalanceTitle.setGravity(Gravity.CENTER);
         tonBalanceTitleSizeSpan = new RelativeSizeSpan(65f / 96f);
@@ -367,11 +414,11 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
 
         tonBalanceSubtitle = new AnimatedTextView(context, true, true, true);
         tonBalanceSubtitle.setGravity(Gravity.CENTER);
-        tonBalanceSubtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourceProvider));
+        ThemeBind.textColor(tonBalanceSubtitle, Theme.key_windowBackgroundWhiteGrayText, resourceProvider);
         tonBalanceSubtitle.setTextSize(dp(14));
         tonBalanceLayout.addView(tonBalanceSubtitle, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 17, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 22, 4, 22, 0));
 
-        tonBalanceButton = new ButtonWithCounterView(context, resourceProvider);
+        tonBalanceButton = new ButtonWithCounterView(context, resourceProvider).setRound();
         tonBalanceButton.setEnabled(MessagesController.getInstance(currentAccount).channelRevenueWithdrawalEnabled);
         tonBalanceButton.setText(getString(self ? R.string.MonetizationSelfWithdraw : R.string.MonetizationWithdraw), false);
         tonBalanceButton.setVisibility(View.GONE);
@@ -390,20 +437,267 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         tonBalanceLayout.addView(tonBalanceButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP | Gravity.FILL_HORIZONTAL, 18, 13, 18, 0));
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onItemClick, this::onItemLongClick);
-        listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         listView.setSections();
-        frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+        listView.adapter.setApplyBackground(false);
+        listView.setCaptureSectionsDecoratorAllowed(true);
+        listView.setClipToPadding(false);
+        listView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+        if (scrollCoordinator != null) {
+            configureTransactionsScrolling();
+        } else {
+            frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        fragmentView = frameLayout;
+        configureGlass(frameLayout);
+        AndroidUtilities.removeFromParent(avatarContainer.avatarImageView);
+        frameLayout.addView(avatarContainer.avatarImageView,
+                LayoutHelper.createFrame(42, 42, Gravity.TOP | Gravity.RIGHT));
+        applyScrollInsets();
+        return fragmentView;
+    }
+
+    private void createTonTransactions(Context context) {
+        tonTransactionsLayout = new FrameLayout(context);
+        tonTransactionsLayout.setClipChildren(false);
+        tonTransactionsLayout.setClipToPadding(false);
+        RecyclerPagerView pager = new RecyclerPagerView(context, resourceProvider, scrollCoordinator);
+        transactionPager = pager;
+        pager.setAdapter(new ViewPagerFixed.Adapter() {
+            private final TonTransactionsPage[] pages = new TonTransactionsPage[3];
+
             @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (type == TYPE_TON && (!listView.canScrollVertically(1) || isLoadingVisible())) {
-                    loadTonTransactions();
-                }
+            public int getItemCount() {
+                return pages.length;
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                return position;
+            }
+
+            @Override
+            public View createView(int viewType) {
+                if (pages[viewType] == null) pages[viewType] = new TonTransactionsPage(context, viewType);
+                return pages[viewType];
+            }
+
+            @Override
+            public void bindView(View view, int position, int viewType) {
+                pager.onPageBound(view);
+            }
+
+            @Override
+            public String getItemTitle(int position) {
+                return getString(position == 1 ? R.string.StarsTransactionsIncoming
+                        : position == 2 ? R.string.StarsTransactionsOutgoing : R.string.StarsTransactionsAll);
             }
         });
-        actionBar.setAdaptiveBackground(listView);
+        transactionTabs = new FrameLayout(context);
+        transactionTabs.setPadding(dp(4), dp(4), dp(4), dp(4));
+        transactionTabs.addView(pager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP));
+        tonTransactionsLayout.addView(pager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+    }
 
-        return fragmentView = frameLayout;
+    private class TonTransactionsPage extends FrameLayout {
+        private final int filter;
+        private final ArrayList<TL_stars.StarsTransaction> transactions = new ArrayList<>();
+        private final UniversalRecyclerView recycler;
+        private String offset = "";
+        private boolean loading;
+        private boolean endReached;
+        private boolean failed;
+        private final Runnable checkMore = this::checkMoreTransactions;
+
+        private void checkMoreTransactions() {
+            if (isAttachedToWindow() && !recycler.canScrollVertically(1)) loadMore();
+        }
+
+        TonTransactionsPage(Context context, int filter) {
+            super(context);
+            this.filter = filter;
+            setClipChildren(false);
+            setClipToPadding(false);
+            recycler = new UniversalRecyclerView(context, currentAccount, getClassGuid(), true,
+                    this::fillTransactions, (item, view, position, x, y) -> {
+                if (item.object instanceof TL_stars.StarsTransaction) {
+                    StarsIntroActivity.showTransactionSheet(getContext(), true, bot_id, currentAccount,
+                            (TL_stars.StarsTransaction) item.object, resourceProvider);
+                } else if (failed) {
+                    failed = false;
+                    loadMore();
+                }
+            }, null, resourceProvider);
+            recycler.setSections(dp(12), dp(16), false);
+            recycler.adapter.setApplyBackground(false);
+            recycler.setCaptureSectionsDecoratorAllowed(true);
+            recycler.setClipToPadding(false);
+            recycler.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+            addView(recycler, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+            glassEngine.addScrolledView(recycler);
+            recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView view, int dx, int dy) {
+                    if (!view.canScrollVertically(1)) {
+                        removeCallbacks(checkMore);
+                        post(checkMore);
+                    }
+                }
+            });
+        }
+
+        private void fillTransactions(ArrayList<UItem> items, UniversalAdapter adapter) {
+            for (TL_stars.StarsTransaction transaction : transactions) {
+                items.add(StarsIntroActivity.StarsTransactionView.Factory.asTransaction(transaction, true));
+            }
+            if (failed) {
+                items.add(UItem.asButton(-1, getString(R.string.Retry)));
+            } else if (!endReached) {
+                for (int i = 0; i < 3; i++) {
+                    items.add(UItem.asFlicker(i, FlickerLoadingView.DIALOG_CELL_TYPE));
+                }
+            }
+        }
+
+        private void loadMore() {
+            if (destroyed || loading || endReached || failed) return;
+            loading = true;
+            TL_stars.TL_payments_getStarsTransactions request = new TL_stars.TL_payments_getStarsTransactions();
+            request.ton = true;
+            request.inbound = filter == 1;
+            request.outbound = filter == 2;
+            request.peer = MessagesController.getInstance(currentAccount).getInputPeer(bot_id);
+            final String requestedOffset = offset;
+            request.offset = requestedOffset;
+            request.limit = 20;
+            recycler.adapter.update(false);
+            int requestId = ConnectionsManager.getInstance(currentAccount).sendRequest(request, (response, error) ->
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (destroyed) return;
+                        loading = false;
+                        if (response instanceof TL_stars.StarsStatus) {
+                            TL_stars.StarsStatus result = (TL_stars.StarsStatus) response;
+                            MessagesController.getInstance(currentAccount).putUsers(result.users, false);
+                            MessagesController.getInstance(currentAccount).putChats(result.chats, false);
+                            // A repeated cursor cannot advance pagination; do not loop requests.
+                            boolean hasMore = (result.flags & 1) != 0 && result.next_offset != null;
+                            if (hasMore && TextUtils.equals(requestedOffset, result.next_offset)) {
+                                failed = true;
+                            } else {
+                                transactions.addAll(result.history);
+                                offset = result.next_offset;
+                                endReached = !hasMore;
+                            }
+                        } else {
+                            failed = true;
+                            if (error != null) BulletinFactory.showError(error);
+                        }
+                        recycler.adapter.update(false);
+                        removeCallbacks(checkMore);
+                        post(checkMore);
+                    }));
+            ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(requestId, getClassGuid());
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            post(checkMore);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            removeCallbacks(checkMore);
+            super.onDetachedFromWindow();
+        }
+    }
+
+    private void configureTransactionsScrolling() {
+        listView.setLayoutManager(listView.layoutManager = scrollCoordinator.createCommonLayoutManager(getContext()));
+        scrollCoordinator.setCommonRecyclerView(listView, () -> transactionsRow);
+        View host = type == TYPE_TON ? tonTransactionsLayout : transactionsLayout;
+        scrollCoordinator.setPager(host, transactionPager, page -> type == TYPE_TON
+                ? ((TonTransactionsPage) page).recycler : transactionsLayout.getPageListView(page));
+        FrameLayout tabs = transactionTabs;
+        scrollCoordinator.setTabs(tabs, LayoutHelper.WRAP_CONTENT);
+        tabs.setLayoutParams(LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, -4, 0, -4, 0));
+    }
+
+    private void configureGlass(FrameLayout root) {
+        getBaseSimpleGlass().setViews(root, listView, simpleActionBar, resourceProvider);
+        simpleActionBar.setBackground(null);
+        listTopOverlay = new View(getContext());
+        int overlayIndex = scrollCoordinator != null
+                ? root.indexOfChild(transactionTabs) : root.indexOfChild(simpleActionBar);
+        root.addView(listTopOverlay, overlayIndex,
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
+        listTopOverlay.setBackground(getBaseSimpleGlass().createActionBarFadeDrawable(listTopOverlay));
+        tabsPinnedAnimator = new BoolAnimator(0, (id, factor, fraction, callee) ->
+                updateTopOverlayTranslation(), CubicBezierInterpolator.EASE_OUT_QUINT, 380);
+        tabsPinnedAnimator.setValue(scrollCoordinator != null && scrollCoordinator.areTabsPinned(), false);
+        if (scrollCoordinator != null) {
+            getBaseSimpleGlass().setClipView(scrollCoordinator);
+            if (transactionsLayout != null) transactionsLayout.setGlassEngine(glassEngine);
+            else glassEngine.addScrolledView(transactionPager);
+            final SiblingRecyclerPagerLayout.ScrollCapture capture = (canvas, bounds, view) -> {
+                RecyclerListView recycler = (RecyclerListView) view;
+                Blur3Utils.captureRelativeParent(recycler, canvas, bounds, recycler, root);
+            };
+            getBaseSimpleGlass().setCapture((canvas, bounds) ->
+                    scrollCoordinator.captureScrollingContent(canvas, bounds, capture));
+            FrameLayout tabs = transactionTabs;
+            tabs.setBackground(getBaseSimpleGlass().factory.create(tabs)
+                    .setColorProvider(BlurredBackgroundProviderImpl.simpleActionBar(resourceProvider))
+                    .setPadding(dp(9.66f)).setRadius(dp(18)));
+        }
+    }
+
+    private void applyScrollInsets() {
+        if (listView == null) return;
+        AndroidUtilities.setViewLayoutMargins(avatarContainer.avatarImageView, 0,
+                mSystemInsets.top + (ActionBar.getCurrentActionBarHeight() - dp(42)) / 2, dp(6), 0);
+        BaseFragmentSimpleGlass.setListViewParams(listView, mSystemInsets.top, mSystemInsets.bottom,
+                ActionBar.getCurrentActionBarHeight(), 0);
+        if (scrollCoordinator != null) {
+            ViewGroup.MarginLayoutParams margins = (ViewGroup.MarginLayoutParams) listView.getLayoutParams();
+            scrollCoordinator.setVerticalBleed(-margins.topMargin, -margins.bottomMargin);
+            scrollCoordinator.invalidateGeometry();
+        }
+        if (listTopOverlay != null) {
+            int height = mSystemInsets.top + ActionBar.getCurrentActionBarHeight()
+                    + (scrollCoordinator != null ? dp(44) : 0);
+            ViewGroup.LayoutParams params = listTopOverlay.getLayoutParams();
+            if (params.height != height) {
+                params.height = height;
+                listTopOverlay.setLayoutParams(params);
+            }
+            updateTopOverlayTranslation();
+        }
+    }
+
+    private void updateTopOverlayTranslation() {
+        if (listTopOverlay == null) return;
+        float pinnedFactor = tabsPinnedAnimator == null ? 0f : tabsPinnedAnimator.getFloatValue();
+        listTopOverlay.setTranslationY(scrollCoordinator == null ? 0f : -(1f - pinnedFactor) * dp(44));
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        applyScrollInsets();
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        if (transactionPager != null && transactionPager.canScrollHorizontally(-1)) {
+            return false;
+        }
+        return super.isSwipeBackEnabled(event);
     }
 
     private Bulletin withdrawalBulletin;
@@ -462,6 +756,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     private StatisticActivity.ChartViewData revenueChart;
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        transactionsRow = RecyclerView.NO_POSITION;
         final BotStarsController s = BotStarsController.getInstance(currentAccount);
         if (type == TYPE_STARS) {
             items.add(UItem.asChart(StatisticActivity.VIEW_TYPE_STACKBAR, stats_dc, revenueChartData));
@@ -503,7 +798,8 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     items.add(AffiliateProgramFragment.ColorfulTextCell.Factory.as(BUTTON_AFFILIATE, Theme.getColor(Theme.key_color_green, resourceProvider), R.drawable.filled_earn_stars, applyNewSpan(getString(R.string.BotAffiliateProgramRowTitle)), getString(R.string.BotAffiliateProgramRowText)));
                     items.add(UItem.asShadow(-4, null));
                 }
-                items.add(UItem.asFullscreenCustom(transactionsLayout, 0));
+                transactionsRow = items.size();
+                items.add(UItem.asCustomShadow(transactionsBoundary, LayoutHelper.WRAP_CONTENT));
             }
         } else if (type == TYPE_TON) {
             TLRPC.TL_payments_starsRevenueStats stats = s.getTONRevenueStats(bot_id, true);
@@ -574,58 +870,9 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                 }), true);
             }
             items.add(UItem.asShadow(-5, balanceInfo));
-            if (!tonTransactionsEndReached || !tonTransactions.isEmpty()) {
-                items.add(UItem.asBlackHeader(getString(R.string.BotMonetizationTransactions)));
-                for (TL_stars.StarsTransaction t : tonTransactions) {
-                    items.add(StarsIntroActivity.StarsTransactionView.Factory.asTransaction(t, true));
-                }
-                if (!tonTransactionsEndReached) {
-                    items.add(UItem.asFlicker(1, FlickerLoadingView.DIALOG_CELL_TYPE));
-                    items.add(UItem.asFlicker(2, FlickerLoadingView.DIALOG_CELL_TYPE));
-                    items.add(UItem.asFlicker(3, FlickerLoadingView.DIALOG_CELL_TYPE));
-                }
-            }
-            items.add(UItem.asShadow(-6, null));
+            transactionsRow = items.size();
+            items.add(UItem.asCustomShadow(transactionsBoundary, LayoutHelper.WRAP_CONTENT));
         }
-    }
-
-    private boolean tonTransactionsLoading = false;
-    private boolean tonTransactionsEndReached = false;
-    private final ArrayList<TL_stars.StarsTransaction> tonTransactions = new ArrayList<>();
-    private String tonTransactionsLastOffset = "";
-    private void loadTonTransactions() {
-        if (tonTransactionsLoading || tonTransactionsEndReached || tonTransactionsLastOffset == null) return;
-        tonTransactionsLoading = true;
-        TL_stars.TL_payments_getStarsTransactions req = new TL_stars.TL_payments_getStarsTransactions();
-        req.ton = true;
-        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(bot_id);
-        req.offset = tonTransactionsLastOffset;
-        req.limit = tonTransactions.isEmpty() ? 5 : 20;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-            if (res instanceof TL_stars.StarsStatus) {
-                TL_stars.StarsStatus r = (TL_stars.StarsStatus) res;
-                MessagesController.getInstance(currentAccount).putUsers(r.users, false);
-                MessagesController.getInstance(currentAccount).putChats(r.chats, false);
-                tonTransactionsLastOffset = r.next_offset;
-                tonTransactions.addAll(r.history);
-                tonTransactionsEndReached = r.history.isEmpty() || r.next_offset == null;
-            } else if (err != null) {
-                BulletinFactory.showError(err);
-                tonTransactionsEndReached = true;
-            }
-            tonTransactionsLoading = false;
-            if (listView.adapter != null) {
-                listView.adapter.update(true);
-            }
-        }));
-    }
-
-    public boolean isLoadingVisible() {
-        for (int i = 0; i < listView.getChildCount(); ++i) {
-            if (listView.getChildAt(i) instanceof FlickerLoadingView)
-                return true;
-        }
-        return false;
     }
 
     private void onItemClick(UItem item, View view, int pos, float x, float y) {
@@ -739,7 +986,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
     private int stats_dc = -1;
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.botStarsUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.botStarsUpdated);
         checkStats();
         return super.onFragmentCreate();
     }
@@ -762,13 +1009,16 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
             }
             setStarsBalance(stats.status.available_balance, stats.status.next_withdrawal_at);
             if (listView != null) {
-                listView.adapter.update(true);
+                boolean pinned = scrollCoordinator != null && scrollCoordinator.areTabsPinned();
+                listView.adapter.update(scrollCoordinator == null);
+                if (pinned) scrollCoordinator.alignCommonBoundaryToPin();
             }
         }
     }
 
     @Override
     public void onFragmentDestroy() {
+        destroyed = true;
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.botStarsUpdated);
         super.onFragmentDestroy();
     }
@@ -787,130 +1037,6 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
         return AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundWhite)) > 0.721f;
     }
 
-
-    private class NestedFrameLayout extends SizeNotifierFrameLayout implements NestedScrollingParent3 {
-
-        @Override
-        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        }
-
-        private NestedScrollingParentHelper nestedScrollingParentHelper;
-
-        public NestedFrameLayout(Context context) {
-            super(context);
-            nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
-        }
-
-        @Override
-        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] consumed) {
-            try {
-                if (target == listView && transactionsLayout.isAttachedToWindow()) {
-                    RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                    int bottom = ((View) transactionsLayout.getParent()).getBottom();
-                    actionBar.setCastShadows(listView.getHeight() - bottom < 0);
-                    if (listView.getHeight() - bottom >= 0) {
-                        consumed[1] = dyUnconsumed;
-                        innerListView.scrollBy(0, dyUnconsumed);
-                    }
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-                AndroidUtilities.runOnUIThread(() -> {
-                    try {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        if (innerListView != null && innerListView.getAdapter() != null) {
-                            innerListView.getAdapter().notifyDataSetChanged();
-                        }
-                    } catch (Throwable e2) {
-
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type) {
-
-        }
-
-        @Override
-        public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
-            return super.onNestedPreFling(target, velocityX, velocityY);
-        }
-
-        @Override
-        public void onNestedPreScroll(View target, int dx, int dy, int[] consumed, int type) {
-            if (target == listView && transactionsLayout.isAttachedToWindow()) {
-                boolean searchVisible = actionBar.isSearchFieldVisible();
-                int t = ((View) transactionsLayout.getParent()).getTop() - AndroidUtilities.statusBarHeight - ActionBar.getCurrentActionBarHeight();
-                int bottom = ((View) transactionsLayout.getParent()).getBottom();
-                if (dy < 0) {
-                    boolean scrolledInner = false;
-                    actionBar.setCastShadows(listView.getHeight() - bottom < 0);
-                    if (listView.getHeight() - bottom >= 0) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        LinearLayoutManager linearLayoutManager = (LinearLayoutManager) innerListView.getLayoutManager();
-                        int pos = linearLayoutManager.findFirstVisibleItemPosition();
-                        if (pos != RecyclerView.NO_POSITION) {
-                            RecyclerView.ViewHolder holder = innerListView.findViewHolderForAdapterPosition(pos);
-                            int top = holder != null ? holder.itemView.getTop() : -1;
-                            int paddingTop = innerListView.getPaddingTop();
-                            if (top != paddingTop || pos != 0) {
-                                consumed[1] = pos != 0 ? dy : Math.max(dy, (top - paddingTop));
-                                innerListView.scrollBy(0, dy);
-                                scrolledInner = true;
-                            }
-                        }
-                    }
-                    if (searchVisible) {
-                        if (!scrolledInner && t < 0) {
-                            consumed[1] = dy - Math.max(t, dy);
-                        } else {
-                            consumed[1] = dy;
-                        }
-                    }
-                } else {
-                    if (searchVisible) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        consumed[1] = dy;
-                        if (t > 0) {
-                            consumed[1] -= dy;
-                        }
-                        if (innerListView != null && consumed[1] > 0) {
-                            innerListView.scrollBy(0, consumed[1]);
-                        }
-                    } else if (dy > 0) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        if (listView.getHeight() - bottom >= 0 && innerListView != null && !innerListView.canScrollVertically(1)) {
-                            consumed[1] = dy;
-                            listView.stopScroll();
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public boolean onStartNestedScroll(View child, View target, int axes, int type) {
-            return axes == ViewCompat.SCROLL_AXIS_VERTICAL;
-        }
-
-        @Override
-        public void onNestedScrollAccepted(View child, View target, int axes, int type) {
-            nestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes);
-        }
-
-        @Override
-        public void onStopNestedScroll(View target, int type) {
-            nestedScrollingParentHelper.onStopNestedScroll(target);
-        }
-
-        @Override
-        public void onStopNestedScroll(View child) {
-
-        }
-    }
 
     private void initWithdraw(boolean stars, long stars_amount, TLRPC.InputCheckPasswordSRP password, TwoStepVerificationActivity passwordFragment) {
         Activity parentActivity = getParentActivity();
@@ -948,7 +1074,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     builder.setView(linearLayout);
 
                     TextView messageTextView = new TextView(parentActivity);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.WithdrawChannelAlertText)));
@@ -961,10 +1087,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     ImageView dotImageView = new ImageView(parentActivity);
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(parentActivity);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
@@ -983,10 +1109,10 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                     dotImageView = new ImageView(parentActivity);
                     dotImageView.setImageResource(R.drawable.list_circle);
                     dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                    dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                     messageTextView = new TextView(parentActivity);
-                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                     messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
@@ -1003,7 +1129,7 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                     } else {
                         messageTextView = new TextView(parentActivity);
-                        messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                        ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                         messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                         messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));
@@ -1044,5 +1170,17 @@ public class BotStarsActivity extends BaseFragment implements NotificationCenter
                 }
             }
         }));
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (avatarContainer != null) {
+                avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle), Theme.getColor(Theme.key_player_actionBarSubtitle));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

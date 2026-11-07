@@ -1,0 +1,76 @@
+<!--
+  common profile: only what WebView, Blitz and litehtml all render (corpus/common/README.md)
+  idea: deep-nesting stress — a file tree five levels deep (~120 nodes) rendered as nested blocks with left padding; folders collapse/expand (hidden toggles whole subtrees)
+-->
+<style>
+  :root { --fg: #000; --muted: #6e6e73; --card: #fff; --fill: rgba(127,127,127,0.12); --fill2: rgba(127,127,127,0.22); --border: rgba(0,0,0,0.10);
+    --blue: #007aff; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --purple: #af52de; --teal: #30b0c7; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #fff; --muted: #98989d; --card: #1c1c1e; --border: rgba(255,255,255,0.14); } }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  .card { width: 392px; max-width: 100%; box-sizing: border-box; background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .row { display: flex; align-items: center; } .between { justify-content: space-between; } .grow { flex-grow: 1; flex-basis: 0; }
+  .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; } .bold { font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 9px; font-weight: 600; text-align: center; background-color: var(--fill); color: var(--fg); cursor: pointer; }
+  .btn.primary { background-color: var(--blue); color: #fff; }
+  .btn:active { background-color: var(--fill2); }
+  [hidden] { display: none; }
+
+  .tree { margin-top: 8px; font-size: 13px; }
+  .kids { padding-left: 16px; border-left: 1px solid var(--border); margin-left: 7px; }
+  .n { display: flex; align-items: center; padding: 3px 0; }
+  .n .ic { width: 14px; height: 14px; border-radius: 3px; margin-right: 7px; flex-shrink: 0; }
+  .n.dir { cursor: pointer; font-weight: 600; }
+  .n.dir .ic { background-color: var(--orange); border-radius: 3px 3px 3px 3px; }
+  .n.dir.closed .ic { background-color: var(--fill2); }
+  .n.file .ic { background-color: var(--fill2); }
+  .n.file .ic.ts { background-color: var(--blue); } .n.file .ic.swift { background-color: var(--red); } .n.file .ic.kt { background-color: var(--purple); } .n.file .ic.md { background-color: var(--teal); } .n.file .ic.html { background-color: var(--green); }
+  .n .sz { margin-left: auto; font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .n .cnt { margin-left: 6px; font-size: 10px; color: var(--muted); font-weight: 400; }
+</style>
+<div class="card">
+  <div class="row between"><span class="bold" style="font-size: 16px">twidget/</span><span class="tiny muted" id="note"></span></div>
+  <div class="tree" id="tree"></div>
+  <div class="row" style="margin-top: 8px"><span class="btn" role="button" data-all="1" style="padding: 4px 10px; font-size: 12px; margin-right: 6px">Expand all</span><span class="btn" role="button" data-all="0" style="padding: 4px 10px; font-size: 12px">Collapse all</span></div>
+</div>
+<script>
+const T = ['src', [
+  ['host', [['validator.ts', 18], ['allowlist.ts', 6], ['css-sanitizer.ts', 11], ['url-policy.ts', 3], ['widget-host.ts', 14], ['renderer.ts', 2], ['iframe-renderer.ts', 9], ['blitz-renderer.ts', 8], ['litehtml-renderer.ts', 8], ['cpu-budget.ts', 2], ['loader.ts', 5]]],
+  ['sandbox', [['dom', [['element.ts', 22], ['node.ts', 9], ['document.ts', 12], ['events', [['event.ts', 4], ['target.ts', 5], ['dispatch.ts', 3]]], ['style.ts', 7], ['classlist.ts', 2]]], ['timers.ts', 4], ['raf.ts', 2], ['network-stubs.ts', 1], ['storage.ts', 2], ['bridge.ts', 3], ['index.ts', 6]]],
+  ['renderer', [['apply-ops.ts', 10], ['hit-test.ts', 4], ['index.ts', 3]]],
+  ['shared', [['protocol.ts', 5], ['schema.ts', 7]]],
+  ['main.ts', 12], ['style.css', 4]]];
+const IOS = ['ios', [['Sources', [['WidgetSandbox', [['WidgetHost.swift', 16], ['SandboxEngine.swift', 14], ['TrustedValidator.swift', 9], ['RendererWebView.swift', 11], ['CpuBudget.swift', 2], ['JSThread.swift', 3], ['QuickJS.swift', 8], ['Platform.swift', 2], ['WidgetView.swift', 6]]], ['CQuickJS', [['shim', [['qjs_shim.c', 5]]], ['include', [['qjs_shim.h', 1]]]]]]], ['DemoApp', [['Sources', [['ContentView.swift', 7], ['Corpus.swift', 1], ['NativeRenderer.swift', 9], ['BlitzRenderer.swift', 1], ['LitehtmlRenderer.swift', 1], ['ChatFeed', [['FeedModel.swift', 10], ['FeedConfig.swift', 3], ['ChatFeedView.swift', 8]]]]], ['project.yml', 2]]], ['Tests', [['WidgetSandboxTests', [['EngineTests.swift', 9], ['ValidatorTests.swift', 6], ['PauseTests.swift', 3]]]]]]];
+const AND = ['android', [['widget-sandbox', [['src', [['main', [['java', [['SandboxEngine.kt', 13], ['WidgetHost.kt', 12], ['TrustedValidator.kt', 8], ['RendererWebView.kt', 10], ['CpuBudget.kt', 2], ['JSThread.kt', 2]]], ['cpp', [['quickjs_jni.c', 7]]]]]]]]], ['demo', [['MainActivity.kt', 6], ['Bench.kt', 7], ['Corpus.kt', 1]]]]];
+const DOCS = ['docs', [['overview.md', 9], ['decisions.md', 14], ['protocol.md', 11], ['native-port-notes.md', 16], ['blitz-experiment.md', 21], ['litehtml-renderer.md', 13], ['widget-runtime-profile.md', 6]]];
+const CORPUS = ['corpus', [['compat', [['calculator.html', 2], ['tabs.html', 2], ['chart.html', 3]]], ['common', [['cards', [['01-profile-card.html', 5]]], ['heavy', [['03-nested-tree.html', 6]]]]], ['README.md', 3]]];
+const ROOT = [T, IOS, AND, DOCS, CORPUS, ['package.json', 1], ['CLAUDE.md', 8]];
+let files = 0, dirs = 0;
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function node(n, depth) {
+  const [name, kids] = n;
+  if (Array.isArray(kids)) {
+    dirs++;
+    const closed = depth >= 2;
+    return `<div class="n dir${closed ? ' closed' : ''}" role="button"><span class="ic"></span>${esc(name)}<span class="cnt">${count(kids)} items</span></div><div class="kids"${closed ? ' hidden' : ''}>${kids.map(k => node(k, depth + 1)).join('')}</div>`;
+  }
+  files++;
+  const ext = name.split('.').pop();
+  return `<div class="n file"><span class="ic ${ext}"></span>${esc(name)}<span class="sz">${kids} KB</span></div>`;
+}
+function count(kids) { return kids.reduce((a, k) => a + (Array.isArray(k[1]) ? count(k[1]) : 1), 0); }
+const tree = document.getElementById('tree');
+tree.innerHTML = ROOT.map(k => node(k, 0)).join('');
+document.getElementById('note').textContent = files + ' files · ' + dirs + ' folders';
+tree.addEventListener('click', e => {
+  const d = e.target.closest('.n.dir');
+  if (!d) return;
+  const open = d.classList.toggle('closed');
+  d.nextElementSibling.hidden = open;
+});
+document.querySelector('.card').addEventListener('click', e => {
+  const b = e.target.closest('[data-all]');
+  if (!b) return;
+  const open = b.dataset.all === '1';
+  for (const d of tree.querySelectorAll('.n.dir')) { d.classList.toggle('closed', !open); d.nextElementSibling.hidden = !open; }
+});
+</script>

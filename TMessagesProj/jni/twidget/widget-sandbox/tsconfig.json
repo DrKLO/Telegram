@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "useDefineForClassFields": true
+  },
+  // Repo tooling: the Playwright suites and the scripts. packages/core and apps/web have their own.
+  "include": ["tests", "scripts", "playwright.config.ts", "packages/core/src/types.d.ts"]
+}

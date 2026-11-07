@@ -1,0 +1,28 @@
+<!-- requests to the bot and copyText without a real tap. Timers, promise jobs, frames, scripted clicks,
+     synthetic pointer events and animation events all try; none may reach the client (no background requests for this
+     message: the attack suite opens it as an original in a group, can_query only). Only the real tap on #go may send one request. -->
+<div class="widget"><button id="go">tap me once</button><div id="anim" style="animation: a .01s 3"></div><p id="log"></p></div>
+<style>@keyframes a { to { opacity: .5; } }</style>
+<script>
+var T = TelegramWidget, log = [];
+function note(t) { log.push(t); document.getElementById('log').textContent = log.slice(-6).join(' · '); }
+function ask(from) {
+  try { T.request('http://127.0.0.1:9999/hit/request-' + from).then(function () { note(from + ':sent'); }, function (e) { note(from + ':' + e.code); }); } catch (e) { note(from + ':' + e.name); }
+  try { T.copyText('copied from ' + from); } catch (e) {}
+}
+setTimeout(function () { ask('timer'); }, 0);
+Promise.resolve().then(function () { ask('promise'); });
+requestAnimationFrame(function () { ask('frame'); });
+document.getElementById('anim').addEventListener('animationiteration', function () { ask('animation'); });
+setTimeout(function () {
+  var b = document.getElementById('go');
+  b.addEventListener('pointerdown', function (e) { if (!e.isTrusted) ask('synthetic-pointerdown'); });
+  b.click();
+  b.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+  b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+}, 50);
+document.getElementById('go').addEventListener('click', function (e) {
+  ask(e.isTrusted ? 'tap' : 'scripted-click');
+  setTimeout(function () { ask('timer-after-tap'); }, 0);
+});
+</script>

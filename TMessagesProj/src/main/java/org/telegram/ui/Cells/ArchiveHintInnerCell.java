@@ -13,6 +13,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -27,17 +28,17 @@ public class ArchiveHintInnerCell extends FrameLayout {
         super(context);
 
         imageView = new ImageView(context);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_nameMessage_threeLines), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, Theme.key_chats_nameMessage_threeLines, PorterDuff.Mode.MULTIPLY);
 
         headerTextView = new TextView(context);
-        headerTextView.setTextColor(Theme.getColor(Theme.key_chats_nameMessage_threeLines));
+        ThemeBind.textColor(headerTextView, Theme.key_chats_nameMessage_threeLines);
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         headerTextView.setTypeface(AndroidUtilities.bold());
         headerTextView.setGravity(Gravity.CENTER);
         addView(headerTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 75, 52, 0));
 
         messageTextView = new TextView(context);
-        messageTextView.setTextColor(Theme.getColor(Theme.key_chats_message));
+        ThemeBind.textColor(messageTextView, Theme.key_chats_message);
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         messageTextView.setGravity(Gravity.CENTER);
         addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 52, 110, 52, 0));
@@ -48,7 +49,7 @@ public class ArchiveHintInnerCell extends FrameLayout {
 
                 imageView2 = new ImageView(context);
                 imageView2.setImageResource(R.drawable.chats_archive_arrow);
-                imageView2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_unreadCounter), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.colorFilter(imageView2, Theme.key_chats_unreadCounter, PorterDuff.Mode.MULTIPLY);
                 addView(imageView2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 20, 8, 0));
 
                 headerTextView.setText(LocaleController.getString(R.string.ArchiveHintHeader1));

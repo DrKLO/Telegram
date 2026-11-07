@@ -19,6 +19,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class RequestPeerRequirementsCell extends LinearLayout {
         super(context);
 
         setOrientation(VERTICAL);
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(this, Theme.key_windowBackgroundGray);
     }
 
     private TLRPC.RequestPeerType requestPeerType;
@@ -80,18 +81,24 @@ public class RequestPeerRequirementsCell extends LinearLayout {
             if (!requirements.isEmpty()) {
                 HeaderCell headerCell = new HeaderCell(getContext(), 20);
                 headerCell.setText(LocaleController.getString(R.string.PeerRequirements));
-                headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
                 addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-                addView(emptyView(9, Theme.getColor(Theme.key_windowBackgroundWhite)), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                addView(emptyViewThemed(9, Theme.key_windowBackgroundWhite), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 for (Requirement requirement : requirements) {
                     addView(new RequirementCell(getContext(), requirement), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 }
-                addView(emptyView(12, Theme.getColor(Theme.key_windowBackgroundWhite)), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                addView(emptyViewThemed(12, Theme.key_windowBackgroundWhite), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 addView(emptyView(12, Theme.getThemedDrawableByKey(getContext(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow)), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             }
         }
+    }
+
+    private View emptyViewThemed(int heightDp, int colorKey) {
+        final View view = emptyView(heightDp, (Drawable) null);
+        ThemeBind.backgroundColor(view, colorKey);
+        return view;
     }
 
     private View emptyView(int heightDp, int color) {
@@ -258,19 +265,19 @@ public class RequestPeerRequirementsCell extends LinearLayout {
         public RequirementCell(Context context, Requirement requirement) {
             super(context);
 
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(this, Theme.key_windowBackgroundWhite);
 
             setOrientation(HORIZONTAL);
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.setImageResource(requirement.padding <= 0 ? R.drawable.list_check : R.drawable.list_circle);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteBlueHeader, PorterDuff.Mode.MULTIPLY);
             addView(imageView, LayoutHelper.createLinear(20, 20, 0, Gravity.TOP | Gravity.LEFT, 17 + requirement.padding * 16, -1, 0, 0));
 
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText2);
             textView.setSingleLine(false);
             textView.setText(requirement.text);
             addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1, 6, 4, 24, 4));

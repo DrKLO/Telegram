@@ -29,6 +29,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -65,7 +66,7 @@ public class MentionCell extends LinearLayout {
                 super.setText(text, type);
             }
         };
-        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         nameTextView.setSingleLine(true);
         nameTextView.setGravity(Gravity.LEFT);
@@ -73,7 +74,7 @@ public class MentionCell extends LinearLayout {
         addView(nameTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
 
         usernameTextView = new TextView(context);
-        usernameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+        ThemeBind.textColor(usernameTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         usernameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         usernameTextView.setSingleLine(true);
         usernameTextView.setGravity(Gravity.LEFT);
@@ -262,11 +263,14 @@ public class MentionCell extends LinearLayout {
 
     public void setIsDarkTheme(boolean isDarkTheme) {
         if (isDarkTheme) {
+            // fixed colors: drop the theme-key bindings so a theme switch does not overwrite them
+            ThemeBind.clear(nameTextView);
+            ThemeBind.clear(usernameTextView);
             nameTextView.setTextColor(0xffffffff);
             usernameTextView.setTextColor(0xffbbbbbb);
         } else {
-            nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            usernameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+            ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            ThemeBind.textColor(usernameTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         }
     }
 

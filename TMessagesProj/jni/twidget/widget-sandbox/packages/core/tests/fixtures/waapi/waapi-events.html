@@ -1,0 +1,42 @@
+<style>body{margin:0}.t{margin:6px;width:60px;height:16px;background:#ff9500}</style>
+<div class="t" id="a"></div><div class="t" id="b"></div><div class="t" id="c"></div><div class="t" id="d"></div>
+<script>
+const L = [];
+const log = (...a) => L.push(a.join(' '));
+const a = document.getElementById('a'), b = document.getElementById('b'), c = document.getElementById('c'), d = document.getElementById('d');
+const x = a.animate({ opacity: [0, 1] }, 120);
+x.ready.then(() => log('x ready', x.pending, x.playState));
+x.finished.then(() => log('x finished', x.playState));
+x.onfinish = (e) => log('x onfinish', e.currentTime === 120, e.timelineTime !== null);
+x.addEventListener('finish', () => { log('x listener'); Promise.resolve().then(() => log('x micro after listener')); });
+requestAnimationFrame(() => log('raf first', x.pending));
+x.finished.then(() => {
+  const y = b.animate({ transform: ['none', 'translateX(10px)'] }, { duration: 300 });
+  y.finished.catch((e) => log('y finished rejected', e.name));
+  y.oncancel = (e) => log('y oncancel', e.currentTime, e.timelineTime !== null, y.playState);
+  y.ready.then(() => { y.cancel(); log('y cancelled sync', y.playState); requestAnimationFrame(() => log('raf after cancel')); });
+});
+const p1 = c.animate({ marginLeft: ['0px', '20px'] }, { duration: 50, fill: 'forwards' });
+const p2 = c.animate({ marginLeft: ['20px', '40px'] }, { duration: 80, fill: 'forwards' });
+p1.onremove = (e) => log('p1 onremove', p1.replaceState, e.type);
+p1.finished.then(() => log('p1 finished', p1.replaceState));
+p2.finished.then(() => log('p2 finished', p1.replaceState, p2.replaceState, c.getAnimations().length));
+const z = d.animate({ opacity: [1, 0] }, { duration: 1000 });
+z.pause();
+const zr = z.ready;
+z.ready.then(() => { log('z paused ready', z.playState, z.currentTime); z.play(); log('z play', z.playState, z.pending, z.ready !== zr); z.ready.then(() => { log('z play ready', z.playState); z.currentTime = 900; z.reverse(); log('z reversed', z.playbackRate, z.pending); z.ready.then(() => log('z reverse ready', z.playState)); z.finished.then(() => log('z finished at', z.currentTime, z.playbackRate)); }); });
+const q = d.animate({ opacity: [0, 1] }, 10000);
+q.finish();
+log('q finish sync', q.playState);
+q.finished.then(() => log('q finished'));
+q.onfinish = () => log('q onfinish');
+const m1 = a.animate({ opacity: [0, 1] }, { duration: 200, id: 'm1' });
+const m2 = b.animate({ opacity: [0, 1] }, { duration: 200, id: 'm2' });
+m2.onfinish = () => log('m2 onfinish');
+m1.onfinish = () => log('m1 onfinish');
+const pr = a.animate({ transform: ['none', 'scale(2)'] }, { duration: 30, fill: 'forwards' });
+const pr2 = a.animate({ transform: ['none', 'scale(3)'] }, { duration: 30, fill: 'forwards' });
+pr.persist();
+pr2.finished.then(() => log('persist', pr.replaceState, pr2.replaceState));
+setTimeout(() => { L.forEach((l) => console.log(l)); }, 1400);
+</script>

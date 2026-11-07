@@ -160,7 +160,7 @@ public interface INavigationLayout {
         if (getFragmentStack().isEmpty()) return null;
         for (int i = getFragmentStack().size() - 1; i >= 0; --i) {
             BaseFragment fragment = getFragmentStack().get(i);
-            if (fragment == null || fragment.isFinishing() || fragment.isRemovingFromStack())
+            if (fragment == null || fragment.getContext() == null || fragment.isFinishing() || fragment.isRemovingFromStack())
                 continue;
             return fragment;
         }

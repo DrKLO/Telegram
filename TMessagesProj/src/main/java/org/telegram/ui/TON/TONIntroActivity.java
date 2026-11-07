@@ -1,6 +1,7 @@
 package org.telegram.ui.TON;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Stars.StarsIntroActivity.formatStarsAmount;
@@ -22,9 +23,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
-import androidx.core.view.NestedScrollingParent3;
-import androidx.core.view.NestedScrollingParentHelper;
-import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -48,6 +46,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -56,12 +55,12 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FireworksOverlay;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
-import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
-import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.Components.Premium.boosts.UserSelectorBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SiblingRecyclerPagerLayout;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.GradientHeaderActivity;
@@ -74,15 +73,34 @@ import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.bots.ChannelAffiliateProgramsFragment;
+import org.telegram.ui.Wallet.WalletDiamondView;
 
 import java.util.ArrayList;
+
+import me.vkryl.android.animator.BoolAnimator;
 
 public class TONIntroActivity extends GradientHeaderActivity implements NotificationCenter.NotificationCenterDelegate {
 
     private FrameLayout aboveTitleView;
-    private GLIconTextureView iconTextureView;
+    private WalletDiamondView iconTextureView;
 
     private StarsIntroActivity.StarsTransactionsLayout transactionsLayout;
+    private SiblingRecyclerPagerLayout scrollCoordinator;
+    private View transactionsBoundary;
+    private View listTopOverlay;
+    private BoolAnimator actionBarShownAnimator;
+    private BoolAnimator tabsPinnedAnimator;
+    private BoolAnimator headerVisibleAnimator;
+    private int transactionsRow = RecyclerView.NO_POSITION;
+    private int contentInsetTop;
+    private int contentInsetBottom;
+    private boolean receivedInsets;
+    private boolean savedTransactionsPinned;
+    private final Runnable alignTransactionsBoundary = () -> {
+        if (scrollCoordinator != null && transactionsRow != RecyclerView.NO_POSITION) {
+            scrollCoordinator.alignCommonBoundaryToPin();
+        }
+    };
     private View emptyLayout;
     private FireworksOverlay fireworksOverlay;
 
@@ -110,11 +128,11 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starOptionsLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starBalanceUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starTransactionsLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starSubscriptionsLoaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.botStarsUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starOptionsLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starBalanceUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starTransactionsLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starSubscriptionsLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.botStarsUpdated);
         StarsController.getTonInstance(currentAccount).invalidateTransactions(true);
         StarsController.getTonInstance(currentAccount).invalidateSubscriptions(true);
         StarsController.getTonInstance(currentAccount).getOptions();
@@ -124,6 +142,9 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (listView != null) {
+            listView.removeCallbacks(alignTransactionsBoundary);
+        }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starOptionsLoaded);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starBalanceUpdated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starTransactionsLoaded);
@@ -142,9 +163,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
             if (adapter != null) {
                 adapter.update(true);
             }
-            if (savedScrollPosition == 0 && savedScrollOffset < 0) {
-                savedScrollOffset = 0;
-            }
             applyScrolledPosition();
         } else if (id == NotificationCenter.starTransactionsLoaded) {
             final StarsController c = StarsController.getTonInstance(currentAccount);
@@ -152,10 +170,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 hadTransactions = c.hasTransactions();
                 saveScrollPosition();
                 if (adapter != null) {
-                    adapter.update(true);
-                }
-                if (savedScrollPosition == 0 && savedScrollOffset < 0) {
-                    savedScrollOffset = 0;
+                    adapter.update(false);
                 }
                 applyScrolledPosition();
             }
@@ -178,16 +193,54 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
         useFillLastLayoutManager = false;
         particlesViewHeight = dp(32 + 190 + 16);
-        transactionsLayout = new StarsIntroActivity.StarsTransactionsLayout(context, currentAccount, true, 0, getClassGuid(), getResourceProvider());
+        scrollCoordinator = new SiblingRecyclerPagerLayout(context);
+        scrollCoordinator.setCommonInsetsManagedExternally(true);
+        if (!receivedInsets) {
+            contentInsetTop = parentLayout != null && parentLayout.isLayersLayout() ? 0 : AndroidUtilities.statusBarHeight;
+            contentInsetBottom = AndroidUtilities.navigationBarHeight;
+        }
+        scrollCoordinator.setGeometry(new SiblingRecyclerPagerLayout.Geometry() {
+            @Override
+            public float tabsPinnedTop(SiblingRecyclerPagerLayout parent) {
+                // the glass of the tabs (inset by 9.66dp) 7dp under the header's buttons
+                return Math.max(0, BaseFragmentSimpleGlass.getPillGlassTop(contentInsetTop) - dp(9.66f));
+            }
+
+            @Override
+            public int pageBottomInset(SiblingRecyclerPagerLayout parent) {
+                return contentInsetBottom;
+            }
+
+            @Override
+            public void onTabsPinnedChanged(boolean pinned) {
+                if (tabsPinnedAnimator != null) {
+                    tabsPinnedAnimator.setValue(pinned, true);
+                }
+                if (contentView != null) {
+                    contentView.invalidate();
+                }
+            }
+        });
+        scrollCoordinator.setVerticalBleed(
+                -Math.min(-dp(8), contentInsetTop - dp(48)),
+                -Math.min(-dp(8), contentInsetBottom - dp(48)));
+        transactionsBoundary = scrollCoordinator.createBoundarySpacer(context);
+        transactionsLayout = new StarsIntroActivity.StarsTransactionsLayout(context, currentAccount, true, 0,
+                getClassGuid(), getResourceProvider(), scrollCoordinator);
         emptyLayout = new View(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 int firstViewHeight;
                 if (isLandscapeMode) {
-                    firstViewHeight = statusBarHeight + actionBar.getMeasuredHeight() - AndroidUtilities.dp(16);
+                    firstViewHeight = statusBarHeight + getHeaderView().getMeasuredHeight() - AndroidUtilities.dp(16);
                 } else {
                     int h = AndroidUtilities.dp(140) + statusBarHeight;
                     if (backgroundView.getMeasuredHeight() + AndroidUtilities.dp(24) > h) {
@@ -201,19 +254,17 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         };
 
         super.createView(context);
+        configureTransactionsGlass();
         if (parentLayout != null && parentLayout.isRightLayout()) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_close);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_close);
         }
 
         aboveTitleView = new FrameLayout(context);
         aboveTitleView.setClickable(true);
-        iconTextureView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_DIAMOND);
-        iconTextureView.mRenderer.colorKey1 = Theme.key_starsGradient1;
-        iconTextureView.mRenderer.colorKey2 = Theme.key_starsGradient2;
-        iconTextureView.mRenderer.updateColors();
+        iconTextureView = new WalletDiamondView(context, 170);
         iconTextureView.setStarParticlesView(particlesView);
-        aboveTitleView.addView(iconTextureView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
-        configureHeader(getString(R.string.TONBalanceTitle), AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.TONBalanceText), () -> {
+        aboveTitleView.addView(iconTextureView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 12));
+        configureHeader(getString(R.string.GramEarningsTitle), AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(getString(R.string.GramEarningsText), () -> {
             new ExplainStarsSheet(context).show();
         }), true), aboveTitleView, null);
 
@@ -244,11 +295,11 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         starBalanceTextView.setTypeface(AndroidUtilities.bold());
         starBalanceTextView.setTextSize(dp(32));
         starBalanceTextView.setGravity(Gravity.CENTER);
-        starBalanceTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(starBalanceTextView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
 
         starBalanceIcon = new SpannableStringBuilder("S");
         final ColoredImageSpan starBalanceIconSpan = new ColoredImageSpan(R.drawable.mini_gram_72);
-        starBalanceIconSpan.setOverrideColor(0xFF3391D4);
+        starBalanceIconSpan.recolorDrawable = false;
         starBalanceIconSpan.setScale(0.5f, 0.5f);
         starBalanceIconSpan.translate(-dp(3), 0);
         starBalanceIcon.setSpan(starBalanceIconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -258,7 +309,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         starBalanceTitleView.setTextSize(dp(14));
         starBalanceTitleView.setGravity(Gravity.CENTER);
         starBalanceTitleView.setText(LocaleController.getString(R.string.YourTonBalance));
-        starBalanceTitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourceProvider));
+        ThemeBind.textColor(starBalanceTitleView, Theme.key_windowBackgroundWhiteGrayText2, resourceProvider);
         balanceLayout.addView(starBalanceTitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.CENTER, 24, 0, 24, 8));
 
         FrameLayout buttonsLayout = new FrameLayout(getContext());
@@ -387,137 +438,177 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     }
 
     @Override
-    protected ContentView createContentView() {
-        return new NestedFrameLayout(getContext());
+    protected LinearLayoutManager createMainLayoutManager(Context context) {
+        return scrollCoordinator.createCommonLayoutManager(context);
     }
 
-    private class NestedFrameLayout extends ContentView implements NestedScrollingParent3 {
-
-        private NestedScrollingParentHelper nestedScrollingParentHelper;
-
-        public NestedFrameLayout(Context context) {
-            super(context);
-            nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
-        }
-
-        @Override
-        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] consumed) {
-            try {
-                if (target == listView && transactionsLayout.isAttachedToWindow()) {
-                    RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                    int bottom = ((View) transactionsLayout.getParent()).getBottom();
-                    if (listView.getHeight() - bottom >= 0) {
-                        consumed[1] = dyUnconsumed;
-                        innerListView.scrollBy(0, dyUnconsumed);
-                    }
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-                AndroidUtilities.runOnUIThread(() -> {
-                    try {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        if (innerListView != null && innerListView.getAdapter() != null) {
-                            innerListView.getAdapter().notifyDataSetChanged();
-                        }
-                    } catch (Throwable e2) {
-
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type) {
-
-        }
-
-        @Override
-        public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
-            return super.onNestedPreFling(target, velocityX, velocityY);
-        }
-
-        @Override
-        public void onNestedPreScroll(View target, int dx, int dy, int[] consumed, int type) {
-            if (target == listView && transactionsLayout.isAttachedToWindow()) {
-                boolean searchVisible = actionBar.isSearchFieldVisible();
-                int t = ((View) transactionsLayout.getParent()).getTop() - AndroidUtilities.statusBarHeight - ActionBar.getCurrentActionBarHeight();
-                int bottom = ((View) transactionsLayout.getParent()).getBottom();
-                if (dy < 0) {
-                    boolean scrolledInner = false;
-                    if (listView.getHeight() - bottom >= 0) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        LinearLayoutManager linearLayoutManager = (LinearLayoutManager) innerListView.getLayoutManager();
-                        int pos = linearLayoutManager.findFirstVisibleItemPosition();
-                        if (pos != RecyclerView.NO_POSITION) {
-                            RecyclerView.ViewHolder holder = innerListView.findViewHolderForAdapterPosition(pos);
-                            int top = holder != null ? holder.itemView.getTop() : -1;
-                            int paddingTop = innerListView.getPaddingTop();
-                            if (top != paddingTop || pos != 0) {
-                                consumed[1] = pos != 0 ? dy : Math.max(dy, (top - paddingTop));
-                                innerListView.scrollBy(0, dy);
-                                scrolledInner = true;
-                            }
-                        }
-                    }
-                    if (searchVisible) {
-                        if (!scrolledInner && t < 0) {
-                            consumed[1] = dy - Math.max(t, dy);
-                        } else {
-                            consumed[1] = dy;
-                        }
-                    }
-                } else {
-                    if (searchVisible) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        consumed[1] = dy;
-                        if (t > 0) {
-                            consumed[1] -= dy;
-                        }
-                        if (innerListView != null && consumed[1] > 0) {
-                            innerListView.scrollBy(0, consumed[1]);
-                        }
-                    } else if (dy > 0) {
-                        RecyclerListView innerListView = transactionsLayout.getCurrentListView();
-                        if (listView.getHeight() - bottom >= 0 && innerListView != null && !innerListView.canScrollVertically(1)) {
-                            consumed[1] = dy;
-                            listView.stopScroll();
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public boolean onStartNestedScroll(View child, View target, int axes, int type) {
-            return axes == ViewCompat.SCROLL_AXIS_VERTICAL;
-        }
-
-        @Override
-        public void onNestedScrollAccepted(View child, View target, int axes, int type) {
-            nestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes);
-        }
-
-        @Override
-        public void onStopNestedScroll(View target, int type) {
-            nestedScrollingParentHelper.onStopNestedScroll(target);
-        }
-
-        @Override
-        public void onStopNestedScroll(View child) {
-
+    @Override
+    protected void onHeaderCollapseProgress(float progress) {
+        if (iconTextureView != null) {
+            iconTextureView.setHeaderTilt(70f * progress);
         }
     }
 
+    @Override
+    protected void attachMainList(Context context) {
+        contentView.addView(scrollCoordinator, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        scrollCoordinator.setCommonRecyclerView(listView, () -> transactionsRow);
+        scrollCoordinator.setPager(transactionsLayout, transactionsLayout.getViewPager(),
+                transactionsLayout::getPageListView);
+        scrollCoordinator.setTabs(transactionsLayout.getTabsContainer(), ViewGroup.LayoutParams.WRAP_CONTENT);
+        transactionsLayout.getTabsContainer().setLayoutParams(LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, -4, 0, -4, 0));
+        applyScrollInsets();
+    }
+
+    private void configureTransactionsGlass() {
+        final FrameLayout captureRoot = contentView;
+        getBaseSimpleGlass().setViews(captureRoot, listView, simpleActionBar, resourceProvider);
+        simpleActionBar.setBackground(null);
+        // Keep the header above the coordinator's fade, and ActionBar controls above the header.
+        backgroundView.bringToFront();
+        simpleActionBar.bringToFront();
+        // The common list translates independently; it cannot bound capture of sibling pages.
+        getBaseSimpleGlass().setClipView(scrollCoordinator);
+        listView.setCaptureSectionsDecoratorAllowed(true);
+        transactionsLayout.setGlassEngine(glassEngine);
+        final SiblingRecyclerPagerLayout.ScrollCapture listCapture = (canvas, position, view) -> {
+            RecyclerListView recyclerListView = (RecyclerListView) view;
+            Blur3Utils.captureRelativeParent(recyclerListView, canvas, position,
+                    recyclerListView, captureRoot);
+        };
+        getBaseSimpleGlass().setCapture((canvas, position) ->
+                scrollCoordinator.captureScrollingContent(canvas, position, listCapture));
+        FrameLayout tabs = transactionsLayout.getTabsContainer();
+        listTopOverlay = new View(getContext());
+        listTopOverlay.setAlpha(0f);
+        scrollCoordinator.addView(listTopOverlay, scrollCoordinator.indexOfChild(tabs),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
+        listTopOverlay.setBackground(getBaseSimpleGlass().createActionBarFadeDrawable(listTopOverlay));
+        actionBarShownAnimator = new BoolAnimator(0, (id, factor, fraction, callee) ->
+                updateListTopOverlayTranslation(), CubicBezierInterpolator.EASE_OUT_QUINT, 380);
+        tabsPinnedAnimator = new BoolAnimator(1, (id, factor, fraction, callee) ->
+                updateListTopOverlayTranslation(), CubicBezierInterpolator.EASE_OUT_QUINT, 380);
+        headerVisibleAnimator = new BoolAnimator(2, (id, factor, fraction, callee) ->
+                listTopOverlay.setAlpha(factor), CubicBezierInterpolator.EASE_OUT_QUINT, 380);
+        actionBarShownAnimator.setValue(listView.canScrollVertically(-1) || simpleActionBar.isActionModeShowed(), false);
+        tabsPinnedAnimator.setValue(scrollCoordinator.areTabsPinned(), false);
+        listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                actionBarShownAnimator.setValue(listView.canScrollVertically(-1)
+                        || simpleActionBar.isActionModeShowed(), true);
+            }
+        });
+        updateListTopOverlaySize();
+        tabs.setBackground(getBaseSimpleGlass().factory.create(tabs)
+                .setColorProvider(BlurredBackgroundProviderImpl.simpleActionBar(resourceProvider))
+                .setPadding(dp(9.66f))
+                .setRadius(dp(18)));
+    }
+
+    private void updateListTopOverlaySize() {
+        if (listTopOverlay == null) {
+            return;
+        }
+        int height = contentInsetTop + ActionBar.getCurrentActionBarHeight() + dp(44);
+        ViewGroup.LayoutParams params = listTopOverlay.getLayoutParams();
+        if (params.height != height) {
+            params.height = height;
+            listTopOverlay.setLayoutParams(params);
+        }
+        updateListTopOverlayTranslation();
+    }
+
+    private void updateListTopOverlayTranslation() {
+        if (listTopOverlay == null) {
+            return;
+        }
+        float actionBarFactor = actionBarShownAnimator == null ? 0f : actionBarShownAnimator.getFloatValue();
+        float tabsFactor = tabsPinnedAnimator == null ? 0f : tabsPinnedAnimator.getFloatValue();
+        listTopOverlay.setTranslationY(-(1f - actionBarFactor) * ActionBar.getCurrentActionBarHeight()
+                - (1f - tabsFactor) * dp(44));
+    }
+
+    @Override
+    protected void onHeaderBackgroundVisibilityChanged(boolean visible) {
+        if (headerVisibleAnimator != null && headerVisibleAnimator.getValue() != visible) {
+            headerVisibleAnimator.setValue(visible, true);
+        }
+    }
+
+    @Override
+    protected View getMainScrollLayer() {
+        return scrollCoordinator;
+    }
+
+    @Override
+    protected float getMainListOffsetY() {
+        return listView == null ? 0f : listView.getY();
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        receivedInsets = true;
+        contentInsetTop = top;
+        contentInsetBottom = bottom;
+        applyScrollInsets();
+    }
+
+    private void applyScrollInsets() {
+        updateListTopOverlaySize();
+        if (listView == null || scrollCoordinator == null || listView.getLayoutParams() == null) {
+            return;
+        }
+        int marginTop = Math.min(-dp(8), contentInsetTop - dp(48));
+        int marginBottom = Math.min(-dp(8), contentInsetBottom - dp(48));
+        AndroidUtilities.setViewLayoutMargins(listView, 0, marginTop, 0, marginBottom);
+        // The gradient header's spacer already includes the top inset. Only compensate bleed.
+        listView.setPadding(listView.getPaddingLeft(), -marginTop,
+                listView.getPaddingRight(), contentInsetBottom - marginBottom);
+        scrollCoordinator.setVerticalBleed(-marginTop, -marginBottom);
+    }
+
+    @Override
+    public void saveScrollPosition() {
+        super.saveScrollPosition();
+        savedTransactionsPinned = scrollCoordinator != null && scrollCoordinator.areTabsPinned();
+        if (listView != null && savedScrollPosition >= 0) {
+            savedScrollOffset -= listView.getPaddingTop();
+        }
+    }
+
+    @Override
+    public void applyScrolledPosition(boolean ignorePaddingView) {
+        super.applyScrolledPosition(ignorePaddingView);
+        if (savedTransactionsPinned && scrollCoordinator != null && transactionsRow != RecyclerView.NO_POSITION) {
+            scrollCoordinator.alignCommonBoundaryToPin();
+        }
+        savedTransactionsPinned = false;
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        if (scrollCoordinator == null || event == null
+                || scrollCoordinator.isCommonContentAt(event.getX(), event.getY())) {
+            return super.isSwipeBackEnabled(event);
+        }
+        return !scrollCoordinator.canStartPageSwipe() || transactionsLayout.getViewPager().isCurrentTabFirst();
+    }
+
+    /** Returns whether transaction tabs are currently pinned under the ActionBar. */
     public boolean attachedTransactionsLayout() {
-        if (transactionsLayout == null || !(transactionsLayout.getParent() instanceof View))
-            return false;
-        int bottom = ((View) transactionsLayout.getParent()).getBottom();
-        return listView.getHeight() - bottom >= 0;
+        return scrollCoordinator != null && scrollCoordinator.areTabsPinned();
+    }
+
+    @Override
+    protected boolean usesActionBarFadeBackground() {
+        return true;
     }
 
     @Override
     protected boolean drawActionBarShadow() {
-        return !attachedTransactionsLayout();
+        return false;
     }
 
     @Override
@@ -570,7 +661,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         super.onResume();
         if (iconTextureView != null) {
             iconTextureView.setPaused(false);
-            iconTextureView.setDialogVisible(false);
         }
     }
 
@@ -579,7 +669,6 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         super.onPause();
         if (iconTextureView != null) {
             iconTextureView.setPaused(true);
-            iconTextureView.setDialogVisible(true);
         }
     }
 
@@ -614,6 +703,8 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
     private final int BUTTON_AFFILIATE = -4;
 
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        boolean wasPinned = scrollCoordinator != null && scrollCoordinator.areTabsPinned();
+        transactionsRow = RecyclerView.NO_POSITION;
         if (getContext() == null) {
             return;
         }
@@ -623,12 +714,17 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         items.add(UItem.asFullyCustom(getHeader(getContext())));
         items.add(UItem.asCustom(balanceLayout));
         if (allowTopUp) {
-            items.add(UItem.asShadow(getString(R.string.TopUpViaFragmentInfo)));
+            items.add(UItem.asShadow(getString(R.string.GramEarningsHint)));
         }
 
         if (hadTransactions = c.hasTransactions()) {
             if (!allowTopUp) items.add(UItem.asShadow(null));
-            items.add(UItem.asFullscreenCustom(transactionsLayout, ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(24) + AndroidUtilities.navigationBarHeight));
+            transactionsRow = items.size();
+            items.add(UItem.asCustomShadow(transactionsBoundary, LayoutHelper.WRAP_CONTENT));
+            if (wasPinned && listView != null) {
+                listView.removeCallbacks(alignTransactionsBoundary);
+                listView.post(alignTransactionsBoundary);
+            }
         } else {
             items.add(UItem.asCustomShadow(emptyLayout));
         }
@@ -660,6 +756,22 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         private final FrameLayout footerView;
         private final ButtonWithCounterView topUpButton;
         private Runnable whenPurchased;
+
+        private int lastThemedBackgroundColor;
+
+        @Override
+        public void onThemeColorsChanged() {
+            super.onThemeColorsChanged();
+            try {
+                final int color = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+                if (color != lastThemedBackgroundColor) { // setBackgroundColor allocates a color filter
+                    lastThemedBackgroundColor = color;
+                    setBackgroundColor(color);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         @Override
         public void didReceivedNotification(int id, int account, Object... args) {
@@ -702,8 +814,8 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 }
             }
             super.show();
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starOptionsLoaded);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starBalanceUpdated);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starOptionsLoaded);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starBalanceUpdated);
         }
 
         @Override
@@ -810,7 +922,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
         public static class HeaderView extends LinearLayout {
             private final FrameLayout topView;
             public final StarParticlesView particlesView;
-            public final GLIconTextureView iconView;
+            public final WalletDiamondView iconView;
             public final TextView titleView;
             public final TextView subtitleView;
 
@@ -825,10 +937,7 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 particlesView = makeParticlesView(context, 70, 0);
                 topView.addView(particlesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-                iconView = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_DIAMOND);
-                iconView.mRenderer.colorKey1 = Theme.key_starsGradient1;
-                iconView.mRenderer.colorKey2 = Theme.key_starsGradient2;
-                iconView.mRenderer.updateColors();
+                iconView = new WalletDiamondView(context, 170);
                 iconView.setStarParticlesView(particlesView);
                 topView.addView(iconView, LayoutHelper.createFrame(170, 170, Gravity.CENTER, 0, 32, 0, 24));
                 iconView.setPaused(false);
@@ -838,13 +947,13 @@ public class TONIntroActivity extends GradientHeaderActivity implements Notifica
                 titleView = new TextView(context);
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 titleView.setTypeface(AndroidUtilities.bold());
-                titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
                 titleView.setGravity(Gravity.CENTER);
                 addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 2, 0, 0));
 
                 subtitleView = new TextView(context);
                 subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                subtitleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+                ThemeBind.textColor(subtitleView, Theme.key_dialogTextBlack, resourcesProvider);
                 subtitleView.setGravity(Gravity.CENTER);
                 addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 9, 0, 18));
             }

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!-- out-of-profile/d3-line.html without D3 (profile 1 bundles no library): 24 hourly temperatures as a
+     monotone cubic path (d3.curveMonotoneX by hand), axes with formatted ticks, a crosshair dot and dashed rule
+     that follow the pointer and stay where a tap put them, and a y label rotated from its getBBox. -->
+<html><head><meta charset="utf-8">
+<style>body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; } #svg { touch-action: pan-y; } #readout { font-size: 13px; color: #444; min-height: 18px; font-variant-numeric: tabular-nums; }</style>
+</head><body>
+<div id="chart"></div><div id="readout">Tap the chart or move the pointer over it</div>
+<script>
+  var NS = 'http://www.w3.org/2000/svg';
+  var data = [];
+  for (var h = 0; h < 24; h++) data.push({ h: h, t: 12 + 8 * Math.sin(h / 24 * Math.PI * 2 - 1.5) + (h % 3) });
+  var W = 380, H = 200, m = { t: 10, r: 12, b: 28, l: 34 };
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function x(h) { return m.l + (W - m.r - m.l) * h / 23; }
+  function y(t) { return (H - m.b) + (m.t - (H - m.b)) * t / 25; }
+  var svg = el('svg', { viewBox: [0, 0, W, H].join(' '), width: '100%', id: 'svg' }, document.getElementById('chart'));
+  // axisBottom().ticks(8) on [0, 23] gives a tick every 2 h; axisLeft().ticks(5) on [0, 25] one every 5°.
+  var bottom = el('g', { transform: 'translate(0,' + (H - m.b) + ')', fill: 'none', 'font-size': 10, 'font-family': 'sans-serif', 'text-anchor': 'middle' }, svg);
+  el('path', { stroke: 'currentColor', d: 'M' + m.l + ',6V0H' + (W - m.r) + 'V6' }, bottom);
+  for (var th = 0; th <= 23; th += 2) {
+    var g = el('g', { transform: 'translate(' + x(th) + ',0)' }, bottom);
+    el('line', { stroke: 'currentColor', y2: 6 }, g);
+    el('text', { fill: 'currentColor', y: 9, dy: '0.71em' }, g).textContent = th + 'h';
+  }
+  var left = el('g', { transform: 'translate(' + m.l + ',0)', fill: 'none', 'font-size': 10, 'font-family': 'sans-serif', 'text-anchor': 'end' }, svg);
+  el('path', { stroke: 'currentColor', d: 'M-6,' + y(0) + 'H0V' + y(25) + 'H-6' }, left);
+  for (var tv = 0; tv <= 25; tv += 5) {
+    var g2 = el('g', { transform: 'translate(0,' + y(tv) + ')' }, left);
+    el('line', { stroke: 'currentColor', x2: -6 }, g2);
+    el('text', { fill: 'currentColor', x: -9, dy: '0.32em' }, g2).textContent = tv + '°';
+  }
+  // Monotone cubic interpolation in x (Steffen / Fritsch–Carlson, as d3.curveMonotoneX).
+  function sign(v) { return v < 0 ? -1 : 1; }
+  function f(v) { return Math.round(v * 100) / 100; }
+  function monotone(pts) {
+    var n = pts.length, s = [], tan = [];
+    for (var i = 0; i < n - 1; i++) s.push((pts[i + 1][1] - pts[i][1]) / (pts[i + 1][0] - pts[i][0]));
+    for (i = 1; i < n - 1; i++) {
+      var h0 = pts[i][0] - pts[i - 1][0], h1 = pts[i + 1][0] - pts[i][0], p = (s[i - 1] * h1 + s[i] * h0) / (h0 + h1);
+      tan[i] = (sign(s[i - 1]) + sign(s[i])) * Math.min(Math.abs(s[i - 1]), Math.abs(s[i]), 0.5 * Math.abs(p)) || 0;
+    }
+    tan[0] = (3 * s[0] - tan[1]) / 2;
+    tan[n - 1] = (3 * s[n - 2] - tan[n - 2]) / 2;
+    var d = 'M' + f(pts[0][0]) + ',' + f(pts[0][1]);
+    for (i = 0; i < n - 1; i++) {
+      var dx = (pts[i + 1][0] - pts[i][0]) / 3;
+      d += 'C' + [pts[i][0] + dx, pts[i][1] + dx * tan[i], pts[i + 1][0] - dx, pts[i + 1][1] - dx * tan[i + 1], pts[i + 1][0], pts[i + 1][1]].map(f).join(',');
+    }
+    return d;
+  }
+  el('path', { fill: 'none', stroke: '#2481cc', 'stroke-width': 2, d: monotone(data.map(function (p) { return [x(p.h), y(p.t)]; })) }, svg);
+  var dot = el('circle', { r: 4, fill: '#f59e0b', style: 'display: none' }, svg);
+  var rule = el('line', { stroke: '#999', 'stroke-dasharray': '3,3', y1: m.t, y2: H - m.b, style: 'display: none' }, svg);
+  var pinned = false;
+  function show(e) {
+    var r = svg.getBoundingClientRect();
+    if (!r.width) return;
+    var px = (e.clientX - r.left) * W / r.width;
+    var i = Math.max(0, Math.min(23, Math.round((px - m.l) / (W - m.r - m.l) * 23))), d = data[i];
+    dot.style.display = ''; dot.setAttribute('cx', x(d.h)); dot.setAttribute('cy', y(d.t));
+    rule.style.display = ''; rule.setAttribute('x1', x(d.h)); rule.setAttribute('x2', x(d.h));
+    document.getElementById('readout').textContent = d.h + ':00 — ' + d.t.toFixed(1) + '°C';
+  }
+  svg.addEventListener('pointermove', show);
+  svg.addEventListener('click', function (e) { pinned = true; show(e); });
+  svg.addEventListener('pointerleave', function (e) { if (!pinned && e.pointerType === 'mouse') { dot.style.display = 'none'; rule.style.display = 'none'; } });
+  var yl = el('text', { 'font-size': 11, fill: '#666' }, svg);
+  yl.textContent = 'temperature';
+  var bb = yl.getBBox();
+  yl.setAttribute('transform', 'translate(12,' + (m.t + bb.width + 4) + ') rotate(-90)');
+</script>
+</body></html>

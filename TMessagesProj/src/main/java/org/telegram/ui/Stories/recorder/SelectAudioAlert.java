@@ -1,29 +1,19 @@
 package org.telegram.ui.Stories.recorder;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
-import static org.telegram.messenger.AndroidUtilities.escape;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Canvas;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextUtils;
-import android.text.TextWatcher;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -47,7 +37,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.utils.RectFMergeBounding;
 import org.telegram.messenger.utils.TextWatcherImpl;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -58,31 +47,29 @@ import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatAttachAlertAudioLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.EditTextCaption;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.FragmentSearchField;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.ProfileMusicView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
-import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
-import org.telegram.ui.Components.blur3.capture.IBlur3Hash;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
+import org.telegram.utils.glass.source.GlassSourceColor;
+import org.telegram.utils.glass.source.GlassSourceRenderNode;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
-import org.telegram.ui.Components.chat.ViewPositionWatcher;
-import org.telegram.ui.Stories.DarkThemeResourceProvider;
+import org.telegram.utils.glass.GlassEngine;
+import org.telegram.utils.glass.positions.GlassPositionsArray;
+import org.telegram.utils.glass.positions.GlassPositionsMerger;
 
 import java.io.File;
 import java.util.ArrayList;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.BitwiseUtils;
 
 public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener, FactorAnimator.Target {
 
@@ -107,11 +94,10 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
     private final FragmentSearchField searchField;
 
     private final @Nullable DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
-    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlassFrosted;
-    private final @Nullable BlurredBackgroundSourceRenderNode iBlur3SourceGlass;
-    private final @NonNull BlurredBackgroundSourceColor iBlur3SourceColor;
+
+    private final @Nullable GlassSourceRenderNode iBlur3SourceGlass;
+    private final @NonNull GlassSourceColor iBlur3SourceColor;
     private final @NonNull BlurredBackgroundDrawableViewFactory iBlur3FactoryLiquidGlass;
-    private final @NonNull BlurredBackgroundDrawableViewFactory iBlur3FactoryFrostedLiquidGlass;
     private final @NonNull BlurredBackgroundDrawableViewFactory iBlur3FactoryFade;
 
     private final IBlur3Capture iBlur3Capture;
@@ -134,54 +120,23 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
         this.parentAlert = parentAlert;
         this.onAudioSelected = onAudioSelected;
 
-        iBlur3SourceColor = new BlurredBackgroundSourceColor();
-        iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        iBlur3SourceColor = glassEngine.createThemedColorSource(() -> getThemedColor(Theme.key_windowBackgroundWhite));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SharedConfig.chatBlurEnabled()) {
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
-            iBlur3SourceGlass = new BlurredBackgroundSourceRenderNode(null);
-            iBlur3SourceGlass.setupRenderer(new RenderNodeWithHash.Renderer() {
-                @Override
-                public void renderNodeCalculateHash(IBlur3Hash hash) {
-                    hash.add(getThemedColor(Theme.key_windowBackgroundWhite));
-                    hash.add(SharedConfig.chatBlurEnabled());
-                }
+            glassEngine.addNoiseSuppressor(scrollableViewNoiseSuppressor);
 
-                @Override
-                public void renderNodeUpdateDisplayList(Canvas canvas) {
-                    canvas.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    if (SharedConfig.chatBlurEnabled()) {
-                        scrollableViewNoiseSuppressor.draw(canvas, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
-                    }
-                }
-            });
-
-            iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
-            iBlur3SourceGlassFrosted.setupRenderer(new RenderNodeWithHash.Renderer() {
-                @Override
-                public void renderNodeCalculateHash(IBlur3Hash hash) {
-                    hash.add(getThemedColor(Theme.key_windowBackgroundWhite));
-                    hash.add(SharedConfig.chatBlurEnabled());
-                }
-
-                @Override
-                public void renderNodeUpdateDisplayList(Canvas canvas) {
-                    canvas.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
-                    if (SharedConfig.chatBlurEnabled()) {
-                        scrollableViewNoiseSuppressor.draw(canvas, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
-                    }
-                }
-            });
+            iBlur3SourceGlass = new GlassSourceRenderNode(iBlur3SourceColor);
+            iBlur3SourceGlass.setUnderSource(iBlur3SourceColor);
+            iBlur3SourceGlass.setScrollableNoiseSuppressor(scrollableViewNoiseSuppressor,DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
 
             iBlur3FactoryLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceGlass);
-            iBlur3FactoryLiquidGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
-            iBlur3FactoryFrostedLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceGlassFrosted);
-            iBlur3FactoryFrostedLiquidGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
+            iBlur3FactoryLiquidGlass.setLiquidGlassEffectAllowed(true);
+            iBlur3FactoryLiquidGlass.setOutset(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? dp(8) : dp(48));
+            iBlur3FactoryLiquidGlass.setGlassEngine(glassEngine);
         } else {
             scrollableViewNoiseSuppressor = null;
-            iBlur3SourceGlassFrosted = null;
             iBlur3SourceGlass = null;
             iBlur3FactoryLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
-            iBlur3FactoryFrostedLiquidGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
         }
         iBlur3FactoryFade = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
 
@@ -238,7 +193,7 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
         frameLayout.setPadding(backgroundPaddingLeft + dp(8), 0, backgroundPaddingLeft + dp(8), 0);
         containerView.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
-        setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        setBackgroundColorKey(Theme.key_windowBackgroundGray); // BottomSheet recolors it on theme changes
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
         recyclerListView.setSections();
         final DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
@@ -271,7 +226,6 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 updateSearchY();
-                blur3_InvalidateBlur();
                 if (recyclerListView.scrollingByUser && !ignoreScroll) {
                     AndroidUtilities.hideKeyboard(containerView);
                 }
@@ -313,21 +267,15 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
                 }
             }
         });
+        glassEngine.addScrolledView(recyclerListView);
+
+        glassEngine.setRoot(containerView);
+        glassEngine.setGlassInvalidationListener(this::invalidateBlurCaptures);
+        glassEngine.setPositionsMerger(new GlassPositionsMerger(Float.POSITIVE_INFINITY, dp(48)));
     }
 
     @Override
     protected void preDrawInternal(Canvas canvas, View parent) {
-        if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
-            blur3_InvalidateBlur();
-            if (iBlur3SourceGlassFrosted != null) {
-                iBlur3SourceGlassFrosted.setSize(containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
-                iBlur3SourceGlassFrosted.updateDisplayListIfNeeded();
-            }
-            if (iBlur3SourceGlass != null) {
-                iBlur3SourceGlass.setSize(containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
-                iBlur3SourceGlass.updateDisplayListIfNeeded();
-            }
-        }
         updateSearchY();
         super.preDrawInternal(canvas, parent);
     }
@@ -766,7 +714,7 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.musicListLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.musicListLoaded);
     }
 
     @Override
@@ -802,28 +750,28 @@ public class SelectAudioAlert extends BottomSheetWithRecyclerListView implements
         return tag;
     }
 
-    private final ArrayList<RectF> iBlur3Positions = new ArrayList<>();
-    private final RectF iBlur3PositionActionBar = new RectF();
-    {
-        iBlur3Positions.add(iBlur3PositionActionBar);
-    }
-
-    private final ArrayList<RectF> iBlur3PositionsMerged = new ArrayList<>();
-
-    public void blur3_InvalidateBlur() {
+    private void invalidateBlurCaptures(int flags) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || scrollableViewNoiseSuppressor == null) {
             return;
         }
 
-        iBlur3PositionActionBar.set(
-            0,
-            ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight,
-            containerView.getMeasuredWidth(),
-            ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight + dp(64)
-        );
+        if (BitwiseUtils.hasFlag(flags, GlassEngine.FLAG_INVALIDATED_POSITIONS)) {
+            GlassPositionsArray glassPositionsArray = glassEngine.getAllVisibleDrawablesWithDisplayListPositionsMerged();
+            scrollableViewNoiseSuppressor.setupRenderNodes(glassPositionsArray);
+        }
 
-        final int mergedPositionsCount = RectFMergeBounding.mergeOverlapping(iBlur3Positions, 1, iBlur3PositionsMerged);
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3PositionsMerged, mergedPositionsCount);
-        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, containerView.getMeasuredWidth(), containerView.getMeasuredHeight());
+        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, containerView.getWidth(), containerView.getHeight());
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (iBlur3SourceColor != null) {
+                iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

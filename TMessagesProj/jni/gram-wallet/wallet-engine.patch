@@ -1,0 +1,1018 @@
+diff --git a/WASM.md b/WASM.md
+index 3d7c9f9..d4efc91 100644
+--- a/WASM.md
++++ b/WASM.md
+@@ -292,10 +292,10 @@ const body = {kind: "rawPayload" as const, boc}
+ 
+ Supplying `recipientPublicKey` skips the recipient's `get_public_key` lookup,
+ including for an uninitialized wallet. Omit it or pass `null` to use the lookup.
+-The engine verifies locally that the supplied key derives the recipient address
+-using [supported default wallet parameters](README.md#sending-gram).
+-Unmatched keys or unsupported parameters are rejected before any HTTP request
+-or protected-secret access. The engine asks the platform host for the protected
++The supplied key is used directly, without checking whether it derives the
++recipient address. The caller must provide the recipient's comment-decryption
++key. Invalid key lengths are rejected before HTTP or protected-secret access.
++The engine asks the platform host for the protected
+ mnemonic with reason `"encryptComment"`. Put `body` into the same immutable
+ intent passed to `previewSend` and `send`.
+ 
+diff --git a/src/domain/encrypted_comment.rs b/src/domain/encrypted_comment.rs
+index 2b6de66..e84aa0f 100644
+--- a/src/domain/encrypted_comment.rs
++++ b/src/domain/encrypted_comment.rs
+@@ -16,9 +16,8 @@ pub struct CreateEncryptedCommentRequest {
+     pub comment: String,
+     /// Optional 32-byte Ed25519 public key used instead of an on-chain lookup.
+     ///
+-    /// The engine verifies this key against `recipient` by deriving supported
+-    /// wallet addresses with default parameters. A mismatch or unsupported
+-    /// wallet configuration is rejected before authorizing the sender's secret.
++    /// Used directly without deriving or checking the recipient address. The
++    /// caller must supply the key used by the recipient for comment decryption.
+     #[serde(default)]
+     #[uniffi(default = None)]
+     pub recipient_public_key: Option<Vec<u8>>,
+@@ -36,8 +35,8 @@ pub struct EncryptedCommentRecipientRequest {
+     pub recipient: TonAddressString,
+     /// Optional 32-byte Ed25519 public key used instead of an on-chain lookup.
+     ///
+-    /// It is verified against `recipient` exactly as
+-    /// [`CreateEncryptedCommentRequest::recipient_public_key`] is.
++    /// The host authenticates it as described by
++    /// [`CreateEncryptedCommentRequest::recipient_public_key`].
+     #[serde(default)]
+     #[uniffi(default = None)]
+     pub recipient_public_key: Option<Vec<u8>>,
+diff --git a/src/domain/nft_send.rs b/src/domain/nft_send.rs
+index d1cf4c1..2d474f6 100644
+--- a/src/domain/nft_send.rs
++++ b/src/domain/nft_send.rs
+@@ -68,6 +68,16 @@ pub struct NftTransferPreviewRequest {
+     pub intent: NftTransferIntent,
+ }
+ 
++/// Requests signed NFT transfer delivery forms without submitting either one.
++#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, uniffi::Record)]
++#[serde(rename_all = "camelCase")]
++pub struct PrepareNftTransferRequest {
++    /// Correlation identifier, shared with the preview for a stable TEP-62 query ID.
++    pub operation_id: NonEmptyString,
++    /// Immutable NFT transfer choices.
++    pub intent: NftTransferIntent,
++}
++
+ /// Requests one owner-signed TEP-62 NFT transfer.
+ #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, uniffi::Record)]
+ #[serde(rename_all = "camelCase")]
+diff --git a/src/engine/encrypted_comment.rs b/src/engine/encrypted_comment.rs
+index d0cfafb..321472d 100644
+--- a/src/engine/encrypted_comment.rs
++++ b/src/engine/encrypted_comment.rs
+@@ -10,10 +10,9 @@ use crate::wallet::encrypted_comment::{
+     encrypt_comment as encrypt_body, validate_encrypted_comment_body,
+ };
+ use crate::wallet::key_history::{KeyChange, recover_signing_keys};
+-use crate::wallet::recipient_public_key::verify_recipient_public_key;
+ use crate::{
+     AccountStatus, Boc, CreateEncryptedCommentRequest, DecryptCommentRequest,
+-    EncryptedCommentRecipientRequest, HttpRequest, Network, ProtectedSecretRead, TonAddressString,
++    EncryptedCommentRecipientRequest, HttpRequest, ProtectedSecretRead, TonAddressString,
+     WalletClientConfig, WalletClientError,
+ };
+ 
+@@ -42,8 +41,7 @@ impl WalletClient {
+     /// wallet's `get_public_key` get-method, then asks the platform host to
+     /// authorize this wallet's protected mnemonic. The sender key is this
+     /// wallet's current signing key.
+-    /// A supplied key must locally derive the recipient's address using supported
+-    /// default wallet parameters. Verification happens before secret authorization.
++    /// The host authenticates supplied recipient keys, including rotated keys.
+     /// No secret is requested when the comment is already too large.
+     /// The recipient key is resolved exactly as
+     /// [`Self::resolve_encrypted_comment_recipient`] resolves it, including its
+@@ -70,9 +68,6 @@ impl WalletClient {
+             if state.active_send.is_some() || state.active_resolution.is_some() {
+                 return Err(WalletClientError::SendAlreadyInProgress);
+             }
+-            if let Some(key) = &provided_public_key {
+-                verify_provided_recipient_key(&request.recipient, key, state.config.network)?;
+-            }
+             let generation = next_resolution_generation(&mut state)?;
+             let config = state.config.clone();
+             let public_key_source = recipient_public_key_source(
+@@ -148,7 +143,6 @@ impl WalletClient {
+             let mut state = self.lock()?;
+             ensure_running(&state)?;
+             if let Some(key) = provided_public_key {
+-                verify_provided_recipient_key(&request.recipient, &key, state.config.network)?;
+                 return Ok(key.to_vec());
+             }
+             if state.active_send.is_some() || state.active_resolution.is_some() {
+@@ -495,15 +489,6 @@ fn provided_recipient_key(key: Option<&[u8]>) -> Result<Option<[u8; 32]>, Wallet
+     })
+ }
+ 
+-fn verify_provided_recipient_key(
+-    recipient: &TonAddressString,
+-    key: &[u8; 32],
+-    network: Network,
+-) -> Result<(), WalletClientError> {
+-    verify_recipient_public_key(recipient, key, network)
+-        .map_err(|error| encrypted_comment_error(error.to_string()))
+-}
+-
+ fn next_resolution_generation(state: &mut State) -> Result<u64, WalletClientError> {
+     state.resolution_generation = state
+         .resolution_generation
+@@ -862,13 +847,18 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn supplied_key_for_another_wallet_is_rejected_before_io() {
++    fn supplied_key_need_not_derive_the_recipient_address() {
++        const RECIPIENT_MNEMONIC: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
++        let recipient_wallet =
++            derive_wallet(RECIPIENT_MNEMONIC, Network::Testnet).expect("recipient wallet derives");
++        let key_address =
++            TonAddressString::from_address(&recipient_wallet.address, Network::Testnet);
+         let config = client_config();
+-        let recipient = config.address.clone();
+-        let correct_key = config.public_key.clone();
+-        let wrong_key = SigningKey::from_bytes(&[7; 32]).verifying_key().to_bytes();
++        let source = config.address.clone();
++        let recipient = TonAddressString::try_from(RECIPIENT).expect("recipient");
++        assert_ne!(recipient, key_address);
+         let http = Arc::new(PublicKeyHost {
+-            public_key: wrong_key,
++            public_key: [0; 32],
+             requests: Mutex::new(Vec::new()),
+         });
+         let platform = Arc::new(SecretHost {
+@@ -877,20 +867,24 @@ mod tests {
+         let client =
+             WalletClient::new(config, http.clone(), platform.clone()).expect("client builds");
+ 
+-        let error = block_on(
++        let body = block_on(
+             client.create_encrypted_comment(CreateEncryptedCommentRequest {
+-                recipient: recipient.clone(),
+-                comment: "must remain private".to_owned(),
+-                recipient_public_key: Some(wrong_key.to_vec()),
++                recipient,
++                comment: "use the supplied encryption key".to_owned(),
++                recipient_public_key: Some(recipient_wallet.key_pair.public_key.to_vec()),
+             }),
+         )
+-        .expect_err("a key for another wallet must fail");
++        .expect("supplied encryption key need not derive the destination address");
++        let keys =
++            comment_keys(RECIPIENT_MNEMONIC.as_bytes(), Network::Testnet, &key_address).unwrap();
++        let plaintext = decrypt_comment_with_keys([&keys.signing], &source, &body)
++            .expect("holder of the supplied key decrypts the comment");
++        assert_eq!(plaintext, "use the supplied encryption key");
++        assert!(http.requests.lock().expect("request lock").is_empty());
+         assert_eq!(
+-            error,
+-            encrypted_comment_error(EncryptedCommentError::RecipientPublicKeyMismatch.to_string()),
++            *platform.reasons.lock().expect("reason lock"),
++            [SecretAccessReason::EncryptComment],
+         );
+-        assert!(http.requests.lock().expect("request lock").is_empty());
+-        assert!(platform.reasons.lock().expect("reason lock").is_empty());
+         assert!(
+             client
+                 .lock()
+@@ -898,20 +892,6 @@ mod tests {
+                 .active_resolution
+                 .is_none()
+         );
+-
+-        block_on(
+-            client.create_encrypted_comment(CreateEncryptedCommentRequest {
+-                recipient,
+-                comment: "the correct key still works".to_owned(),
+-                recipient_public_key: Some(correct_key),
+-            }),
+-        )
+-        .expect("rejected key does not leave a pending operation");
+-        assert!(http.requests.lock().expect("request lock").is_empty());
+-        assert_eq!(
+-            *platform.reasons.lock().expect("reason lock"),
+-            [SecretAccessReason::EncryptComment],
+-        );
+     }
+ 
+     fn resolve(
+@@ -984,7 +964,7 @@ mod tests {
+     }
+ 
+     #[test]
+-    fn resolution_verifies_a_supplied_key_locally_even_while_the_slot_is_busy() {
++    fn resolution_accepts_host_authenticated_keys_even_while_the_slot_is_busy() {
+         let config = secretless_config();
+         let recipient = config.address.clone();
+         let correct_key = config.public_key.clone();
+@@ -1000,10 +980,10 @@ mod tests {
+                 .expect("the supplied key derives the recipient"),
+             correct_key
+         );
+-        assert!(matches!(
+-            resolve(&client, recipient.clone(), Some(wrong_key.to_vec())),
+-            Err(WalletClientError::EncryptedCommentUnavailable { .. })
+-        ));
++        assert_eq!(
++            resolve(&client, recipient.clone(), Some(wrong_key.to_vec())).unwrap(),
++            wrong_key.to_vec()
++        );
+         assert!(matches!(
+             resolve(&client, recipient.clone(), Some(vec![7; 31])),
+             Err(WalletClientError::EncryptedCommentUnavailable { .. })
+diff --git a/src/engine/key_rotation.rs b/src/engine/key_rotation.rs
+index cfded89..b41e18d 100644
+--- a/src/engine/key_rotation.rs
++++ b/src/engine/key_rotation.rs
+@@ -16,7 +16,8 @@ use super::state::{OperationFamily, ensure_running};
+ 
+ #[uniffi::export]
+ impl WalletClient {
+-    /// Generates a new signing half and a signed Wallet rev00 key-change message.
++    /// Generates one new signing half and both signed Wallet rev00 delivery forms.
++    /// `signed_boc` aliases the form selected by `request.message_kind`.
+     ///
+     /// The client first fetches fresh account state through its configured
+     /// provider. Active wallets use the on-chain `seqno` getter, while an
+@@ -182,6 +183,8 @@ impl WalletClient {
+             },
+             new_public_key: prepared.new_public_key.to_vec(),
+             signed_boc: prepared.signed_boc,
++            external_boc: prepared.external_boc,
++            internal_boc: prepared.internal_boc,
+             seqno,
+             valid_until: request.valid_until,
+             message_kind: request.message_kind,
+diff --git a/src/engine/nft_transfer.rs b/src/engine/nft_transfer.rs
+index c727fc4..052ced4 100644
+--- a/src/engine/nft_transfer.rs
++++ b/src/engine/nft_transfer.rs
+@@ -3,8 +3,9 @@
+ use crate::domain::bounded_diagnostic;
+ use crate::wallet::nft_transfer::canonicalize_nft_transfer;
+ use crate::{
+-    NftItem, NftTransferPreviewRequest, NftTransferRequest, SendPreview, SendPreviewRequest,
+-    SendRequest, SendResult, TonAddressString, WalletClientError,
++    NftItem, NftTransferPreviewRequest, NftTransferRequest, PrepareNftTransferRequest,
++    PrepareTransferRequest, PreparedTransfer, SendPreview, SendPreviewRequest, SendRequest,
++    SendResult, TonAddressString, WalletClientError,
+ };
+ 
+ use super::WalletClient;
+@@ -13,6 +14,30 @@ use super::state::ensure_running;
+ 
+ #[uniffi::export]
+ impl WalletClient {
++    /// Validates ownership and emulation, then signs external and internal delivery
++    /// alternatives without broadcasting or writing the send journal.
++    pub async fn prepare_nft_transfer(
++        &self,
++        request: PrepareNftTransferRequest,
++    ) -> Result<PreparedTransfer, WalletClientError> {
++        let _preview = self
++            .preview_nft_transfer(NftTransferPreviewRequest {
++                operation_id: request.operation_id.clone(),
++                intent: request.intent.clone(),
++            })
++            .await?;
++        let source = self.nft_transfer_source()?;
++        let canonical = canonicalize_nft_transfer(&request.operation_id, &source, &request.intent)
++            .map_err(|error| {
++                nft_unavailable(format!("failed to build TEP-62 transfer: {error}"))
++            })?;
++        self.prepare_transfer(PrepareTransferRequest {
++            operation_id: request.operation_id,
++            intent: canonical.intent,
++        })
++        .await
++    }
++
+     /// Validates current ownership and emulates one typed TEP-62 NFT transfer.
+     ///
+     /// Reuse this request's operation ID for [`Self::send_nft_transfer`] after
+diff --git a/src/engine/preview.rs b/src/engine/preview.rs
+index 4a91f8a..2f60cfa 100644
+--- a/src/engine/preview.rs
++++ b/src/engine/preview.rs
+@@ -29,6 +29,28 @@ impl WalletClient {
+         &self,
+         request: SendPreviewRequest,
+     ) -> Result<SendPreview, WalletClientError> {
++        self.preview_send_or_key_rotation(Some(request)).await
++    }
++
++    /// Emulates external key rotation using public state and zero signatures.
++    /// Never unlocks a secret, generates a replacement phrase, or submits a BOC.
++    pub async fn preview_key_rotation(&self) -> Result<SendPreview, WalletClientError> {
++        self.preview_send_or_key_rotation(None).await
++    }
++}
++
++impl WalletClient {
++    async fn preview_send_or_key_rotation(
++        &self,
++        request: Option<SendPreviewRequest>,
++    ) -> Result<SendPreview, WalletClientError> {
++        let key_rotation = request.is_none();
++        let request = request.unwrap_or_else(|| SendPreviewRequest {
++            intent: crate::SendIntent {
++                expiration: crate::SendExpiration::EngineDefault,
++                messages: Vec::new(),
++            },
++        });
+         let (
+             generation,
+             config,
+@@ -89,10 +111,13 @@ impl WalletClient {
+             })?;
+ 
+         let available = account.balance_nanograms.clone();
+-        let requested = request
+-            .intent
+-            .exact_value_total()
+-            .map_err(|_| self.preview_error(generation, WalletClientError::InvalidSendRequest))?;
++        let requested = if key_rotation {
++            Some(crate::UnsignedDecimalString::from(0_u64))
++        } else {
++            request.intent.exact_value_total().map_err(|_| {
++                self.preview_error(generation, WalletClientError::InvalidSendRequest)
++            })?
++        };
+ 
+         if let Some(nanograms) = &requested
+             && nanograms > &available
+@@ -148,14 +173,27 @@ impl WalletClient {
+             seqno,
+         };
+ 
+-        let boc = prepare_transfer_emulation(
+-            &expected_source,
+-            &config.public_key,
+-            config.network,
+-            &request,
+-            &fresh,
+-            valid_until,
+-        )
++        let boc = if key_rotation {
++            crate::wallet::key_rotation::prepare_key_rotation_emulation(
++                &expected_source,
++                &config.public_key,
++                config.network,
++                fresh.seqno,
++                fresh.needs_state_init(),
++                valid_until,
++            )
++            .map_err(|error| error.to_string())
++        } else {
++            prepare_transfer_emulation(
++                &expected_source,
++                &config.public_key,
++                config.network,
++                &request,
++                &fresh,
++                valid_until,
++            )
++            .map_err(|error| error.to_string())
++        }
+         .map_err(|error| {
+             self.preview_error(
+                 generation,
+@@ -205,7 +243,10 @@ impl WalletClient {
+         self.finish_preview(generation)?;
+         Ok(preview)
+     }
++}
+ 
++#[uniffi::export]
++impl WalletClient {
+     /// Emulates an already signed external-message BOC without submitting it.
+     ///
+     /// The request is validated against the configured source and fresh wallet
+diff --git a/src/ton_connect/derived.rs b/src/ton_connect/derived.rs
+index c08665e..e0809f3 100644
+--- a/src/ton_connect/derived.rs
++++ b/src/ton_connect/derived.rs
+@@ -245,6 +245,18 @@ impl TonConnectDerivedSession {
+     reason = "UniFFI exports owned records, byte buffers, and strings at the foreign-language boundary"
+ )]
+ impl TonConnectDerivedSession {
++    /// Opens an opaque MTProto envelope for hosts that own RPC decoding.
++    /// In particular, Gram Wallet also supports relayed `signMessage`.
++    pub fn decrypt_envelope(&self, body: Vec<u8>) -> Result<Vec<u8>, TonConnectSessionError> {
++        self.crypto.decrypt(self.peer, &body).map_err(session_error)
++    }
++
++    /// Seals a host-validated protocol envelope without exporting session keys.
++    pub fn encrypt_envelope(&self, body: Vec<u8>) -> Result<Vec<u8>, TonConnectSessionError> {
++        let body = Zeroizing::new(body);
++        self.crypto.encrypt(self.peer, &body).map_err(session_error)
++    }
++
+     /// Returns the session public key `W` as 64 lowercase hex characters.
+     #[must_use]
+     pub fn public_key_hex(&self) -> String {
+diff --git a/src/wallet/encrypted_comment.rs b/src/wallet/encrypted_comment.rs
+index 1477d4e..238e4dd 100644
+--- a/src/wallet/encrypted_comment.rs
++++ b/src/wallet/encrypted_comment.rs
+@@ -40,10 +40,6 @@ pub(crate) enum EncryptedCommentError {
+     WalletIdentityMismatch,
+     #[error("the peer Ed25519 public key is invalid")]
+     InvalidPeerPublicKey,
+-    #[error(
+-        "the recipient public key does not match a supported wallet address with default parameters"
+-    )]
+-    RecipientPublicKeyMismatch,
+     #[error("secure random generation failed")]
+     RandomGeneration,
+     #[error("the encrypted comment body is malformed")]
+diff --git a/src/wallet/key_rotation.rs b/src/wallet/key_rotation.rs
+index cbc3e6a..351bc24 100644
+--- a/src/wallet/key_rotation.rs
++++ b/src/wallet/key_rotation.rs
+@@ -48,6 +48,8 @@ pub(crate) struct PreparedKeyRotationMaterial {
+     pub(crate) replacement_mnemonic: SensitiveMnemonic,
+     pub(crate) new_public_key: [u8; 32],
+     pub(crate) signed_boc: Boc,
++    pub(crate) external_boc: Boc,
++    pub(crate) internal_boc: Boc,
+ }
+ 
+ pub(crate) fn prepare_key_rotation(
+@@ -143,24 +145,34 @@ fn prepare_with_new_half(
+             .map_err(|_| KeyRotationError::Preparation)?
+             .as_slice(),
+     );
+-    let request = build_change_public_key_request(
+-        message_kind,
+-        wallet_id,
+-        valid_until,
+-        seqno,
+-        new_public_key,
+-        proof_signature.to_bytes(),
+-        encrypt_old_private_key(current_key, new_key),
+-    )
+-    .map_err(|_| KeyRotationError::Preparation)?;
+-    let signed_request = sign_cell(current_key, &request)?;
+-    let message = wrap_signed_request(wallet_address, message_kind, signed_request, state_init)?;
+-    let signed_boc = Boc::try_from(
+-        message
+-            .to_boc()
+-            .map_err(|_| KeyRotationError::Preparation)?,
+-    )
+-    .map_err(|_| KeyRotationError::Preparation)?;
++    // Generate the replacement only once. The opcodes differ, so each delivery
++    // form needs its own current-key signature over the same replacement key.
++    let build = |kind, init| {
++        let request = build_change_public_key_request(
++            kind,
++            wallet_id,
++            valid_until,
++            seqno,
++            new_public_key,
++            proof_signature.to_bytes(),
++            encrypt_old_private_key(current_key, new_key),
++        )
++        .map_err(|_| KeyRotationError::Preparation)?;
++        let signed_request = sign_cell(current_key, &request)?;
++        let message = wrap_signed_request(wallet_address, kind, signed_request, init)?;
++        Boc::try_from(
++            message
++                .to_boc()
++                .map_err(|_| KeyRotationError::Preparation)?,
++        )
++        .map_err(|_| KeyRotationError::Preparation)
++    };
++    let external_boc = build(KeyRotationMessageKind::External, state_init.clone())?;
++    let internal_boc = build(KeyRotationMessageKind::Internal, state_init)?;
++    let signed_boc = match message_kind {
++        KeyRotationMessageKind::External => external_boc.clone(),
++        KeyRotationMessageKind::Internal => internal_boc.clone(),
++    };
+ 
+     let mut replacement_phrase = Zeroizing::new(String::new());
+     replacement_phrase.push_str(&current.anchor().to_phrase());
+@@ -174,9 +186,71 @@ fn prepare_with_new_half(
+         replacement_mnemonic,
+         new_public_key,
+         signed_boc,
++        external_boc,
++        internal_boc,
+     })
+ }
+ 
++/// Constructs an external rotation preview using public state only. Both the
++/// owner signature and the new-key proof are zero placeholders; this BOC must
++/// never authorize a real rotation, even if the emulation provider broadcasts it.
++pub(crate) fn prepare_key_rotation_emulation(
++    source: &TonAddressString,
++    anchor_public_key: &[u8],
++    network: Network,
++    seqno: u32,
++    needs_state_init: bool,
++    valid_until: u64,
++) -> Result<Boc, KeyRotationError> {
++    let valid_until =
++        u32::try_from(valid_until).map_err(|_| KeyRotationError::ExpirationOutOfRange)?;
++    let wallet_id = match network {
++        Network::Mainnet => ton::ton_wallet::WALLET_SUBWALLET_ID_DEFAULT,
++        Network::Testnet => ton::ton_wallet::WALLET_SUBWALLET_ID_DEFAULT_TESTNET,
++    };
++    // Encoded Ed25519 base point: a valid public key unrelated to the wallet.
++    let mut placeholder_key = [0x66; 32];
++    placeholder_key[0] = 0x58;
++    let request = build_change_public_key_request(
++        KeyRotationMessageKind::External,
++        wallet_id,
++        valid_until,
++        seqno,
++        placeholder_key,
++        [0; 64],
++        [0; 32],
++    )
++    .map_err(|_| KeyRotationError::Preparation)?;
++    let mut body = TonCell::builder();
++    body.write_bits([0; 64], SIGNATURE_BITS)
++        .map_err(|_| KeyRotationError::Preparation)?;
++    body.write_cell(&request)
++        .map_err(|_| KeyRotationError::Preparation)?;
++    let body = body.build().map_err(|_| KeyRotationError::Preparation)?;
++    let init = if needs_state_init {
++        let (address, init) = derive_wallet_public_state(anchor_public_key, network)
++            .map_err(|_| KeyRotationError::Preparation)?;
++        if &address != source.as_address() {
++            return Err(KeyRotationError::WalletIdentityMismatch);
++        }
++        Some(init)
++    } else {
++        None
++    };
++    let message = wrap_signed_request(
++        source.as_address(),
++        KeyRotationMessageKind::External,
++        body,
++        init,
++    )?;
++    Boc::try_from(
++        message
++            .to_boc()
++            .map_err(|_| KeyRotationError::Preparation)?,
++    )
++    .map_err(|_| KeyRotationError::Preparation)
++}
++
+ fn build_rotation_proof(wallet_address: &TonAddress) -> Result<TonCell, TonCoreError> {
+     let workchain = i8::try_from(wallet_address.workchain).map_err(|_| {
+         TonCoreError::Custom("Wallet key-rotation proof requires an int8 workchain".to_owned())
+@@ -594,6 +668,149 @@ mod tests {
+         ));
+     }
+ 
++    #[test]
++    fn paired_rotation_uses_one_replacement_and_verifiable_channel_signatures() {
++        for phrase in [CURRENT_PHRASE, ROTATED_PHRASE] {
++            let current = SensitiveMnemonic::from_bytes(phrase.as_bytes().to_vec()).unwrap();
++            let wallet = derive_wallet(phrase, Network::Testnet).unwrap();
++            let source = TonAddressString::from_address(&wallet.address, Network::Testnet);
++            let material = prepare_key_rotation(
++                &current,
++                Network::Testnet,
++                &source,
++                SEQNO,
++                false,
++                u64::from(VALID_UNTIL),
++                KeyRotationMessageKind::External,
++            )
++            .unwrap();
++            let replacement =
++                RotationMnemonic::parse(material.replacement_mnemonic.as_str().unwrap()).unwrap();
++            let keys = derive_rotation_keys(&replacement);
++            assert_eq!(
++                keys.signing.verifying_key().to_bytes(),
++                material.new_public_key
++            );
++            let current_keys = derive_rotation_keys(&RotationMnemonic::parse(phrase).unwrap());
++            assert_eq!(
++                keys.anchor.verifying_key(),
++                current_keys.anchor.verifying_key()
++            );
++            assert_ne!(
++                keys.signing.verifying_key(),
++                current_keys.signing.verifying_key()
++            );
++            assert_eq!(material.signed_boc, material.external_boc);
++            let proof = build_rotation_proof(&wallet.address).unwrap();
++            let proof_signature = keys
++                .signing
++                .sign(proof.cell_hash().unwrap().as_slice())
++                .to_bytes();
++            for (kind, boc, opcode) in [
++                (
++                    KeyRotationMessageKind::External,
++                    &material.external_boc,
++                    CHANGE_PUBLIC_KEY_EXTERNAL_OPCODE,
++                ),
++                (
++                    KeyRotationMessageKind::Internal,
++                    &material.internal_boc,
++                    CHANGE_PUBLIC_KEY_INTERNAL_OPCODE,
++                ),
++            ] {
++                let message = Msg::<TonCell>::from_boc(boc.as_bytes().to_vec()).unwrap();
++                assert!(matches!(
++                    (&message.info, kind),
++                    (CommonMsgInfo::ExtIn(_), KeyRotationMessageKind::External)
++                        | (CommonMsgInfo::Int(_), KeyRotationMessageKind::Internal)
++                ));
++                let request = build_change_public_key_request(
++                    kind,
++                    wallet.wallet_id,
++                    VALID_UNTIL,
++                    SEQNO,
++                    material.new_public_key,
++                    proof_signature,
++                    encrypt_old_private_key(&current_keys.signing, &keys.signing),
++                )
++                .unwrap();
++                assert_signed_request(
++                    &message.body.value,
++                    &request,
++                    current_keys.signing.verifying_key().to_bytes(),
++                    opcode,
++                    material.new_public_key,
++                );
++            }
++        }
++    }
++
++    #[test]
++    fn rotation_preview_has_no_valid_owner_or_replacement_signature() {
++        let wallet = derive_wallet(CURRENT_PHRASE, Network::Testnet).unwrap();
++        let keys = derive_rotation_keys(&RotationMnemonic::parse(CURRENT_PHRASE).unwrap());
++        let source = TonAddressString::from_address(&wallet.address, Network::Testnet);
++        for deploy in [false, true] {
++            let boc = prepare_key_rotation_emulation(
++                &source,
++                &keys.anchor.verifying_key().to_bytes(),
++                Network::Testnet,
++                SEQNO,
++                deploy,
++                u64::from(VALID_UNTIL),
++            )
++            .unwrap();
++            let message = Msg::<TonCell>::from_boc(boc.as_bytes().to_vec()).unwrap();
++            assert!(matches!(message.info, CommonMsgInfo::ExtIn(_)));
++            assert_eq!(message.init.is_some(), deploy);
++            let mut parser = message.body.value.parser();
++            let owner_signature = parser.read_bits(SIGNATURE_BITS).unwrap();
++            assert_eq!(owner_signature, [0; 64]);
++            assert_eq!(
++                parser.read_num::<u32>(32).unwrap(),
++                CHANGE_PUBLIC_KEY_EXTERNAL_OPCODE
++            );
++            let _ = parser.read_num::<u32>(32).unwrap();
++            assert_eq!(parser.read_num::<u32>(32).unwrap(), VALID_UNTIL);
++            assert_eq!(parser.read_num::<u32>(32).unwrap(), SEQNO);
++            let key: [u8; 32] = parser.read_bits(256).unwrap().try_into().unwrap();
++            let proof_cell = parser.read_next_ref().unwrap();
++            let proof_signature = proof_cell.parser().read_bits(SIGNATURE_BITS).unwrap();
++            assert_eq!(proof_signature, [0; 64]);
++            assert_eq!(read_encrypted_old_private_key(&mut parser), [0; 32]);
++            parser.ensure_empty().unwrap();
++            let proof = build_rotation_proof(&wallet.address).unwrap();
++            assert!(
++                VerifyingKey::from_bytes(&key)
++                    .unwrap()
++                    .verify_strict(
++                        proof.cell_hash().unwrap().as_slice(),
++                        &Signature::from_slice(&proof_signature).unwrap()
++                    )
++                    .is_err()
++            );
++            let request = build_change_public_key_request(
++                KeyRotationMessageKind::External,
++                wallet.wallet_id,
++                VALID_UNTIL,
++                SEQNO,
++                key,
++                [0; 64],
++                [0; 32],
++            )
++            .unwrap();
++            assert!(
++                keys.signing
++                    .verifying_key()
++                    .verify_strict(
++                        request.cell_hash().unwrap().as_slice(),
++                        &Signature::from_slice(&owner_signature).unwrap()
++                    )
++                    .is_err()
++            );
++        }
++    }
++
+     fn deterministic_material(
+         message_kind: KeyRotationMessageKind,
+     ) -> (
+diff --git a/src/wallet/mod.rs b/src/wallet/mod.rs
+index 8843ccb..4a58213 100644
+--- a/src/wallet/mod.rs
++++ b/src/wallet/mod.rs
+@@ -10,7 +10,6 @@ pub(crate) mod key_rotation;
+ pub(crate) mod mnemonic;
+ mod mnemonic_scheme;
+ pub(crate) mod nft_transfer;
+-pub(crate) mod recipient_public_key;
+ pub(crate) mod send;
+ pub(crate) mod slip_0010;
+ pub(crate) mod transfer;
+@@ -217,6 +216,10 @@ pub struct PreparedKeyRotation {
+     /// Its `ChangePublicKey` request holds two references: the new key's
+     /// wallet-address proof signature and the encrypted old private key.
+     pub signed_boc: Boc,
++    /// External delivery form for the same replacement key, sequence and expiration.
++    pub external_boc: Boc,
++    /// Internal alternative; submit only one of the two delivery forms.
++    pub internal_boc: Boc,
+     /// Sequence number covered by the signed request.
+     pub seqno: u32,
+     /// Unix expiration timestamp covered by the signed request.
+diff --git a/src/wallet/recipient_public_key.rs b/src/wallet/recipient_public_key.rs
+deleted file mode 100644
+index 5fb18f4..0000000
+--- a/src/wallet/recipient_public_key.rs
++++ /dev/null
+@@ -1,265 +0,0 @@
+-//! Local address binding for caller-supplied encrypted-comment public keys.
+-
+-use ton::block_tlb::StateInit;
+-use ton::ton_core::cell::{TonCell, TonHash};
+-use ton::ton_core::traits::tlb::TLB as _;
+-use ton::ton_wallet::{
+-    WALLET_ID_DEFAULT, WALLET_SUBWALLET_ID_DEFAULT, WALLET_SUBWALLET_ID_DEFAULT_TESTNET,
+-    WALLET_V5R1_ID_DEFAULT, WALLET_V5R1_ID_DEFAULT_TESTNET, WalletData, WalletV1V2Data,
+-    WalletV3Data, WalletV4Data, WalletV5Data, WalletVersion,
+-};
+-
+-use super::encrypted_comment::EncryptedCommentError;
+-use crate::{Network, TonAddressString};
+-
+-/// Authenticates a supplied key by reconstructing standard initial wallet states.
+-///
+-/// This works before deployment and never trusts a provider response. V1-V5
+-/// use their standard wallet IDs, including the workchain-aware SDK defaults;
+-/// Wallet rev00 uses the engine's network-specific ID in workchain zero. Custom
+-/// wallet IDs and unknown wallet contracts cannot be proven with only a key and
+-/// are rejected. This binds only the initial key; a Wallet rev00 recipient
+-/// running this engine still decrypts comments encrypted to it after a
+-/// signing-key rotation, because decryption also tries the anchor key.
+-pub(crate) fn verify_recipient_public_key(
+-    recipient: &TonAddressString,
+-    public_key: &[u8; 32],
+-    network: Network,
+-) -> Result<(), EncryptedCommentError> {
+-    let public_key =
+-        TonHash::from_slice(public_key).map_err(|_| EncryptedCommentError::CellEncoding)?;
+-    let workchain = recipient.as_address().workchain;
+-
+-    let data = WalletV1V2Data::new(public_key.clone())
+-        .to_cell()
+-        .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-    if matches_versions(
+-        recipient,
+-        &[
+-            WalletVersion::V1R1,
+-            WalletVersion::V1R2,
+-            WalletVersion::V1R3,
+-            WalletVersion::V2R1,
+-            WalletVersion::V2R2,
+-        ],
+-        &data,
+-    )? {
+-        return Ok(());
+-    }
+-
+-    // ton-org/ton's V3/V4 constructors add the workchain to the legacy ID.
+-    // Also recognize the fixed default used by the vendored constructors.
+-    let legacy_ids = [
+-        Some(WALLET_ID_DEFAULT),
+-        WALLET_ID_DEFAULT
+-            .checked_add(workchain)
+-            .filter(|id| *id != WALLET_ID_DEFAULT),
+-    ];
+-    for wallet_id in legacy_ids.into_iter().flatten() {
+-        let data = WalletV3Data::new(wallet_id, public_key.clone())
+-            .to_cell()
+-            .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        if matches_versions(
+-            recipient,
+-            &[WalletVersion::V3R1, WalletVersion::V3R2],
+-            &data,
+-        )? {
+-            return Ok(());
+-        }
+-        let data = WalletV4Data::new(wallet_id, public_key.clone())
+-            .to_cell()
+-            .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        if matches_versions(
+-            recipient,
+-            &[WalletVersion::V4R1, WalletVersion::V4R2],
+-            &data,
+-        )? {
+-            return Ok(());
+-        }
+-    }
+-
+-    let (v5_id, wallet_id) = match network {
+-        Network::Mainnet => (WALLET_V5R1_ID_DEFAULT, WALLET_SUBWALLET_ID_DEFAULT),
+-        Network::Testnet => (
+-            WALLET_V5R1_ID_DEFAULT_TESTNET,
+-            WALLET_SUBWALLET_ID_DEFAULT_TESTNET,
+-        ),
+-    };
+-    let v5_ids = [
+-        Some(v5_id),
+-        v5_workchain_id(v5_id, workchain).filter(|id| *id != v5_id),
+-    ];
+-    for wallet_id in v5_ids.into_iter().flatten() {
+-        let data = WalletV5Data::new(wallet_id, public_key.clone())
+-            .to_cell()
+-            .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        if matches_versions(recipient, &[WalletVersion::V5R1], &data)? {
+-            return Ok(());
+-        }
+-    }
+-
+-    if workchain == 0 {
+-        let data = WalletData::new(wallet_id, public_key)
+-            .to_cell()
+-            .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        if matches_versions(recipient, &[WalletVersion::Wallet], &data)? {
+-            return Ok(());
+-        }
+-    }
+-
+-    Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-}
+-
+-fn matches_versions(
+-    recipient: &TonAddressString,
+-    versions: &[WalletVersion],
+-    data: &TonCell,
+-) -> Result<bool, EncryptedCommentError> {
+-    for &version in versions {
+-        let code =
+-            WalletVersion::get_code(version).map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        let address = StateInit::new(code.clone(), data.clone())
+-            .derive_address(recipient.as_address().workchain)
+-            .map_err(|_| EncryptedCommentError::CellEncoding)?;
+-        if address == *recipient.as_address() {
+-            return Ok(true);
+-        }
+-    }
+-    Ok(false)
+-}
+-
+-/// V5's client context encodes workchain as int8 immediately after its tag bit.
+-/// See ton-org/ton's `WalletV5R1WalletId.ts`; the remaining default context bits
+-/// and network ID are already encoded in the workchain-zero constant.
+-fn v5_workchain_id(default_id: i32, workchain: i32) -> Option<i32> {
+-    let workchain = i8::try_from(workchain).ok()?;
+-    let workchain_bits = u32::from(u8::from_ne_bytes(workchain.to_ne_bytes())) << 23;
+-    Some(default_id ^ i32::from_ne_bytes(workchain_bits.to_ne_bytes()))
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use ton::ton_core::types::TonAddress;
+-    use ton::ton_wallet::{KeyPair, TonWallet};
+-
+-    use super::*;
+-
+-    type TestResult = Result<(), Box<dyn std::error::Error>>;
+-
+-    const PUBLIC_KEY: [u8; 32] = [0x5a; 32];
+-
+-    fn wallet_address(
+-        version: WalletVersion,
+-        workchain: i32,
+-        wallet_id: i32,
+-        network: Network,
+-    ) -> Result<TonAddressString, Box<dyn std::error::Error>> {
+-        let wallet = TonWallet::new_with_params(
+-            version,
+-            KeyPair {
+-                public_key: PUBLIC_KEY,
+-                secret_key: [0; 64],
+-            },
+-            workchain,
+-            wallet_id,
+-        )?;
+-        Ok(TonAddressString::from_address(&wallet.address, network))
+-    }
+-
+-    #[test]
+-    fn binds_all_supported_initial_wallet_versions_on_both_networks() -> TestResult {
+-        for network in [Network::Mainnet, Network::Testnet] {
+-            for version in [
+-                WalletVersion::V1R1,
+-                WalletVersion::V1R2,
+-                WalletVersion::V1R3,
+-                WalletVersion::V2R1,
+-                WalletVersion::V2R2,
+-                WalletVersion::V3R1,
+-                WalletVersion::V3R2,
+-                WalletVersion::V4R1,
+-                WalletVersion::V4R2,
+-            ] {
+-                let recipient = wallet_address(version, 0, WALLET_ID_DEFAULT, network)?;
+-                verify_recipient_public_key(&recipient, &PUBLIC_KEY, network)?;
+-                assert!(matches!(
+-                    verify_recipient_public_key(&recipient, &[0x33; 32], network),
+-                    Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-                ));
+-            }
+-            let (v5_id, wallet_id) = match network {
+-                Network::Mainnet => (WALLET_V5R1_ID_DEFAULT, WALLET_SUBWALLET_ID_DEFAULT),
+-                Network::Testnet => (
+-                    WALLET_V5R1_ID_DEFAULT_TESTNET,
+-                    WALLET_SUBWALLET_ID_DEFAULT_TESTNET,
+-                ),
+-            };
+-            for (version, wallet_id) in [
+-                (WalletVersion::V5R1, v5_id),
+-                (WalletVersion::Wallet, wallet_id),
+-            ] {
+-                let recipient = wallet_address(version, 0, wallet_id, network)?;
+-                verify_recipient_public_key(&recipient, &PUBLIC_KEY, network)?;
+-                assert!(matches!(
+-                    verify_recipient_public_key(&recipient, &[0x33; 32], network),
+-                    Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-                ));
+-                let other_network = match network {
+-                    Network::Mainnet => Network::Testnet,
+-                    Network::Testnet => Network::Mainnet,
+-                };
+-                assert!(matches!(
+-                    verify_recipient_public_key(&recipient, &PUBLIC_KEY, other_network),
+-                    Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-                ));
+-            }
+-        }
+-        Ok(())
+-    }
+-
+-    #[test]
+-    fn binds_workchain_aware_standard_ids_and_address_spellings() -> TestResult {
+-        for (version, wallet_id) in [
+-            (WalletVersion::V3R2, 698_983_190),
+-            (WalletVersion::V4R2, 698_983_190),
+-            // Values independently pinned by the official V5 wallet-ID module.
+-            (WalletVersion::V5R1, 8_388_369),
+-        ] {
+-            let recipient = wallet_address(version, -1, wallet_id, Network::Mainnet)?;
+-            verify_recipient_public_key(&recipient, &PUBLIC_KEY, Network::Mainnet)?;
+-            let raw = TonAddressString::try_from(recipient.as_address().to_hex())?;
+-            verify_recipient_public_key(&raw, &PUBLIC_KEY, Network::Mainnet)?;
+-        }
+-        let recipient = wallet_address(WalletVersion::V5R1, -1, 8_388_605, Network::Testnet)?;
+-        verify_recipient_public_key(&recipient, &PUBLIC_KEY, Network::Testnet)?;
+-        Ok(())
+-    }
+-
+-    #[test]
+-    fn rejects_nondefault_ids_unknown_contracts_and_unrelated_addresses() -> TestResult {
+-        let custom = wallet_address(WalletVersion::V4R2, 0, 42, Network::Mainnet)?;
+-        assert!(matches!(
+-            verify_recipient_public_key(&custom, &PUBLIC_KEY, Network::Mainnet),
+-            Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-        ));
+-        let unsupported = wallet_address(
+-            WalletVersion::HLV2R2,
+-            0,
+-            WALLET_ID_DEFAULT,
+-            Network::Mainnet,
+-        )?;
+-        assert!(matches!(
+-            verify_recipient_public_key(&unsupported, &PUBLIC_KEY, Network::Mainnet),
+-            Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-        ));
+-        let unrelated = TonAddressString::from_address(
+-            &TonAddress::new(0, TonHash::from_slice(&[0x11; 32])?),
+-            Network::Mainnet,
+-        );
+-        assert!(matches!(
+-            verify_recipient_public_key(&unrelated, &PUBLIC_KEY, Network::Mainnet),
+-            Err(EncryptedCommentError::RecipientPublicKeyMismatch)
+-        ));
+-        Ok(())
+-    }
+-}

@@ -1,0 +1,15 @@
+<p>location</p><script>
+var tries = [
+  function () { location.href = 'http://127.0.0.1:9999/hit/api-location-href'; },
+  function () { location.assign('http://127.0.0.1:9999/hit/api-location-assign'); },
+  function () { location.replace('http://127.0.0.1:9999/hit/api-location-replace'); },
+  function () { location = 'http://127.0.0.1:9999/hit/api-location-set'; },
+  function () { window.location = 'http://127.0.0.1:9999/hit/api-window-location'; },
+  function () { document.location = 'http://127.0.0.1:9999/hit/api-document-location'; },
+  function () { top.location = 'http://127.0.0.1:9999/hit/api-top-location'; },
+  function () { parent.location.href = 'http://127.0.0.1:9999/hit/api-parent-location'; },
+  function () { location.hash = '#x'; location.pathname = '/hit/api-location-pathname'; },
+  function () { history.pushState({}, '', 'http://127.0.0.1:9999/hit/api-history'); },
+];
+tries.forEach(function (t) { try { t(); } catch (e) { console.log('blocked:', e.name); } });
+</script>

@@ -24,6 +24,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadioButton;
 
@@ -37,6 +38,7 @@ public class DialogRadioCell extends FrameLayout {
     private TextView valueTextView;
     private RadioButton radioButton;
     private boolean needDivider;
+    private int padding = 23;
 
     public DialogRadioCell(Context context) {
         this(context, false);
@@ -47,9 +49,9 @@ public class DialogRadioCell extends FrameLayout {
 
         textView = new TextView(context);
         if (dialog) {
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
         } else {
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
         }
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
@@ -61,9 +63,9 @@ public class DialogRadioCell extends FrameLayout {
 
         valueTextView = new TextView(context);
         if (dialog) {
-            valueTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+            ThemeBind.textColor(valueTextView, Theme.key_dialogTextBlue2);
         } else {
-            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+            ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteValueText);
         }
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         valueTextView.setLines(1);
@@ -77,20 +79,30 @@ public class DialogRadioCell extends FrameLayout {
         radioButton = new RadioButton(context);
         radioButton.setSize(dp(20));
         if (dialog) {
-            radioButton.setColor(Theme.getColor(Theme.key_dialogRadioBackground), Theme.getColor(Theme.key_dialogRadioBackgroundChecked));
+            ThemeBind.radioColors(radioButton, Theme.key_dialogRadioBackground, Theme.key_dialogRadioBackgroundChecked);
         } else {
-            radioButton.setColor(Theme.getColor(Theme.key_radioBackground), Theme.getColor(Theme.key_radioBackgroundChecked));
+            ThemeBind.radioColors(radioButton, Theme.key_radioBackground, Theme.key_radioBackgroundChecked);
         }
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 20, 15, 20, 0));
 
         updateLayout();
     }
 
+    /** Horizontal text padding: 23 in dialogs, 21 in settings lists to line up with headers and switches. */
+    public void setHorizontalPadding(int paddingDp) {
+        if (padding != paddingDp) {
+            padding = paddingDp;
+            ((MarginLayoutParams) valueTextView.getLayoutParams()).leftMargin = dp(paddingDp);
+            ((MarginLayoutParams) valueTextView.getLayoutParams()).rightMargin = dp(paddingDp);
+            updateLayout();
+        }
+    }
+
     private void updateLayout() {
         textView.setLayoutParams(
             valueTextView.getVisibility() == View.VISIBLE ?
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 23 : 61, 0, LocaleController.isRTL ? 61 : 23, 0) :
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 61 : 23, 0, LocaleController.isRTL ? 23 : 61, 0)
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? padding : 61, 0, LocaleController.isRTL ? 61 : padding, 0) :
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 61 : padding, 0, LocaleController.isRTL ? padding : 61, 0)
         );
         radioButton.setLayoutParams(
             valueTextView.getVisibility() == View.VISIBLE ?
@@ -103,7 +115,7 @@ public class DialogRadioCell extends FrameLayout {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(50) + (needDivider ? 1 : 0));
 
-        int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - dp(61 + 23 + (valueTextView.getVisibility() == View.VISIBLE ? 12 : 0));
+        int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - dp(61 + padding + (valueTextView.getVisibility() == View.VISIBLE ? 12 : 0));
         radioButton.measure(MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY));
         if (valueTextView.getVisibility() == View.VISIBLE) {
             valueTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
@@ -171,7 +183,7 @@ public class DialogRadioCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(dp(LocaleController.isRTL ? 0 : 23), getHeight() - 1, getMeasuredWidth() - dp(LocaleController.isRTL ? 23 : 0), getHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(dp(LocaleController.isRTL ? 0 : padding), getHeight() - 1, getMeasuredWidth() - dp(LocaleController.isRTL ? padding : 0), getHeight() - 1, Theme.dividerPaint);
         }
     }
 }

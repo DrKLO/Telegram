@@ -20,6 +20,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLoader;
@@ -43,6 +44,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class RichAudioCell extends RichBlockCell
     implements Theme.Colorable, TextSelectionHelper.ArticleSelectableView, RichCaptionHost,
@@ -291,6 +293,26 @@ public class RichAudioCell extends RichBlockCell
     public void updateColors() {
         selectionPaint.setColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight, resourcesProvider));
         if (caption != null) caption.applyColors();
+        updateThemeColorsExtra();
+    }
+
+    private boolean progressColorApplied;
+
+    private void updateThemeColorsExtra() {
+        try {
+            if (progressColorApplied && radialProgress != null) {
+                radialProgress.setProgressColor(Theme.getColor(Theme.key_chat_inFileProgress, resourcesProvider));
+            }
+            if (getBackground() instanceof RichEditor.DraggingDrawable) {
+                ((RichEditor.DraggingDrawable) getBackground()).setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inTextSelectionHighlight);
     }
 
     @Override
@@ -322,6 +344,7 @@ public class RichAudioCell extends RichBlockCell
             Theme.key_chat_inMediaIconSelected
         );
         radialProgress.setProgressColor(Theme.getColor(Theme.key_chat_inFileProgress, resourcesProvider));
+        progressColorApplied = true;
 
         if (isUploading()) {
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
@@ -420,10 +443,10 @@ public class RichAudioCell extends RichBlockCell
         radialProgress.setParent(this);
         seekBar.setParent(this);
         updateButtonState(false);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidStart);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
     }
 
     @Override

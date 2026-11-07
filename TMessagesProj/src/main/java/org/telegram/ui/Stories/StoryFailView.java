@@ -17,13 +17,14 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class StoryFailView extends FrameLayout {
+public class StoryFailView extends FrameLayout implements Theme.Colorable {
 
     private final Paint redPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint whitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -32,8 +33,21 @@ public class StoryFailView extends FrameLayout {
     private final TextView subtitleTextView;
     private final TextView button;
 
+    private final Theme.ResourcesProvider resourcesProvider;
+
+    @Override
+    public void updateColors() {
+        try {
+            redPaint.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public StoryFailView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
+        this.resourcesProvider = resourcesProvider;
 
         redPaint.setColor(Theme.getColor(Theme.key_text_RedBold, resourcesProvider));
         whitePaint.setColor(Color.WHITE);

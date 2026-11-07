@@ -50,6 +50,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Adapters.FiltersView;
@@ -859,21 +860,23 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 actionModeCloseView = new ImageView(getContext());
                 actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
                 actionModeCloseView.setImageDrawable(new BackDrawable(true));
-                actionModeCloseView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-                actionModeCloseView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)));
+                ThemeBind.colorFilter(actionModeCloseView, Theme.key_actionBarActionModeDefaultIcon, PorterDuff.Mode.MULTIPLY);
+                ThemeBind.selectorBackground(actionModeCloseView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector));
                 actionModeCloseView.setOnClickListener(v -> hideActionMode());
                 actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, 0f, Gravity.CENTER_VERTICAL));
             }
 
-            selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
+            selectedMessagesCountTextView = new ThemedNumberTextView(actionMode.getContext());
             selectedMessagesCountTextView.setTextSize(18);
             selectedMessagesCountTextView.setTypeface(AndroidUtilities.bold());
-            selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
+            ThemeBind.custom((ThemedNumberTextView) selectedMessagesCountTextView, 101, Theme.key_actionBarActionModeDefaultIcon, null, ThemedNumberTextView::getAppliedColor, ThemedNumberTextView::setAppliedColor);
             actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, parent.hasMainTabs ? 18 : 72, 0, 0, 0));
             selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
 
             speedItem = actionMode.addItemWithWidth(speedItemId, R.drawable.avd_speed, AndroidUtilities.dp(54), getString(R.string.AccDescrPremiumSpeed));
-            speedItem.getIconView().setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.SRC_IN));
+            if (speedItem.getIconView() != null) {
+                ThemeBind.colorFilter(speedItem.getIconView(), Theme.key_actionBarActionModeDefaultIcon, PorterDuff.Mode.SRC_IN);
+            }
             gotoItem = actionMode.addItemWithWidth(gotoItemId, R.drawable.msg_message, AndroidUtilities.dp(54), getString(R.string.AccDescrGoToMessage));
             forwardItem = actionMode.addItemWithWidth(forwardItemId, R.drawable.msg_forward, AndroidUtilities.dp(54), getString(R.string.Forward));
             deleteItem = actionMode.addItemWithWidth(deleteItemId, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete));
@@ -958,7 +961,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             AlertDialog alertDialog = builder.show();
             TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
             if (button != null) {
-                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                ThemeBind.textColor(button, Theme.key_text_RedBold);
             }
 
         } else if (id == speedItemId) {
@@ -1088,7 +1091,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         AnimatedVectorDrawable drawable = (AnimatedVectorDrawable) speedItem.getIconView().getDrawable();
-                        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.SRC_IN));
+                        ThemeBind.drawableColorFilter(this, drawable, Theme.key_actionBarActionModeDefaultIcon, PorterDuff.Mode.SRC_IN);
                         if (visible) {
                             drawable.start();
                         } else {
@@ -1197,43 +1200,31 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         }, Theme.key_actionBarActionModeDefaultIcon));
     }
 
+    /** NumberTextView remembering its text color, so that a ThemeBind binding can follow theme changes */
+    private static class ThemedNumberTextView extends NumberTextView {
+        private int appliedColor; // no initializer: may be set from the super constructor
+
+        public ThemedNumberTextView(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void setTextColor(int value) {
+            super.setTextColor(value);
+            appliedColor = value;
+        }
+
+        private static int getAppliedColor(ThemedNumberTextView view) {
+            return view.appliedColor;
+        }
+
+        private static void setAppliedColor(ThemedNumberTextView view, int color) {
+            view.setTextColor(color);
+        }
+    }
+
     public void updateColors() {
-        for (int i = 0; i < getChildCount(); i++) {
-            if (getChildAt(i) instanceof FilteredSearchView) {
-                RecyclerListView recyclerListView = ((FilteredSearchView) getChildAt(i)).recyclerListView;
-                int count = recyclerListView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = recyclerListView.getChildAt(a);
-                    if (child instanceof DialogCell) {
-                        ((DialogCell) child).update(0);
-                    }
-                }
-            }
-        }
-        int n = viewsByType.size();
-        for (int i = 0; i < n; i++) {
-            View v = viewsByType.valueAt(i);
-            if (v instanceof FilteredSearchView) {
-                RecyclerListView recyclerListView = ((FilteredSearchView) v).recyclerListView;
-                int count = recyclerListView.getChildCount();
-                for (int a = 0; a < count; a++) {
-                    View child = recyclerListView.getChildAt(a);
-                    if (child instanceof DialogCell) {
-                        ((DialogCell) child).update(0);
-                    }
-                }
-            }
-        }
-        if (noMediaFiltersSearchView != null) {
-            RecyclerListView recyclerListView = noMediaFiltersSearchView.recyclerListView;
-            int count = recyclerListView.getChildCount();
-            for (int a = 0; a < count; a++) {
-                View child = recyclerListView.getChildAt(a);
-                if (child instanceof DialogCell) {
-                    ((DialogCell) child).update(0);
-                }
-            }
-        }
+        // DialogCells in the search lists are Theme.Colorable: the theme dispatcher recolors them
         if (postsSearchContainer != null) {
             postsSearchContainer.updateColors();
         }

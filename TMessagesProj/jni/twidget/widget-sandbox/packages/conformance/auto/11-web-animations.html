@@ -1,0 +1,87 @@
+<!doctype html>
+<html data-test="auto/11-web-animations">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conformance: Web Animations</title>
+<!-- conformance {"title":"Web Animations: Element.animate, pause and seek, keyframe offsets and easing, getAnimations, finished, cancel, timeline; control of CSS animations through getAnimations (needs the webAnimations feature, D5)"} -->
+<!-- conformance:harness --><style>html,body{margin:0;padding:0}body{font:13px/1.35 system-ui,sans-serif;color:#111}@media(prefers-color-scheme:dark){body{color:#e8e8e8}}[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}.conf-stages{position:relative}.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}.conf-probes{margin:0 8px}.conf-stages>:nth-child(4n+2){left:96px}.conf-stages>:nth-child(4n+3){left:184px}.conf-stages>:nth-child(4n+4){left:272px}.conf-stages{height:76px}</style><script>var T=function(){var g=document,q=g.documentElement,w=typeof TelegramWidget!="undefined",T=window.__conformanceMode||(w?"sandbox":"native"),c=[],A={},f=[];var O,l,x,u,S,h,m,y,p=t=>typeof t=="string"?g.querySelector(t):t,d=t=>JSON.stringify(typeof t=="number"?Math.round(t*100)/100:t),j=()=>{y=y||setTimeout(M,0)};function i(t,e,n,o,r){r=r||{};let s=n==null?"skip":n=="pending"?n:(r.xfail?"x":"")+(n?"pass":"fail"),a=A[t+"|"+e]||(A[t+"|"+e]=c[c.length]=[t,e]);return a[2]=s,a[3]=(o?(""+o).slice(0,160):"")+(r.xfail&&s[0]=="x"?" (expected to fail: "+r.xfail+")":""),j(),s}function k(t,e,n,o){if(o&&o.sandboxOnly&&!w)return i(t,e,null,"sandbox only",o);let r;try{r=typeof n=="function"?n():n}catch(s){return i(t,e,!1,"threw "+s,o)}return r==null?i(t,e,null,"not applicable",o):i(t,e,r instanceof Array?!!r[0]:!!r,r[1],o)}var R=(t,e,n,o,r)=>k(t,e,[n,o],r),B=(t,e,n,o,r)=>k(t,e,[n===o,"got "+d(n)+", want "+d(o)],r),E=(t,e,n,o,r,s)=>k(t,e,[typeof n=="number"&&Math.abs(n-o)<=r,"got "+d(n)+", want "+d(o)+" ±"+r],s);function I(t,e,n){m=()=>{for(let s of c)s[2]=="pending"&&(s[2]="fail",s[3]+=" (timed out)");u=1,M()};let o=(s,a)=>{r.done||(r.done=i(t,e,s,a,n))},r={done:n&&n.sandboxOnly&&!w,pass:s=>o(!0,s),fail:s=>o(!1,s),skip:s=>o(null,s),result:(s,a)=>o(!!s,a)};return i(t,e,r.done?null:"pending",r.done?"sandbox only":n&&n.hint,n),r}var F=(t,e,n)=>getComputedStyle(p(t),n).getPropertyValue(e).trim();function J(t){let e=p(t).getBoundingClientRect();return{x:e.left,y:e.top,w:e.width,h:e.height,r:e.right,b:e.bottom}}var N=t=>{f.push(t)};function _(t,e){let n=p('[data-stage="'+t+'"]');if(n&&!(T=="ref"&&p('template[data-ref="'+t+'"]')))try{e(n)}catch(o){i("harness","stage "+t,!1,o)}}var v=()=>{},K=t=>{let e=t.getBoundingClientRect();return[e.left,e.top,e.width,e.height].map(n=>Math.round(n*10)/10)};function M(){y=0,x&&!u&&v();let t={pass:0,fail:0,xfail:0,xpass:0,skip:0,pending:0};for(let o of c)t[o[2]]++;let e=x&&!f.length,n=u||e&&!t.pending?"done":e&&S?"awaiting":"running";u=n=="done",q.setAttribute("data-conformance",JSON.stringify({v:1,id:q.getAttribute("data-test"),mode:T,status:n,n:t,checks:c,targets:O,stages:l})),b&&b(n,t)}var b;function C(){b=(t,e)=>{let n=[t];for(let o in e)e[o]&&n.push(o+" "+e[o]);g.getElementById("conf-list").textContent=[n.join(" · ")].concat(c.filter(o=>/^(fail|xpass|pending)/.test(o[2])).map(o=>o.join(" · "))).join(`
+`)}}function D(){if(l||(l={},[].forEach.call(g.querySelectorAll("[data-stage]"),e=>{l[e.getAttribute("data-stage")]=K(e)})),!f.length)return x=1,h&&m&&setTimeout(m,h),j();let t;try{t=f.shift()()}catch(e){i("harness","step",!1,e)}setTimeout(D,t||0)}function P(t){t=t||{},S=t.awaitInput,h=t.awaitInput||t.deadline,M();let e=()=>{e=()=>{},setTimeout(D,t.settle||60)};try{requestAnimationFrame(()=>requestAnimationFrame(()=>e()))}catch(n){}setTimeout(()=>e(),400)}C();return{cs:F,eq:B,near:E,ok:R,rect:J,run:P,stage:_,step:N,wait:I}}();</script><!-- /conformance:harness -->
+<style>
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(40px)}}
+.conf-probes{font:13px/16px sans-serif}
+.box{position:absolute;left:10px;top:20px;width:20px;height:20px}
+#w-anim{background:#c33}
+#w-css{background:#36c;animation:slide 10s linear infinite}
+#w-off{left:20px;top:15px;width:40px;height:30px;background:#3a3}
+#w-ease{background:#e83}
+.pr{width:20px;height:4px;background:#999}
+</style>
+</head>
+<body>
+<div class="conf-stages">
+  <div data-stage="animate" data-covers="anim.waapi"><div class="box" id="w-anim"></div></div>
+  <div data-stage="css-control" data-covers="anim.waapi-css-control"><div class="box" id="w-css"></div></div>
+  <div data-stage="offsets" data-covers="anim.waapi"><div class="box" id="w-off"></div></div>
+  <div data-stage="easing" data-covers="anim.waapi"><div class="box" id="w-ease"></div></div>
+</div>
+<div class="conf-head">11 · Web Animations</div>
+<div class="conf-probes"><div class="pr" id="p1"></div><div class="pr" id="p2"></div><div class="pr" id="p3"></div></div>
+<div id="conf-list"></div>
+<script>
+var supported = typeof Element !== 'undefined' && typeof document.body.animate === 'function';
+var fin = T.wait('anim.waapi', 'finished resolves for a 100ms animation');
+var a1, a2, a3, a4, css;
+T.stage('animate', function () {
+  a1 = document.getElementById('w-anim').animate([{ transform: 'translateX(0)' }, { transform: 'translateX(40px)' }], { duration: 1000, fill: 'both' });
+  a1.pause(); a1.currentTime = 500;
+});
+T.stage('offsets', function () {
+  a3 = document.getElementById('w-off').animate([{ background: '#3a3' }, { background: '#c33', offset: 0.25 }, { background: '#3a3' }], { duration: 1000, fill: 'both' });
+  a3.pause(); a3.currentTime = 250;
+});
+T.stage('easing', function () {
+  a4 = document.getElementById('w-ease').animate([{ transform: 'translateX(0)' }, { transform: 'translateX(40px)' }], { duration: 1000, easing: 'steps(2, end)', fill: 'both' });
+  a4.pause(); a4.currentTime = 600;
+});
+var p3 = document.getElementById('p3').animate([{ opacity: 1 }, { opacity: 0.5 }], { duration: 100 });
+p3.finished.then(function () { fin.pass(); }, function (e) { fin.fail('rejected ' + e); });
+
+T.step(function () {
+  T.ok('anim.waapi', 'Element.animate returns an Animation', !!a1 && typeof a1.pause === 'function' && typeof a1.play === 'function', typeof a1);
+  T.eq('anim.waapi', 'paused + currentTime: playState', a1 && a1.playState, 'paused');
+  T.near('anim.waapi', 'currentTime reads back', a1 && Number(a1.currentTime), 500, 1);
+  T.near('anim.waapi', 'getComputedTiming().progress', a1 && a1.effect.getComputedTiming().progress, 0.5, 0.001);
+  var m = /matrix\(([^)]*)\)/.exec(T.cs('#w-anim', 'transform'));
+  T.near('anim.waapi', 'the renderer applies the seeked frame (computed transform)', m ? parseFloat(m[1].split(',')[4]) : NaN, 20, 0.5);
+  T.ok('anim.waapi', 'element.getAnimations() lists it', document.getElementById('w-anim').getAnimations().length === 1, String(document.getElementById('w-anim').getAnimations().length));
+  T.ok('anim.waapi', 'document.getAnimations() lists script and CSS animations', document.getAnimations().length >= 4, String(document.getAnimations().length));
+  var t0 = document.timeline && document.timeline.currentTime;
+  T.ok('anim.waapi', 'document.timeline.currentTime is a number', typeof t0 === 'number' && t0 >= 0, String(t0));
+  var p1 = document.getElementById('p1').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 10000 });
+  p1.cancel();
+  T.eq('anim.waapi', 'cancel() removes the animation', document.getElementById('p1').getAnimations().length, 0);
+  var p2 = document.getElementById('p2').animate([{ width: '20px' }, { width: '120px' }], { duration: 1000, fill: 'forwards' });
+  p2.pause(); p2.currentTime = 250;
+  T.near('anim.waapi', 'a seek is visible to a layout query in the same task', T.rect('#p2').w, 45, 0.5);
+  var el = document.getElementById('w-css');
+  var list = el.getAnimations();
+  css = list[0];
+  T.ok('anim.waapi-css-control', 'a CSS animation shows up in getAnimations()', list.length === 1 && css.animationName === 'slide', list.length + ' ' + (css && css.animationName));
+  if (css) { css.pause(); css.currentTime = 2500; }
+  return 80;
+});
+T.step(function () {
+  T.eq('anim.waapi-css-control', 'pause() + currentTime seek a CSS animation', css && css.playState, 'paused');
+  var m = /matrix\(([^)]*)\)/.exec(T.cs('#w-css', 'transform'));
+  T.near('anim.waapi-css-control', 'the renderer shows the seeked CSS frame', m ? parseFloat(m[1].split(',')[4]) : NaN, 10, 0.5);
+  T.near('anim.waapi', 'a seeked width animation lays out in a later task', T.rect('#p2').w, 45, 0.5);
+});
+T.run({ deadline: 3000 });
+</script>
+<template data-ref="animate"><div style="position:absolute;left:30px;top:20px;width:20px;height:20px;background:#c33"></div></template>
+<template data-ref="css-control"><div style="position:absolute;left:20px;top:20px;width:20px;height:20px;background:#36c"></div></template>
+<template data-ref="offsets"><div style="position:absolute;left:20px;top:15px;width:40px;height:30px;background:#c33"></div></template>
+<template data-ref="easing"><div style="position:absolute;left:30px;top:20px;width:20px;height:20px;background:#e83"></div></template>
+</body>
+</html>

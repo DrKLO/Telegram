@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplication Table</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #fff; }
+  h2 { font-size: 18px; margin: 0 0 10px; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12px; }
+  td, th { text-align: center; padding: 6px 0; border: 1px solid #e5e7eb; transition: background .1s; }
+  th { background: #1d4ed8; color: #fff; font-weight: 600; }
+  td.hl { background: #dbeafe; }
+  td.hit { background: #1d4ed8; color: #fff; font-weight: 700; }
+  th.hl { background: #1e3a8a; }
+  .info { margin-top: 10px; font-size: 14px; color: #374151; min-height: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<h2>✖️ Multiplication Table</h2>
+<table id="t"></table>
+<div class="info" id="info">Hover or tap a cell to highlight its row and column</div>
+<script>
+  const N = 10;
+  const t = document.getElementById('t');
+  let html = '<tr><th>×</th>' + Array.from({ length: N }, (_, j) => `<th data-c="${j + 1}">${j + 1}</th>`).join('') + '</tr>';
+  for (let i = 1; i <= N; i++) {
+    html += `<tr><th data-r="${i}">${i}</th>` + Array.from({ length: N }, (_, j) => `<td data-r="${i}" data-c="${j + 1}">${i * (j + 1)}</td>`).join('') + '</tr>';
+  }
+  t.innerHTML = html;
+  const info = document.getElementById('info');
+  // Hover is a desktop-only enhancement in a widget, so a tap highlights too.
+  const highlight = e => {
+    const td = e.target.closest('td'); if (!td) return;
+    const r = td.dataset.r, c = td.dataset.c;
+    t.querySelectorAll('td, th').forEach(x => {
+      x.classList.toggle('hl', (x.dataset.r === r && x.dataset.c !== c) || (x.dataset.c === c && x.dataset.r !== r) || (x.tagName === 'TH' && (x.dataset.r === r || x.dataset.c === c)));
+      x.classList.toggle('hit', x === td);
+    });
+    info.textContent = `${r} × ${c} = ${r * c}`;
+  };
+  t.addEventListener('mouseover', highlight);
+  t.addEventListener('click', highlight);
+  t.addEventListener('mouseleave', () => { t.querySelectorAll('.hl, .hit').forEach(x => x.classList.remove('hl', 'hit')); info.textContent = 'Hover or tap a cell to highlight its row and column'; });
+</script>
+</body>
+</html>

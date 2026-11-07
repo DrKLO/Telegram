@@ -114,7 +114,7 @@ public class SetupEmojiStatusSheet {
         }
 
         AlertDialog dialog = new AlertDialog.Builder(context, null)
-            .setTopImage(new UserEmojiStatusDrawable(currentUser, document), Theme.getColor(Theme.key_dialogTopBackground))
+            .setTopImage(new UserEmojiStatusDrawable(currentUser, document), Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
             .setMessage(message)
             .setPositiveButton(LocaleController.getString(R.string.BotEmojiStatusConfirm), (dialogInterface, i) -> {
                 if (!UserConfig.getInstance(currentAccount).isPremium()) {
@@ -212,7 +212,7 @@ public class SetupEmojiStatusSheet {
         boolean[] sentDone = new boolean[1];
         boolean[] setting = new boolean[1];
         AlertDialog dialog = new AlertDialog.Builder(context, null)
-            .setTopImage(new UserEmojiStatusDrawable(currentUser), Theme.getColor(Theme.key_dialogTopBackground))
+            .setTopImage(new UserEmojiStatusDrawable(currentUser), Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
             .setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.BotEmojiStatusPermissionRequest, UserObject.getUserName(bot), UserObject.getUserName(bot))))
             .setPositiveButton(LocaleController.getString(R.string.BotEmojiStatusPermissionAllow), (dialogInterface, i) -> {
                 if (!UserConfig.getInstance(currentAccount).isPremium()) {
@@ -375,7 +375,7 @@ public class SetupEmojiStatusSheet {
             attached = true;
             userImageReceiver.onAttachedToWindow();
             statusImageReceiver.onAttachedToWindow();
-            NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
+            NotificationCenter.getInstance(UserConfig.selectedAccount).addWeakObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
             if (emojis[0] != null) {
                 emojis[0].addView(view);
             }
@@ -408,6 +408,13 @@ public class SetupEmojiStatusSheet {
         @Override
         public void draw(@NonNull Canvas canvas) {
             final Rect bounds = getBounds();
+            final int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+            if (backgroundPaint.getColor() != backgroundColor) {
+                backgroundPaint.setColor(backgroundColor);
+            }
+            if (backgroundPaint2.getColor() != backgroundColor) {
+                backgroundPaint2.setColor(backgroundColor);
+            }
 
             final float width = dp(32 + 6 + (highlight ? 48 : 28) + 6.66f) + text.getCurrentWidth();
             final float height = dp(32);

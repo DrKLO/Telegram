@@ -30,6 +30,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.LaunchActivity;
 
 public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
@@ -42,7 +43,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     private final Drawable headerShadowDrawable;
     protected LinearLayoutManager layoutManager;
     protected RecyclerListView recyclerListView;
-    protected ActionBar actionBar;
+    public ActionBar actionBar;
     boolean wasDrawn;
     protected int contentHeight;
     private BaseFragment baseFragment;
@@ -485,11 +486,11 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                     return super.dispatchTouchEvent(ev);
                 }
             };
-            actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-            actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
+            ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, resourcesProvider, false);
 
             actionBar.setCastShadows(true);
             actionBar.setTitle(getTitle());

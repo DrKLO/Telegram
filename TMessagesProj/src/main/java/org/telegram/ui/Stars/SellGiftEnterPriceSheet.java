@@ -28,6 +28,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextCheckbox2Cell;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.EditTextBoldCursor;
@@ -78,7 +79,7 @@ public class SellGiftEnterPriceSheet extends BottomSheet {
         inputAmountMinStars = AmountUtils.Amount.fromDecimal(config.starsStarGiftResaleAmountMin.get(), AmountUtils.Currency.STARS);
         inputAmountMaxStars = AmountUtils.Amount.fromDecimal(config.starsStarGiftResaleAmountMax.get(), AmountUtils.Currency.STARS);
 
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        fixNavigationBarKey(Theme.key_dialogBackground);
 
 
 
@@ -92,7 +93,7 @@ public class SellGiftEnterPriceSheet extends BottomSheet {
         layout.addView(headerLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
 
         titleView = new AnimatedTextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
         titleView.setTextSize(dp(20));
         titleView.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         titleView.setTypeface(AndroidUtilities.bold());
@@ -115,7 +116,7 @@ public class SellGiftEnterPriceSheet extends BottomSheet {
             starsCountEditField.setMaxLines(1);
             starsCountEditField.setBackground(null);
             starsCountEditField.setPadding(dp(42), dp(16), dp(16), dp(16));
-            starsCountEditField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(starsCountEditField, Theme.key_windowBackgroundWhiteBlackText);
             starsCountEditField.requestFocus();
 
             starsCountEditOutline.setLeftPadding(dp(28));
@@ -135,17 +136,16 @@ public class SellGiftEnterPriceSheet extends BottomSheet {
 
             iconTon = new ImageView(context);
             iconTon.setImageResource(R.drawable.mini_gram_72);
-            iconTon.setColorFilter(0xFF3391d4);
             starsCountEditOutline.addView(iconTon, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
 
             dollarsEqView = new AnimatedTextView(context);
-            dollarsEqView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(dollarsEqView, Theme.key_windowBackgroundWhiteGrayText);
             dollarsEqView.setTextSize(dp(13));
             dollarsEqView.setGravity(Gravity.RIGHT);
             starsCountEditOutline.addView(dollarsEqView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
             starsCountEditHint = new TextView(context);
-            starsCountEditHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(starsCountEditHint, Theme.key_windowBackgroundWhiteGrayText);
             starsCountEditHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             bodyLayout.addView(starsCountEditHint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 33, 4, 33, 0));
         }

@@ -1,0 +1,335 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 05-long-reads.chat, message 1
+  author: weekly 08:00 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --sep: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --purple: #af52de; }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  p { margin: 0 0 8px 0; }
+  h2 { margin: 4px 0 6px 0; line-height: 1.2; font-size: 19px; }
+  ul { margin: 4px 0 8px 0; padding-left: 22px; } li { margin: 2px 0; }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: rgba(127,127,127,0.15); padding: 1px 4px; border-radius: 4px; }
+  pre { font-family: ui-monospace, monospace; font-size: 12.5px; line-height: 1.45; background-color: rgba(127,127,127,0.13); padding: 8px 10px; border-radius: 8px; margin: 4px 0 8px 0; white-space: pre-wrap; }
+  pre code { background-color: transparent; padding: 0; font-size: 12.5px; }
+  a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .muted { color: var(--muted); } .tiny { font-size: 11px; }
+  .caps { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; } .center { text-align: center; }
+  .sep { border-top: 1px solid var(--sep); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.blue { background-color: rgba(0,122,255,0.16); color: var(--blue); } .badge.purple { background-color: rgba(175,82,222,0.16); color: var(--purple); }
+  .av { display: inline-block; width: 24px; height: 24px; border-radius: 12px; text-align: center; line-height: 24px; color: #ffffff; font-size: 10px; font-weight: 700; background-color: #8e8e93; }
+  [hidden] { display: none !important; }
+
+  .art { width: 420px; max-width: 100%; }
+  .art .hero { padding: 16px 18px 16px 18px; border-radius: 13px 13px 0 0; background-image: linear-gradient(135deg, #0b1b3a 0%, #123c5a 30%, #1a7a6e 55%, #3fd0a0 78%, #7f5af0 100%); background-size: cover; background-position: center; color: #ffffff; }
+  .art .kicker { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #5ef2c4; }
+  /* tween(fx, { intro: 1 }, 800, ease.outCubic): title and dek rise and fade in */
+  .art .title { position: relative; font-size: 23px; line-height: 1.15; font-weight: 800; margin-top: 6px; top: 14px; opacity: 0; transition: top 800ms cubic-bezier(.33,1,.68,1), opacity 800ms cubic-bezier(.33,1,.68,1); }
+  .art .dek { position: relative; font-size: 13.5px; margin-top: 8px; top: 22px; opacity: 0; transition: top 800ms cubic-bezier(.33,1,.68,1), opacity 800ms cubic-bezier(.33,1,.68,1); }
+  .art.intro .title { top: 0; opacity: 1; } .art.intro .dek { top: 0; opacity: 0.85; }
+  .art .body { padding: 4px 18px 16px 18px; line-height: 1.55; font-size: 15px; transition: font-size 320ms cubic-bezier(.33,1,.68,1); }
+  .art .body h2 { font-size: 1.27em; margin: 12px 0 6px 0; }
+  .art .body p { margin: 0 0 10px 0; }
+  .art .drop { float: left; font-family: serif; font-size: 3.9em; line-height: 0.86; font-weight: 800; margin: 5px 8px 0 0; color: #7f5af0; }
+  .art .pull { margin: 14px 0; padding: 4px 0 4px 16px; border-left: 4px solid #7f5af0; font-family: serif; font-size: 1.33em; line-height: 1.35; font-style: italic; }
+  .art .pull small { display: block; font-family: system-ui, sans-serif; font-style: normal; font-size: 12px; margin-top: 6px; }
+  .art .fig { margin: 10px 0 12px 0; padding: 10px; border-radius: 12px; background-color: rgba(127,127,127,0.10); }
+  .art .pipe { display: flex; flex-wrap: wrap; align-items: center; }
+  .art .pipe .box { padding: 4px 8px; margin: 3px 0; border-radius: 8px; color: #ffffff; font-size: 11.5px; font-weight: 700; background-color: rgba(127,127,127,0.30); }
+  .art .pipe .box.lit { background-color: var(--c); }
+  .art .pipe .arr { margin: 0 4px; font-size: 12px; color: #8e8e93; } .art .pipe .arr.lit { color: #7f5af0; }
+  .art .figcap { font-size: 12px; line-height: 1.4; margin-top: 6px; }
+  .art .note, .art .warn, .art .tip { border-radius: 8px; padding: 8px 12px; margin: 12px 0; font-size: 0.92em; }
+  .art .note { border-left: 4px solid #007aff; background-color: rgba(0,122,255,0.09); }
+  .art .warn { border-left: 4px solid #ff9500; background-color: rgba(255,149,0,0.10); }
+  .art .tip { border-left: 4px solid #34c759; background-color: rgba(52,199,89,0.10); }
+  .art .matrix { border-collapse: collapse; width: 100%; font-size: 12px; margin: 8px 0 4px 0; line-height: 1.3; }
+  .art .matrix th { text-align: left; font-size: 10px; text-transform: uppercase; padding: 5px 5px; border-bottom: 2px solid rgba(127,127,127,0.35); }
+  .art .matrix td { padding: 5px 5px; border-bottom: 1px solid rgba(127,127,127,0.2); }
+  .art .matrix td.c, .art .matrix th.c { text-align: center; }
+  .art .matrix tr:hover td { background-color: rgba(127,90,240,0.10); }
+  .art .fn { font-size: 12px; line-height: 1.45; }
+  .art .rel { display: flex; margin-top: 8px; }
+  .art .rel a { flex-grow: 1; flex-basis: 0; display: block; text-decoration: none; border-radius: 10px; border: 1px solid rgba(127,127,127,0.25); padding: 8px 10px; margin-right: 8px; font-size: 13px; line-height: 1.35; color: inherit; }
+  .art .rel a:hover { background-color: rgba(127,127,127,0.10); }
+  .art .tool { display: flex; align-items: center; margin: 10px 0 2px 0; }
+  .art .tb { padding: 3px 9px; margin-left: 4px; border-radius: 8px; font-size: 12px; font-weight: 600; line-height: 1.4; background-color: rgba(127,127,127,0.13); cursor: pointer; }
+  .art .tb:hover { background-color: rgba(127,127,127,0.26); }
+  .art .tb.on { background-color: rgba(127,90,240,0.20); color: #7f5af0; }
+  .art .prog { height: 4px; margin: 0 6px 0 10px; border-radius: 2px; background-color: rgba(127,127,127,0.2); }
+  .art .prog div { height: 4px; border-radius: 2px; background-color: #7f5af0; width: 0%; transition: width 600ms cubic-bezier(.33,1,.68,1); }
+  .art .toc { margin: 6px 0 4px 0; padding: 4px; border-radius: 10px; background-color: rgba(127,127,127,0.09); }
+  .art .toc .e { display: flex; align-items: center; padding: 4px 8px; border-radius: 7px; font-size: 13px; line-height: 1.4; cursor: pointer; }
+  .art .toc .e:hover { background-color: rgba(127,90,240,0.12); }
+  .art .toc .e.on { background-color: rgba(127,90,240,0.20); font-weight: 600; }
+  .art .toc .n { width: 22px; color: #7f5af0; font-weight: 700; }
+  .art .pager { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(127,127,127,0.22); }
+  .art .pg { padding: 5px 12px; border-radius: 9px; font-size: 13px; font-weight: 600; line-height: 1.4; background-color: rgba(127,127,127,0.12); cursor: pointer; }
+  .art .pg:hover { background-color: rgba(127,127,127,0.24); }
+  .art .more { text-align: center; padding: 8px; margin-top: 2px; border-radius: 10px; font-weight: 700; color: #ffffff; background-color: #7f5af0; cursor: pointer; }
+  .art .more:hover { background-color: #6a45dc; }
+  .art .fb { padding: 6px 14px; margin-right: 8px; line-height: 22px; border-radius: 9px; font-weight: 600; background-color: rgba(127,127,127,0.14); cursor: pointer; }
+  .art .fb:hover { background-color: rgba(127,127,127,0.26); }
+  .art .fb.on { background-color: #7f5af0; color: #ffffff; }
+  .art .fb .emo { display: inline-block; font-size: 14px; }
+  /* tween(fx, { pop: 1 }, 420, ease.outBack) from 1.6, font-size = 14 * pop */
+  @keyframes pop { 0% { font-size: 22px } 20% { font-size: 16px } 40% { font-size: 14px } 60% { font-size: 13px } 80% { font-size: 14px } 100% { font-size: 14px } }
+  .art .fb .emo.pop { animation: pop 420ms linear; }
+  .art .tldr { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background-color: rgba(127,90,240,0.10); font-size: 0.92em; }
+  .art .tldr ul { margin: 4px 0 0 0; padding-left: 18px; }
+  /* transition(kind) on the whole bubble */
+  @keyframes slide-left { from { opacity: 0; transform: translateX(24px) } to { opacity: 1; transform: none } }
+  @keyframes slide-right { from { opacity: 0; transform: translateX(-24px) } to { opacity: 1; transform: none } }
+  @keyframes slide-down { from { opacity: 0; transform: translateY(-10px) } to { opacity: 1; transform: none } }
+  @keyframes slide-up { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+  .art.slide-left { animation: slide-left 240ms cubic-bezier(.33,1,.68,1); }
+  .art.slide-right { animation: slide-right 240ms cubic-bezier(.33,1,.68,1); }
+  .art.slide-down { animation: slide-down 240ms cubic-bezier(.33,1,.68,1); }
+  .art.slide-up { animation: slide-up 240ms cubic-bezier(.33,1,.68,1); }
+</style>
+<div class="card art" id="art">
+  <div class="hero">
+    <div class="kicker">Engineering · 9 min read</div>
+    <div class="title">Inside a 1&nbsp;MB browser: how litehtml paints your chat bubbles</div>
+    <div class="dek">No WebKit, no web views — just a C++ layout engine, CoreText and a few hundred lines of glue.</div>
+  </div>
+  <div class="body" id="body">
+    <div class="row" id="byline" style="margin: 10px 0 10px 0">
+      <span class="av" style="background-color: #ff6b35; width: 32px; height: 32px; line-height: 32px; border-radius: 16px; font-size: 12px; margin-right: 10px">SR</span>
+      <div class="grow"><b>Sam Rivera</b><div class="tiny muted">Staff engineer · October 7, 2026</div></div>
+      <span class="badge purple" style="margin-right: 4px">C++</span><span class="badge blue">macOS</span></div>
+
+    <div id="collapsed">
+      <p><span class="drop">E</span>very message in this app is a tiny web page. Not a web <i>view</i> — there is no browser process, no web engine and no network stack hiding behind the bubbles. Instead each message is handed to <b>litehtml</b>, a compact C++ library that understands HTML and CSS well enough to lay out documents, and then asks its host application to do the actual drawing. That split — <i>litehtml decides where things go, you decide how they look on screen</i> — is what makes it such a good fit for chat.</p>
+      <div class="more" id="more">Read more ▾</div>
+      <div class="tiny muted center" style="margin-top: 6px">7 sections · 9 min · one message</div>
+    </div>
+
+    <div id="opened" hidden>
+      <div class="tool">
+        <span class="tb" id="tocBtn">☰ Contents</span>
+        <div class="prog grow"><div id="prog"></div></div>
+        <span class="tiny muted" id="left" style="margin-right: 4px">9 min left</span>
+        <span class="tb" data-font="-1">A−</span><span class="tb" data-font="1">A+</span></div>
+      <div class="toc" id="toc" hidden>
+        <div class="e" data-sec="0"><span class="n">·</span><span class="grow">A tiny web page</span><span class="tiny muted"><span class="chk"></span>1 min</span></div>
+        <div class="e" data-sec="1"><span class="n">1</span><span class="grow">Parsing: from bytes to a tree</span><span class="tiny muted"><span class="chk"></span>1.5 min</span></div>
+        <div class="e" data-sec="2"><span class="n">2</span><span class="grow">Styling: the cascade, minus the drama</span><span class="tiny muted"><span class="chk"></span>1.5 min</span></div>
+        <div class="e" data-sec="3"><span class="n">3</span><span class="grow">Layout: boxes all the way down</span><span class="tiny muted"><span class="chk"></span>1.5 min</span></div>
+        <div class="e" data-sec="4"><span class="n">4</span><span class="grow">Painting: the container contract</span><span class="tiny muted"><span class="chk"></span>1.5 min</span></div>
+        <div class="e" data-sec="5"><span class="n">5</span><span class="grow">Fitting text into bubbles</span><span class="tiny muted"><span class="chk"></span>1 min</span></div>
+        <div class="e" data-sec="6"><span class="n">6</span><span class="grow">What's missing — and why that's fine</span><span class="tiny muted"><span class="chk"></span>1 min</span></div>
+      </div>
+      <h2 id="h2" hidden></h2>
+
+      <section class="sec" data-sec="0" data-min="1" data-title="A tiny web page">
+    <p><span class="drop">E</span>very message in this app is a tiny web page. Not a web <i>view</i> — there is no browser process, no web engine and no network stack hiding behind the bubbles. Instead each message is handed to <b>litehtml</b>, a compact C++ library that understands HTML and CSS well enough to lay out documents, and then asks its host application to do the actual drawing. That split — <i>litehtml decides where things go, you decide how they look on screen</i> — is what makes it such a good fit for chat.</p>
+    <p>This article walks through the whole journey of a message: from a string of HTML to pixels on a Retina display. Along the way we will look at what litehtml does for you, what it deliberately leaves out, and the handful of decisions that make HTML bubbles feel native instead of embedded.</p>
+      </section>
+
+      <section class="sec" data-sec="1" data-min="1.5" data-title="Parsing: from bytes to a tree" hidden>
+    <p>litehtml does not ship its own HTML tokenizer. It bundles <b>gumbo</b>, Google's HTML5-compliant parser, which means malformed markup is repaired exactly the way a browser would repair it: unclosed paragraphs are closed, stray <code>&lt;/b&gt;</code> tags are ignored, and a <code>&lt;div&gt;</code> inside a <code>&lt;p&gt;</code> splits the paragraph in two. That matters in a chat app, where messages come from people (and bots) who do not run validators.</p>
+    <p>The gumbo tree is then converted into litehtml's own element classes — <code>el_div</code>, <code>el_text</code>, <code>el_image</code>, <code>el_table</code> and friends. Text is split into words and spaces at this stage, because the layout engine wraps text one word at a time. Every word is measured once by calling back into the host: <code>text_width("hello", font)</code>.</p>
+    <div class="fig"><div class="pipe" id="pipe">
+      <span class="box lit" style="--c: #8e8e93">HTML string</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #ff6b35">gumbo</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #ff9500">element tree</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #34c759">CSS cascade</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #30b0c7">render tree</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #007aff">layout</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #7f5af0">draw calls</span>
+      <span class="arr lit">→</span><span class="box lit" style="--c: #48484a">CoreGraphics</span></div>
+    <div class="figcap muted"><b>Figure 1.</b> The pipeline. Everything up to “draw calls” happens inside litehtml; the last step is our container. <a href="#" id="replay">↻ Replay</a></div></div>
+      </section>
+
+      <section class="sec" data-sec="2" data-min="1.5" data-title="Styling: the cascade, minus the drama" hidden>
+    <p>Three stylesheets are applied to every bubble, in order. First the <b>master CSS</b> that ships with litehtml — the equivalent of a browser's user-agent stylesheet, which knows that <code>&lt;b&gt;</code> is bold and <code>&lt;ul&gt;</code> has bullets. Then our <b>user CSS</b>, generated per bubble: it sets the system font, the text colour for light or dark mode, link colours, code blocks, and the small utility kit (<code>.card</code>, <code>.btn</code>, <code>.badge</code>…) used by the cards in this demo. Finally the message's own <code>&lt;style&gt;</code> blocks and inline <code>style</code> attributes.</p>
+    <p>Selectors cover what you would expect in practice: descendant and child combinators, classes and IDs, attribute selectors, <code>:first-child</code>, <code>:nth-child(even)</code>, <code>:not()</code>, <code>:hover</code> and <code>:active</code>, plus <code>::before</code> and <code>::after</code> with generated content and CSS counters. Hover over the rows of the table in the next section to see <code>:hover</code> at work.</p>
+    <div class="pull">“litehtml decides where things go; you decide how they look on screen. That split is the whole trick.”<small class="muted">— the one sentence to remember from this article</small></div>
+      </section>
+
+      <section class="sec" data-sec="3" data-min="1.5" data-title="Layout: boxes all the way down" hidden>
+    <p>After styling, litehtml builds a <b>render tree</b> of <code>render_block</code>, <code>render_inline</code>, <code>render_table</code> and <code>render_flex</code> items. Layout is a single call: <code>document::render(maxWidth)</code>. It positions every box, wraps every line, resolves percentages, floats and absolutely-positioned children, and returns the document's <i>natural</i> width — how wide it would like to be if nothing forced it to wrap.</p>
+    <p>That return value is exactly what a chat bubble needs. We render once at the maximum bubble width; if the natural width is smaller, we render again at that width and the bubble shrinks to hug its text. Because word widths were measured during parsing, re-layout is pure arithmetic and typically takes a small fraction of a millisecond.</p>
+    <table class="matrix">
+      <tr><th>Capability</th><th class="c">litehtml</th><th class="c">WKWebView</th><th class="c">Attributed string</th></tr>
+      <tr><td>Block, inline, floats, positioning</td><td class="c">✅</td><td class="c">✅</td><td class="c">—</td></tr>
+      <tr><td>Tables with rowspan / colspan</td><td class="c">✅</td><td class="c">✅</td><td class="c">⚠️ basic</td></tr>
+      <tr><td>Flexbox</td><td class="c">✅</td><td class="c">✅</td><td class="c">—</td></tr>
+      <tr><td>Linear / radial / conic gradients</td><td class="c">✅</td><td class="c">✅</td><td class="c">—</td></tr>
+      <tr><td>CSS grid, transforms, shadows</td><td class="c">—</td><td class="c">✅</td><td class="c">—</td></tr>
+      <tr><td>JavaScript</td><td class="c">⚠️ <span class="tiny muted">sandbox, HTML out</span></td><td class="c">✅</td><td class="c">—</td></tr>
+      <tr><td>Synchronous height for a list cell</td><td class="c">✅</td><td class="c">❌ async</td><td class="c">✅</td></tr>
+      <tr><td>Cost per message</td><td class="c">one C++ object</td><td class="c">a web process</td><td class="c">one string</td></tr>
+    </table>
+    <div class="tiny muted" style="margin-bottom: 8px">Table 1. Why not just use a web view? The last two rows are the answer for chat.</div>
+      </section>
+
+      <section class="sec" data-sec="4" data-min="1.5" data-title="Painting: the container contract" hidden>
+    <p>litehtml never touches a pixel. To draw, it walks the render tree and calls methods on a <b>document container</b> — an abstract C++ class the host implements. There are about thirty of them, and they read like a to-do list for a 2D renderer:</p>
+<pre><code><span style="color: #af52de">class</span> <span style="color: #007aff">document_container</span> {
+  <span style="color: #8e8e93">// text</span>
+  uint_ptr <span style="color: #ff9500">create_font</span>(descr, doc, metrics);
+  pixel_t  <span style="color: #ff9500">text_width</span>(text, font);
+  <span style="color: #af52de">void</span>     <span style="color: #ff9500">draw_text</span>(hdc, text, font, color, pos);
+  <span style="color: #8e8e93">// boxes</span>
+  <span style="color: #af52de">void</span>     <span style="color: #ff9500">draw_borders</span>(hdc, borders, pos, root);
+  <span style="color: #af52de">void</span>     <span style="color: #ff9500">draw_solid_fill</span>(hdc, layer, color);
+  <span style="color: #af52de">void</span>     <span style="color: #ff9500">draw_image</span>(hdc, layer, url, base_url);
+  <span style="color: #af52de">void</span>     <span style="color: #ff9500">set_clip</span>(pos, radius);
+  <span style="color: #8e8e93">// … ~20 more: gradients, list markers, links</span>
+};</code></pre>
+    <p>Our implementation (<code>LHContainer.mm</code>) maps these onto Apple's APIs. Text goes through <b>CoreText</b>: every word becomes a <code>CTLine</code>, which gives us kerning, ligatures and — crucially — automatic font fallback, so emoji 🎉, Cyrillic, Japanese and Arabic all render even though the CSS asked for the system font. Shapes, borders and gradients are <b>CoreGraphics</b> paths; conic gradients map directly onto <code>CGContextDrawConicGradient</code>.</p>
+    <div class="note"><b>Note.</b> The same container renders to an on-screen <code>NSView</code> and to an off-screen bitmap. The <code>lhrender</code> command-line tool in this repo uses the bitmap path to turn any HTML file into a PNG — handy for testing messages without launching the app.</div>
+      </section>
+
+      <section class="sec" data-sec="5" data-min="1" data-title="Fitting text into bubbles" hidden>
+    <p>The hardest part of the integration is not drawing, it is <i>agreeing</i>. litehtml asks for a font's ascent, descent, height and x-height, and then trusts those numbers when it stacks lines. If the container measures a word one way and draws it another, lines overlap or wrap one word too early. The fix is boring and strict: measure and draw with the identical <code>CTLine</code>, round the line height up once, and derive the descent from it so that <code>ascent + descent</code> is exactly the height litehtml thinks it is.</p>
+    <p>Images follow the same rule. litehtml asks for an image's size <i>during layout</i>, so the container must know it synchronously. In this MVP that means images come from <code>data:</code> URIs, SF Symbols (<code>sf:heart.fill</code>) or pictures the app draws at launch (<code>app:aurora</code>). Remote images would need an asynchronous load followed by a re-layout of the affected bubble — very doable, just not done yet.</p>
+    <div class="warn"><b>Watch out.</b> litehtml has no <code>overflow-wrap</code>. A 200-character URL without spaces will overflow its bubble; the bubble clips it. If you generate HTML from user text, insert <code>&lt;wbr&gt;</code> or zero-width spaces into very long tokens.</div>
+      </section>
+
+      <section class="sec" data-sec="6" data-min="1" data-title="What's missing — and why that's fine" hidden>
+    <p>There is no CSS grid, no <code>box-shadow</code>, no <code>opacity</code>, no transforms and no CSS animations. There is no bidirectional text reordering, so Hebrew and Arabic words are shaped correctly but placed left-to-right. And litehtml itself never runs a line of JavaScript — which for a messaging app is a feature, not a bug: the layout engine cannot track you, mine cryptocurrency or rewrite the chat around it.</p>
+    <p>Interactivity lives next to the engine instead. A message may carry a script that runs in its own JavaScriptCore sandbox, with no network and a strict CPU budget. Its <code>render()</code> returns a fresh HTML string, litehtml lays it out again, and clicks on <code>data-action</code> elements call back into <code>onAction</code> — which is how this article turns pages, resizes its text and remembers what you have read.</p>
+    <div class="tip"><b>Try it.</b> Right-click this article and choose <i>View HTML Source</i>. It is one message: a <code>&lt;style&gt;</code> block, a two-line static fallback and a script whose <code>render()</code> returns only the section you are reading.</div>
+    <h2>Further reading</h2>
+    <div class="rel">
+      <a href="https://github.com/litehtml/litehtml"><div class="caps">GitHub</div><b>litehtml/litehtml</b><div class="tiny muted">The engine, with GTK, Windows and Haiku containers</div></a>
+      <a href="https://github.com/google/gumbo-parser" style="margin-right: 0"><div class="caps">GitHub</div><b>google/gumbo-parser</b><div class="tiny muted">The HTML5 parser litehtml bundles</div></a>
+    </div>
+    <div class="sep" style="margin: 14px 0 8px 0"></div>
+    <div class="fn muted">¹ “1&nbsp;MB” is the order of magnitude of the stripped LiteChat binary including litehtml and gumbo. ² Timings vary with message size; the first bubble also pays for CoreText warming up its font caches.</div>
+      </section>
+
+      <div id="feedback" hidden>
+        <div style="margin-top: 12px">
+          <span class="fb" id="up"><span class="emo" id="thumb">👍</span> Helpful · <span id="likes">1,247</span></span>
+          <span class="fb" id="tldrBtn">Too long?</span></div>
+        <div class="tldr" id="tldr" hidden><b>TL;DR</b><ul><li>litehtml lays out HTML and CSS; CoreText and CoreGraphics draw it.</li><li>Layout is synchronous and cheap, so a bubble knows its height at once — no web process.</li><li>No grid, shadows or transforms; scripts run beside it in a sandbox and only return HTML.</li></ul></div>
+      </div>
+      <div class="pager">
+        <span class="pg" id="prev">▴ Collapse</span>
+        <span class="tiny muted" style="padding-top: 6px" id="pos">1 / 7</span>
+        <span class="pg" id="next">Part 1 ›</span></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const root = document.getElementById('art');
+  const $ = id => document.getElementById(id);
+  const sections = Array.from(root.querySelectorAll('section.sec'));
+  const MIN = sections.map(s => Number(s.dataset.min));
+  const TITLES = sections.map(s => s.dataset.title);
+  const tocRows = Array.from(root.querySelectorAll('.toc .e'));
+  const boxes = Array.from(root.querySelectorAll('#pipe .box')), arrows = Array.from(root.querySelectorAll('#pipe .arr'));
+  const body = $('body'), byline = $('byline'), collapsed = $('collapsed'), opened = $('opened'), toc = $('toc'), tocBtn = $('tocBtn'),
+        h2 = $('h2'), prog = $('prog'), leftEl = $('left'), feedback = $('feedback'), upBtn = $('up'), thumb = $('thumb'), likesEl = $('likes'),
+        tldrBtn = $('tldrBtn'), tldrEl = $('tldr'), prev = $('prev'), next = $('next'), pos = $('pos');
+
+  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+
+  let open = false, sec = 0, tocOpen = false, size = 15, vote = null, likes = 1247, tldr = false;
+  const seen = new Set();
+
+  // transition(kind) on the bubble: restart the root animation
+  const KINDS = ['slide-left', 'slide-right', 'slide-up', 'slide-down'];
+  function bubble(kind) {
+    root.classList.remove(...KINDS);
+    requestAnimationFrame(() => root.classList.add(kind));
+  }
+  root.addEventListener('animationend', e => { if (e.target === root) root.classList.remove(...KINDS); });
+
+  // Figure 1: fx.pipe 0 → 1 over 1700 ms linear; stage = floor(pipe * 8 - 0.001)
+  let pipeRun = 0;
+  function paintPipe(pipe) {
+    const stage = Math.floor(pipe * boxes.length - 0.001);
+    boxes.forEach((b, i) => b.classList.toggle('lit', i <= stage));
+    arrows.forEach((a, i) => a.classList.toggle('lit', i + 1 <= stage));
+  }
+  function replayPipe() {
+    const me = ++pipeRun, start = performance.now();
+    const step = () => {
+      if (me !== pipeRun) return;
+      const t = Math.min(1, (performance.now() - start) / 1700);
+      paintPipe(t);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    step();
+  }
+
+  function paint() {
+    collapsed.hidden = open;
+    opened.hidden = !open;
+    byline.hidden = open && sec !== 0;
+    if (!open) return;
+    const last = sec === sections.length - 1;
+    sections.forEach((s, i) => { s.hidden = i !== sec; });
+    h2.hidden = sec === 0;
+    h2.textContent = sec ? `${sec}. ${TITLES[sec]}` : '';
+    tocBtn.classList.toggle('on', tocOpen);
+    toc.hidden = !tocOpen;
+    tocRows.forEach((e, i) => { e.classList.toggle('on', i === sec); e.querySelector('.chk').textContent = seen.has(i) ? '✓ ' : ''; });
+    const left = MIN.reduce((s, m, i) => s + (seen.has(i) ? 0 : m), 0);
+    leftEl.textContent = left ? `${Math.ceil(left)} min left` : 'all read ✓';
+    prog.style.width = (seen.size / sections.length * 100).toFixed(1) + '%';
+    feedback.hidden = !last;
+    prev.textContent = sec > 0 ? `‹ ${sec - 1 ? 'Part ' + (sec - 1) : 'Intro'}` : '▴ Collapse';
+    next.textContent = !last ? `Part ${sec + 1} ›` : '▴ Collapse';
+    pos.textContent = `${sec + 1} / ${sections.length}`;
+  }
+
+  function visit(i) {
+    sec = i;
+    seen.add(i);
+    if (i === 1) { paintPipe(0); replayPipe(); }
+    paint();
+  }
+  function goTo(i) {
+    if (i === sec) { if (tocOpen) { bubble('slide-up'); tocOpen = false; paint(); } return; }
+    bubble(i > sec ? 'slide-left' : 'slide-right');
+    tocOpen = false;
+    visit(i);
+  }
+  function less() { bubble('slide-up'); open = false; tocOpen = false; tldr = false; tldrEl.hidden = true; tldrBtn.classList.remove('on'); paint(); }
+
+  $('more').addEventListener('click', () => { bubble('slide-down'); open = true; visit(0); });
+  tocBtn.addEventListener('click', () => { bubble(tocOpen ? 'slide-up' : 'slide-down'); tocOpen = !tocOpen; paint(); });
+  tocRows.forEach(e => e.addEventListener('click', () => goTo(Number(e.dataset.sec))));
+  prev.addEventListener('click', () => { if (sec > 0) goTo(clamp(sec - 1, 0, sections.length - 1)); else less(); });
+  next.addEventListener('click', () => { if (sec < sections.length - 1) goTo(clamp(sec + 1, 0, sections.length - 1)); else less(); });
+  root.querySelectorAll('[data-font]').forEach(b => b.addEventListener('click', () => {
+    size = clamp(size + Number(b.dataset.font), 13, 19);
+    body.style.fontSize = size + 'px';
+  }));
+  $('replay').addEventListener('click', e => { e.preventDefault(); paintPipe(0); replayPipe(); });
+  upBtn.addEventListener('click', () => {
+    vote = vote === 'up' ? null : 'up';
+    likes += vote === 'up' ? 1 : -1;
+    upBtn.classList.toggle('on', vote === 'up');
+    likesEl.textContent = likes.toLocaleString('en-US');
+    thumb.classList.remove('pop');
+    requestAnimationFrame(() => thumb.classList.add('pop'));
+  });
+  thumb.addEventListener('animationend', () => thumb.classList.remove('pop'));
+  tldrBtn.addEventListener('click', () => {
+    bubble(tldr ? 'slide-up' : 'slide-down');
+    tldr = !tldr;
+    tldrEl.hidden = !tldr;
+    tldrBtn.classList.toggle('on', tldr);
+  });
+
+  paint();
+  setTimeout(() => root.classList.add('intro'), 250);
+})();
+</script>

@@ -430,6 +430,8 @@ public class BottomSheetTabs extends FrameLayout {
         TLRPC.User user = MessagesController.getInstance(tab.props.currentAccount).getUser(tab.props.botId);
         if (user != null) {
             botName = ContactsController.formatName(user.first_name, user.last_name);
+        } else if (tab.props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+            botName = tab.props.buttonText;
         }
 
         final boolean[] clicked = new boolean[] { false };
@@ -457,7 +459,7 @@ public class BottomSheetTabs extends FrameLayout {
         });
         dialog[0].show();
         TextView textView = (TextView) dialog[0].getButton(AlertDialog.BUTTON_POSITIVE);
-        textView.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        ThemeBind.textColor(textView, Theme.key_text_RedBold);
     }
 
     public boolean removeTab(WebTabData tab, boolean destroy) {
@@ -1021,6 +1023,9 @@ public class BottomSheetTabs extends FrameLayout {
                 return title;
             }
             if (props == null) return "";
+            if (props.type == BotWebViewSheet.TYPE_FAKE_WEB_VIEW) {
+                return props.buttonText;
+            }
             TLRPC.User user = MessagesController.getInstance(props.currentAccount).getUser(props.botId);
             return UserObject.getUserName(user);
         }

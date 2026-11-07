@@ -1,0 +1,201 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 06-trip-lisbon.chat, message 4
+  author: ana 08:05 · bare (full width, no bubble)
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --muted: light-dark(#6e6e73, #98989d);
+    --card: light-dark(#fff, #1c1c1e); --border: light-dark(rgba(0,0,0,0.10), rgba(255,255,255,0.14));
+    --blue: #007aff; --blue-h: #0a6ee0; --green: #34c759; --orange: #ff9500; --dot: light-dark(#ffffff, #1e1e1e); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  [hidden] { display: none !important; }
+  .card { background-color: var(--card); border: 1px solid var(--border); border-radius: 14px; color: var(--fg); }
+  .pad { padding: 12px 14px; }
+  .fg { color: var(--fg); } .muted { color: var(--muted); } .small { font-size: 12px; } .tiny { font-size: 11px; }
+  .row { display: flex; align-items: center; } .grow { flex-grow: 1; }
+  .t-green { color: var(--green); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 9px; font-size: 11px; font-weight: 700; background-color: rgba(127,127,127,0.18); }
+  .badge.orange { background-color: rgba(255,149,0,0.18); color: var(--orange); }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; padding: 5px 13px; border: 0; border-radius: 9px; background-color: rgba(127,127,127,0.16); color: var(--fg); text-align: center; cursor: pointer; }
+  button:hover { background-color: rgba(127,127,127,0.28); }
+  button.primary { background-color: var(--blue); color: #ffffff; } button.primary:hover { background-color: var(--blue-h); }
+  button:active { background-color: rgba(127,127,127,0.40); } button.primary:active { background-color: var(--blue-h); }
+  .tab, .dot, .body { cursor: pointer; }
+
+  .it { width: 420px; max-width: 100%; }
+  .it .tabs { display: flex; padding: 10px 14px 0 14px; }
+  .it .tab { flex-grow: 1; flex-basis: 0; text-align: center; padding: 5px 0 4px 0; border-radius: 9px; margin-right: 6px; font-weight: 600; font-size: 13px; background-color: rgba(127,127,127,0.12); }
+  .it .tab:last-child { margin-right: 0; }
+  .it .tab:hover { background-color: rgba(127,127,127,0.24); }
+  .it .tab.on { background-color: #ff9500; color: #ffffff; }
+  .it .tab .cnt { font-size: 10px; font-weight: 700; }
+  .it .prog { height: 4px; border-radius: 2px; margin: 10px 14px 0 14px; background-color: rgba(127,127,127,0.18); }
+  .it .prog div { height: 4px; border-radius: 2px; width: 0; background-color: #ff9500; transition: width 500ms cubic-bezier(.33,1,.68,1); }
+  .it .sub { padding: 8px 14px 0 14px; }
+  .it .tl { border-left: 2px solid rgba(127,127,127,0.3); margin: 12px 14px 14px 66px; padding-left: 16px; }
+  .it .ev { position: relative; padding: 0 0 8px 0; }
+  .it .ev:last-child { padding-bottom: 0; }
+  .it .time { position: absolute; left: -72px; top: 4px; width: 44px; text-align: right; font-size: 12px; font-weight: 700; }
+  .it .dot { position: absolute; left: -27px; top: 3px; width: 16px; height: 16px; border-radius: 10px; text-align: center; line-height: 16px; font-weight: 800; font-size: 11px; color: #ffffff; border: 2px solid #ff9500; background-color: var(--dot); }
+  .it .dot:hover { background-color: rgba(255,149,0,0.35); }
+  .it .dot.done { background-color: #34c759; border-color: #34c759; }
+  .it .dot.done:hover { background-color: #2a9d48; border-color: #2a9d48; }
+  .it .dot.pop { animation: dot-pop 380ms linear; }
+  @keyframes dot-pop { 0% { font-size: 1px; } 25% { font-size: 9px; } 50% { font-size: 12px; } 60% { font-size: 12.1px; } 75% { font-size: 11.7px; } 100% { font-size: 11px; } }
+  .it .body { padding: 3px 6px 4px 6px; border-radius: 8px; margin-left: -6px; transition: margin-left 380ms cubic-bezier(.33,1,.68,1); }
+  .it .body.in { margin-left: 22px; }
+  .it .body:hover { background-color: rgba(127,127,127,0.09); }
+  .it .what { font-weight: 600; }
+  .it .what.done { color: var(--muted); text-decoration: line-through; }
+  .it .det { font-size: 12px; }
+  .it .more { display: flex; margin: 4px 0 4px 0; }
+  .it .map { position: relative; width: 120px; height: 92px; flex-shrink: 0; border-radius: 10px; overflow: hidden; margin-right: 10px;
+    background-color: #e8e4d8;
+    background-image:
+      linear-gradient(115deg, transparent 0 38%, rgba(165,205,235,0.9) 38% 46%, transparent 46%),
+      linear-gradient(0deg, transparent 0 62%, rgba(255,255,255,0.85) 62% 65%, transparent 65%),
+      linear-gradient(90deg, transparent 0 30%, rgba(255,255,255,0.85) 30% 33%, transparent 33%),
+      linear-gradient(35deg, transparent 0 55%, rgba(255,255,255,0.75) 55% 57%, transparent 57%),
+      radial-gradient(circle at 78% 72%, rgba(170,205,150,0.9) 0 18px, transparent 19px),
+      radial-gradient(circle at 20% 20%, rgba(170,205,150,0.8) 0 14px, transparent 15px); }
+  .it .pin { position: absolute; font-size: 20px; line-height: 22px; }
+  .it .pin.drop { animation: pin-drop 750ms linear; }
+  @keyframes pin-drop { 0% { transform: translateY(var(--drop)); } 36.4% { transform: translateY(0); } 54.5% { transform: translateY(calc(var(--drop) * 0.25)); } 72.7% { transform: translateY(0); } 81.8% { transform: translateY(calc(var(--drop) * 0.0625)); } 90.9% { transform: translateY(0); } 100% { transform: translateY(0); } }
+  .it .facts div { font-size: 12px; padding: 1px 0; }
+
+  .tr-fade { animation: tr-fade 260ms ease-out; }
+  .tr-slide-left { animation: tr-slide-left 280ms cubic-bezier(.33,1,.68,1); }
+  .tr-slide-right { animation: tr-slide-right 280ms cubic-bezier(.33,1,.68,1); }
+  @keyframes tr-fade { from { opacity: 0; } }
+  @keyframes tr-slide-left { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes tr-slide-right { from { opacity: 0; transform: translateX(-24px); } }
+</style>
+<div class="card it" id="root">
+  <div class="pad" style="padding-bottom: 0">
+    <div class="row">
+      <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px; flex-shrink: 0"><path d="M1 4.5 6 2.5v11l-5 2zM7 2.5l4 2v11l-4-2zM12 4.5l5-2v11l-5 2z" fill="#ff9500"/></svg>
+      <b class="grow" style="font-size: 17px">Itinerary</b><span class="badge orange" id="badge">3 days · 0/14 ✓</span></div>
+    <div class="tiny muted">Tap a dot to tick a stop off, tap a stop for details and a map</div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="sub row"><span class="grow small"><b id="title"></b> <span class="muted">· <span id="wx"></span></span></span><span id="status"></span></div>
+  <div class="prog"><div id="prog"></div></div>
+  <div class="tl" id="tl"></div>
+</div>
+<script>
+const DAYS = [
+  { tab: 'Thu 9', title: 'Arrival & Chiado', wx: '☀️ 26°', items: [
+    { t: '12:40', what: '✈️ Land at LIS', det: 'Metro red line → Alameda, then green line. 25 min, €1.85 with a Viva card.', facts: ['🚇 Red line → Alameda → green line', '⏱ 25 min to Baixa-Chiado', '💶 €1.85 with Viva Viagem'], x: 86, y: 8 },
+    { t: '14:00', what: '🏨 Check in · Casa do Largo', det: 'Largo do Carmo 12 — bags can go in early.', facts: ['📍 Largo do Carmo 12, Chiado', '🔑 Door code by SMS at 13:00', '🧳 Bags welcome from 10:00'], x: 48, y: 44 },
+    { t: '15:30', what: '🥐 Pastéis at Manteigaria', det: 'Better than Belém, fight me. — Ana', facts: ['📍 Rua do Loreto 2', '🚶 4 min from the hotel', '💶 €1.30 each, warm'], x: 34, y: 52 },
+    { t: '17:00', what: '🚋 Tram 28 to Graça', det: 'Board at Martim Moniz to get a seat.', facts: ['📍 Martim Moniz terminus', '⏱ 20 min ride uphill', '🎟 Covered by the Viva day pass'], x: 66, y: 26 },
+    { t: '19:30', what: '🌅 Sunset · Miradouro da Senhora do Monte', det: 'Best view of the castle. Bring a jacket.', facts: ['🌇 Sunset 19:12, come early', '🚶 10 min uphill from Graça', '🧥 Windy once the sun is gone'], x: 72, y: 14 },
+    { t: '21:00', what: '🍷 Dinner · Taberna da Rua das Flores', det: 'No reservations — get there early.', facts: ['📍 Rua das Flores 103', '⏳ Queue forms from 18:45', '💶 About €30 each'], x: 30, y: 60 },
+  ] },
+  { tab: 'Fri 10', title: 'Castle, market & fado', wx: '⛅️ 24°', items: [
+    { t: '09:30', what: '🏰 Castelo de São Jorge', det: 'Tickets online, skip the queue. 2 h.', facts: ['🎟 3 × €15, already booked', '⏱ About 2 hours', '📍 Rua de Santa Cruz do Castelo'], x: 64, y: 22 },
+    { t: '12:30', what: '🐟 Lunch · Time Out Market', det: 'Everyone picks their own stall.', facts: ['📍 Mercado da Ribeira, Cais do Sodré', '🚋 Tram 15E or a 20 min walk', '💶 €12–20 each'], x: 28, y: 62 },
+    { t: '15:00', what: '🖼 MAAT + riverside walk', det: 'Walk the roof, then along the Tejo to Belém.', facts: ['🎟 €11, the roof is free', '🚶 3 km along the river to Belém', '🥐 Pastéis de Belém on the way'], x: 8, y: 66 },
+    { t: '20:00', what: '🎸 Fado in Alfama', det: 'Tasca do Chico — small, loud, wonderful.', facts: ['📍 Rua dos Remédios 83', '🎶 A new singer every 30 min', '🤫 Total silence during songs'], x: 76, y: 36 },
+  ] },
+  { tab: 'Sat 11', title: 'Sintra day trip', wx: '🌦 21°', items: [
+    { t: '08:45', what: '🚆 Train to Sintra', det: 'From Rossio, 40 min. Pena Palace first, before the crowds.', facts: ['🚉 Rossio station, every 20 min', '⏱ 40 min', '💶 €2.40 each way'], x: 52, y: 40 },
+    { t: '13:00', what: '🧀 Picnic in Monserrate gardens', det: 'Tom is in charge of cheese.', facts: ['🌿 Monserrate Palace gardens', '🎟 €12 entry', '🧀 Queijo da Serra, bread, vinho verde'], x: 22, y: 24 },
+    { t: '16:30', what: '🌊 Cabo da Roca', det: 'Westernmost point of mainland Europe. Windy!', facts: ['🚌 Bus 403 from Sintra, 40 min', '📸 Lighthouse and cliffs', '🧥 Hold on to your hat'], x: 4, y: 42 },
+    { t: '20:30', what: '🎉 Farewell dinner · Cervejaria Ramiro', det: 'Prawns, then a steak sandwich for dessert. Trust the process.', facts: ['📍 Av. Almirante Reis 1', '⏳ Take a number at the door', '🍤 Order the tiger prawns'], x: 70, y: 30 },
+  ] },
+];
+const TOTAL = DAYS.reduce((s, d) => s + d.items.length, 0);
+let day = 0, open = null;
+const done = new Set();
+
+const $ = id => document.getElementById(id);
+const root = $('root');
+const esc = v => String(v === undefined || v === null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const doneIn = d => DAYS[d].items.filter((_, j) => done.has(d + '-' + j)).length;
+const frac = d => doneIn(d) / DAYS[d].items.length;
+
+const TR = ['tr-fade', 'tr-slide-left', 'tr-slide-right'];
+function bubble(kind) {
+  if (TR.some(c => root.classList.contains(c))) { root.classList.remove(...TR); void root.offsetWidth; }
+  root.classList.add('tr-' + kind);
+}
+root.addEventListener('animationend', e => {
+  if (e.target === root) root.classList.remove(...TR);
+  else if (e.target.classList) e.target.classList.remove('pop', 'drop');
+});
+
+function renderHeader() {
+  const D = DAYS[day], n = doneIn(day);
+  $('badge').textContent = `3 days · ${done.size}/${TOTAL} ✓`;
+  $('tabs').innerHTML = DAYS.map((d, i) => {
+    const k = doneIn(i), all = k === d.items.length;
+    return `<div class="tab ${i === day ? 'on' : 'fg'}" data-day="${i}">${d.tab}<div class="cnt">${all ? '✓ all done' : `${k} / ${d.items.length}`}</div></div>`;
+  }).join('');
+  $('title').textContent = D.title;
+  $('wx').textContent = D.wx;
+  $('status').innerHTML = n === D.items.length ? '<span class="small t-green"><b>Day complete 🎉</b></span>' : `<span class="small muted">${n} of ${D.items.length} done</span>`;
+}
+
+function setProgress(animated) {
+  const p = $('prog');
+  if (!animated) p.style.transition = 'none';
+  p.style.width = (frac(day) * 100).toFixed(1) + '%';
+  if (!animated) { void p.offsetWidth; p.style.transition = ''; }
+}
+
+// `stagger` is the intro (bodies slide in from 22 px, 90 ms apart); `popId` pops the just-ticked dot; `dropOpen` drops the pin.
+function renderList({ stagger = false, popId = null, dropOpen = false } = {}) {
+  $('tl').innerHTML = DAYS[day].items.map((it, j) => {
+    const id = day + '-' + j, isDone = done.has(id), isOpen = open === id;
+    const more = isOpen ? `<div class="more">
+      <div class="map"><div class="pin${dropOpen ? ' drop' : ''}" style="left: ${it.x}px; top: ${it.y}px; --drop: ${-(26 + it.y)}px">📍</div></div>
+      <div class="grow"><div class="facts">${it.facts.map(f => `<div>${esc(f)}</div>`).join('')}</div>
+        <div style="margin-top: 6px"><button class="${isDone ? '' : 'primary'}" data-tick="${id}">${isDone ? 'Undo' : '✓ Mark done'}</button></div></div>
+    </div>` : '';
+    return `<div class="ev"><span class="time">${it.t}</span>
+    <div class="dot${isDone ? ' done' : ''}${popId === id ? ' pop' : ''}" data-tick="${id}">${isDone ? '✓' : '&nbsp;'}</div>
+    <div class="body${stagger ? ' in' : ''}" data-open="${id}" style="transition-delay: ${stagger ? j * 90 : 0}ms">
+      <div class="what${isDone ? ' done' : ''}">${esc(it.what)} <span class="tiny muted">${isOpen ? '▴' : '▾'}</span></div>
+      <div class="det muted">${esc(it.det)}</div></div>${more}</div>`;
+  }).join('');
+}
+
+function tick(id) {
+  let popId = null;
+  if (done.has(id)) done.delete(id);
+  else { done.add(id); popId = id; }
+  renderHeader();
+  renderList({ popId });
+  setProgress(true);
+}
+
+root.addEventListener('click', e => {
+  const tab = e.target.closest('[data-day]');
+  if (tab) {
+    const d = Number(tab.dataset.day);
+    if (d === day) return;
+    bubble(d > day ? 'slide-left' : 'slide-right');
+    day = d; open = null;
+    renderHeader(); renderList(); setProgress(false);
+    return;
+  }
+  const t = e.target.closest('[data-tick]');
+  if (t) { tick(t.dataset.tick); return; }
+  const o = e.target.closest('[data-open]');
+  if (o) {
+    bubble('fade');
+    const id = o.dataset.open;
+    open = open === id ? null : id;
+    renderList({ dropOpen: !!open });
+  }
+});
+
+renderHeader();
+renderList({ stagger: true });
+setProgress(false);
+// intro: 250 ms in, the bodies slide to their place
+setTimeout(() => { for (const b of root.querySelectorAll('.body.in')) b.classList.remove('in'); }, 250);
+</script>

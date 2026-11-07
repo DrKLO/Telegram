@@ -1,0 +1,47 @@
+{
+  "name": "@telegram/widget-sandbox",
+  "version": "0.6.0",
+  "description": "No-network sandbox for untrusted HTML widgets: QuickJS worker, DOM shim, validator and renderer core (the web host; the same bundles ship to the native packages)",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./host/*": "./src/host/*.ts",
+    "./shared/*": "./src/shared/*.ts",
+    "./vite": "./vite.ts",
+    "./build": "./scripts/sandbox-build.ts",
+    "./node": "./scripts/sandbox-node.ts"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "vite.ts"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "build:native": "tsx scripts/build-native-bundles.ts"
+  },
+  "dependencies": {
+    "@telegram/widget-sandbox-quickjs": "workspace:*",
+    "css-tree": "^3.2.1",
+    "esbuild": "^0.28.2",
+    "linkedom": "^0.18.13",
+    "parse5": "^8.0.0",
+    "quickjs-emscripten-core": "^0.32.0"
+  },
+  "devDependencies": {
+    "@types/css-tree": "^3.2.0",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3"
+  },
+  "peerDependencies": {
+    "vite": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
+  }
+}

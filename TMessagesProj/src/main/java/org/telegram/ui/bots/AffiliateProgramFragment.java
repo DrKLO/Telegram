@@ -9,6 +9,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -36,6 +37,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -100,7 +102,7 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(firstViewHeight, MeasureSpec.EXACTLY));
             }
         };
-        emptyLayout.setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
+        ThemeBind.backgroundColor(emptyLayout, Theme.key_dialogBackgroundGray);
 
         super.createView(context);
 
@@ -116,10 +118,10 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
 
         buttonLayout = new LinearLayout(context);
         buttonLayout.setOrientation(LinearLayout.VERTICAL);
-        buttonLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(buttonLayout, Theme.key_windowBackgroundWhite, getResourceProvider());
 
         View buttonShadow = new View(context);
-        buttonShadow.setBackgroundColor(getThemedColor(Theme.key_divider));
+        ThemeBind.backgroundColor(buttonShadow, Theme.key_divider, getResourceProvider());
         buttonLayout.addView(buttonShadow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density));
 
         button = new ButtonWithCounterView(context, resourceProvider) {
@@ -177,8 +179,8 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
         buttonLayout.addView(button, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 10, 10, 10, 7));
 
         buttonSubtext = new LinkSpanDrawable.LinksTextView(context, resourceProvider);
-        buttonSubtext.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
-        buttonSubtext.setLinkTextColor(getThemedColor(Theme.key_chat_messageLinkIn));
+        ThemeBind.textColor(buttonSubtext, Theme.key_windowBackgroundWhiteGrayText2, getResourceProvider());
+        ThemeBind.linkTextColor(buttonSubtext, Theme.key_chat_messageLinkIn, getResourceProvider());
         buttonSubtext.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         buttonSubtext.setGravity(Gravity.CENTER);
         buttonLayout.addView(buttonSubtext, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 32, 1, 32, 8));
@@ -289,28 +291,28 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
 
         TextView textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         textView.setText(AndroidUtilities.replaceTags(getString(R.string.AffiliateProgramStopText)));
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 17));
 
         textView = new BulletinTextView(getContext());
         textView.setPadding(dp(15), 0, 0, 0);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         textView.setText(AndroidUtilities.replaceTags(getString(R.string.AffiliateProgramStopText1)));
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 17));
 
         textView = new BulletinTextView(getContext());
         textView.setPadding(dp(15), 0, 0, 0);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         textView.setText(AndroidUtilities.replaceTags(getString(R.string.AffiliateProgramStopText2)));
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 17));
 
         textView = new BulletinTextView(getContext());
         textView.setPadding(dp(15), 0, 0, 0);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         textView.setText(AndroidUtilities.replaceTags(getString(R.string.AffiliateProgramStopText3)));
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
 
@@ -569,7 +571,7 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
             addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.LEFT, 20, 2 + 9.46f, 0, 0));
 
             textLayout = new LinearLayout(context);
@@ -577,13 +579,13 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
             addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 64, compact ? 2 : 2 + 7.8f, 24, compact ? 4 : 2 + 7.8f));
 
             titleView = new TextView(context);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 1));
 
             textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
         }
@@ -659,23 +661,23 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
             titleView = new TextView(context);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 0, 0, 0));
 
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             textLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, 3, 0, 0));
 
             arrowView = new ImageView(context);
-            arrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrack, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(arrowView, Theme.key_switchTrack, resourcesProvider, PorterDuff.Mode.SRC_IN);
             arrowView.setImageResource(R.drawable.msg_arrowright);
             arrowView.setScaleType(ImageView.ScaleType.CENTER);
             addView(arrowView, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
             percentView = new TextView(context);
             percentView.setTextColor(0xFFFFFFFF);
-            percentView.setBackground(Theme.createRoundRectDrawable(dp(4), Theme.getColor(Theme.key_color_green, resourcesProvider)));
+            ThemeBind.fillBackground(percentView, Theme.createRoundRectDrawable(dp(4), Theme.getColor(Theme.key_color_green, resourcesProvider)), ThemeBind.of(Theme.key_color_green), resourcesProvider);
             percentView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             percentView.setTypeface(AndroidUtilities.bold());
             percentView.setPadding(dp(5), 0, dp(4), 0);
@@ -686,7 +688,13 @@ public class AffiliateProgramFragment extends GradientHeaderActivity implements 
 
         public void set(int color, int iconResId, CharSequence title, CharSequence text) {
             imageView.setImageResource(iconResId);
-            imageView.setBackground(Theme.createRoundRectDrawable(dp(9), color));
+            final Drawable iconBackground = Theme.createRoundRectDrawable(dp(9), color);
+            if (color == Theme.getColor(Theme.key_color_green, resourcesProvider)) {
+                // every caller passes key_color_green: follow theme changes
+                ThemeBind.fillBackground(imageView, iconBackground, ThemeBind.of(Theme.key_color_green), resourcesProvider);
+            } else {
+                imageView.setBackground(iconBackground);
+            }
 
             titleView.setText(title);
             if (TextUtils.isEmpty(text)) {

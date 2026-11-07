@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 14px; background: #fff; color: #222; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font: 14px system-ui; }
+  button { padding: 8px 12px; border: 0; border-radius: 6px; background: #2481cc; color: #fff; cursor: pointer; }
+  ul { list-style: none; padding: 0; margin: 0; } li { display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  li button { background: #ef4444; padding: 2px 8px; font-size: 12px; }
+  #meta { font-size: 12px; color: #666; margin-top: 8px; }
+</style></head><body>
+<div class="row"><input id="text" placeholder="New note…"><button id="add">Add</button></div>
+<ul id="list"></ul>
+<div id="meta"></div>
+<script>
+  var KEY = 'notes-widget';
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+  var notes = load();
+  var visits = Number(localStorage.getItem(KEY + ':visits') || 0) + 1;
+  localStorage.setItem(KEY + ':visits', String(visits));
+  function save() { localStorage.setItem(KEY, JSON.stringify(notes)); render(); }
+  function render() {
+    var ul = document.getElementById('list'); ul.innerHTML = '';
+    notes.forEach(function (n, i) {
+      var li = document.createElement('li'); li.textContent = n;
+      var b = document.createElement('button'); b.textContent = '✕'; b.className = 'del'; b.addEventListener('click', function () { notes.splice(i, 1); save(); });
+      li.appendChild(b); ul.appendChild(li);
+    });
+    document.getElementById('meta').textContent = notes.length + ' notes · visit #' + visits + ' · ' + localStorage.length + ' keys in storage';
+  }
+  function add() { var t = document.getElementById('text'); if (t.value.trim()) { notes.push(t.value.trim()); t.value = ''; save(); } }
+  document.getElementById('add').addEventListener('click', add);
+  document.getElementById('text').addEventListener('keydown', function (e) { if (e.key === 'Enter') add(); });
+  if (!notes.length) { notes = ['Buy milk', 'Call Sam']; save(); } else render();
+</script>
+</body></html>

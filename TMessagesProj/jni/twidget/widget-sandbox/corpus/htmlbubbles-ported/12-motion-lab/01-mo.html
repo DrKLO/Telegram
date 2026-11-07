@@ -1,0 +1,13 @@
+<!--
+  source: Telegram macOS 12.10 (283300), 12-motion-lab.chat, message 1
+  author: mo 14:00
+  host stylesheet: ../kit.css is prepended to every bubble by the host; images use app:/sf: schemes
+  ported: classic widget, see corpus/htmlbubbles-ported/README.md
+-->
+<style>
+  :root { color-scheme: light dark;
+    --fg: light-dark(#000, #fff); --kbd: light-dark(#f2f2f7, #2c2c2e); }
+  body { margin: 0; font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.3; color: var(--fg); }
+  code { font-family: ui-monospace, monospace; font-size: 13px; background-color: var(--kbd); padding: 1px 4px; border-radius: 4px; }
+</style>
+litehtml has no CSS transitions, transforms or opacity, so every moving value here is a script re-rendering its message up to <b>60 times a second</b>, driven by <code>animate()</code> and <code>tween()</code> with the <code>ease.*</code> curves. Each frame changes ordinary properties: sizes, margins, absolute positions, rgba colours (<code>mix()</code>, <code>alpha()</code>), gradient angles, or a freshly generated SVG image. When a card swaps whole content (a tab, a step, a result), <code>transition('slide-left')</code> or <code>'pop'</code> lets the bubble animate it natively. Animation pauses whenever a card is off screen, and every loop stops once nothing moves.

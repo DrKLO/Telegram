@@ -47,6 +47,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -71,11 +72,12 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -91,13 +93,15 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanNoUnderline;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 
 public class ChangeUsernameActivity extends BaseFragment {
 
-    private View doneButton;
+    private SimpleActionBarDoneButton doneButton;
 
     private RecyclerListView listView;
     private LinearLayoutManager layoutManager;
@@ -187,11 +191,17 @@ public class ChangeUsernameActivity extends BaseFragment {
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString(R.string.Username));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(LocaleController.getString(R.string.Username));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -203,8 +213,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItemWithWidth(done_button, R.drawable.ic_ab_done, dp(56), LocaleController.getString(R.string.Done));
+        doneButton = simpleActionBar.createDoneButton(done_button, LocaleController.getString(R.string.Save));
 
         TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(getUserId());
         if (user == null) {
@@ -251,12 +260,11 @@ public class ChangeUsernameActivity extends BaseFragment {
         fragmentView = new FrameLayout(context);
         listView = new RecyclerListView(context);
         listView.setSections();
-        actionBar.setAdaptiveBackground(listView);
 
-        fragmentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context));
         listView.setAdapter(adapter = new Adapter());
-        listView.setSelectorDrawableColor(getThemedColor(Theme.key_listSelector));
+        ThemeBind.listSelectorColor(listView, Theme.key_listSelector, getResourceProvider());
+        listView.setSectionsDrawBackground(true);
         itemTouchHelper = new ItemTouchHelper(new TouchHelperCallback());
         itemTouchHelper.attachToRecyclerView(listView);
         ((FrameLayout) fragmentView).addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -663,10 +671,10 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             text1View = new LinkSpanDrawable.LinksTextView(context);
             text1View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            text1View.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
+            ThemeBind.textColor(text1View, Theme.key_windowBackgroundWhiteGrayText8);
             text1View.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            text1View.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-            text1View.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+            ThemeBind.linkTextColor(text1View, Theme.key_windowBackgroundWhiteLinkText);
+            ThemeBind.highlightColor(text1View, Theme.key_windowBackgroundWhiteLinkSelection);
             text1View.setPadding(dp(3), 0, dp(3), 0);
 
             text2View = statusTextView = new LinkSpanDrawable.LinksTextView(context) {
@@ -677,7 +685,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                         int index = tagsString.toString().indexOf('\n');
                         if (index >= 0) {
                             tagsString.replace(index, index + 1, " ");
-                            tagsString.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_text_RedRegular)), 0, index, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            tagsString.setSpan(new ForegroundColorSpanThemable(Theme.key_text_RedRegular, getResourceProvider()), 0, index, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                         TypefaceSpan[] spans = tagsString.getSpans(0, tagsString.length(), TypefaceSpan.class);
                         for (int i = 0; i < spans.length; ++i) {
@@ -706,10 +714,10 @@ public class ChangeUsernameActivity extends BaseFragment {
                 }
             };
             text2View.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            text2View.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
+            ThemeBind.textColor(text2View, Theme.key_windowBackgroundWhiteGrayText8);
             text2View.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            text2View.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-            text2View.setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+            ThemeBind.linkTextColor(text2View, Theme.key_windowBackgroundWhiteLinkText);
+            ThemeBind.highlightColor(text2View, Theme.key_windowBackgroundWhiteLinkSelection);
             text2View.setPadding(dp(3), 0, dp(3), 0);
 
             addView(text1View, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
@@ -766,7 +774,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         }
     }
 
-    private class InputCell extends FrameLayout {
+    private class InputCell extends FrameLayout implements Theme.Colorable {
         public EditTextBoldCursor field;
         public TextView tme;
 
@@ -777,8 +785,8 @@ public class ChangeUsernameActivity extends BaseFragment {
             content.setOrientation(LinearLayout.HORIZONTAL);
             field = new EditTextBoldCursor(getContext());
             field.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-            field.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            field.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.hintTextColor(field, Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(field, Theme.key_windowBackgroundWhiteBlackText);
             field.setBackgroundDrawable(null);
 //            field.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
             field.setMaxLines(1);
@@ -789,7 +797,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             field.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
             field.setImeOptions(EditorInfo.IME_ACTION_DONE);
             field.setHint(LocaleController.getString(R.string.UsernameLinkPlaceholder));
-            field.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(field, Theme.key_windowBackgroundWhiteBlackText);
             field.setCursorSize(dp(19));
             field.setCursorWidth(1.5f);
             field.setOnEditorActionListener((textView, i, keyEvent) -> {
@@ -854,7 +862,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             tme.setSingleLine(true);
             tme.setText(getMessagesController().linkPrefix + "/");
             tme.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-            tme.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(tme, Theme.key_windowBackgroundWhiteBlackText);
             tme.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
             tme.setTranslationY(-dp(3));
             content.addView(tme, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL, 21, 15, 0, 15));
@@ -874,13 +882,24 @@ public class ChangeUsernameActivity extends BaseFragment {
                 MeasureSpec.makeMeasureSpec(dp(50), MeasureSpec.EXACTLY)
             );
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                field.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     private static Paint linkBackgroundActive = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static Paint linkBackgroundInactive = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static Paint dragPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    public static class UsernameCell extends FrameLayout {
+    public static class UsernameCell extends FrameLayout implements Theme.Colorable {
 
         public boolean isProfile = false;
         private Theme.ResourcesProvider resourcesProvider;
@@ -897,11 +916,11 @@ public class ChangeUsernameActivity extends BaseFragment {
 
             this.resourcesProvider = resourcesProvider;
 
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            ThemeBind.backgroundColor(this, Theme.key_windowBackgroundWhite, resourcesProvider);
 
             usernameView = new SimpleTextView(getContext());
             usernameView.setTextSize(16);
-            usernameView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(usernameView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             usernameView.setEllipsizeByGradient(true);
             addView(usernameView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 70, 9, 0, 50));
 
@@ -915,7 +934,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             addView(loadingView, LayoutHelper.createFrame(14, 14, Gravity.TOP, 70, 23 + 12, 0, 0));
 
             activeView = new AnimatedTextView(getContext(), false, true, true);
-            activeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            activeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)); // state color, re-applied in updateColors()
             activeView.setAnimationProperties(0.4f, 0, 120, CubicBezierInterpolator.EASE_OUT);
             activeView.setTextSize(dp(13));
             addView(activeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 70, 23, 0, 0));
@@ -1006,7 +1025,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             if (TextUtils.isEmpty(usernameString)) {
                 SpannableStringBuilder ssb = new SpannableStringBuilder("@");
                 SpannableString sb = new SpannableString(LocaleController.getString(R.string.UsernameLinkPlaceholder));
-                sb.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider)), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.setSpan(new ForegroundColorSpanThemable(Theme.key_windowBackgroundWhiteHintText, resourcesProvider), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 ssb.append(sb);
                 usernameView.setText(ssb);
             } else {
@@ -1054,6 +1073,34 @@ public class ChangeUsernameActivity extends BaseFragment {
             if (currentUsername != null) {
                 set(currentUsername, useDivider, true, botId);
             }
+        }
+
+        @Override
+        public void updateColors() {
+            try {
+                linkBackgroundActive.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+                linkBackgroundInactive.setColor(Theme.getColor(Theme.key_chats_unreadCounterMuted, resourcesProvider));
+                if ((activeViewTextColorAnimator == null || !activeViewTextColorAnimator.isRunning()) && loadingDrawable != null && activeView != null) {
+                    final int color = ColorUtils.blendARGB(
+                        Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider),
+                        Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider),
+                        activeViewTextColorT
+                    );
+                    loadingDrawable.setColor(color);
+                    activeView.setTextColor(color);
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_featuredStickers_addButton);
+            colors.add(Theme.key_chats_unreadCounterMuted);
+            colors.add(Theme.key_windowBackgroundWhiteGrayText2);
+            colors.add(Theme.key_windowBackgroundWhiteBlueText);
         }
 
         @Override
@@ -1207,7 +1254,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 if (statusTextView != null) {
                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalid));
                     statusTextView.setTag(Theme.key_text_RedRegular);
-                    statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                     if (helpCell != null) {
                         helpCell.update();
                     }
@@ -1223,7 +1270,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                         if (statusTextView != null) {
                             statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidStartNumber));
                             statusTextView.setTag(Theme.key_text_RedRegular);
-                            statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                            ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                             if (helpCell != null) {
                                 helpCell.update();
                             }
@@ -1238,7 +1285,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                         if (statusTextView != null) {
                             statusTextView.setText(LocaleController.getString(R.string.UsernameInvalid));
                             statusTextView.setTag(Theme.key_text_RedRegular);
-                            statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                            ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                             if (helpCell != null) {
                                 helpCell.update();
                             }
@@ -1255,7 +1302,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 if (statusTextView != null) {
                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                     statusTextView.setTag(Theme.key_text_RedRegular);
-                    statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                     if (helpCell != null) {
                         helpCell.update();
                     }
@@ -1270,7 +1317,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 if (statusTextView != null) {
                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidLong));
                     statusTextView.setTag(Theme.key_text_RedRegular);
-                    statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                    ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                     if (helpCell != null) {
                         helpCell.update();
                     }
@@ -1288,7 +1335,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                 if (statusTextView != null) {
                     statusTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, name));
                     statusTextView.setTag(Theme.key_windowBackgroundWhiteGreenText);
-                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
+                    ThemeBind.textColor(statusTextView, Theme.key_windowBackgroundWhiteGreenText);
                     if (helpCell != null) {
                         helpCell.update();
                     }
@@ -1299,7 +1346,7 @@ public class ChangeUsernameActivity extends BaseFragment {
             if (statusTextView != null) {
                 statusTextView.setText(LocaleController.getString(R.string.UsernameChecking));
                 statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText8);
-                statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
+                ThemeBind.textColor(statusTextView, Theme.key_windowBackgroundWhiteGrayText8);
                 if (helpCell != null) {
                     helpCell.update();
                 }
@@ -1316,7 +1363,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                             if (statusTextView != null) {
                                 statusTextView.setText(LocaleController.formatString("UsernameAvailable", R.string.UsernameAvailable, nameFinal));
                                 statusTextView.setTag(Theme.key_windowBackgroundWhiteGreenText);
-                                statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGreenText));
+                                ThemeBind.textColor(statusTextView, Theme.key_windowBackgroundWhiteGreenText);
                                 if (helpCell != null) {
                                     helpCell.update();
                                 }
@@ -1327,7 +1374,7 @@ public class ChangeUsernameActivity extends BaseFragment {
                                 if (error != null && "USERNAME_INVALID".equals(error.text) && req.username.length() == 4) {
                                     statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShort));
                                     statusTextView.setTag(Theme.key_text_RedRegular);
-                                    statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                                    ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                                 } else if (error != null && "USERNAME_PURCHASE_AVAILABLE".equals(error.text)) {
                                     if (req.username.length() == 4) {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInvalidShortPurchase));
@@ -1335,11 +1382,11 @@ public class ChangeUsernameActivity extends BaseFragment {
                                         statusTextView.setText(LocaleController.getString(R.string.UsernameInUsePurchase));
                                     }
                                     statusTextView.setTag(Theme.key_windowBackgroundWhiteGrayText8);
-                                    statusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText8));
+                                    ThemeBind.textColor(statusTextView, Theme.key_windowBackgroundWhiteGrayText8);
                                 } else {
                                     statusTextView.setText(LocaleController.getString(R.string.UsernameInUse));
                                     statusTextView.setTag(Theme.key_text_RedRegular);
-                                    statusTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+                                    ThemeBind.textColor(statusTextView, Theme.key_text_RedRegular);
                                 }
                                 if (helpCell != null) {
                                     helpCell.update();
@@ -1464,16 +1511,33 @@ public class ChangeUsernameActivity extends BaseFragment {
     }
 
     @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
 //        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
         return themeDescriptions;
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_windowBackgroundWhite);
     }
 }

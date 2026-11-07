@@ -1,0 +1,6 @@
+packages:
+  - packages/core
+  - packages/quickjs-wasm
+  - apps/web
+allowBuilds:
+  esbuild: true
