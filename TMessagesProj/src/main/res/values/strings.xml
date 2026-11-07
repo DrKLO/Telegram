@@ -5868,7 +5868,7 @@
     <string name="DeleteReaction">Delete Reaction</string>
     <string name="BanUser">Ban user</string>
     <string name="BanUserMonoforum">Ban User From Channel</string>
-    <string name="UnbanUserMonoforum">Ban User From Channel</string>
+    <string name="UnbanUserMonoforum">Unban User From Channel</string>
     <string name="AccDescrCustomEmoji">Custom emoji</string>
     <string name="RecentlyUsed">Recently Used</string>
     <string name="PopularReactions">Popular</string>
