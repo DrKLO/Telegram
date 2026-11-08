@@ -1,0 +1,742 @@
+=================== clear_history ===================
+1639-            sendBotInlineResult((TLRPC.BotInlineResult) botContextResults.get(index), notify, scheduleDate, 0);
+1640-        }
+1641-    };
+1642-
+1643-    private final static int copy = 10;
+1644-    private final static int forward = 11;
+1645-    private final static int delete = 12;
+1646-    private final static int chat_enc_timer = 13;
+1647-    private final static int chat_menu_attach = 14;
+1648-    private final static int chat_menu_search = -1;
+1649-    private final static int chat_menu_options = -2;
+1650-    private final static int chat_menu_edit_text_options = -3;
+1651:    private final static int clear_history = 15;
+1652-    private final static int delete_chat = 16;
+1653-    private final static int share_contact = 17;
+1654-    private final static int mute = 18;
+1655-    private final static int report = 21;
+1656-    private final static int star = 22;
+1657-    private final static int edit = 23;
+1658-    private final static int add_shortcut = 24;
+1659-    private final static int save_to = 25;
+1660-    private final static int auto_delete_timer = 26;
+1661-    private final static int change_colors = 27;
+1662-    private final static int tag_message = 28;
+1663-    private final static int boost_group = 29;
+1664-
+1665-    private final static int bot_help = 30;
+1666-    private final static int bot_settings = 31;
+1667-    private final static int call = 32;
+1668-    private final static int video_call = 33;
+1669-
+1670-    private final static int attach_photo = 0;
+1671-    private final static int attach_gallery = 1;
+1672-    private final static int attach_video = 2;
+1673-
+1674-    private final static int text_bold = 50;
+1675-    private final static int text_italic = 51;
+1676-    private final static int text_mono = 52;
+--
+3861-                        if (count > 0) {
+3862-                            if (getParentActivity() == null) {
+3863-                                return;
+3864-                            }
+3865-                            BulletinFactory.of(ChatActivity.this).createDownloadBulletin(isMusic ? BulletinFactory.FileType.AUDIOS : BulletinFactory.FileType.UNKNOWNS, count, themeDelegate).show();
+3866-                        }
+3867-                    });
+3868-                } else if (id == chat_enc_timer) {
+3869-                    if (getParentActivity() == null) {
+3870-                        return;
+3871-                    }
+3872-                    showDialog(AlertsCreator.createTTLAlert(getParentActivity(), currentEncryptedChat, themeDelegate).create());
+3873:                } else if (id == clear_history || id == delete_chat || id == auto_delete_timer) {
+3874-                    if (getParentActivity() == null) {
+3875-                        return;
+3876-                    }
+3877-
+3878:                    if (id == clear_history && ChatObject.isMonoForum(currentChat)) {
+3879-                        if (getThreadId() != 0) {
+3880-                            final TLRPC.User user = getMessagesController().getUser(getThreadId());
+3881-                            if (user != null) {
+3882-                                AlertsCreator.createClearDaysDialogAlert(ChatActivity.this, -1, user, currentChat, true, revoke -> {
+3883-                                    if (user.id != getThreadId()) {
+3884-                                        return;
+3885-                                    }
+3886-                                    performHistoryClear(false, true);
+3887-                                }, getResourceProvider());
+3888-                            }
+3889-                        }
+3890-                        return;
+3891-                    }
+3892-
+3893-                    boolean canDeleteHistory = chatInfo != null && chatInfo.can_delete_channel;
+3894:                    if (id == auto_delete_timer || id == clear_history && currentEncryptedChat == null && ((currentUser != null && !UserObject.isUserSelf(currentUser) && !UserObject.isDeleted(currentUser)) || (chatInfo != null && chatInfo.can_delete_channel))) {
+3895-                        AlertsCreator.createClearDaysDialogAlert(ChatActivity.this, -1, currentUser, currentChat, canDeleteHistory, new MessagesStorage.BooleanCallback() {
+3896-                            @Override
+3897-                            public void run(boolean revoke) {
+3898-                                if (revoke && (currentUser != null || canDeleteHistory)) {
+3899-                                    getMessagesStorage().getMessagesCount(dialog_id, (count) -> {
+3900-                                        if (count >= 50) {
+3901-                                            AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, true, currentChat, currentUser, false, false, false, canDeleteHistory, (param) -> performHistoryClear(true, canDeleteHistory));
+3902-                                        } else {
+3903-                                            performHistoryClear(true, canDeleteHistory);
+3904-                                        }
+3905-                                    });
+3906-                                } else {
+3907-                                    performHistoryClear(revoke, canDeleteHistory);
+3908-                                }
+3909-                            }
+3910-                        }, getResourceProvider());
+3911-                        return;
+3912-                    }
+3913:                    AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, id == clear_history, currentChat, currentUser, currentEncryptedChat != null, true, false, canDeleteHistory, (param) -> {
+3914:                        if (id == clear_history && ChatObject.isChannel(currentChat) && (!currentChat.megagroup || ChatObject.isPublic(currentChat))) {
+3915-                            getMessagesController().deleteDialog(dialog_id, 2, param);
+3916-                        } else {
+3917:                            if (id != clear_history) {
+3918-                                getNotificationCenter().removeObserver(ChatActivity.this, NotificationCenter.closeChats);
+3919-                                getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+3920-                                finishFragment();
+3921-                                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialog_id, currentUser, currentChat, param);
+3922-                            } else {
+3923-                                performHistoryClear(param, canDeleteHistory);
+3924-                            }
+3925-                        }
+3926-                    });
+3927-                } else if (id == share_contact) {
+3928-                    if (currentUser == null || getParentActivity() == null) {
+3929-                        return;
+3930-                    }
+3931-                    if (addToContactsButton != null && addToContactsButton.getTag() != null) {
+3932-                        shareMyContact((Integer) addToContactsButton.getTag(), null);
+3933-                    } else {
+3934-                        Bundle args = new Bundle();
+3935-                        args.putLong("user_id", currentUser.id);
+3936-                        args.putBoolean("addContact", true);
+3937-                        presentFragment(new ContactAddActivity(args));
+3938-                    }
+3939-                } else if (id == mute) {
+3940-                    toggleMute(false);
+3941-                } else if (id == add_shortcut) {
+3942-                    try {
+--
+4482-                timeItem2 = headerItem.lazilyAddSubItem(chat_enc_timer, R.drawable.msg_autodelete, LocaleController.getString(R.string.SetTimer));
+4483-            }
+4484-            if (currentChat != null && !isTopic) {
+4485-                viewAsTopics = headerItem.lazilyAddSubItem(view_as_topics, R.drawable.msg_topics, LocaleController.getString(R.string.TopicViewAsTopics));
+4486-            }
+4487-            if (themeDelegate.isThemeChangeAvailable(true)) {
+4488-                headerItem.lazilyAddSubItem(change_colors, R.drawable.msg_background, LocaleController.getString(R.string.SetWallpapers));
+4489-            }
+4490-            if (currentUser != null && currentUser.self && getDialogId() != UserObject.VERIFY) {
+4491-                headerItem.lazilyAddSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
+4492-            }
+4493-            if (!isTopic && !ChatObject.isMonoForum(currentChat)) {
+4494:                clearHistoryItem = headerItem.lazilyAddSubItem(clear_history, R.drawable.msg_clear,
+4495-                    LocaleController.getString(UserObject.isBotForum(currentUser) ? R.string.ClearAllHistory : R.string.ClearHistory));
+4496-            }
+4497-            boolean addedSettings = false;
+4498-            if (!isTopic) {
+4499-                if (ChatObject.isChannel(currentChat) && !currentChat.creator) {
+4500-                    if (!ChatObject.isNotInChat(currentChat)) {
+4501-                        if (currentChat.monoforum) {
+4502-                            headerItem.lazilyAddSubItem(delete_chat, R.drawable.msg_leave, LocaleController.getString(R.string.LeaveConversationMenu));
+4503-                        } else if (currentChat.megagroup) {
+4504-                            headerItem.lazilyAddSubItem(delete_chat, R.drawable.msg_leave, LocaleController.getString(R.string.LeaveMegaMenu));
+4505-                        } else {
+4506-                            headerItem.lazilyAddSubItem(delete_chat, R.drawable.msg_leave, LocaleController.getString(R.string.LeaveChannelMenu));
+4507-                        }
+4508-                    }
+4509-                } else if (!ChatObject.isChannel(currentChat) && getDialogId() != UserObject.VERIFY) {
+4510-                    if (currentChat != null) {
+4511-                        headerItem.lazilyAddSubItem(delete_chat, R.drawable.msg_leave, LocaleController.getString(R.string.DeleteAndExit));
+4512-                    } else if (currentUser != null && currentUser.bot) {
+4513-                        headerItem.lazilyAddSubItem(bot_settings, R.drawable.msg_settings_old, LocaleController.getString(R.string.BotSettings));
+4514-                        addedSettings = true;
+4515-                        headerItem.lazilyAddSubItem(bot_help, R.drawable.msg_help, LocaleController.getString(R.string.BotHelp));
+4516-                        if (!MessagesController.isSupportUser(currentUser)) {
+4517-                            headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportBot)).setColors(getThemedColor(Theme.key_text_RedRegular), getThemedColor(Theme.key_text_RedRegular));
+4518-                        }
+4519-                        headerItem.lazilyAddSubItem(delete_chat, R.drawable.msg_block2, LocaleController.getString(R.string.DeleteAndBlock)).setColors(getThemedColor(Theme.key_text_RedRegular), getThemedColor(Theme.key_text_RedRegular));
+=================== chatListThanosEffect ===================
+458-    protected ActionBarMenuItem topicCreateItem;
+459-    private ActionBarMenuItem.Item translateItem;
+460-    private ActionBarMenuItem searchIconItem;
+461-    private ActionBarMenu.LazyItem audioCallIconItem;
+462-    private boolean searchItemVisible;
+463-    private RadialProgressView progressBar;
+464-    private ActionBarMenuItem.Item addContactItem;
+465-    private ActionBarMenuItem.Item clearHistoryItem;
+466-    private ActionBarMenuItem.Item viewAsTopics;
+467-    private ActionBarMenuItem.Item closeTopicItem;
+468-    private ActionBarMenuItem.Item openForumItem;
+469-    private ClippingImageView animatingImageView;
+470:    private ThanosEffect chatListThanosEffect;
+471-    private ChatListViewPaddingsAnimator chatListViewPaddingsAnimator;
+472-    private ChatListRecyclerView chatListView;
+473-    private ChatListItemAnimator chatListItemAnimator;
+474-    private GridLayoutManagerFixed chatLayoutManager;
+475-    private ChatActivityAdapter chatAdapter;
+476-    private UnreadCounterTextView bottomOverlayChatText;
+477-    private boolean bottomOverlayLinks;
+478-    private LinkSpanDrawable.LinksTextView bottomOverlayLinksText;
+479-    private TextView bottomOverlayText;
+480-    private TextView bottomOverlayStartButton;
+481-    private RadialProgressView bottomOverlayProgress;
+482-    private AnimatorSet bottomOverlayAnimation;
+483-    private boolean bottomOverlayChatWaitsReply;
+484-    private HintView2 bottomGiftHintView;
+485-    private HintView2 guestBotHintView;
+486-    private HintView2 bottomSuggestHintView;
+487-    private ChatActivityTopPanelLayout topPanelLayout;
+488-
+489-    private boolean ignoreItemAnimation;
+490-    private ChatActivityChannelButtonsLayout bottomChannelButtonsLayout;
+491-    private ChatActivityActionsButtonsLayout actionsButtonsLayout;
+492-    @Nullable
+493-    private FrameLayout emptyViewContainer;
+494-    private LinearLayout emptyViewContent;
+495-    private ChatGreetingsView greetingsViewContainer;
+--
+4588-        }
+4589-
+4590-        if (BuildConfig.DEBUG_PRIVATE_VERSION && headerItem != null) {
+4591-            headerItem.lazilyAddSubItem(888, R.drawable.menu_download_round, "Dump Canvas");
+4592-        }
+4593-
+4594-        actionModeViews.clear();
+4595-        selectedMessagesCountTextView = null;
+4596-        checkActionBarMenu(false);
+4597-
+4598-        scrimPaint = new Paint();
+4599-
+4600:        if (chatListThanosEffect != null) {
+4601:            AndroidUtilities.removeFromParent(chatListThanosEffect);
+4602:            chatListThanosEffect = null;
+4603-        }
+4604-        removingFromParent = false;
+4605-        fragmentView = contentView = new ChatActivityFragmentView(context, parentLayout);
+4606-        invalidateBlurredSourcesView = new OnPostDrawView(context, true, this::invalidateMergedVisibleBlurredPositionsAndSourcesImpl);
+4607-        contentView.addView(invalidateBlurredSourcesView);
+4608-
+4609-        viewPositionWatcher = new ViewPositionWatcher(contentView);
+4610-
+4611-        final ViewGroup parentView = parentChatActivity != null ? parentChatActivity.contentView : contentView;
+4612-        glassBackgroundDrawableFactory.setSourceRootView(viewPositionWatcher, parentView);
+4613-        glassBackgroundDrawableFactoryFrosted.setSourceRootView(viewPositionWatcher, parentView);
+4614-        navbarContentDrawableFactory.setSourceRootView(viewPositionWatcher, parentView);
+4615-        scrimBlur3Factory.setSourceRootView(viewPositionWatcher, parentView);
+4616-
+4617-        if (headerItem != null) {
+4618-            headerItem.setBlurredBackgroundFactory(scrimBlur3Factory, BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider));
+4619-        }
+4620-
+4621-        contentView.setOccupyStatusBar(!inBubbleMode && !isInsideContainer && !inPreviewMode);
+4622-
+4623-        actionBar.setupGlass(
+4624-            glassBackgroundDrawableFactory,
+4625-            BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
+4626-            ChatObject.isForum(currentChat));
+4627-
+--
+6876-                    }
+6877-                }
+6878-            }
+6879-
+6880-            @Override
+6881-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+6882-                final ChatActivity chatToUpdate = parentChatActivity != null ? parentChatActivity : ChatActivity.this;
+6883-
+6884-                chatListView.invalidate();
+6885-                if (contentView != null) {
+6886-                    contentView.updateBlurContent();
+6887-                }
+6888:                if (chatListThanosEffect != null) {
+6889:                    chatListThanosEffect.scroll(dx, dy);
+6890-                }
+6891-                scrollUp = dy < 0;
+6892-                int firstVisibleItem = chatLayoutManager.findFirstVisibleItemPosition();
+6893-                if (dy != 0 && (scrollByTouch && recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_SETTLING) || recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING) {
+6894-                    if (forceNextPinnedMessageId != 0) {
+6895-                        if ((!scrollUp || forceScrollToFirst)) {
+6896-                            forceNextPinnedMessageId = 0;
+6897-                        } else if (!chatListView.isFastScrollAnimationRunning() && firstVisibleItem != RecyclerView.NO_POSITION) {
+6898-                            int lastVisibleItem = chatLayoutManager.findLastVisibleItemPosition();
+6899-                            MessageObject messageObject = null;
+6900-                            boolean foundForceNextPinnedView = false;
+6901-                            for (int i = lastVisibleItem; i >= firstVisibleItem; i--) {
+6902-                                View view = chatLayoutManager.findViewByPosition(i);
+6903-                                if (view instanceof ChatMessageCell) {
+6904-                                    messageObject = ((ChatMessageCell) view).getMessageObject();
+6905-                                } else if (view instanceof ChatActionCell) {
+6906-                                    messageObject = ((ChatActionCell) view).getMessageObject();
+6907-                                }
+6908-                                if (messageObject != null) {
+6909-                                    if (forceNextPinnedMessageId == messageObject.getId()) {
+6910-                                        foundForceNextPinnedView = true;
+6911-                                        break;
+6912-                                    }
+6913-                                }
+6914-                            }
+--
+18624-                }
+18625-            }
+18626-            for (int i = 0; i < childCount; i++) {
+18627-                View child = getChildAt(i);
+18628-
+18629-                if (child == null || child.getVisibility() == GONE || child == chatActivityEnterView || child == actionBar) {
+18630-                    continue;
+18631-                }
+18632-                if (isFullSizeIgnoreInsetsChild(child)) {
+18633-                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(allWidth, View.MeasureSpec.EXACTLY);
+18634-                    int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(allHeight, View.MeasureSpec.EXACTLY);
+18635-                    child.measure(contentWidthSpec, contentHeightSpec);
+18636:                } else if (child == chatListView || child == chatListThanosEffect || child instanceof TextSelectionHelper.TextSelectionOverlay) {
+18637-                    int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
+18638-                    int h = allHeight
+18639-                        + blurredViewTopOffset
+18640-                        + blurredViewBottomOffset;
+18641-                    int contentHeightSpec = MeasureSpec.makeMeasureSpec(
+18642-                        Math.max(dp(10), h), View.MeasureSpec.EXACTLY);
+18643-                    child.measure(contentWidthSpec, contentHeightSpec);
+18644-                } else if (child == progressView) {
+18645-                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
+18646-                    int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(Math.max(AndroidUtilities.dp(10), heightSize - inputFieldHeight - (inPreviewMode ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(2 + (chatActivityEnterView.isTopViewVisible() ? 48 : 0))), View.MeasureSpec.EXACTLY);
+18647-                    child.measure(contentWidthSpec, contentHeightSpec);
+18648-                } else if (child == instantCameraView) {
+18649-                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
+18650-                    int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(allHeight, View.MeasureSpec.EXACTLY);
+18651-                    instantCameraView.setInternalPadding(windowInsetsStateHolder.getCurrentMaxBottomInset()
+18652-                        + (int) inputIslandHeightTarget + dp(9 + 3));
+18653-
+18654-                    child.measure(contentWidthSpec, contentHeightSpec);
+18655-                } else if (child == overlayView) {
+18656-                    int contentWidthSpec = View.MeasureSpec.makeMeasureSpec(widthSize, View.MeasureSpec.EXACTLY);
+18657-                    int contentHeightSpec = View.MeasureSpec.makeMeasureSpec(allHeight
+18658-                        - windowInsetsStateHolder.getCurrentMaxBottomInset()
+18659-                        - (int) inputIslandHeightTarget
+18660-                        - dp(9 + 3), View.MeasureSpec.EXACTLY);
+18661-                    child.measure(contentWidthSpec, contentHeightSpec);
+--
+18825-                    } else {
+18826-                        childTop = chatActivityEnterView.getBottom();
+18827-                    }
+18828-                } else if (chatActivityEnterView != null && chatActivityEnterView.isRecordCircleOrControlsView(child)) {
+18829-                    childTop -= windowInsetsStateHolder.getCurrentMaxBottomInset() + dp(7);
+18830-                    childLeft -= dp(3);
+18831-                } else if (child == emojiButtonRed) {
+18832-                    childTop -= windowInsetsStateHolder.getCurrentMaxBottomInset() + dp(7);
+18833-                } else if (chatActivityEnterView != null && child == chatActivityEnterView.recordedAudioPanel) {
+18834-                    childTop -= windowInsetsStateHolder.getCurrentMaxBottomInset() + dp(9);
+18835-                } else if (child == gifHintTextView || child == voiceHintTextView || child == mediaBanTooltip || child == emojiHintTextView) {
+18836-                    childTop -= inputFieldHeight;
+18837:                } else if (child == chatListView || child == chatListThanosEffect || child == floatingDateView || child == floatingTopicSeparator || child == infoTopView) {
+18838-                    childTop = -blurredViewTopOffset;
+18839-                } else if (child == progressView) {
+18840-                    if (chatActivityEnterView.isTopViewVisible()) {
+18841-                        childTop -= AndroidUtilities.dp(48);
+18842-                    }
+18843-                } else if (child == actionBar) {
+18844-                    childTop -= getPaddingTop();
+18845-                    if (isInPreviewMode()) {
+18846-                        childTop += dp(1);
+18847-                    }
+18848-                } else if (child == videoPlayerContainer) {
+18849-                    childTop = actionBar.getMeasuredHeight();
+18850-                } else if (child == instantCameraView || child == overlayView || child == animatingImageView) {
+18851-                    childTop = 0;
+18852-                } else if (child instanceof MessagePreviewView) {
+18853-                    childTop = AndroidUtilities.statusBarHeight;
+18854-                } else if (child == roundVideoRecordBackground || child == messageMetricsView || child == pollAddOptionFieldLayout) {
+18855-                    childTop = 0;
+18856-                }
+18857-                child.layout(childLeft, childTop, childLeft + width, childTop + height);
+18858-            }
+18859-
+18860-            if (floatingTopicSeparator != null) {
+18861-                floatingTopicSeparator.setBackgroundHeight(getMeasuredHeight());
+18862-            }
+--
+44676-            }
+44677-        }
+44678-    }
+44679-
+44680-    public boolean supportsThanosEffect() {
+44681-        return ThanosEffect.supports() && LiteMode.isEnabled(LiteMode.FLAG_CHAT_THANOS);
+44682-    }
+44683-
+44684-    public ThanosEffect getChatThanosEffect() {
+44685-        if (!LiteMode.isEnabled(LiteMode.FLAG_CHAT_THANOS) || !ThanosEffect.supports()) {
+44686-            return null;
+44687-        }
+44688:        if (chatListThanosEffect == null || chatListThanosEffect.destroyed) {
+44689-            if (getContext() == null || !ThanosEffect.supports() || chatListView == null || contentView == null) {
+44690-                return null;
+44691-            }
+44692:            if (chatListThanosEffect != null) {
+44693:                AndroidUtilities.removeFromParent(chatListThanosEffect);
+44694-            }
+44695-            final ThanosEffect[] thisThanosEffect = new ThanosEffect[1];
+44696-            final ThanosEffect thanosEffect = new ThanosEffect(getContext(), () -> {
+44697-                if (removingFromParent || thisThanosEffect[0] == null) {
+44698-                    return;
+44699-                }
+44700-                ThanosEffect effect = thisThanosEffect[0];
+44701-                thisThanosEffect[0] = null;
+44702:                if (chatListThanosEffect == effect) {
+44703:                    chatListThanosEffect = null;
+44704-                }
+44705-                AndroidUtilities.removeFromParent(effect);
+44706-            });
+44707:            thisThanosEffect[0] = chatListThanosEffect = thanosEffect;
+44708-            contentView.addView(thanosEffect, 1 + contentView.indexOfChild(chatListView), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+44709-        }
+44710:        return chatListThanosEffect;
+44711-    }
+44712-
+44713-    private StarReactionsOverlay starReactionsOverlay;
+44714-    public StarReactionsOverlay getStarReactionsOverlay() {
+44715-        if (starReactionsOverlay == null) {
+44716-            starReactionsOverlay = new StarReactionsOverlay(ChatActivity.this);
+44717-        }
+44718-        FrameLayout starReactionsOverlayParent = getLayoutContainer();
+44719-//        if (LaunchActivity.instance != null) {
+44720-//            starReactionsOverlayParent = LaunchActivity.instance.frameLayout;
+44721-//        }
+44722-        if (starReactionsOverlayParent == null) {
+44723-            return null;
+44724-        }
+44725-        if (starReactionsOverlay.getParent() != starReactionsOverlayParent) {
+44726-            AndroidUtilities.removeFromParent(starReactionsOverlay);
+44727-            starReactionsOverlayParent.addView(starReactionsOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+44728-        } else if (starReactionsOverlayParent.indexOfChild(starReactionsOverlay) < starReactionsOverlayParent.indexOfChild(fragmentView)) {
+44729-            starReactionsOverlay.bringToFront();
+44730-        }
+44731-        return starReactionsOverlay;
+44732-    }
+44733-
+44734-    private void checkGroupMessagesOrder() {
+44735-        if (!reversed) return;
+=================== setClearingHistory( ===================
+834-    private Runnable pendingWebPageTimeoutRunnable;
+835-    private Runnable waitingForCharaterEnterRunnable;
+836-    private Runnable onChatMessagesLoaded;
+837-
+838-    private TLRPC.ChatInvite chatInvite;
+839-    private Runnable chatInviteRunnable;
+840-
+841-    private LongSparseIntArray clearingHistoryArr = new LongSparseIntArray();
+842-    boolean isClearingHistory() {
+843-        return clearingHistoryArr.get(getThreadId(), 0) != 0;
+844-    }
+845-
+846:    void setClearingHistory(long threadId, boolean isClearingHistory) {
+847-        clearingHistoryArr.put(threadId, isClearingHistory ? 1 : 0);
+848-    }
+849-
+850-    public boolean openAnimationEnded;
+851-    public boolean fragmentOpened;
+852-    private long openAnimationStartTime;
+853-
+854-    private boolean scrollToTopOnResume;
+855-    private boolean forceScrollToTop;
+856-    private boolean scrollToTopUnReadOnResume;
+857-    private long dialog_id;
+858-    private Long dialog_id_Long;
+859-    private int lastLoadIndex = 1;
+860-    private SparseArray<MessageObject>[] selectedMessagesIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
+861-    private SparseArray<MessageObject>[] selectedMessagesCanCopyIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
+862-    private SparseArray<MessageObject>[] selectedMessagesCanStarIds = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
+863-    private boolean hasUnfavedSelected;
+864-    private int cantDeleteMessagesCount;
+865-    private int cantForwardMessagesCount;
+866-    private int canForwardMessagesCount;
+867-    private int canEditMessagesCount;
+868-    private int cantSaveMessagesCount;
+869-    private int canSaveMusicCount;
+870-    private int canSaveDocumentsCount;
+871-    private ArrayList<Integer> waitingForLoad = new ArrayList<>();
+--
+12841-    }
+12842-
+12843-    public void performHistoryClear(boolean revoke, boolean canDeleteHistory) {
+12844-        final long threadId = getThreadId();
+12845-        performHistoryClear(threadId, revoke, canDeleteHistory);
+12846-    }
+12847-
+12848-    public void performHistoryClear(long threadId, boolean revoke, boolean canDeleteHistory) {
+12849-        if (topicsTabs != null && UserObject.isBotForum(currentUser)) {
+12850-            topicsTabs.setAllTopicsHidden(true);
+12851-        }
+12852-
+12853:        setClearingHistory(threadId, true);
+12854-        createUndoView();
+12855-        if (undoView == null) {
+12856-            return;
+12857-        }
+12858-        undoView.showWithAction(dialog_id, UndoView.ACTION_CLEAR, () -> {
+12859-            if (!pinnedMessageIds.isEmpty()) {
+12860-                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+12861-                preferences.edit().putInt("pin_" + dialog_id, pinnedMessageIds.get(0)).commit();
+12862-                pinnedMessageIds.clear();
+12863-                pinnedMessageObjects.clear();
+12864-                currentPinnedMessageId = 0;
+12865-                loadedPinnedMessagesCount = 0;
+12866-                totalPinnedMessagesCount = 0;
+12867-                updatePinnedMessageView(true);
+12868-            }
+12869-
+12870-            if (ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat)) {
+12871-                if (threadId != 0) {
+12872-                    getMessagesStorage().removeTopic(-currentChat.id, threadId);
+12873-                    getMessagesController().deleteSavedDialog(threadId, getMessagesController().getInputPeer(-currentChat.id));
+12874-                    getMessagesController().getTopicsController().onTopicsDeletedServerSide(currentChat.id, threadId);
+12875-                }
+12876-            } else {
+12877-                getMessagesController().deleteDialog(dialog_id, 1, revoke);
+12878-                getMessagesStorage().removeAllTopics(dialog_id);
+12879-                getMessagesController().getTopicsController().reloadTopics(-dialog_id);
+12880-            }
+12881:            setClearingHistory(threadId, false);
+12882-            if (topicsTabs != null) {
+12883-                topicsTabs.setAllTopicsHidden(false);
+12884-            }
+12885-            if (threadId == getThreadId()) {
+12886-                clearHistory(false, null);
+12887-                chatAdapter.notifyDataSetChanged();
+12888-            }
+12889-        }, () -> {
+12890:            setClearingHistory(threadId, false);
+12891-            if (topicsTabs != null) {
+12892-                topicsTabs.setAllTopicsHidden(false);
+12893-            }
+12894-            if (threadId == getThreadId()) {
+12895-                chatAdapter.notifyDataSetChanged();
+12896-            }
+12897-        });
+12898-        chatAdapter.notifyDataSetChanged();
+12899-    }
+12900-
+12901-    public long getDialogId() {
+12902-        return dialog_id;
+12903-    }
+12904-    public int getDialogFolderId() {
+12905-        return dialogFolderId;
+12906-    }
+12907-    public int getDialogFilterId() {
+12908-        return dialogFilterId;
+12909-    }
+12910-
+12911-    public boolean openedWithLivestream() {
+12912-        return livestream;
+12913-    }
+12914-
+12915-    @Nullable
+=================== deleteDialog( ===================
+3903-                                            performHistoryClear(true, canDeleteHistory);
+3904-                                        }
+3905-                                    });
+3906-                                } else {
+3907-                                    performHistoryClear(revoke, canDeleteHistory);
+3908-                                }
+3909-                            }
+3910-                        }, getResourceProvider());
+3911-                        return;
+3912-                    }
+3913-                    AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, id == clear_history, currentChat, currentUser, currentEncryptedChat != null, true, false, canDeleteHistory, (param) -> {
+3914-                        if (id == clear_history && ChatObject.isChannel(currentChat) && (!currentChat.megagroup || ChatObject.isPublic(currentChat))) {
+3915:                            getMessagesController().deleteDialog(dialog_id, 2, param);
+3916-                        } else {
+3917-                            if (id != clear_history) {
+3918-                                getNotificationCenter().removeObserver(ChatActivity.this, NotificationCenter.closeChats);
+3919-                                getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+3920-                                finishFragment();
+3921-                                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialog_id, currentUser, currentChat, param);
+3922-                            } else {
+3923-                                performHistoryClear(param, canDeleteHistory);
+3924-                            }
+3925-                        }
+3926-                    });
+3927-                } else if (id == share_contact) {
+3928-                    if (currentUser == null || getParentActivity() == null) {
+3929-                        return;
+3930-                    }
+3931-                    if (addToContactsButton != null && addToContactsButton.getTag() != null) {
+3932-                        shareMyContact((Integer) addToContactsButton.getTag(), null);
+3933-                    } else {
+3934-                        Bundle args = new Bundle();
+3935-                        args.putLong("user_id", currentUser.id);
+3936-                        args.putBoolean("addContact", true);
+3937-                        presentFragment(new ContactAddActivity(args));
+3938-                    }
+3939-                } else if (id == mute) {
+3940-                    toggleMute(false);
+--
+12865-                loadedPinnedMessagesCount = 0;
+12866-                totalPinnedMessagesCount = 0;
+12867-                updatePinnedMessageView(true);
+12868-            }
+12869-
+12870-            if (ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat)) {
+12871-                if (threadId != 0) {
+12872-                    getMessagesStorage().removeTopic(-currentChat.id, threadId);
+12873-                    getMessagesController().deleteSavedDialog(threadId, getMessagesController().getInputPeer(-currentChat.id));
+12874-                    getMessagesController().getTopicsController().onTopicsDeletedServerSide(currentChat.id, threadId);
+12875-                }
+12876-            } else {
+12877:                getMessagesController().deleteDialog(dialog_id, 1, revoke);
+12878-                getMessagesStorage().removeAllTopics(dialog_id);
+12879-                getMessagesController().getTopicsController().reloadTopics(-dialog_id);
+12880-            }
+12881-            setClearingHistory(threadId, false);
+12882-            if (topicsTabs != null) {
+12883-                topicsTabs.setAllTopicsHidden(false);
+12884-            }
+12885-            if (threadId == getThreadId()) {
+12886-                clearHistory(false, null);
+12887-                chatAdapter.notifyDataSetChanged();
+12888-            }
+12889-        }, () -> {
+12890-            setClearingHistory(threadId, false);
+12891-            if (topicsTabs != null) {
+12892-                topicsTabs.setAllTopicsHidden(false);
+12893-            }
+12894-            if (threadId == getThreadId()) {
+12895-                chatAdapter.notifyDataSetChanged();
+12896-            }
+12897-        });
+12898-        chatAdapter.notifyDataSetChanged();
+12899-    }
+12900-
+12901-    public long getDialogId() {
+12902-        return dialog_id;
+--
+27866-    }
+27867-
+27868-    public void openAttachBotLayout(long botId, String startCommand, boolean justAdded) {
+27869-        openAttachMenu();
+27870-        if (chatAttachAlert != null) {
+27871-            chatAttachAlert.showBotLayout(botId, startCommand, justAdded, false);
+27872-        }
+27873-    }
+27874-
+27875-    @Override
+27876-    protected void onDialogDismiss(Dialog dialog) {
+27877-        if (closeChatDialog != null && dialog == closeChatDialog) {
+27878:            getMessagesController().deleteDialog(dialog_id, 0);
+27879-            if (parentLayout != null && !parentLayout.getFragmentStack().isEmpty() && parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 1) != this) {
+27880-                BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 1);
+27881-                removeSelfFromStack();
+27882-                fragment.finishFragment();
+27883-            } else {
+27884-                finishFragment();
+27885-            }
+27886-        }
+27887-    }
+27888-
+27889-    @Override
+27890-    public boolean extendActionMode(Menu menu) {
+27891-        if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
+27892-            if (PhotoViewer.getInstance().getSelectionLength() == 0 || menu.findItem(android.R.id.copy) == null) {
+27893-                return true;
+27894-            }
+27895-        } else {
+27896-            if (chatActivityEnterView.getSelectionLength() == 0 || menu.findItem(android.R.id.copy) == null) {
+27897-                return true;
+27898-            }
+27899-        }
+27900-        fillActionModeMenu(menu, currentEncryptedChat, true, true);
+27901-        return true;
+27902-    }
+27903-
+=================== createClearOrDeleteDialogAlert ===================
+3889-                        }
+3890-                        return;
+3891-                    }
+3892-
+3893-                    boolean canDeleteHistory = chatInfo != null && chatInfo.can_delete_channel;
+3894-                    if (id == auto_delete_timer || id == clear_history && currentEncryptedChat == null && ((currentUser != null && !UserObject.isUserSelf(currentUser) && !UserObject.isDeleted(currentUser)) || (chatInfo != null && chatInfo.can_delete_channel))) {
+3895-                        AlertsCreator.createClearDaysDialogAlert(ChatActivity.this, -1, currentUser, currentChat, canDeleteHistory, new MessagesStorage.BooleanCallback() {
+3896-                            @Override
+3897-                            public void run(boolean revoke) {
+3898-                                if (revoke && (currentUser != null || canDeleteHistory)) {
+3899-                                    getMessagesStorage().getMessagesCount(dialog_id, (count) -> {
+3900-                                        if (count >= 50) {
+3901:                                            AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, true, currentChat, currentUser, false, false, false, canDeleteHistory, (param) -> performHistoryClear(true, canDeleteHistory));
+3902-                                        } else {
+3903-                                            performHistoryClear(true, canDeleteHistory);
+3904-                                        }
+3905-                                    });
+3906-                                } else {
+3907-                                    performHistoryClear(revoke, canDeleteHistory);
+3908-                                }
+3909-                            }
+3910-                        }, getResourceProvider());
+3911-                        return;
+3912-                    }
+3913:                    AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, id == clear_history, currentChat, currentUser, currentEncryptedChat != null, true, false, canDeleteHistory, (param) -> {
+3914-                        if (id == clear_history && ChatObject.isChannel(currentChat) && (!currentChat.megagroup || ChatObject.isPublic(currentChat))) {
+3915-                            getMessagesController().deleteDialog(dialog_id, 2, param);
+3916-                        } else {
+3917-                            if (id != clear_history) {
+3918-                                getNotificationCenter().removeObserver(ChatActivity.this, NotificationCenter.closeChats);
+3919-                                getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+3920-                                finishFragment();
+3921-                                getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialog_id, currentUser, currentChat, param);
+3922-                            } else {
+3923-                                performHistoryClear(param, canDeleteHistory);
+3924-                            }
+3925-                        }
+3926-                    });
+3927-                } else if (id == share_contact) {
+3928-                    if (currentUser == null || getParentActivity() == null) {
+3929-                        return;
+3930-                    }
+3931-                    if (addToContactsButton != null && addToContactsButton.getTag() != null) {
+3932-                        shareMyContact((Integer) addToContactsButton.getTag(), null);
+3933-                    } else {
+3934-                        Bundle args = new Bundle();
+3935-                        args.putLong("user_id", currentUser.id);
+3936-                        args.putBoolean("addContact", true);
+3937-                        presentFragment(new ContactAddActivity(args));
+3938-                    }
+--
+8646-
+8647-                            if (hasReportSpam() && reportSpamButton.getTag(R.id.object_tag) != null) {
+8648-                                SharedPreferences preferences = MessagesController.getNotificationsSettings(currentAccount);
+8649-                                preferences.edit().putInt("dialog_bar_vis3" + dialog_id, 3).commit();
+8650-                                getNotificationCenter().postNotificationName(NotificationCenter.peerSettingsDidLoad, dialog_id);
+8651-                            }
+8652-                        }
+8653-                    } else {
+8654-                        toggleMute(true);
+8655-                    }
+8656-                } else {
+8657-                    boolean canDeleteHistory = chatInfo != null && chatInfo.can_delete_channel;
+8658:                    AlertsCreator.createClearOrDeleteDialogAlert(ChatActivity.this, false, currentChat, currentUser, currentEncryptedChat != null, true, false, canDeleteHistory, (param) -> {
+8659-                        getNotificationCenter().removeObserver(ChatActivity.this, NotificationCenter.closeChats);
+8660-                        getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+8661-                        finishFragment();
+8662-                        getNotificationCenter().postNotificationName(NotificationCenter.needDeleteDialog, dialog_id, currentUser, currentChat, param);
+8663-                    });
+8664-                }
+8665-            }
+8666-        });
+8667-
+8668-        bottomOverlayProgress = new RadialProgressView(context, themeDelegate);
+8669-        bottomOverlayProgress.setSize(AndroidUtilities.dp(22));
+8670-        bottomOverlayProgress.setProgressColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+8671-        bottomOverlayProgress.setVisibility(View.INVISIBLE);
+8672-        bottomOverlayProgress.setScaleX(0.1f);
+8673-        bottomOverlayProgress.setScaleY(0.1f);
+8674-        bottomOverlayProgress.setAlpha(1.0f);
+8675-        bottomChannelButtonsLayout.getContainer().addView(bottomOverlayProgress, LayoutHelper.createFrame(30, 30, Gravity.CENTER));
+8676-
+8677-        contentView.addView(messageEnterTransitionContainer = new MessageEnterTransitionContainer(contentView, currentAccount));
+8678-
+8679-        if (currentChat != null) {
+8680-            slowModeHint = new HintView(getParentActivity(), 2, themeDelegate);
+8681-            slowModeHint.setAlpha(0.0f);
+8682-            slowModeHint.setVisibility(View.INVISIBLE);
+8683-            contentView.addView(slowModeHint, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
