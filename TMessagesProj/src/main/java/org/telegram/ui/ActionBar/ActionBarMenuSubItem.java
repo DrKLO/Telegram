@@ -44,11 +44,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
     private PorterDuff.Mode iconColorMode;
     private int selectorColor;
 
-    int selectorRad = 12;
+    int selectorRad = 20;
     boolean top;
     boolean bottom;
 
     private int itemHeight = 48;
+    private boolean iconAtEnd = true;
     protected final Theme.ResourcesProvider resourcesProvider;
     public Runnable openSwipeBackLayout;
 
@@ -86,7 +87,7 @@ public class ActionBarMenuSubItem extends FrameLayout {
         imageView = new RLottieImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
-        addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));
+        addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));
 
         textView = new AnimatedEmojiSpan.TextViewEmojis(context);
         textView.setLines(1);
@@ -94,15 +95,23 @@ public class ActionBarMenuSubItem extends FrameLayout {
         textView.setGravity(Gravity.LEFT);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTextColor(textColor);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL));
 
         checkViewLeft = LocaleController.isRTL;
         makeCheckView(needCheck);
     }
 
+    private void setIconAtEnd(boolean end) {
+        iconAtEnd = end;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+        lp.gravity = Gravity.CENTER_VERTICAL | ((end != LocaleController.isRTL) ? Gravity.RIGHT : Gravity.LEFT);
+        imageView.setLayoutParams(lp);
+    }
+
     public void makeCheckView(int needCheck) {
         if (needCheck > 0) {
+            setIconAtEnd(false);
             checkView = new CheckBox2(getContext(), 26, resourcesProvider);
             checkView.setDrawUnchecked(false);
             checkView.setColor(-1, -1, Theme.key_actionBarDefaultSubmenuItem);
@@ -157,6 +166,11 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void setRightIcon(int icon) {
+        if (iconAtEnd) {
+            setIconAtEnd(false);
+            boolean hasIcon = imageView.getVisibility() == VISIBLE;
+            textView.setPadding(LocaleController.isRTL ? 0 : (hasIcon ? dp(43) : 0), 0, LocaleController.isRTL ? (hasIcon ? dp(43) : 0) : 0, 0);
+        }
         if (rightIcon == null) {
             rightIcon = new ImageView(getContext());
             rightIcon.setScaleType(ImageView.ScaleType.CENTER);
@@ -214,6 +228,10 @@ public class ActionBarMenuSubItem extends FrameLayout {
                 imageView.setImageResource(icon);
             }
             imageView.setVisibility(VISIBLE);
+            if (iconAtEnd && checkView == null) {
+                boolean hasIcon = icon != 0 || iconDrawable != null;
+                textView.setPadding(LocaleController.isRTL && hasIcon ? dp(34) : 0, 0, !LocaleController.isRTL && hasIcon ? dp(34) : 0, 0);
+            } else
             textView.setPadding(checkViewLeft ? (checkView != null ? dp(43) : 0) : dp(icon != 0 || iconDrawable != null ? 43 : 0), 0, checkViewLeft ? dp(icon != 0 || iconDrawable != null ? 43 : 0) : (checkView != null ? dp(43) : 0), 0);
         } else {
             iconResId = 0;

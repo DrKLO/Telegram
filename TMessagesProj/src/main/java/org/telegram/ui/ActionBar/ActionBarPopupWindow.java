@@ -19,6 +19,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -27,7 +29,9 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -44,6 +48,7 @@ import android.widget.ScrollView;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -131,6 +136,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         protected LinearLayout linearLayout;
 
         private int backgroundColor = Color.WHITE;
+        private final Paint dividerPaint = new Paint();
         protected Drawable backgroundDrawable;
 
         private boolean fitItems;
@@ -162,7 +168,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             this.resourcesProvider = resourcesProvider;
 
             if (resId != 0) {
-                backgroundDrawable = getResources().getDrawable(resId).mutate();
+                backgroundDrawable = new IOSMenuDrawable();
                 setPadding(dp(8), dp(8), dp(8), dp(8));
             }
             if (backgroundDrawable != null) {
@@ -252,7 +258,26 @@ public class ActionBarPopupWindow extends PopupWindow {
                     if (child instanceof GapView && backgroundDrawable != null) {
                         return false;
                     }
-                    return super.drawChild(canvas, child, drawingTime);
+                    boolean result = super.drawChild(canvas, child, drawingTime);
+                    if (backgroundDrawable instanceof IOSMenuDrawable && child instanceof ActionBarMenuSubItem && child.getVisibility() == VISIBLE) {
+                        View next = null;
+                        for (int i = indexOfChild(child) + 1; i < getChildCount(); i++) {
+                            View v = getChildAt(i);
+                            if (v.getVisibility() == VISIBLE) {
+                                next = v;
+                                break;
+                            }
+                        }
+                        if (next instanceof ActionBarMenuSubItem) {
+                            boolean dark = ColorUtils.calculateLuminance(backgroundColor) < 0.5;
+                            int base = dark ? 0x2EFFFFFF : 0x24000000;
+                            dividerPaint.setColor(ColorUtils.setAlphaComponent(base, (int) (Color.alpha(base) * child.getAlpha())));
+                            float h = Math.max(1f, AndroidUtilities.dpf2(0.5f));
+                            float y = child.getY() + child.getHeight();
+                            canvas.drawRect(child.getLeft(), y - h, child.getRight(), y, dividerPaint);
+                        }
+                    }
+                    return result;
                 }
             };
             linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -292,6 +317,12 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         public void setBackgroundColor(int color) {
+            if (backgroundDrawable instanceof IOSMenuDrawable) {
+                backgroundColor = color;
+                ((IOSMenuDrawable) backgroundDrawable).setBaseColor(color);
+                invalidate();
+                return;
+            }
             if (backgroundColor != color && backgroundDrawable != null) {
                 backgroundDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = color, PorterDuff.Mode.MULTIPLY));
             }
@@ -546,7 +577,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                         } else {
                             path.rewind();
                         }
-                        path.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);
+                        path.addRoundRect(AndroidUtilities.rectTmp, dp(20), dp(20), Path.Direction.CW);
                         canvas.clipPath(path);
                         for (int i = 0; i < linearLayout.getChildCount(); i++) {
                             if (linearLayout.getChildAt(i) instanceof GapView && linearLayout.getChildAt(i).getVisibility() == View.VISIBLE) {
@@ -791,6 +822,15 @@ public class ActionBarPopupWindow extends PopupWindow {
         WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
         p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         p.dimAmount = amount;
+        if (Build.VERSION.SDK_INT >= 31) {
+            try {
+                if (wm.isCrossWindowBlurEnabled()) {
+                    p.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
+                    p.setBlurBehindRadius(dp(18));
+                }
+            } catch (Throwable ignore) {
+            }
+        }
         wm.updateViewLayout(container, p);
     }
 
@@ -820,8 +860,8 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
         WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
         try {
-            if ((p.flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND) != 0) {
-                p.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+            if ((p.flags & (WindowManager.LayoutParams.FLAG_DIM_BEHIND | WindowManager.LayoutParams.FLAG_BLUR_BEHIND)) != 0) {
+                p.flags &= ~(WindowManager.LayoutParams.FLAG_DIM_BEHIND | WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
                 p.dimAmount = 0.0f;
                 wm.updateViewLayout(container, p);
             }
@@ -1107,6 +1147,98 @@ public class ActionBarPopupWindow extends PopupWindow {
         void onSizeChanged();
     }
 
+    /** iOS-style frosted glass panel for popup menus. */
+    public static class IOSMenuDrawable extends Drawable {
+        private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint sheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rect = new RectF();
+        private final Matrix sheenMatrix = new Matrix();
+        private final LinearGradient lightSheen = new LinearGradient(0, 0, 0, 1, new int[]{0x55FFFFFF, 0x10FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+        private final LinearGradient darkSheen = new LinearGradient(0, 0, 0, 1, new int[]{0x22FFFFFF, 0x08FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+        private final int pad = dp(8);
+        private final float radius = dp(20);
+        private int baseColor = Color.WHITE;
+        private boolean dark;
+        private int alpha = 255;
+
+        public IOSMenuDrawable() {
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setStrokeWidth(Math.max(1f, AndroidUtilities.dpf2(0.5f)));
+        }
+
+        public void setBaseColor(int color) {
+            baseColor = color;
+            dark = ColorUtils.calculateLuminance(color) < 0.5;
+            invalidateSelf();
+        }
+
+        @Override
+        public boolean getPadding(Rect padding) {
+            padding.set(pad, pad, pad, pad);
+            return true;
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            rect.set(b.left + pad, b.top + pad, b.right - pad, b.bottom - pad);
+            if (rect.width() <= 0 || rect.height() <= 0) {
+                return;
+            }
+            float r = Math.min(radius, Math.min(rect.width(), rect.height()) / 2f);
+            float a = alpha / 255f;
+
+            // soft shadow
+            for (int i = 3; i >= 1; i--) {
+                float e = i * AndroidUtilities.dpf2(1.5f);
+                shadowPaint.setColor(Color.argb((int) (255 * a * (dark ? 0.10f : 0.045f)), 0, 0, 0));
+                canvas.drawRoundRect(rect.left - e, rect.top - e + dp(2), rect.right + e, rect.bottom + e + dp(2), r + e, r + e, shadowPaint);
+            }
+
+            // translucent glass body
+            fillPaint.setColor(ColorUtils.setAlphaComponent(baseColor, (int) ((dark ? 208 : 218) * a)));
+            canvas.drawRoundRect(rect, r, r, fillPaint);
+
+            // top sheen
+            sheenMatrix.setScale(1f, rect.height());
+            sheenMatrix.postTranslate(0, rect.top);
+            LinearGradient sheen = dark ? darkSheen : lightSheen;
+            sheen.setLocalMatrix(sheenMatrix);
+            sheenPaint.setShader(sheen);
+            sheenPaint.setAlpha((int) (255 * a));
+            canvas.drawRoundRect(rect, r, r, sheenPaint);
+
+            // rim light
+            float half = strokePaint.getStrokeWidth() / 2f;
+            strokePaint.setColor(ColorUtils.setAlphaComponent(dark ? 0x38FFFFFF : 0x99FFFFFF, (int) (Color.alpha(dark ? 0x38FFFFFF : 0x99FFFFFF) * a)));
+            canvas.drawRoundRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half, r, r, strokePaint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            if (this.alpha != alpha) {
+                this.alpha = alpha;
+                invalidateSelf();
+            }
+        }
+
+        @Override
+        public int getAlpha() {
+            return alpha;
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+    }
+
     public static class GapView extends FrameLayout {
 
         Drawable shadowDrawable;
@@ -1117,8 +1249,8 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public GapView(Context context, int color, int shadowColor) {
             super(context);
-            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, shadowColor);
-            setBackgroundColor(color);
+            this.shadowDrawable = null;
+            setBackgroundColor(Theme.isCurrentThemeDark() ? 0x66000000 : 0x26000000);
         }
 
         public GapView(Context context, Theme.ResourcesProvider resourcesProvider, int colorKey) {
