@@ -1382,6 +1382,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         };
         view.setOpaque(true);
         view.setClickable(true);
+        // clickable only to take the pinch that zooms; it is no button, and a screen reader found it
+        // as one with no name before Switch camera
+        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         view.setCameraDistance(dp(8000));
         view.setOutlineProvider(new ViewOutlineProvider() {
             @Override
