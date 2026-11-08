@@ -23134,7 +23134,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     // the menu of the message, so that is what a press asks for here. The menu keeps the one
     // place it is offered by name, which is where a reader looks for it.
     private boolean pressOpensMessageOptions() {
-        if (currentMessageObject == null || drawVideoImageButton) {
+        if (currentMessageObject == null) {
+            return false;
+        }
+        // a message that could not be sent has nothing to play or open: a tap on it anywhere opens
+        // its menu, with Retry and Delete. The button left from the upload is no longer drawn, and
+        // going by it said Play or Cancel and did that
+        if (currentMessageObject.isSendError()) {
+            return true;
+        }
+        if (drawVideoImageButton) {
             return false;
         }
         if (currentMessageObject.type != MessageObject.TYPE_TEXT && currentMessageObject.type != MessageObject.TYPE_POLL) {
