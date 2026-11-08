@@ -4642,8 +4642,18 @@ public class ChatActivity extends BaseFragment implements
         chatInputViewsContainer = new ChatInputViewsContainer(context);
         chatInputViewsContainer.setClipChildren(false);
         chatInputViewsContainer.setWindowInsetsProvider(windowInsetsStateHolder);
+        final BlurredBackgroundColorProviderThemed inputGlassColorProvider = new BlurredBackgroundColorProviderThemed(themeDelegate, Theme.key_chat_messagePanelBackground) {
+            @Override
+            public int getBackgroundColor() {
+                if (!BlurredBackgroundProviderImpl.checkBlurEnabled(currentAccount, themeDelegate)) {
+                    return ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelBackground), 255);
+                }
+                final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? 130 : 140);
+            }
+        };
         chatInputViewsContainer.setInputIslandBubbleDrawable(
-            glassBackgroundDrawableFactory.create(chatInputViewsContainer, blurredBackgroundColorProvider));
+            glassBackgroundDrawableFactory.create(chatInputViewsContainer, inputGlassColorProvider));
         chatInputViewsContainer.setUnderKeyboardBackgroundDrawable(
             glassBackgroundDrawableFactoryFrosted.create(chatInputViewsContainer, blurredBackgroundColorProvider));
 
