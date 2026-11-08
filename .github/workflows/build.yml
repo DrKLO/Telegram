@@ -4,6 +4,13 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-build
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,19 +32,36 @@ jobs:
           yes | "$SDKM" --licenses > /dev/null || true
           "$SDKM" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
-      # ---------- امضا (keystore ثابت داخل خود فایل) ----------
+      # ---------- امضا ----------
+      # اگر سکرت KEYSTORE_B64 و KEYSTORE_PASSWORD تنظیم شده باشد از همان استفاده می‌شود
+      # (برای اینکه امضا بین بیلدها ثابت بماند و آپدیت روی هم نصب شود).
+      # اگر نباشد، یک keystore موقت ساخته می‌شود.
       - name: Prepare keystore
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
         run: |
           mkdir -p TMessagesProj/config
-          echo "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" | base64 -d > TMessagesProj/config/release.keystore
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > TMessagesProj/config/release.keystore
+            ALIAS="${KS_ALIAS:-tgapp}"
+            PASS="$KS_PASS"
+          else
+            echo "No keystore secrets, generating a temporary keystore"
+            ALIAS=tgapp
+            PASS=$(openssl rand -hex 12)
+            keytool -genkeypair -v -keystore TMessagesProj/config/release.keystore \
+              -storetype PKCS12 -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=TG app"
+          fi
           {
-            echo "RELEASE_KEY_PASSWORD=XXJBiC8tQuLC6Uu6"
-            echo "RELEASE_KEY_ALIAS=tgapp"
-            echo "RELEASE_STORE_PASSWORD=XXJBiC8tQuLC6Uu6"
+            echo "RELEASE_KEY_PASSWORD=$PASS"
+            echo "RELEASE_KEY_ALIAS=$ALIAS"
+            echo "RELEASE_STORE_PASSWORD=$PASS"
             echo "org.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
           } >> gradle.properties
 
-      # ---------- Firebase (باید برای org.tgapp ساخته شود) ----------
       - name: google-services.json
         env:
           GS_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
@@ -46,7 +70,6 @@ jobs:
             for d in TMessagesProj TMessagesProj_App; do echo "$GS_JSON" > $d/google-services.json; done
           fi
 
-      # ---------- api_id / api_hash ----------
       - name: Patch BuildVars
         env:
           API_ID: ${{ secrets.API_ID }}
@@ -58,18 +81,15 @@ jobs:
             sed -i -E "s/(APP_HASH *= *\")[^\"]*(\")/\1$API_HASH\2/" $F
           fi
 
-      # ---------- تغییر applicationId و اسم برنامه ----------
       - name: Rename app
         run: |
           grep -rl --include=build.gradle 'applicationId' . | while read f; do
             sed -i -E 's/applicationId[ =]+"[^"]+"/applicationId "org.tgapp"/' "$f"
             sed -i -E "s/applicationId[ =]+'[^']+'/applicationId \"org.tgapp\"/" "$f"
           done
-          # اسم برنامه در لانچر
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values/strings.xml
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values*/strings.xml || true
 
-      # ---------- فقط arm64 (گوشی‌های امروزی) ----------
       - name: Only arm64
         run: |
           python3 - <<'PYEOF'
@@ -82,7 +102,7 @@ jobs:
                   print('abiFilters patched in', f)
           PYEOF
 
-      # ---------- افکت سیاه‌چاله ----------
+      # ---------- افکت سیاه‌چاله (ساخت فایل + قلاب در ChatActivity) ----------
       - name: Add BlackHole effect
         run: |
           cat > TMessagesProj/src/main/java/org/telegram/ui/Components/BlackHoleClearEffect.java <<'JAVAEOF'
@@ -101,24 +121,51 @@ jobs:
           import android.widget.FrameLayout;
 
           import org.telegram.messenger.AndroidUtilities;
+          import org.telegram.messenger.MessageObject;
+          import org.telegram.ui.ActionBar.SimpleTextView;
+          import org.telegram.ui.Cells.ChatMessageCell;
 
           import java.util.ArrayList;
+          import java.util.List;
+          import java.util.Random;
 
           /**
-           * سیاه‌چاله از بالای صفحه پایین می‌آید و همه پیام‌های چت را به سمت بالا می‌کشد و می‌بلعد.
+           * سیاه‌چاله‌ای که از «اسم کاربر» بالای چت باز می‌شود.
+           * حالت ۱ (پاک کردن کل تاریخچه): والپیپر/تم به سمت سیاه‌چاله خم می‌شود و پیام‌ها کشیده و بلعیده می‌شوند.
+           * حالت ۲ (پاک کردن پیام): پیام به ذرات پودر تبدیل می‌شود و بعد سیاه‌چاله می‌آید و پودر را می‌بلعد.
            * فقط Canvas ساده، بدون OpenGL.
            */
           public class BlackHoleClearEffect extends View {
 
-              private static final float EMERGE = 0.6f;          // پایین آمدن سیاه‌چاله
-              private static final float SWALLOW_START = 0.25f;  // شروع بلعیدن
-              private static final float SWALLOW = 1.1f;         // مدت بلعیدن
-              private static final float COLLAPSE = 0.35f;       // برگشت به بالا
-              private static final float TOTAL = SWALLOW_START + SWALLOW + COLLAPSE;
-              private static final float STAGGER = 0.45f;        // فاصله زمانی بین پیام‌های بالا و پایین
+              private static final int MODE_CLEAR = 0;
+              private static final int MODE_DELETE = 1;
+
+              private static final float EMERGE = 0.6f;
+              private static final float COLLAPSE = 0.35f;
+
+              // حالت پاک کردن کل تاریخچه
+              private static final float SWALLOW_START = 0.25f;
+              private static final float SWALLOW = 1.1f;
+              private static final float CLEAR_COLLAPSE_AT = SWALLOW_START + SWALLOW;
+              private static final float CLEAR_TOTAL = CLEAR_COLLAPSE_AT + COLLAPSE;
+              private static final float STAGGER = 0.45f;
+
+              // حالت پاک کردن پیام
+              private static final float DEL_HOLE_START = 0.3f;
+              private static final float DEL_ATTRACT_START = 0.7f;
+              private static final float DEL_MAX = 3.4f;
+              private static final int MAX_PARTICLES = 2600;
 
               private static final int COLS = 4;
               private static final int ROWS = 16;
+              private static final int BC = 8;
+              private static final int BR = 16;
+
+              private static boolean running;
+
+              public static boolean isRunning() {
+                  return running;
+              }
 
               private static class Item {
                   Bitmap bmp;
@@ -128,33 +175,52 @@ jobs:
                   float[] dst = new float[(COLS + 1) * (ROWS + 1) * 2];
               }
 
+              private final int mode;
               private final ArrayList<Item> items = new ArrayList<>();
               private final Paint bmpPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+              private final Paint titlePaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
               private final Paint holePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
               private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
               private final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+              private final Paint darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+              private final Paint dustPaint = new Paint();
               private final Matrix matrix = new Matrix();
               private final RadialGradient glowShader;
               private final SweepGradient ringShader;
-
-              private final float maxRadius = AndroidUtilities.dp(46);
-              private long startTime;
-              private boolean finished;
-              private View listView;
-              private Runnable onFinished;
-              private int hostX, hostY;
-              private static final int BC = 8;
-              private static final int BR = 16;
-              private Bitmap bgBmp;
-              private final float[] bgVerts = new float[(BC + 1) * (BR + 1) * 2];
-              private final Paint darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
               private final RadialGradient darkShader = new RadialGradient(0, 0, 1f,
                       new int[]{0xCC000000, 0x66000000, 0x00000000},
                       new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP);
+              private final float[] bgVerts = new float[(BC + 1) * (BR + 1) * 2];
               private final int[] tmpLoc = new int[2];
+              private final Random rnd = new Random();
 
-              private BlackHoleClearEffect(Context context) {
+              private final float maxRadius = AndroidUtilities.dp(46);
+              private long startTime;
+              private float lastT;
+              private boolean finished;
+              private boolean cleaned;
+              private View listView;
+              private Runnable onFinished;
+              private int hostX, hostY;
+              private Bitmap bgBmp;
+
+              // اسم کاربر (مبدا سیاه‌چاله)
+              private View titleView;
+              private float titleOrigAlpha = 1f;
+              private Bitmap titleBmp;
+              private float titleX, titleY, titleW, titleH, titleCx, titleCy;
+              private float holeCx, holeCy;
+
+              // ذرات پودر
+              private int pcount;
+              private float[] ppx, ppy, pvx, pvy, psz, pdelay, palpha;
+              private int[] pcol;
+              private boolean[] palive;
+              private float collapseStart = -1f;
+
+              private BlackHoleClearEffect(Context context, int mode) {
                   super(context);
+                  this.mode = mode;
                   glowShader = new RadialGradient(0, 0, 1f,
                           new int[]{0xFF000000, 0xFF000000, 0xFFFFE2B0, 0x66FF9A40, 0x00FF9A40},
                           new float[]{0f, 0.45f, 0.5f, 0.62f, 1f}, Shader.TileMode.CLAMP);
@@ -165,20 +231,27 @@ jobs:
                   holePaint.setStyle(Paint.Style.FILL);
                   ringPaint.setStyle(Paint.Style.STROKE);
                   ringPaint.setStrokeWidth(AndroidUtilities.dp(2.5f));
+                  dustPaint.setStyle(Paint.Style.FILL);
               }
 
+              private static float clamp(float v) {
+                  return v < 0f ? 0f : (v > 1f ? 1f : v);
+              }
+
+              // ------------------------------------------------------------------------------------
+              // ورودی ۱: پاک کردن کل تاریخچه
+              // ------------------------------------------------------------------------------------
+
               /**
-               * @param host        ویوی والد (مثلاً fragmentView در ChatActivity)
+               * @param host        ویوی والد (contentView)
                * @param list        لیست پیام‌ها (chatListView)
-               * @param onCaptured  بعد از گرفتن عکس از پیام‌ها صدا زده می‌شود؛ پاک کردن واقعی تاریخچه را اینجا انجام بدهید
-               * @param onFinished  بعد از پایان انیمیشن صدا زده می‌شود؛ مثلاً نمایش پیام «Chat cleared»
-               * @return false اگر چیزی برای انیمیشن نبود (آن موقع خودتان کار را معمولی انجام بدهید)
+               * @param titleOrigin ویوی هدر چت (avatarContainer)؛ سیاه‌چاله از اسم کاربر داخل آن باز می‌شود. می‌تواند null باشد.
                */
-              public static boolean start(ViewGroup host, ViewGroup list, Runnable onCaptured, Runnable onFinished) {
-                  if (host == null || list == null || list.getChildCount() == 0 || host.getHeight() == 0) {
+              public static boolean start(ViewGroup host, ViewGroup list, View titleOrigin, Runnable onCaptured, Runnable onFinished) {
+                  if (running || host == null || list == null || list.getChildCount() == 0 || host.getHeight() == 0) {
                       return false;
                   }
-                  BlackHoleClearEffect effect = new BlackHoleClearEffect(host.getContext());
+                  BlackHoleClearEffect effect = new BlackHoleClearEffect(host.getContext(), MODE_CLEAR);
                   int[] hostLoc = new int[2];
                   int[] childLoc = new int[2];
                   host.getLocationInWindow(hostLoc);
@@ -221,6 +294,9 @@ jobs:
 
                   effect.listView = list;
                   effect.onFinished = onFinished;
+                  effect.hostX = hostLoc[0];
+                  effect.hostY = hostLoc[1];
+                  effect.setupTitle(host, titleOrigin);   // اسم را می‌گیرد و پنهان می‌کند
                   list.setAlpha(0f);
                   try {
                       int bw = Math.max(1, host.getWidth() / 2);
@@ -233,19 +309,196 @@ jobs:
                   } catch (Throwable ignore) {
                       effect.bgBmp = null;
                   }
-                  effect.hostX = hostLoc[0];
-                  effect.hostY = hostLoc[1];
-                  host.addView(effect, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                  effect.startTime = System.nanoTime();
+                  if (!effect.attach(host)) {
+                      return false;
+                  }
                   if (onCaptured != null) {
                       onCaptured.run();
                   }
-                  effect.invalidate();
                   return true;
               }
 
-              private static float clamp(float v) {
-                  return v < 0f ? 0f : (v > 1f ? 1f : v);
+              // ------------------------------------------------------------------------------------
+              // ورودی ۲: پاک شدن پیام (از NotificationCenter.messagesDeleted صدا زده می‌شود)
+              // ------------------------------------------------------------------------------------
+
+              public static boolean onMessagesDeleted(ViewGroup host, ViewGroup list, View titleOrigin, Object[] args) {
+                  if (running || host == null || list == null || host.getHeight() == 0
+                          || args == null || args.length == 0 || !(args[0] instanceof List)) {
+                      return false;
+                  }
+                  List<?> ids = (List<?>) args[0];
+                  if (ids.isEmpty()) {
+                      return false;
+                  }
+                  int[] hostLoc = new int[2];
+                  int[] childLoc = new int[2];
+                  host.getLocationInWindow(hostLoc);
+                  float hostH = host.getHeight();
+
+                  ArrayList<Bitmap> bitmaps = new ArrayList<>();
+                  ArrayList<float[]> origins = new ArrayList<>();
+                  long totalArea = 0;
+                  for (int i = 0; i < list.getChildCount(); i++) {
+                      View child = list.getChildAt(i);
+                      if (!(child instanceof ChatMessageCell) || child.getWidth() <= 0 || child.getHeight() <= 0) {
+                          continue;
+                      }
+                      MessageObject mo = ((ChatMessageCell) child).getMessageObject();
+                      if (mo == null || !ids.contains(mo.getId())) {
+                          continue;
+                      }
+                      child.getLocationInWindow(childLoc);
+                      float y = childLoc[1] - hostLoc[1];
+                      if (y + child.getHeight() < 0 || y > hostH) {
+                          continue;
+                      }
+                      try {
+                          Bitmap b = Bitmap.createBitmap(child.getWidth(), child.getHeight(), Bitmap.Config.ARGB_8888);
+                          child.draw(new Canvas(b));
+                          bitmaps.add(b);
+                          origins.add(new float[]{childLoc[0] - hostLoc[0], y});
+                          totalArea += (long) b.getWidth() * b.getHeight();
+                      } catch (Throwable e) {
+                          // ignore
+                      }
+                  }
+                  if (bitmaps.isEmpty()) {
+                      return false;
+                  }
+
+                  BlackHoleClearEffect effect = new BlackHoleClearEffect(host.getContext(), MODE_DELETE);
+                  int step = Math.max(3, (int) Math.ceil(Math.sqrt((double) totalArea / MAX_PARTICLES)));
+                  int cap = 0;
+                  for (Bitmap b : bitmaps) {
+                      cap += (b.getWidth() / step + 1) * (b.getHeight() / step + 1);
+                  }
+                  effect.ppx = new float[cap];
+                  effect.ppy = new float[cap];
+                  effect.pvx = new float[cap];
+                  effect.pvy = new float[cap];
+                  effect.psz = new float[cap];
+                  effect.pdelay = new float[cap];
+                  effect.palpha = new float[cap];
+                  effect.pcol = new int[cap];
+                  effect.palive = new boolean[cap];
+
+                  float u = AndroidUtilities.dp(1);
+                  int n = 0;
+                  for (int bi = 0; bi < bitmaps.size(); bi++) {
+                      Bitmap b = bitmaps.get(bi);
+                      float[] o = origins.get(bi);
+                      int w = b.getWidth();
+                      int h = b.getHeight();
+                      int[] pix = new int[w * h];
+                      b.getPixels(pix, 0, w, 0, 0, w, h);
+                      b.recycle();
+                      for (int y = 0; y < h; y += step) {
+                          for (int x = 0; x < w; x += step) {
+                              int c = pix[y * w + x];
+                              int a = c >>> 24;
+                              if (a < 70 || n >= cap) {
+                                  continue;
+                              }
+                              effect.ppx[n] = o[0] + x;
+                              effect.ppy[n] = o[1] + y;
+                              effect.pcol[n] = c & 0x00FFFFFF;
+                              effect.palpha[n] = a / 255f;
+                              effect.psz[n] = step * 0.9f;
+                              effect.pdelay[n] = 0.5f * x / w + 0.2f * effect.rnd.nextFloat();
+                              effect.pvx[n] = (effect.rnd.nextFloat() * 1.3f - 0.3f) * u * 120f;
+                              effect.pvy[n] = (effect.rnd.nextFloat() * 1.1f - 0.9f) * u * 100f;
+                              effect.palive[n] = true;
+                              n++;
+                          }
+                      }
+                  }
+                  if (n == 0) {
+                      return false;
+                  }
+                  effect.pcount = n;
+                  effect.hostX = hostLoc[0];
+                  effect.hostY = hostLoc[1];
+                  effect.setupTitle(host, titleOrigin);
+                  return effect.attach(host);
+              }
+
+              // ------------------------------------------------------------------------------------
+
+              private boolean attach(ViewGroup host) {
+                  try {
+                      host.addView(this, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                  } catch (Throwable e) {
+                      cleanup();
+                      return false;
+                  }
+                  running = true;
+                  startTime = System.nanoTime();
+                  lastT = 0f;
+                  invalidate();
+                  return true;
+              }
+
+              /** اسم کاربر را پیدا می‌کند، از آن عکس می‌گیرد، پنهانش می‌کند و محل سیاه‌چاله را مشخص می‌کند. */
+              private void setupTitle(ViewGroup host, View origin) {
+                  int[] hl = new int[2];
+                  int[] tl = new int[2];
+                  host.getLocationInWindow(hl);
+                  View found = null;
+                  if (origin instanceof ViewGroup) {
+                      ViewGroup g = (ViewGroup) origin;
+                      for (int i = 0; i < g.getChildCount(); i++) {
+                          View c = g.getChildAt(i);
+                          if (c instanceof SimpleTextView && c.getVisibility() == VISIBLE && c.getWidth() > 0 && c.getHeight() > 0) {
+                              found = c;
+                              break;
+                          }
+                      }
+                  }
+                  if (found == null && origin != null && origin.getWidth() > 0 && origin.getHeight() > 0) {
+                      found = origin;
+                  }
+                  float W = host.getWidth();
+                  if (found != null) {
+                      found.getLocationInWindow(tl);
+                      titleX = tl[0] - hl[0];
+                      titleY = tl[1] - hl[1];
+                      titleW = Math.min(found.getWidth(), AndroidUtilities.dp(180));
+                      titleH = found.getHeight();
+                      try {
+                          titleBmp = Bitmap.createBitmap(found.getWidth(), found.getHeight(), Bitmap.Config.ARGB_8888);
+                          found.draw(new Canvas(titleBmp));
+                      } catch (Throwable e) {
+                          titleBmp = null;
+                      }
+                      titleView = found;
+                      titleOrigAlpha = found.getAlpha();
+                      found.setAlpha(0f);
+                  } else {
+                      titleW = AndroidUtilities.dp(120);
+                      titleH = AndroidUtilities.dp(20);
+                      titleX = (W - titleW) / 2f;
+                      titleY = AndroidUtilities.statusBarHeight + AndroidUtilities.dp(18);
+                  }
+                  titleCx = titleX + titleW / 2f;
+                  titleCy = titleY + titleH / 2f;
+                  float m = maxRadius + AndroidUtilities.dp(6);
+                  holeCx = Math.max(m, Math.min(W - m, titleCx));
+                  holeCy = Math.max(m, titleCy);
+              }
+
+              private float holeAmount(float t) {
+                  float cs = mode == MODE_CLEAR ? CLEAR_COLLAPSE_AT : collapseStart;
+                  if (cs >= 0f && t >= cs) {
+                      float p = clamp((t - cs) / COLLAPSE);
+                      return 1f - p * p;
+                  }
+                  float start = mode == MODE_CLEAR ? 0f : DEL_HOLE_START;
+                  if (t < start) {
+                      return 0f;
+                  }
+                  float p = clamp((t - start) / EMERGE);
+                  return 1f - (1f - p) * (1f - p);
               }
 
               @Override
@@ -254,29 +507,37 @@ jobs:
                       return;
                   }
                   float t = (System.nanoTime() - startTime) / 1_000_000_000f;
+                  float dt = Math.min(Math.max(t - lastT, 0f), 1f / 30f);
+                  lastT = t;
                   getLocationInWindow(tmpLoc);
                   canvas.save();
                   canvas.translate(hostX - tmpLoc[0], hostY - tmpLoc[1]);
 
-                  // --- شکل سیاه‌چاله ---
-                  float h;
-                  if (t < EMERGE) {
-                      float p = clamp(t / EMERGE);
-                      h = 1f - (1f - p) * (1f - p);
-                  } else if (t > SWALLOW_START + SWALLOW) {
-                      float p = clamp((t - SWALLOW_START - SWALLOW) / COLLAPSE);
-                      h = 1f - p * p;
+                  float h = holeAmount(t);
+                  if (mode == MODE_CLEAR) {
+                      drawClear(canvas, t, h);
                   } else {
-                      h = 1f;
+                      drawDust(canvas, t, dt, h);
                   }
-                  float radius = maxRadius * (0.3f + 0.7f * h);
-                  float topY = AndroidUtilities.statusBarHeight + maxRadius * 0.9f;
-                  float cx = getWidth() / 2f;
-                  float cy = -maxRadius + (topY + maxRadius) * h;
+                  drawHole(canvas, t, h);
 
-                  // --- پیام‌ها ---
+                  canvas.restore();
+
+                  boolean done = mode == MODE_CLEAR ? t >= CLEAR_TOTAL : (collapseStart >= 0f && t >= collapseStart + COLLAPSE);
+                  if (done) {
+                      finish();
+                  } else {
+                      invalidate();
+                  }
+              }
+
+              // ---------------------------- حالت پاک کردن کل تاریخچه ----------------------------
+
+              private void drawClear(Canvas canvas, float t, float h) {
+                  float cx = holeCx;
+                  float cy = holeCy;
                   float T = clamp((t - SWALLOW_START) / SWALLOW);
-                  drawBackground(canvas, h, cx, cy, radius);
+                  drawBackground(canvas, h, cx, cy, maxRadius * (0.3f + 0.7f * h));
                   for (int n = 0; n < items.size(); n++) {
                       Item item = items.get(n);
                       float p = clamp((T - item.delay) / (1f - STAGGER));
@@ -289,12 +550,10 @@ jobs:
                           float vx = item.src[k];
                           float vy = item.src[k + 1];
                           float frac = clamp((vy - item.y) / item.h);
-                          // بالای هر پیام زودتر کشیده می‌شود تا پیام کشیده شود
                           float pv = clamp(p * 1.25f - 0.25f * frac);
                           float e = pv * pv;
                           float px = vx + (cx - vx) * e;
                           float py = vy + (cy - vy) * e;
-                          // کمی چرخش
                           float ang = 1.5f * e * (1f - e);
                           float dx = px - cx;
                           float dy = py - cy;
@@ -304,36 +563,11 @@ jobs:
                           item.dst[k + 1] = cy + dx * sin + dy * cos;
                       }
                       bmpPaint.setAlpha((int) (alpha * 255));
-                      drawItemMesh(canvas, item);
-                  }
-
-                  // --- سیاه‌چاله ---
-                  if (h > 0.01f) {
-                      float glowR = radius * 2.2f;
-                      matrix.setScale(glowR, glowR);
-                      matrix.postTranslate(cx, cy);
-                      glowShader.setLocalMatrix(matrix);
-                      glowPaint.setShader(glowShader);
-                      canvas.drawCircle(cx, cy, glowR, glowPaint);
-
-                      canvas.drawCircle(cx, cy, radius, holePaint);
-
-                      matrix.setRotate(t * 250f);
-                      matrix.postTranslate(cx, cy);
-                      ringShader.setLocalMatrix(matrix);
-                      ringPaint.setShader(ringShader);
-                      canvas.drawCircle(cx, cy, radius * 1.02f, ringPaint);
-                  }
-
-                  canvas.restore();
-
-                  if (t >= TOTAL) {
-                      finish();
-                  } else {
-                      invalidate();
+                      canvas.drawBitmapMesh(item.bmp, COLS, ROWS, item.dst, 0, null, 0, bmpPaint);
                   }
               }
 
+              /** خم شدن والپیپر/تم و کل صفحه به سمت سیاه‌چاله. */
               private void drawBackground(Canvas canvas, float h, float cx, float cy, float radius) {
                   if (bgBmp == null) {
                       return;
@@ -366,6 +600,10 @@ jobs:
                       }
                   }
                   canvas.drawBitmapMesh(bgBmp, BC, BR, bgVerts, 0, null, 0, null);
+                  drawVignette(canvas, h, cx, cy, radius);
+              }
+
+              private void drawVignette(Canvas canvas, float h, float cx, float cy, float radius) {
                   if (h > 0.01f) {
                       float dr = radius * 3.5f;
                       matrix.setScale(dr, dr);
@@ -377,13 +615,120 @@ jobs:
                   }
               }
 
-              private void drawItemMesh(Canvas canvas, Item item) {
-                  // drawBitmapMesh: مختصات مبدا (src) از خود bitmap حساب می‌شود، مقصد همان dst است.
-                  canvas.drawBitmapMesh(item.bmp, COLS, ROWS, item.dst, 0, null, 0, bmpPaint);
+              // ---------------------------- حالت پاک کردن پیام (پودر) ----------------------------
+
+              private void drawDust(Canvas canvas, float t, float dt, float h) {
+                  float cx = holeCx;
+                  float cy = holeCy;
+                  drawVignette(canvas, h, cx, cy, maxRadius * (0.3f + 0.7f * h));
+
+                  float u = AndroidUtilities.dp(1);
+                  float R = Math.max(maxRadius * h, u * 6f);
+                  float ramp = clamp((t - DEL_ATTRACT_START) / 0.5f);
+                  boolean pulling = ramp > 0f && h > 0.2f;
+                  float damp = 1f - Math.min(0.9f, (pulling ? 1.6f : 0.8f) * dt);
+                  boolean forceKill = t > DEL_MAX;
+                  int aliveCount = 0;
+
+                  for (int i = 0; i < pcount; i++) {
+                      if (!palive[i]) {
+                          continue;
+                      }
+                      if (forceKill) {
+                          palive[i] = false;
+                          continue;
+                      }
+                      if (t >= pdelay[i]) {
+                          pvx[i] += (rnd.nextFloat() - 0.5f) * u * 220f * dt;
+                          pvy[i] += (rnd.nextFloat() - 0.5f) * u * 220f * dt;
+                          if (pulling) {
+                              float dx = cx - ppx[i];
+                              float dy = cy - ppy[i];
+                              float d = (float) Math.sqrt(dx * dx + dy * dy) + 0.001f;
+                              float a = u * 1400f * ramp;
+                              pvx[i] += (dx / d * a - dy / d * a * 0.7f) * dt;
+                              pvy[i] += (dy / d * a + dx / d * a * 0.7f) * dt;
+                          }
+                          pvx[i] *= damp;
+                          pvy[i] *= damp;
+                          ppx[i] += pvx[i] * dt;
+                          ppy[i] += pvy[i] * dt;
+                      }
+                      float dx = cx - ppx[i];
+                      float dy = cy - ppy[i];
+                      float d = (float) Math.sqrt(dx * dx + dy * dy);
+                      if (h > 0.3f && d < R * 0.5f) {
+                          palive[i] = false;
+                          continue;
+                      }
+                      aliveCount++;
+                      float shrink = 1f;
+                      float fade = 1f;
+                      if (h > 0.2f && d < R * 2.4f) {
+                          shrink = 0.3f + 0.7f * clamp(d / (R * 2.4f));
+                          fade = 0.35f + 0.65f * clamp(d / (R * 2.4f));
+                      }
+                      int a = (int) (255f * palpha[i] * fade);
+                      dustPaint.setColor((pcol[i] & 0x00FFFFFF) | (a << 24));
+                      float s = psz[i] * shrink;
+                      canvas.drawRect(ppx[i], ppy[i], ppx[i] + s, ppy[i] + s, dustPaint);
+                  }
+
+                  if (aliveCount == 0 && collapseStart < 0f && t > DEL_HOLE_START + EMERGE) {
+                      collapseStart = t;
+                  }
               }
 
-              private void finish() {
+              // ---------------------------- سیاه‌چاله (از اسم کاربر) ----------------------------
+
+              private void drawHole(Canvas canvas, float t, float h) {
+                  float cx = titleCx + (holeCx - titleCx) * h;
+                  float cy = titleCy + (holeCy - titleCy) * h;
+                  if (h > 0.001f) {
+                      float rad = maxRadius * h;
+                      float glowR = rad * 2.2f;
+                      matrix.setScale(glowR, glowR);
+                      matrix.postTranslate(cx, cy);
+                      glowShader.setLocalMatrix(matrix);
+                      glowPaint.setShader(glowShader);
+                      canvas.drawCircle(cx, cy, glowR, glowPaint);
+
+                      // کپسولِ اندازهٔ اسم به دایره تبدیل می‌شود
+                      float rw = titleW / 2f + (maxRadius - titleW / 2f) * h;
+                      float rh = titleH / 2f + (maxRadius - titleH / 2f) * h;
+                      canvas.drawRoundRect(cx - rw, cy - rh, cx + rw, cy + rh, rh, rh, holePaint);
+
+                      float ringA = clamp((h - 0.35f) / 0.65f);
+                      if (ringA > 0.01f) {
+                          matrix.setRotate(t * 250f);
+                          matrix.postTranslate(cx, cy);
+                          ringShader.setLocalMatrix(matrix);
+                          ringPaint.setShader(ringShader);
+                          ringPaint.setAlpha((int) (255 * ringA));
+                          canvas.drawCircle(cx, cy, rad * 1.02f, ringPaint);
+                      }
+                  }
+                  // خود اسم: قبل از باز شدن سیاه‌چاله دیده می‌شود، بعد در آن حل می‌شود (و در بسته شدن برمی‌گردد)
+                  float ta = 1f - clamp(h / 0.4f);
+                  if (titleBmp != null && ta > 0.01f) {
+                      float sc = 1f - 0.5f * clamp(h / 0.4f);
+                      canvas.save();
+                      canvas.scale(sc, sc, titleCx, titleCy);
+                      titlePaint.setAlpha((int) (255 * ta));
+                      canvas.drawBitmap(titleBmp, titleX, titleY, titlePaint);
+                      canvas.restore();
+                  }
+              }
+
+              // ------------------------------------------------------------------------------------
+
+              private void cleanup() {
+                  if (cleaned) {
+                      return;
+                  }
+                  cleaned = true;
                   finished = true;
+                  running = false;
                   for (Item item : items) {
                       if (item.bmp != null) {
                           item.bmp.recycle();
@@ -394,9 +739,20 @@ jobs:
                       bgBmp.recycle();
                       bgBmp = null;
                   }
+                  if (titleBmp != null) {
+                      titleBmp.recycle();
+                      titleBmp = null;
+                  }
                   if (listView != null) {
                       listView.setAlpha(1f);
                   }
+                  if (titleView != null) {
+                      titleView.setAlpha(titleOrigAlpha);
+                  }
+              }
+
+              private void finish() {
+                  cleanup();
                   final Runnable done = onFinished;
                   post(() -> {
                       if (getParent() instanceof ViewGroup) {
@@ -407,25 +763,61 @@ jobs:
                       }
                   });
               }
+
+              @Override
+              protected void onDetachedFromWindow() {
+                  super.onDetachedFromWindow();
+                  cleanup();
+              }
           }
           JAVAEOF
           python3 - <<'PYEOF'
+          import re
           p = 'TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java'
           s = open(p, encoding='utf-8').read()
+          AV = 'avatarContainer' if re.search(r'\bChatAvatarContainer\s+avatarContainer\b', s) else 'null'
+          print('title origin =', AV)
+
+          # 1) پاک کردن کل تاریخچه
           sig = 'public void performHistoryClear(long threadId, boolean revoke, boolean canDeleteHistory) {\n'
-          hook = sig + (
-              '        if (threadId == getThreadId() && chatListView != null && contentView != null) {\n'
-              '            try {\n'
-              '                org.telegram.ui.Components.BlackHoleClearEffect.start(contentView, chatListView, null, null);\n'
-              '            } catch (Throwable e) {\n'
-              '                FileLog.e(e);\n'
-              '            }\n'
-              '        }\n')
           assert sig in s, 'performHistoryClear not found'
-          if 'BlackHoleClearEffect' not in s:
+          if 'BlackHoleClearEffect.start' not in s:
+              hook = sig + (
+                  '        if (threadId == getThreadId() && chatListView != null && contentView != null) {\n'
+                  '            try {\n'
+                  '                org.telegram.ui.Components.BlackHoleClearEffect.start(contentView, chatListView, ' + AV + ', null, null);\n'
+                  '            } catch (Throwable e) {\n'
+                  '                FileLog.e(e);\n'
+                  '            }\n'
+                  '        }\n')
               s = s.replace(sig, hook, 1)
+              print('clear-history hook added')
+
+          # 2) پاک شدن پیام (پودر + سیاه‌چاله)
+          pat = re.compile(r'public void didReceivedNotification\(\s*int (\w+),\s*int (\w+),\s*(?:final\s+)?Object\.\.\.\s*(\w+)\s*\)\s*\{')
+          ms = list(pat.finditer(s))
+          chosen = None
+          for i, m in enumerate(ms):
+              nxt = ms[i + 1].start() if i + 1 < len(ms) else len(s)
+              if 'NotificationCenter.messagesDeleted' in s[m.end():nxt]:
+                  chosen = m
+                  break
+          if chosen is None:
+              print('WARNING: didReceivedNotification not found, single-message effect skipped')
+          elif 'BlackHoleClearEffect.onMessagesDeleted' not in s:
+              idv, argsv = chosen.group(1), chosen.group(3)
+              code = (
+                  '\n        if (' + idv + ' == NotificationCenter.messagesDeleted && chatListView != null && contentView != null) {\n'
+                  '            try {\n'
+                  '                org.telegram.ui.Components.BlackHoleClearEffect.onMessagesDeleted(contentView, chatListView, ' + AV + ', ' + argsv + ');\n'
+                  '            } catch (Throwable e) {\n'
+                  '                FileLog.e(e);\n'
+                  '            }\n'
+                  '        }\n')
+              s = s[:chosen.end()] + code + s[chosen.end():]
+              print('message-delete hook added')
+
           open(p, 'w', encoding='utf-8').write(s)
-          print('patched')
           PYEOF
 
       - name: Build
@@ -436,8 +828,17 @@ jobs:
       - name: Collect single APK
         run: |
           mkdir -p out
-          APK=$(find TMessagesProj_App/build/outputs/apk -name '*arm64*.apk' | head -n 1)
-          if [ -z "$APK" ]; then APK=$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1); fi
+          echo "=== all APK/AAB files ==="
+          find . -type f \( -name '*.apk' -o -name '*.aab' \) -not -path './.git/*' -print
+          APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | grep -i arm64 | head -n 1)
+          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | head -n 1); fi
+          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -not -path './.git/*' | head -n 1); fi
+          if [ -z "$APK" ]; then
+            echo "No APK found. Build output dirs:"
+            find . -type d -name outputs -path '*build*' -not -path './.git/*'
+            exit 1
+          fi
+          echo "Using $APK"
           cp "$APK" "out/TG app.apk"
 
       - uses: actions/upload-artifact@v4
@@ -445,3 +846,25 @@ jobs:
           name: TG-app
           path: out/TG app.apk
           if-no-files-found: error
+
+      # ---------- ساخت ریلیز خودکار (اولی 1.0.0، هر بیلد موفق بعدی 0.1 بالاتر) ----------
+      - name: Create release
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          LAST=$(gh api "repos/${{ github.repository }}/releases" --paginate --jq '.[].tag_name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1 || true)
+          if [ -z "$LAST" ]; then
+            VER="1.0.0"
+          else
+            L="${LAST#v}"
+            MAJOR=$(echo "$L" | cut -d. -f1)
+            MINOR=$(echo "$L" | cut -d. -f2)
+            VER="$MAJOR.$((MINOR + 1)).0"
+          fi
+          echo "Previous: ${LAST:-none} -> New: v$VER"
+          cp "out/TG app.apk" "out/TG-app-v$VER.apk"
+          gh release create "v$VER" "out/TG-app-v$VER.apk" \
+            --target "${{ github.sha }}" \
+            --title "TG app v$VER" \
+            --notes "Build #${{ github.run_number }} (commit ${{ github.sha }})"
