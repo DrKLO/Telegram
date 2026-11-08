@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -20,6 +21,10 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -43,6 +48,8 @@ import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.ProfileActivity;
+
+import java.util.List;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -226,6 +233,9 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         width = Math.max(width, rowsWidth);
 
         width = Math.min(width + dp(32), maxWidth);
+        if (accessibility != null) {
+            accessibility.invalidateRoot();
+        }
     }
 
     @Override
@@ -249,6 +259,7 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
                     }
                     groupsAvatars.commitTransition(true);
                 }
+                accessibility.invalidateRoot();
                 invalidate();
             }
         }
@@ -407,6 +418,109 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
         return resourcesProvider != null ? resourcesProvider.hasGradientService() : Theme.hasGradientService();
     }
 
+    private void openProfile() {
+        final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+        if (fragment instanceof ChatActivity) {
+            ((ChatActivity) fragment).openThisProfile();
+        }
+    }
+
+    private void openCommonGroups() {
+        final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+        if (fragment != null) {
+            Bundle args = new Bundle();
+            if (dialogId >= 0) {
+                args.putLong("user_id", dialogId);
+            } else {
+                args.putLong("chat_id", -dialogId);
+            }
+            args.putBoolean("open_common", true);
+            fragment.presentFragment(new ProfileActivity(args));
+        }
+    }
+
+    /*
+     * The card at the top of a chat with someone new (who they are, their phone's country, since when
+     * they are here, the groups in common) is drawn here, and a tap on it opens their profile, one on
+     * the groups opens the groups. A screen reader read nothing of it and could press neither. The card
+     * is read by what it shows and opens the profile, and the groups in common are a button of their own.
+     */
+    private static final int CARD = 1, GROUPS = 2;
+    private final AccessibilityHelper accessibility = new AccessibilityHelper();
+    {
+        ViewCompat.setAccessibilityDelegate(this, accessibility);
+    }
+
+    private class AccessibilityHelper extends ExploreByTouchHelper {
+        private final Rect rect = new Rect();
+
+        AccessibilityHelper() {
+            super(UserInfoCell.this);
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            if (groupsRow != null && groupsBounds.contains(x, y)) return GROUPS;
+            if (fullBounds.contains(x, y)) return CARD;
+            return HOST_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            if (title == null) return;
+            list.add(CARD);
+            if (groupsRow != null) list.add(GROUPS);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final StringBuilder sb = new StringBuilder();
+            if (id == GROUPS && groupsRow != null) {
+                append(sb, groupsRow.key);
+                append(sb, groupsRow.value);
+                groupsBounds.round(rect);
+                info.setClassName("android.widget.Button");
+            } else {
+                append(sb, title);
+                append(sb, subtitle);
+                for (int i = 0; i < rows.size(); i++) {
+                    final Row row = rows.get(i);
+                    if (row == groupsRow) continue;
+                    append(sb, row.key);
+                    append(sb, row.value);
+                }
+                append(sb, footer);
+                fullBounds.round(rect);
+            }
+            if (rect.isEmpty()) rect.set(0, 0, 1, 1);
+            info.setBoundsInParent(rect);
+            info.setText(sb);
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK);
+        }
+
+        private void append(StringBuilder sb, Text text) {
+            if (text == null || text.getText() == null || text.getText().length() == 0) return;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(text.getText().toString().trim());
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
+            if (action != AccessibilityNodeInfoCompat.ACTION_CLICK) return false;
+            if (id == GROUPS) {
+                openCommonGroups();
+            } else {
+                openProfile();
+            }
+            return true;
+        }
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return accessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         final boolean groupsHit = groupsRow != null && groupsBounds.contains(event.getX(), event.getY());
@@ -417,22 +531,9 @@ public class UserInfoCell extends View implements NotificationCenter.Notificatio
             groupsRipple.setState(groupsHit ? new int[] { android.R.attr.state_pressed, android.R.attr.state_enabled } : new int[] {});
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             if (fullBounce.isPressed()) {
-                final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
-                if (fragment instanceof ChatActivity) {
-                    ((ChatActivity) fragment).openThisProfile();
-                }
+                openProfile();
             } else if (groupsBounce.isPressed()) {
-                final BaseFragment fragment = LaunchActivity.getSafeLastFragment();
-                if (fragment != null) {
-                    Bundle args = new Bundle();
-                    if (dialogId >= 0) {
-                        args.putLong("user_id", dialogId);
-                    } else {
-                        args.putLong("chat_id", -dialogId);
-                    }
-                    args.putBoolean("open_common", true);
-                    fragment.presentFragment(new ProfileActivity(args));
-                }
+                openCommonGroups();
                 invalidate();
             }
             groupsBounce.setPressed(false);
