@@ -341,8 +341,12 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
                 if (service != null && service.groupCall != null) {
                     text.append(", ").append(LocaleController.getString(service.isMicMute() ? R.string.AccDescrVoipMicOff : R.string.AccDescrVoipMicOn));
                 }
-                info.setText(text);
+                info.setContentDescription(text);
                 info.setClassName("android.widget.Button");
+                // a group with words and an action is not always taken as a stop by a screen reader:
+                // the bubble is one button, and says so
+                info.setFocusable(true);
+                info.setClickable(true);
                 info.addAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
                 if (service != null && service.groupCall != null && canToggleMic(service)) {
                     info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_voice_chat_mic,
@@ -384,6 +388,8 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
         };
         windowView.setAlpha(0.7f);
         windowView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        windowView.setFocusable(true);
+        windowView.setContentDescription(LocaleController.getString(R.string.VoipGroupVoiceChat));
 
         button = new GroupCallPipButton(context, currentAccount, false);
         windowView.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
