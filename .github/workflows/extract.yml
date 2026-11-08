@@ -1,0 +1,32 @@
+name: Extract snippets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract
+        run: |
+          F=TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+          OUT=snippets.txt
+          : > $OUT
+          for KEY in "clear_history" "chatListThanosEffect" "setClearingHistory(" "deleteDialog(" "createClearOrDeleteDialogAlert"; do
+            echo "=================== $KEY ===================" >> $OUT
+            grep -n -B12 -A25 -F "$KEY" "$F" | head -n 400 >> $OUT || true
+          done
+          wc -l $OUT
+
+      - name: Commit
+        run: |
+          git config user.name "bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add snippets.txt
+          git commit -m "snippets" || echo "nothing to commit"
+          git push
