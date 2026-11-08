@@ -1,0 +1,78 @@
+# Merges official Telegram (DrKLO/Telegram) into this fork on a separate branch and verifies that
+# the custom patch and the icon scripts still work. Opens a pull request when everything is fine.
+#
+# It never builds an APK, never tags and never publishes: synchronising with upstream and
+# publishing a custom release are separate operations (see build-release.yml).
+#
+# If the patch no longer applies, the run FAILS and uploads build-reports/patch-conflict-report.md
+# that names the conflicting files and the custom change that needs adjusting.
+#
+# Repository setting required for the pull request step:
+#   Settings -> Actions -> General -> "Allow GitHub Actions to create and approve pull requests".
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"   # every Monday 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prepare
+        run: |
+          python3 -m pip install --quiet pillow
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge upstream and verify patch
+        id: sync
+        run: ./scripts/sync-upstream.sh --branch upstream-sync
+
+      - name: Push branch and open pull request
+        if: steps.sync.outputs.up_to_date == 'false'
+        run: |
+          git push --force-with-lease origin upstream-sync
+          if gh pr list --head upstream-sync --state open --json number --jq '.[0].number' | grep -q .; then
+            echo "A pull request for upstream-sync is already open - branch updated."
+          else
+            gh pr create --base "$BASE_BRANCH" --head upstream-sync \
+              --title "Sync with upstream Telegram" \
+              --body "Automatic merge of official Telegram into this fork.
+
+          - The custom patch (custom/patches/custom-features.patch) still applies cleanly.
+          - The icon script still understands the resource layout.
+          - \`custom/version.properties\` records the new upstream commit.
+
+          Nothing was built or released. To publish, bump the version (scripts/version.sh bump ...), update custom/CHANGELOG.md and run the Build & Release workflow." \
+              || echo "::warning::could not open the pull request automatically - open one from branch upstream-sync"
+          fi
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sync-reports
+          path: build-reports/
+          if-no-files-found: ignore

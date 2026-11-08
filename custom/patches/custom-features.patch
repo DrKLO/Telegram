@@ -1,0 +1,811 @@
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java b/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java
+new file mode 100644
+index 0000000..cf77e75
+--- /dev/null
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java
+@@ -0,0 +1,589 @@
++/*
++ * CUSTOM FORK: Anti-Unsend Message History + Message Edit History.
++ *
++ * All custom logic lives in this file so that the hooks inside upstream
++ * Telegram classes stay tiny (one or a few lines each).
++ *
++ * Storage: two additive tables inside the existing per-account Telegram
++ * database (created with CREATE TABLE IF NOT EXISTS, no existing table is
++ * altered, no external service is used):
++ *   custom_unsent(uid, mid, deleted_date)
++ *   custom_edit_history(uid, mid, ver, edit_date, saved_date, text, data)
++ *
++ * Retained unsent messages simply keep their original row in messages_v2
++ * (and their media files), so Telegram's normal chat loading shows them in
++ * their original position. custom_unsent only marks them.
++ *
++ * Self-destruct / view-once / auto-delete messages that were RECEIVED are kept
++ * as well: they are retained when the sender deletes them (same path as above)
++ * and Telegram's own client-side expiry (MessagesController.checkDeletingTask,
++ * MessagesStorage.emptyMessagesMedia) skips them (see excludeKept). Outgoing
++ * messages and the user's own deletions behave exactly as in stock Telegram.
++ */
++package org.telegram.messenger;
++
++import android.graphics.Typeface;
++import android.text.SpannableStringBuilder;
++import android.text.Spanned;
++import android.text.TextUtils;
++import android.text.style.StyleSpan;
++
++import androidx.collection.LongSparseArray;
++
++import org.telegram.SQLite.SQLiteCursor;
++import org.telegram.SQLite.SQLiteDatabase;
++import org.telegram.SQLite.SQLitePreparedStatement;
++import org.telegram.tgnet.ConnectionsManager;
++import org.telegram.tgnet.NativeByteBuffer;
++import org.telegram.tgnet.TLRPC;
++import org.telegram.ui.Components.QuoteSpan;
++
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Locale;
++import java.util.Set;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.CopyOnWriteArrayList;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++public class CustomHistory {
++
++    /** Label drawn next to the time of a retained (unsent) message. */
++    public static final String UNSENT_LABEL = "Unsent Message";
++
++    private static final long SYNC_TIMEOUT_SECONDS = 10;
++
++    public static final class EditVersion {
++        public final String text;
++        public final int editDate;
++
++        EditVersion(String text, int editDate) {
++            this.text = text;
++            this.editDate = editDate;
++        }
++    }
++
++    /** Marker span placed over the "previous versions" prefix of a displayed text. */
++    public static final class HistoryMarker {
++    }
++
++    private static final class State {
++        final ConcurrentHashMap<Long, Set<Integer>> unsent = new ConcurrentHashMap<>();
++        final ConcurrentHashMap<Long, ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>>> edits = new ConcurrentHashMap<>();
++
++        void clear() {
++            unsent.clear();
++            edits.clear();
++        }
++    }
++
++    private static final State[] states = new State[UserConfig.MAX_ACCOUNT_COUNT];
++
++    private static State state(int account) {
++        synchronized (states) {
++            if (states[account] == null) {
++                states[account] = new State();
++            }
++            return states[account];
++        }
++    }
++
++    // ------------------------------------------------------------------
++    // Initialization (storage thread, called when the database is opened)
++    // ------------------------------------------------------------------
++
++    public static void init(int account, SQLiteDatabase db) {
++        try {
++            db.executeFast("CREATE TABLE IF NOT EXISTS custom_unsent(uid INTEGER, mid INTEGER, deleted_date INTEGER, PRIMARY KEY(uid, mid))").stepThis().dispose();
++            db.executeFast("CREATE TABLE IF NOT EXISTS custom_edit_history(uid INTEGER, mid INTEGER, ver INTEGER, edit_date INTEGER, saved_date INTEGER, text TEXT, data BLOB, PRIMARY KEY(uid, mid, ver))").stepThis().dispose();
++
++            State s = state(account);
++            s.clear();
++
++            SQLiteCursor cursor = db.queryFinalized("SELECT uid, mid FROM custom_unsent");
++            while (cursor.next()) {
++                addUnsent(s, cursor.longValue(0), cursor.intValue(1));
++            }
++            cursor.dispose();
++
++            cursor = db.queryFinalized("SELECT uid, mid, edit_date, text FROM custom_edit_history ORDER BY uid, mid, ver");
++            while (cursor.next()) {
++                String text = cursor.stringValue(3);
++                addEdit(s, cursor.longValue(0), cursor.intValue(1), new EditVersion(text == null ? "" : text, cursor.intValue(2)));
++            }
++            cursor.dispose();
++        } catch (Throwable e) {
++            FileLog.e(e);
++        }
++    }
++
++    private static void addUnsent(State s, long uid, int mid) {
++        Set<Integer> set = s.unsent.get(uid);
++        if (set == null) {
++            set = ConcurrentHashMap.newKeySet();
++            Set<Integer> prev = s.unsent.putIfAbsent(uid, set);
++            if (prev != null) {
++                set = prev;
++            }
++        }
++        set.add(mid);
++    }
++
++    private static void addEdit(State s, long uid, int mid, EditVersion version) {
++        ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>> byMid = s.edits.get(uid);
++        if (byMid == null) {
++            byMid = new ConcurrentHashMap<>();
++            ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>> prev = s.edits.putIfAbsent(uid, byMid);
++            if (prev != null) {
++                byMid = prev;
++            }
++        }
++        CopyOnWriteArrayList<EditVersion> list = byMid.get(mid);
++        if (list == null) {
++            list = new CopyOnWriteArrayList<>();
++            CopyOnWriteArrayList<EditVersion> prev = byMid.putIfAbsent(mid, list);
++            if (prev != null) {
++                list = prev;
++            }
++        }
++        list.add(version);
++    }
++
++    // ------------------------------------------------------------------
++    // Anti-Unsend
++    // ------------------------------------------------------------------
++
++    /**
++     * Server-originated deletions (updateDeleteMessages / updateDeleteChannelMessages).
++     * Removes from the given lists every id that must be retained, so that the
++     * regular code path neither deletes the row / media nor removes the cell.
++     * Keys follow MessagesController: 0 for non-channel chats, -channelId for channels.
++     * Must not be called with the storage queue blocked; safe to call from the storage thread.
++     */
++    public static void retainUnsent(int account, LongSparseArray<ArrayList<Integer>> deleted) {
++        if (deleted == null || deleted.size() == 0) {
++            return;
++        }
++        final int size = deleted.size();
++        final long[] keys = new long[size];
++        final ArrayList<ArrayList<Integer>> copies = new ArrayList<>(size);
++        for (int i = 0; i < size; i++) {
++            keys[i] = deleted.keyAt(i);
++            ArrayList<Integer> ids = deleted.valueAt(i);
++            copies.add(ids == null ? new ArrayList<>() : new ArrayList<>(ids));
++        }
++        final ArrayList<ArrayList<Integer>> retained = new ArrayList<>(size);
++        for (int i = 0; i < size; i++) {
++            retained.add(new ArrayList<>());
++        }
++        boolean done = runOnStorageSync(account, () -> {
++            for (int i = 0; i < size; i++) {
++                retained.get(i).addAll(retainOnStorageThread(account, keys[i], copies.get(i)));
++            }
++        });
++        if (!done) {
++            return; // fail open: normal Telegram deletion proceeds
++        }
++        for (int i = size - 1; i >= 0; i--) {
++            ArrayList<Integer> ids = deleted.valueAt(i);
++            ArrayList<Integer> toKeep = retained.get(i);
++            if (ids == null || toKeep.isEmpty()) {
++                continue;
++            }
++            ids.removeAll(new HashSet<>(toKeep));
++            if (ids.isEmpty()) {
++                deleted.removeAt(i);
++            }
++        }
++    }
++
++    /**
++     * Push-originated deletion. Must run on the storage thread; removes retained ids from ids.
++     */
++    public static void retainUnsent(int account, long dialogId, ArrayList<Integer> ids) {
++        if (ids == null || ids.isEmpty()) {
++            return;
++        }
++        final ArrayList<Integer> copy = new ArrayList<>(ids);
++        final ArrayList<Integer> retained = new ArrayList<>();
++        boolean done = runOnStorageSync(account, () -> retained.addAll(retainOnStorageThread(account, dialogId, copy)));
++        if (done && !retained.isEmpty()) {
++            ids.removeAll(new HashSet<>(retained));
++        }
++    }
++
++    /**
++     * Storage thread. Marks incoming, non-secret messages that exist locally as unsent and
++     * returns their ids. Nothing is deleted. Outgoing messages and secret chats are not retained.
++     */
++    private static ArrayList<Integer> retainOnStorageThread(int account, long dialogId, ArrayList<Integer> ids) {
++        ArrayList<Integer> result = new ArrayList<>();
++        if (ids.isEmpty()) {
++            return result;
++        }
++        SQLiteDatabase db = MessagesStorage.getInstance(account).getDatabase();
++        if (db == null) {
++            return result;
++        }
++        SQLiteCursor cursor = null;
++        SQLitePreparedStatement state = null;
++        try {
++            final long selfId = UserConfig.getInstance(account).getClientUserId();
++            final String idList = TextUtils.join(",", ids);
++            if (dialogId != 0) {
++                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND uid = %d AND out = 0", idList, dialogId));
++            } else {
++                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0 AND out = 0", idList));
++            }
++            ArrayList<long[]> rows = new ArrayList<>();
++            while (cursor.next()) {
++                long uid = cursor.longValue(0);
++                int mid = cursor.intValue(1);
++                if (DialogObject.isEncryptedDialog(uid) || uid == selfId) {
++                    continue;
++                }
++                rows.add(new long[]{uid, mid});
++            }
++            cursor.dispose();
++            cursor = null;
++            if (rows.isEmpty()) {
++                return result;
++            }
++
++            final int now = ConnectionsManager.getInstance(account).getCurrentTime();
++            state = db.executeFast("REPLACE INTO custom_unsent VALUES(?, ?, ?)");
++            final State s = state(account);
++            final HashSet<Long> affectedDialogs = new HashSet<>();
++            for (int i = 0; i < rows.size(); i++) {
++                long uid = rows.get(i)[0];
++                int mid = (int) rows.get(i)[1];
++                state.requery();
++                state.bindLong(1, uid);
++                state.bindInteger(2, mid);
++                state.bindInteger(3, now);
++                state.step();
++                addUnsent(s, uid, mid);
++                affectedDialogs.add(uid);
++                result.add(mid);
++            }
++            state.dispose();
++            state = null;
++
++            AndroidUtilities.runOnUIThread(() -> {
++                for (Long uid : affectedDialogs) {
++                    NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.customHistoryChanged, uid);
++                }
++            });
++        } catch (Throwable e) {
++            FileLog.e(e);
++            result.clear();
++        } finally {
++            if (cursor != null) {
++                cursor.dispose();
++            }
++            if (state != null) {
++                state.dispose();
++            }
++        }
++        return result;
++    }
++
++    // ------------------------------------------------------------------
++    // Keep self-destructing / view-once messages (client-side expiry)
++    // ------------------------------------------------------------------
++
++    /**
++     * Telegram's own timers (MessagesController.checkDeletingTask, MessagesStorage.emptyMessagesMedia)
++     * delete the local copy of self-destruct / view-once messages. This returns the subset of
++     * {@code mids} that may still be deleted or emptied: messages we RECEIVED (out = 0) and that exist
++     * locally are removed from the result, so they stay as they are. Outgoing messages behave as in
++     * stock Telegram. The input list is never modified. Works from any thread (waits for the storage queue).
++     */
++    public static ArrayList<Integer> excludeKept(int account, long dialogId, List<Integer> mids) {
++        final ArrayList<Integer> result = new ArrayList<>(mids);
++        if (result.isEmpty()) {
++            return result;
++        }
++        final HashSet<Integer> keep = new HashSet<>();
++        final String idList = TextUtils.join(",", result);
++        boolean done = runOnStorageSync(account, () -> {
++            SQLiteDatabase db = MessagesStorage.getInstance(account).getDatabase();
++            if (db == null) {
++                return;
++            }
++            SQLiteCursor cursor = null;
++            try {
++                cursor = db.queryFinalized(String.format(Locale.US, "SELECT mid FROM messages_v2 WHERE mid IN(%s) AND uid = %d AND out = 0", idList, dialogId));
++                while (cursor.next()) {
++                    keep.add(cursor.intValue(0));
++                }
++            } catch (Throwable e) {
++                FileLog.e(e);
++                keep.clear();
++            } finally {
++                if (cursor != null) {
++                    cursor.dispose();
++                }
++            }
++        });
++        if (done && !keep.isEmpty()) {
++            result.removeAll(keep);
++        }
++        return result;
++    }
++
++    /**
++     * Map variant: returns a deep copy of {@code source} without the messages that are kept; dialogs
++     * left with no id are dropped. {@code source} (and its lists) stay untouched because the caller
++     * still needs them to clear the finished tasks. Must not be called on the UI thread.
++     */
++    public static LongSparseArray<ArrayList<Integer>> excludeKept(int account, LongSparseArray<ArrayList<Integer>> source) {
++        if (source == null) {
++            return null;
++        }
++        LongSparseArray<ArrayList<Integer>> result = new LongSparseArray<>();
++        for (int a = 0, n = source.size(); a < n; a++) {
++            ArrayList<Integer> mids = source.valueAt(a);
++            if (mids == null) {
++                continue;
++            }
++            ArrayList<Integer> deletable = excludeKept(account, source.keyAt(a), mids);
++            if (!deletable.isEmpty()) {
++                result.put(source.keyAt(a), deletable);
++            }
++        }
++        return result;
++    }
++
++    public static boolean isUnsent(MessageObject messageObject) {
++        if (messageObject == null || messageObject.messageOwner == null) {
++            return false;
++        }
++        Set<Integer> set = state(messageObject.currentAccount).unsent.get(messageObject.getDialogId());
++        return set != null && set.contains(messageObject.getId());
++    }
++
++    // ------------------------------------------------------------------
++    // Edit history
++    // ------------------------------------------------------------------
++
++    /**
++     * Called for an incoming edit update BEFORE the stored message is overwritten and before
++     * the new MessageObject is laid out. Saves the previous text (and the full previous
++     * serialized message) as a new version if the text actually changed.
++     */
++    public static void captureEdit(int account, TLRPC.Message newMessage) {
++        if (newMessage == null || newMessage.out || newMessage.dialog_id == 0) {
++            return;
++        }
++        final long uid = newMessage.dialog_id;
++        final int mid = newMessage.id;
++        final String newText = newMessage.message == null ? "" : newMessage.message;
++        runOnStorageSync(account, () -> captureEditOnStorageThread(account, uid, mid, newText));
++    }
++
++    private static void captureEditOnStorageThread(int account, long uid, int mid, String newText) {
++        SQLiteDatabase db = MessagesStorage.getInstance(account).getDatabase();
++        if (db == null) {
++            return;
++        }
++        SQLiteCursor cursor = null;
++        SQLitePreparedStatement state = null;
++        try {
++            cursor = db.queryFinalized("SELECT data, out FROM messages_v2 WHERE mid = ? AND uid = ?", mid, uid);
++            if (!cursor.next()) {
++                return;
++            }
++            if (cursor.intValue(1) != 0) {
++                return;
++            }
++            NativeByteBuffer buffer = cursor.byteBufferValue(0);
++            if (buffer == null) {
++                return;
++            }
++            TLRPC.Message old = TLRPC.Message.TLdeserialize(buffer, buffer.readInt32(false), false);
++            buffer.reuse();
++            cursor.dispose();
++            cursor = null;
++            if (old == null) {
++                return;
++            }
++            final String oldText = old.message == null ? "" : old.message;
++            if (oldText.equals(newText)) {
++                return;
++            }
++            final State s = state(account);
++            ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>> byMid = s.edits.get(uid);
++            CopyOnWriteArrayList<EditVersion> existing = byMid == null ? null : byMid.get(mid);
++            if (existing != null && !existing.isEmpty() && existing.get(existing.size() - 1).text.equals(oldText)) {
++                return; // duplicate update
++            }
++
++            int ver = 1;
++            cursor = db.queryFinalized("SELECT MAX(ver) FROM custom_edit_history WHERE uid = ? AND mid = ?", uid, mid);
++            if (cursor.next()) {
++                ver = cursor.intValue(0) + 1;
++            }
++            cursor.dispose();
++            cursor = null;
++
++            NativeByteBuffer data = new NativeByteBuffer(old.getObjectSize());
++            MessageObject.normalizeFlags(old);
++            old.serializeToStream(data);
++            state = db.executeFast("REPLACE INTO custom_edit_history VALUES(?, ?, ?, ?, ?, ?, ?)");
++            state.requery();
++            state.bindLong(1, uid);
++            state.bindInteger(2, mid);
++            state.bindInteger(3, ver);
++            state.bindInteger(4, old.edit_date);
++            state.bindInteger(5, ConnectionsManager.getInstance(account).getCurrentTime());
++            state.bindString(6, oldText);
++            state.bindByteBuffer(7, data);
++            state.step();
++            state.dispose();
++            state = null;
++            data.reuse();
++
++            addEdit(s, uid, mid, new EditVersion(oldText, old.edit_date));
++        } catch (Throwable e) {
++            FileLog.e(e);
++        } finally {
++            if (cursor != null) {
++                cursor.dispose();
++            }
++            if (state != null) {
++                state.dispose();
++            }
++        }
++    }
++
++    public static List<EditVersion> getEditVersions(MessageObject messageObject) {
++        if (messageObject == null) {
++            return null;
++        }
++        ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>> byMid = state(messageObject.currentAccount).edits.get(messageObject.getDialogId());
++        return byMid == null ? null : byMid.get(messageObject.getId());
++    }
++
++    /**
++     * Display hook (MessageObject.generateLayout): prepends the previous versions, rendered
++     * as quote blocks, above the latest text. Only incoming plain-text messages.
++     */
++    public static CharSequence withEditHistory(MessageObject messageObject, CharSequence text) {
++        if (messageObject == null || TextUtils.isEmpty(text) || messageObject.type != MessageObject.TYPE_TEXT || messageObject.isOut()) {
++            return text;
++        }
++        List<EditVersion> versions = getEditVersions(messageObject);
++        if (versions == null || versions.isEmpty()) {
++            return text;
++        }
++        if (text instanceof Spanned && ((Spanned) text).getSpans(0, text.length(), HistoryMarker.class).length > 0) {
++            return text; // already applied (layout can be generated more than once)
++        }
++        SpannableStringBuilder sb = new SpannableStringBuilder();
++        for (EditVersion version : versions) {
++            if (TextUtils.isEmpty(version.text)) {
++                continue;
++            }
++            int start = sb.length();
++            sb.append(version.text);
++            int end = sb.length();
++            sb.setSpan(new StyleSpan(Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
++            QuoteSpan.putQuote(sb, start, end, false);
++            sb.append('\n');
++        }
++        int prefixEnd = sb.length();
++        if (prefixEnd == 0) {
++            return text;
++        }
++        sb.setSpan(new HistoryMarker(), 0, prefixEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
++        sb.append(text);
++        return sb;
++    }
++
++    /** Removes the previous-versions prefix again (used so that Copy yields only the latest text). */
++    public static CharSequence stripEditHistory(CharSequence text) {
++        if (text instanceof Spanned) {
++            Spanned spanned = (Spanned) text;
++            HistoryMarker[] markers = spanned.getSpans(0, text.length(), HistoryMarker.class);
++            if (markers.length > 0) {
++                int end = spanned.getSpanEnd(markers[0]);
++                if (end > 0 && end <= text.length()) {
++                    return text.subSequence(end, text.length());
++                }
++            }
++        }
++        return text;
++    }
++
++    // ------------------------------------------------------------------
++    // Storage management
++    // ------------------------------------------------------------------
++
++    /** Number of retained unsent messages and stored previous versions for an account (in memory). */
++    public static int[] getCounts(int account) {
++        State s = state(account);
++        int unsentCount = 0;
++        for (Set<Integer> set : s.unsent.values()) {
++            unsentCount += set.size();
++        }
++        int editCount = 0;
++        for (ConcurrentHashMap<Integer, CopyOnWriteArrayList<EditVersion>> byMid : s.edits.values()) {
++            for (CopyOnWriteArrayList<EditVersion> list : byMid.values()) {
++                editCount += list.size();
++            }
++        }
++        return new int[]{unsentCount, editCount};
++    }
++
++    /**
++     * Forgets all unsent markers and stored previous versions of an account. Retained messages
++     * stay in the chat as ordinary local messages (their rows and media are not touched).
++     */
++    public static void clearAll(int account) {
++        MessagesStorage storage = MessagesStorage.getInstance(account);
++        storage.getStorageQueue().postRunnable(() -> {
++            try {
++                SQLiteDatabase db = storage.getDatabase();
++                if (db != null) {
++                    db.executeFast("DELETE FROM custom_unsent").stepThis().dispose();
++                    db.executeFast("DELETE FROM custom_edit_history").stepThis().dispose();
++                }
++                state(account).clear();
++            } catch (Throwable e) {
++                FileLog.e(e);
++            }
++        });
++    }
++
++    // ------------------------------------------------------------------
++    // Helpers
++    // ------------------------------------------------------------------
++
++    /** Runs on the storage queue and waits. Returns false on timeout/failure. */
++    private static boolean runOnStorageSync(int account, Runnable runnable) {
++        DispatchQueue queue = MessagesStorage.getInstance(account).getStorageQueue();
++        if (Thread.currentThread() == queue) {
++            runnable.run();
++            return true;
++        }
++        final CountDownLatch latch = new CountDownLatch(1);
++        queue.postRunnable(() -> {
++            try {
++                runnable.run();
++            } catch (Throwable e) {
++                FileLog.e(e);
++            } finally {
++                latch.countDown();
++            }
++        });
++        try {
++            return latch.await(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
++        } catch (InterruptedException e) {
++            FileLog.e(e);
++            return false;
++        }
++    }
++}
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+index a9f8c4e..9d1e65b 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+@@ -8714,6 +8714,7 @@ public class MessageObject {
+             return;
+         }
+         boolean hasUrls = applyEntities();
++        messageText = CustomHistory.withEditHistory(this, messageText); // CUSTOM: Edit History
+         boolean noforwards = messageOwner != null && messageOwner.noforwards;
+         if (!noforwards) {
+             final long dialogId = getDialogId();
+@@ -11656,6 +11657,7 @@ public class MessageObject {
+ 
+     public boolean canForwardMessage() {
+         if (isQuickReply()) return false;
++        if (CustomHistory.isUnsent(this)) return false; // CUSTOM: retained message is a local record
+         if (type == TYPE_GIFT_STARS || type == TYPE_GIFT_THEME_UPDATE || type == TYPE_SUGGEST_BIRTHDAY || type == TYPE_GIFT_OFFER || type == TYPE_SHARING_OFFER || type == TYPE_COMMUNITY_CHANGED) return false;
+         return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && !messageOwner.noforwards;
+     }
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+index 91faf80..b429905 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+@@ -8278,7 +8278,9 @@ public class MessagesController extends BaseController implements NotificationCe
+                 Utilities.stageQueue.cancelRunnable(currentDeleteTaskRunnable);
+             }
+             currentDeleteTaskRunnable = null;
+-            LongSparseArray<ArrayList<Integer>> task = currentDeletingTaskMids != null ? currentDeletingTaskMids.clone() : null;
++            LongSparseArray<ArrayList<Integer>> taskAll = currentDeletingTaskMids != null ? currentDeletingTaskMids.clone() : null;
++            // CUSTOM: received self-destruct messages are kept; taskAll is still used below to clear the finished tasks
++            LongSparseArray<ArrayList<Integer>> task = CustomHistory.excludeKept(currentAccount, taskAll);
+             LongSparseArray<ArrayList<Integer>> taskMedia = currentDeletingTaskMediaMids != null ? currentDeletingTaskMediaMids.clone() : null;
+             AndroidUtilities.runOnUIThread(() -> {
+                 if (task != null) {
+@@ -8307,7 +8309,7 @@ public class MessagesController extends BaseController implements NotificationCe
+                     }
+                 }
+                 Utilities.stageQueue.postRunnable(() -> {
+-                    getNewDeleteTask(task, taskMedia);
++                    getNewDeleteTask(taskAll, taskMedia);
+                     currentDeletingTaskTime = 0;
+                     currentDeletingTaskMids = null;
+                     currentDeletingTaskMediaMids = null;
+@@ -17592,7 +17594,18 @@ public class MessagesController extends BaseController implements NotificationCe
+         });
+     }
+ 
+-    protected void deleteMessagesByPush(long dialogId, ArrayList<Integer> ids, long channelId) {
++    protected void deleteMessagesByPush(long dialogId, ArrayList<Integer> originalIds, long channelId) {
++        // CUSTOM: Anti-Unsend. Work on a copy: the caller's list is shared with NotificationsController.
++        final ArrayList<Integer> idsCopy = new ArrayList<>(originalIds);
++        getMessagesStorage().getStorageQueue().postRunnable(() -> {
++            CustomHistory.retainUnsent(currentAccount, dialogId, idsCopy);
++            if (!idsCopy.isEmpty()) {
++                deleteMessagesByPushInternal(dialogId, idsCopy, channelId);
++            }
++        });
++    }
++
++    private void deleteMessagesByPushInternal(long dialogId, ArrayList<Integer> ids, long channelId) {
+         getMessagesStorage().getStorageQueue().postRunnable(() -> {
+             AndroidUtilities.runOnUIThread(() -> {
+                 getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, ids, channelId, false);
+@@ -19524,6 +19537,7 @@ public class MessagesController extends BaseController implements NotificationCe
+                     message.attachPath = "";
+                 }
+ 
++                CustomHistory.captureEdit(currentAccount, message); // CUSTOM: Edit History
+                 ImageLoader.saveMessageThumbs(message);
+                 AndroidUtilities.runOnUIThread(() -> {
+                     getSendMessagesHelper().onMessageEdited(message);
+@@ -21057,6 +21071,7 @@ public class MessagesController extends BaseController implements NotificationCe
+         LongSparseIntArray markAsReadMessagesOutboxFinal = markAsReadMessagesOutbox;
+         LongSparseArray<ArrayList<Integer>> markContentAsReadMessagesFinal = markContentAsReadMessages;
+         SparseIntArray markAsReadEncryptedFinal = markAsReadEncrypted;
++        CustomHistory.retainUnsent(currentAccount, deletedMessages); // CUSTOM: Anti-Unsend (server-originated deletes only)
+         LongSparseArray<ArrayList<Integer>> deletedMessagesFinal = deletedMessages;
+         LongSparseArray<ArrayList<Integer>> deletedQuickRepliesMessagesFinal = deletedQuickReplyMessages;
+         LongSparseArray<ArrayList<Integer>> scheduledDeletedMessagesFinal = scheduledDeletedMessages;
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesStorage.java b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesStorage.java
+index 98e066e..d0ded3d 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/MessagesStorage.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/MessagesStorage.java
+@@ -409,6 +409,7 @@ public class MessagesStorage extends BaseController {
+         loadDialogFilters();
+         loadUnreadMessages();
+         loadPendingTasks();
++        CustomHistory.init(currentAccount, database); // CUSTOM
+         try {
+             openSync.countDown();
+         } catch (Throwable ignore) {
+@@ -4746,7 +4747,11 @@ public class MessagesStorage extends BaseController {
+                 ArrayList<Pair<Long, Integer>> idsToDelete = new ArrayList<>();
+                 ArrayList<TLRPC.Message> messages = new ArrayList<>();
+                 ArrayList<TLRPC.Message> changedSavedMessages = null;
+-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, custom_params FROM messages_v2 WHERE mid IN (%s) AND uid = %d", TextUtils.join(",", mids), dialogId));
++                final ArrayList<Integer> emptyMids = CustomHistory.excludeKept(currentAccount, dialogId, mids); // CUSTOM: keep received self-destruct / view-once media
++                if (emptyMids.isEmpty()) {
++                    return;
++                }
++                cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid, custom_params FROM messages_v2 WHERE mid IN (%s) AND uid = %d", TextUtils.join(",", emptyMids), dialogId));
+                 while (cursor.next()) {
+                     NativeByteBuffer data = cursor.byteBufferValue(0);
+                     if (data != null) {
+diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java b/TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java
+index 544a8e6..b6b72a7 100644
+--- a/TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java
++++ b/TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java
+@@ -42,6 +42,7 @@ public class NotificationCenter {
+     public static final int closeChatActivity = totalEvents++;
+     public static final int closeProfileActivity = totalEvents++;
+     public static final int messagesDeleted = totalEvents++;
++    public static final int customHistoryChanged = totalEvents++; // CUSTOM: Anti-Unsend
+     public static final int historyCleared = totalEvents++;
+     public static final int messagesRead = totalEvents++;
+     public static final int threadMessagesRead = totalEvents++;
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+index bc0affb..b6ab2a6 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+@@ -103,6 +103,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
+ import org.telegram.messenger.AccountInstance;
+ import org.telegram.messenger.AndroidUtilities;
+ import org.telegram.messenger.AppGlobalConfig;
++import org.telegram.messenger.CustomHistory;
+ import org.telegram.messenger.ApplicationLoader;
+ import org.telegram.messenger.BotForumHelper;
+ import org.telegram.messenger.BotInlineKeyboard;
+@@ -18520,6 +18521,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
+         if (currentMessageObject.messageOwner.video_processing_pending) {
+             timeString = formatString(R.string.ScheduledTimeApprox, timeString);
+         }
++        if (CustomHistory.isUnsent(currentMessageObject)) { // CUSTOM: Anti-Unsend label
++            timeString = CustomHistory.UNSENT_LABEL + ", " + timeString;
++        }
+         if (signString != null) {
+             if (messageObject.messageOwner.via_business_bot_id != 0) {
+                 currentTimeString = timeString + ", ";
+diff --git a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+index 87afb39..a665321 100644
+--- a/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
++++ b/TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+@@ -140,6 +140,7 @@ import org.telegram.PhoneFormat.PhoneFormat;
+ import org.telegram.messenger.AccountInstance;
+ import org.telegram.messenger.AndroidUtilities;
+ import org.telegram.messenger.ApplicationLoader;
++import org.telegram.messenger.CustomHistory;
+ import org.telegram.messenger.BotForumHelper;
+ import org.telegram.messenger.BotInlineKeyboard;
+ import org.telegram.messenger.BotWebViewVibrationEffect;
+@@ -2994,6 +2995,7 @@ public class ChatActivity extends BaseFragment implements
+             .add(NotificationCenter.voiceTranscriptionUpdate)
+             .add(NotificationCenter.animatedEmojiDocumentLoaded)
+             .add(NotificationCenter.replaceMessagesObjects)
++            .add(NotificationCenter.customHistoryChanged) // CUSTOM
+             .add(NotificationCenter.notificationsSettingsUpdated)
+             .add(NotificationCenter.replyMessagesDidLoad)
+             .add(NotificationCenter.didReceivedWebpages)
+@@ -14896,11 +14898,17 @@ public class ChatActivity extends BaseFragment implements
+     }
+ 
+     public void showFieldPanelForReply(MessageObject messageObjectToReply) {
++        if (CustomHistory.isUnsent(messageObjectToReply)) { // CUSTOM: retained message cannot be replied to
++            return;
++        }
+         showFieldPanel(true, messageObjectToReply, null, null, null, true, 0, null, false, 0, true);
+     }
+ 
+     private Runnable onHideFieldPanelRunnable;
+     public void showFieldPanelForReplyQuote(MessageObject messageObjectToReply, ReplyQuote quote) {
++        if (CustomHistory.isUnsent(messageObjectToReply)) { // CUSTOM
++            return;
++        }
+         showFieldPanel(true, messageObjectToReply, null, null, null, true, 0, quote, false, 0, true);
+     }
+ 
+@@ -23647,6 +23655,11 @@ public class ChatActivity extends BaseFragment implements
+             doOnIdle(() -> {
+                 replaceMessageObjects(messageObjects, loadIndex, false);
+             });
++        } else if (id == NotificationCenter.customHistoryChanged) { // CUSTOM: Anti-Unsend
++            long did = (long) args[0];
++            if (did == dialog_id || did == mergeDialogId) {
++                updateVisibleRows();
++            }
+         } else if (id == NotificationCenter.notificationsSettingsUpdated) {
+             updateTitleIcons();
+             if (ChatObject.isChannel(currentChat) || UserObject.isReplyUser(currentUser) || currentUser != null && currentUser.id == UserObject.VERIFY) {
+@@ -31246,6 +31259,17 @@ public class ChatActivity extends BaseFragment implements
+                 selectedObject = message;
+                 selectedObjectGroup = groupedMessages;
+                 fillMessageMenu(primaryMessage, icons, items, options);
++                if (CustomHistory.isUnsent(selectedObject)) { // CUSTOM: Anti-Unsend
++                    for (int i = 0; i < options.size(); ++i) {
++                        final int customOption = options.get(i);
++                        if (customOption == OPTION_REPLY || customOption == OPTION_FORWARD || customOption == OPTION_SHARE) {
++                            options.remove(i);
++                            items.remove(i);
++                            icons.remove(i);
++                            i--;
++                        }
++                    }
++                }
+             }
+ 
+             if (selectedObject != null && selectedObject.isHiddenSensitive() && !selectedObject.isMediaSpoilersRevealed) {
+@@ -33503,7 +33527,7 @@ public class ChatActivity extends BaseFragment implements
+         } else if (messageObject.caption != null) {
+             str.append(messageObject.caption);
+         } else {
+-            str.append(messageObject.messageText);
++            str.append(CustomHistory.stripEditHistory(messageObject.messageText)); // CUSTOM
+         }
+         return str;
+     }

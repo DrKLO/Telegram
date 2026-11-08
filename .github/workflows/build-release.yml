@@ -1,0 +1,352 @@
+# Build (and optionally release) the custom Telegram APK.
+#
+# Pipeline: checkout -> verify custom version + upstream commit -> verify patch / icon ->
+#           submodules + toolchain -> apply patch -> apply build vars -> apply icon ->
+#           validate Gradle project -> assembleAfatRelease -> verify APK -> upload artifacts
+#           [-> GitHub Release, only for an intentional release].
+#
+# Triggers
+#   workflow_dispatch   build; tick "publish" to also publish a GitHub Release (tag v<CUSTOM_VERSION_NAME>)
+#   push of tag v*      build + publish the release (tag must equal v<CUSTOM_VERSION_NAME>)
+#   pull_request        fast validation only (no Gradle build)
+# Upstream synchronisation is a different workflow (sync-upstream.yml) and never publishes.
+#
+# Secrets (see custom/README.md): KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD,
+#          TG_API_ID, TG_API_HASH, optional GOOGLE_SERVICES_JSON_BASE64.
+# Variable (optional): ICON_REPLACE_ALTERNATES=true  also replaces the alternative app icons.
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a GitHub Release v<CUSTOM_VERSION_NAME> after a successful build"
+        type: boolean
+        default: false
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "custom/**"
+      - "scripts/**"
+      - ".github/workflows/**"
+      - "tg-icon.png"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ------------------------------------------------------------------ fast checks
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      is_release: ${{ steps.mode.outputs.is_release }}
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scripts are executable
+        run: |
+          bad="$(git ls-files -s 'scripts/*.sh' | awk '$1 != "100755" {print $4}')"
+          if [ -n "$bad" ]; then
+            echo "::error::scripts without executable bit: $bad  (fix: git update-index --chmod=+x <file>)"
+            exit 1
+          fi
+
+      - name: Release mode
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          PUBLISH: ${{ inputs.publish }}
+          REF: ${{ github.ref }}
+        run: |
+          if [[ "$REF" == refs/tags/v* ]] || { [ "$EVENT" = "workflow_dispatch" ] && [ "$PUBLISH" = "true" ]; }; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Custom version
+        id: ver
+        env:
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          IS_RELEASE: ${{ steps.mode.outputs.is_release }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          ./scripts/version.sh check
+          VER="$(./scripts/version.sh get CUSTOM_VERSION_NAME)"
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          if [[ "$REF" == refs/tags/* ]] && [ "$REF_NAME" != "v$VER" ]; then
+            echo "::error::tag '$REF_NAME' does not match CUSTOM_VERSION_NAME 'v$VER' in custom/version.properties"
+            exit 1
+          fi
+          if [ "$IS_RELEASE" = "true" ] && [ "$EVENT" = "workflow_dispatch" ] && git rev-parse -q --verify "refs/tags/v$VER" >/dev/null; then
+            echo "::error::tag v$VER already exists - bump the version (scripts/version.sh bump ...) before releasing again"
+            exit 1
+          fi
+
+      - name: Verify upstream commit
+        run: ./scripts/check-upstream.sh
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify custom patch applies
+        run: |
+          python3 -m pip install --quiet pillow
+          ./scripts/apply-patch.sh --check
+
+      - name: Verify icon source and resource layout
+        run: |
+          ./scripts/apply-icon.sh --check-only
+          ./scripts/apply-icon.sh --dry-run
+
+      - name: Release notes can be generated
+        if: steps.mode.outputs.is_release == 'true'
+        run: ./scripts/gen-release-notes.sh --out "$RUNNER_TEMP/release-notes.md"
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validate-reports
+          path: build-reports/
+          if-no-files-found: ignore
+
+  # ------------------------------------------------------------------ full build
+  build:
+    needs: validate
+    if: github.event_name != 'pull_request'
+    # Public repositories get 4 vCPU / 16 GB, private ones 2 vCPU / 7 GB: on a private repo lower
+    # -Xmx below or use a larger runner. The native (NDK) part for 4 ABIs is slow.
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      IS_RELEASE: ${{ needs.validate.outputs.is_release }}
+      CUSTOM_VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/node_modules || true
+          df -h /
+
+      - name: Fetch submodules (retry)
+        run: |
+          ok=0
+          for i in 1 2 3; do
+            if git submodule sync --recursive && git submodule update --init --recursive --depth 1 --jobs 4; then ok=1; break; fi
+            echo "submodule fetch failed, retry $i/3"; sleep 15
+          done
+          [ "$ok" = 1 ] || { echo "::error::could not fetch submodules"; exit 1; }
+          if git submodule status --recursive | grep -E '^[-+U]'; then
+            echo "::error::submodules are not in a clean checked-out state"; exit 1
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Android SDK components (versions from the Gradle build files)
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKMANAGER" ] || SDKMANAGER="$(command -v sdkmanager || true)"
+          [ -n "$SDKMANAGER" ] || { echo "::error::sdkmanager not found"; exit 1; }
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          python3 -m pip install --quiet pillow
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply custom patch
+        run: ./scripts/apply-patch.sh
+
+      - name: Apply API credentials
+        env:
+          TG_API_ID: ${{ secrets.TG_API_ID }}
+          TG_API_HASH: ${{ secrets.TG_API_HASH }}
+        run: |
+          if [ "$IS_RELEASE" = "true" ]; then ./scripts/apply-buildvars.sh --require; else ./scripts/apply-buildvars.sh; fi
+
+      - name: Signing and Firebase configuration
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "::add-mask::$KEYSTORE_PASSWORD"
+            echo "::add-mask::$KEY_PASSWORD"
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > TMessagesProj/config/release.keystore
+            [ -s TMessagesProj/config/release.keystore ] || { echo "::error::KEYSTORE_BASE64 decoded to an empty file"; exit 1; }
+            echo "SIGNING=own" >> "$GITHUB_ENV"
+          elif [ "$IS_RELEASE" = "true" ]; then
+            echo "::error::a release must be signed with your own key: set KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD"
+            exit 1
+          else
+            echo "::warning::no signing secrets - using the PUBLIC dummy key from the upstream repository. Test build only, do not distribute."
+            echo "SIGNING=dummy" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            for f in TMessagesProj_App/google-services.json TMessagesProj/google-services.json; do
+              [ -f "$f" ] && printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > "$f"
+            done
+            echo "own google-services.json installed"
+          fi
+
+      - name: Apply custom icon
+        env:
+          ALTERNATES: ${{ vars.ICON_REPLACE_ALTERNATES }}
+        run: |
+          if [ "$ALTERNATES" = "true" ]; then ./scripts/apply-icon.sh --alternates; else ./scripts/apply-icon.sh; fi
+
+      - name: Validate Gradle project (task must exist)
+        run: |
+          mkdir -p build-reports
+          ./gradlew --no-daemon --console=plain -q :TMessagesProj_App:tasks --all | tee build-reports/gradle-tasks.txt > /dev/null
+          grep -E '^assembleAfatRelease( |$)' build-reports/gradle-tasks.txt \
+            || { echo "::error::task :TMessagesProj_App:assembleAfatRelease does not exist in this Telegram version - update the workflow"; exit 1; }
+
+      - name: Build APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          SIGN_ARGS=()
+          if [ "$SIGNING" = "own" ]; then
+            SIGN_ARGS=("-PRELEASE_STORE_PASSWORD=$KEYSTORE_PASSWORD" "-PRELEASE_KEY_ALIAS=$KEY_ALIAS" "-PRELEASE_KEY_PASSWORD=$KEY_PASSWORD")
+          fi
+          read -r -a VERSION_ARGS <<< "$(./scripts/version.sh gradle-args)"
+          ./gradlew --no-daemon --console=plain --stacktrace \
+            "-Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" \
+            "${VERSION_ARGS[@]}" "${SIGN_ARGS[@]}" \
+            :TMessagesProj_App:assembleAfatRelease 2>&1 | tee build-reports/gradle-build.log
+
+      - name: Locate APK
+        run: |
+          mapfile -t APKS < <(find TMessagesProj_App/build/outputs/apk -type f -name '*.apk' 2>/dev/null)
+          echo "found: ${APKS[*]:-none}"
+          [ "${#APKS[@]}" -eq 1 ] || { echo "::error::expected exactly one APK, found ${#APKS[@]}"; exit 1; }
+          echo "APK_PATH=${APKS[0]}" >> "$GITHUB_ENV"
+
+      - name: Verify APK
+        run: |
+          PKG="$(grep -E '^APP_PACKAGE=' gradle.properties | cut -d= -f2- | tr -d '\r')"
+          RES="$(jq -r .resource_dir build-reports/icon-applied.json)"
+          ./scripts/verify-apk.sh --apk "$APK_PATH" \
+            --package "$PKG" \
+            --version-name "$CUSTOM_VERSION" \
+            --version-code "$(./scripts/version.sh apk-version-code)" \
+            --res-dir "$RES" 2>&1 | tee build-reports/verify-apk.log
+
+      - name: Package artifacts
+        run: |
+          UP="$(./scripts/version.sh get UPSTREAM_COMMIT)"
+          NAME="TelegramCustom-${CUSTOM_VERSION}-up${UP:0:7}"
+          [ "$SIGNING" = "own" ] || NAME="${NAME}-testkey"
+          mkdir -p dist
+          cp "$APK_PATH" "dist/${NAME}.apk"
+          (cd dist && sha256sum "${NAME}.apk" > "${NAME}.apk.sha256")
+          cat > dist/build-info.json <<EOF
+          {
+            "custom_version_name": "$(./scripts/version.sh get CUSTOM_VERSION_NAME)",
+            "custom_version_code": $(./scripts/version.sh get CUSTOM_VERSION_CODE),
+            "apk_version_code": $(./scripts/version.sh apk-version-code),
+            "custom_patch_version": $(./scripts/version.sh get CUSTOM_PATCH_VERSION),
+            "upstream_version": "$(./scripts/version.sh get UPSTREAM_VERSION_NAME)",
+            "upstream_commit": "$UP",
+            "patch_base_commit": "$(./scripts/version.sh get PATCH_BASE_COMMIT)",
+            "signing": "$SIGNING",
+            "build_date_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "source_commit": "$GITHUB_SHA",
+            "run": "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          }
+          EOF
+          echo "APK_NAME=${NAME}.apk" >> "$GITHUB_ENV"
+          ls -l dist
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-custom-apk
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload reports and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: build-reports/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ------------------------------------------------------------------ release
+  release:
+    needs: [validate, build]
+    if: needs.validate.outputs.is_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VER: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: telegram-custom-apk
+          path: dist
+
+      - name: Re-verify downloaded files
+        run: |
+          cd dist
+          sha256sum -c ./*.apk.sha256
+          shopt -s nullglob
+          apks=(./*.apk)
+          [ "${#apks[@]}" -eq 1 ] || { echo "::error::expected exactly one APK, found ${#apks[@]}"; exit 1; }
+          case "${apks[0]}" in *-testkey.apk) echo "::error::refusing to publish a test-key build"; exit 1 ;; esac
+
+      - name: Generate release notes
+        run: ./scripts/gen-release-notes.sh --out release-notes.md
+
+      - name: Publish GitHub Release
+        run: |
+          TAG="v$VER"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::release $TAG already exists"; exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then TARGET=(--verify-tag); else TARGET=(--target "$GITHUB_SHA"); fi
+          gh release create "$TAG" "${TARGET[@]}" \
+            --title "Telegram Custom $VER" \
+            --notes-file release-notes.md \
+            dist/*.apk dist/*.apk.sha256 dist/build-info.json
