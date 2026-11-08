@@ -69,6 +69,19 @@ jobs:
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values/strings.xml
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values*/strings.xml || true
 
+      # ---------- فقط arm64 (گوشی‌های امروزی) ----------
+      - name: Only arm64
+        run: |
+          python3 - <<'PYEOF'
+          import re, glob
+          for f in glob.glob('TMessagesProj*/build.gradle') + glob.glob('build.gradle'):
+              s = open(f, encoding='utf-8').read()
+              n = re.sub(r'abiFilters[ \t(]+[^\n]*', 'abiFilters "arm64-v8a"', s)
+              if n != s:
+                  open(f, 'w', encoding='utf-8').write(n)
+                  print('abiFilters patched in', f)
+          PYEOF
+
       # ---------- افکت سیاه‌چاله ----------
       - name: Add BlackHole effect
         run: |
@@ -130,6 +143,14 @@ jobs:
               private View listView;
               private Runnable onFinished;
               private int hostX, hostY;
+              private static final int BC = 8;
+              private static final int BR = 16;
+              private Bitmap bgBmp;
+              private final float[] bgVerts = new float[(BC + 1) * (BR + 1) * 2];
+              private final Paint darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+              private final RadialGradient darkShader = new RadialGradient(0, 0, 1f,
+                      new int[]{0xCC000000, 0x66000000, 0x00000000},
+                      new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP);
               private final int[] tmpLoc = new int[2];
 
               private BlackHoleClearEffect(Context context) {
@@ -200,10 +221,21 @@ jobs:
 
                   effect.listView = list;
                   effect.onFinished = onFinished;
+                  list.setAlpha(0f);
+                  try {
+                      int bw = Math.max(1, host.getWidth() / 2);
+                      int bh = Math.max(1, host.getHeight() / 2);
+                      Bitmap bg = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
+                      Canvas bc = new Canvas(bg);
+                      bc.scale(0.5f, 0.5f);
+                      host.draw(bc);
+                      effect.bgBmp = bg;
+                  } catch (Throwable ignore) {
+                      effect.bgBmp = null;
+                  }
                   effect.hostX = hostLoc[0];
                   effect.hostY = hostLoc[1];
                   host.addView(effect, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                  list.setAlpha(0f);
                   effect.startTime = System.nanoTime();
                   if (onCaptured != null) {
                       onCaptured.run();
@@ -244,6 +276,7 @@ jobs:
 
                   // --- پیام‌ها ---
                   float T = clamp((t - SWALLOW_START) / SWALLOW);
+                  drawBackground(canvas, h, cx, cy, radius);
                   for (int n = 0; n < items.size(); n++) {
                       Item item = items.get(n);
                       float p = clamp((T - item.delay) / (1f - STAGGER));
@@ -301,6 +334,49 @@ jobs:
                   }
               }
 
+              private void drawBackground(Canvas canvas, float h, float cx, float cy, float radius) {
+                  if (bgBmp == null) {
+                      return;
+                  }
+                  float w = getWidth();
+                  float hh = getHeight();
+                  float r0 = w * 0.85f;
+                  float border = Math.min(w, hh) * 0.12f;
+                  int k = 0;
+                  for (int r = 0; r <= BR; r++) {
+                      for (int c = 0; c <= BC; c++) {
+                          float x = w * c / BC;
+                          float y = hh * r / BR;
+                          float dx = x - cx;
+                          float dy = y - cy;
+                          float d = (float) Math.sqrt(dx * dx + dy * dy);
+                          float q = d / r0;
+                          float fall = (float) Math.exp(-q * q);
+                          float edge = Math.min(Math.min(x, w - x), Math.min(y, hh - y)) / border;
+                          edge = edge > 1f ? 1f : edge;
+                          float pin = edge * edge * (3f - 2f * edge);
+                          float pull = h * 0.6f * fall * pin;
+                          float ang = h * 0.9f * fall * pin;
+                          float px = dx * (1f - pull);
+                          float py = dy * (1f - pull);
+                          float cos = (float) Math.cos(ang);
+                          float sin = (float) Math.sin(ang);
+                          bgVerts[k++] = cx + px * cos - py * sin;
+                          bgVerts[k++] = cy + px * sin + py * cos;
+                      }
+                  }
+                  canvas.drawBitmapMesh(bgBmp, BC, BR, bgVerts, 0, null, 0, null);
+                  if (h > 0.01f) {
+                      float dr = radius * 3.5f;
+                      matrix.setScale(dr, dr);
+                      matrix.postTranslate(cx, cy);
+                      darkShader.setLocalMatrix(matrix);
+                      darkPaint.setShader(darkShader);
+                      darkPaint.setAlpha((int) (255 * h));
+                      canvas.drawCircle(cx, cy, dr, darkPaint);
+                  }
+              }
+
               private void drawItemMesh(Canvas canvas, Item item) {
                   // drawBitmapMesh: مختصات مبدا (src) از خود bitmap حساب می‌شود، مقصد همان dst است.
                   canvas.drawBitmapMesh(item.bmp, COLS, ROWS, item.dst, 0, null, 0, bmpPaint);
@@ -314,6 +390,10 @@ jobs:
                       }
                   }
                   items.clear();
+                  if (bgBmp != null) {
+                      bgBmp.recycle();
+                      bgBmp = null;
+                  }
                   if (listView != null) {
                       listView.setAlpha(1f);
                   }
@@ -351,12 +431,13 @@ jobs:
       - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
+          ./gradlew --no-daemon -Pandroid.injected.build.abi=arm64-v8a :TMessagesProj_App:assembleAfatRelease
 
       - name: Collect single APK
         run: |
           mkdir -p out
-          APK=$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)
+          APK=$(find TMessagesProj_App/build/outputs/apk -name '*arm64*.apk' | head -n 1)
+          if [ -z "$APK" ]; then APK=$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1); fi
           cp "$APK" "out/TG app.apk"
 
       - uses: actions/upload-artifact@v4
