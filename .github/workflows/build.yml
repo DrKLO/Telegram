@@ -49,6 +49,7 @@ jobs:
             PASS="$KS_PASS"
           else
             echo "No keystore secrets, generating a temporary keystore"
+            rm -f TMessagesProj/config/release.keystore
             ALIAS=tgapp
             PASS=$(openssl rand -hex 12)
             keytool -genkeypair -v -keystore TMessagesProj/config/release.keystore \
