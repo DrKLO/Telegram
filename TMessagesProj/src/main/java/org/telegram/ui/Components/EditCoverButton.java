@@ -46,6 +46,8 @@ public class EditCoverButton extends View {
         imageReceiver.setRoundRadius(dp(22.66f));
 
         this.text = new Text(text, 14, AndroidUtilities.bold());
+        // the words are drawn, so they are its name too
+        setContentDescription(text);
         if (withArrow) {
             this.arrowDrawable = context.getResources().getDrawable(R.drawable.arrow_newchat).mutate();
             this.arrowDrawable.setColorFilter(new PorterDuffColorFilter(0x99FFFFFF, PorterDuff.Mode.SRC_IN));

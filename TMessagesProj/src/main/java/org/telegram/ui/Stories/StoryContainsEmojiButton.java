@@ -120,6 +120,8 @@ public class StoryContainsEmojiButton extends View implements Theme.Colorable {
     }
 
     public void setText(CharSequence text) {
+        // the words are drawn, so they are its name too
+        setContentDescription(text == null ? null : text.toString());
         if (getMeasuredWidth() <= 0) {
             toSetText = text;
             return;
