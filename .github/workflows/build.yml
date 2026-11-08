@@ -1,6 +1,7 @@
 name: Build TG app
 
 on:
+  push:
   workflow_dispatch:
 
 jobs:
@@ -24,28 +25,15 @@ jobs:
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
-      # ---------- امضا ----------
-      # اگر سکرت KEYSTORE_B64 ست شده باشد از همان استفاده می‌شود (برای آپدیت‌های بعدی لازم است)
-      # وگرنه یک keystore جدید با org.tgapp ساخته می‌شود
+      # ---------- امضا (keystore ثابت داخل خود فایل) ----------
       - name: Prepare keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'tgapp123456' }}
         run: |
           mkdir -p TMessagesProj/config
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > TMessagesProj/config/release.keystore
-          else
-            keytool -genkeypair -v \
-              -keystore TMessagesProj/config/release.keystore \
-              -alias tgapp -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "$KEYSTORE_PASS" -keypass "$KEYSTORE_PASS" \
-              -dname "CN=TG app, OU=org.tgapp, O=org.tgapp, C=US"
-          fi
+          echo "MIIKYgIBAzCCCgwGCSqGSIb3DQEHAaCCCf0Eggn5MIIJ9TCCBawGCSqGSIb3DQEHAaCCBZ0EggWZMIIFlTCCBZEGCyqGSIb3DQEMCgECoIIFQDCCBTwwZgYJKoZIhvcNAQUNMFkwOAYJKoZIhvcNAQUMMCsEFOjsF7O5h6PBkbjtaEU1ZXj+mKuwAgInEAIBIDAMBggqhkiG9w0CCQUAMB0GCWCGSAFlAwQBKgQQmmeGfqmRRR+57ow8aGl+nQSCBNAlgem4e9V+1OJ550WZlFZh/oZyaxBIlxIL8slzdgIi4s6gTwTOzAIfzW/RQC/aMgCdLbH1tg4XlGie5IeCrMCOJHaCctLnPS25jPYgt+IY3Etoif6OKX1BUVtdcYBgLYgVoM1IkU5mCn3aEqHPER3xWYaaeuqSgqGbNs/4pQDdM5oVOcOACcjOtP/N6zX/8JBnvB5+8iw61OeiUTc6K2N7gYUxa0KVzsdUCpX8tgUGj2oEcHhKJ1YqrDTnwUkzbhE9AU6o27kmPgCD/tWDSMleptRIz4QqfLp/DMb+TSNOVJVIPo3uGJo49n+TRUC6FGV/AJReEmKpoKf2HeZGHhyvUyhpyENwltlE/GAzMu2SAi1nspMnIX+8YHHCdI1kGC6WGpqXfaArbqIV6lBy9j5Yk8OmTjoKcj7Atp+VhM8pWu4Yxqzf1LIqQOd2RK1r7QY1BMSPSTfmsj59WewKJEe25ARL/tMke8RSPQXoztVoSCzdOtQp6AvlQDMiowb1pKXv+z/lrwLUYv+dtdSwgTFotxLokIiWWVFAA78IkZxXYd0jxDTboaz1twFRkCDQpEKwWQGoyi4vG6cUM4oddUipxZp5i9c9bCkcg3C3tmPPO1oTMAYJo9kqKc94nlvw1ahltBOo3tsYpG9SzGorkDuiUpptu5jjLMAs/44lu1B2WR0vy3wDL/VIci1dcD0J3fRjLk5rCpx09znVs+3H7NW4LiawKGLjbiTS6lNAVXxhhF3da1pQir0+g6ul+LmJwIW6KVDtDZ27tLUozeUdHImEm9A5BvLbrfWhySduyKE77Cnd7xPu8qPE3tZNfo5vATsY+mWMxzfFgegueWn2Bj3jkyikcA777W7FVhkN710R9TohlL5RV3psOpDS179MvS8ucUPxGXYayf2q/kwkOLGX2PWWK+f2dW+DLz9hPw5PQg4uu/7TjVMZ3tEG3GFqk+N01hxH2RY7YbgQHHgCfYJbAza/LOurTz3uD9ktLhiWpKjkx8Gpz6N3oDIZH9238jhFw4lZ2ebDFV7+bdZPZ3xih42VPvmxVfWQAsIbYjcCvVXsmL54xaTRcPITnTQQ1ZU3Myn2t8XtEbBwWb9+IzMgWI7bIQ1x81C7jkbdNb26PMFN+2/sBU36WXQC7zNNUZAT7lndwgvjtNWCNkRFMUkKUeHGeyzDFUPoS4+vy6tyPsPJzJV+MZcMfb/skd/KBXCZBNoXxP2Jg54w6W05+R1oo5ALuPCmAoe9TRXQViIf84+JsbXSipEZ1hYlrIqTPWWfcEoSxDp6OrrkYhd+U8TokUpzFKuEXsWzu3GxSvg84nrjQO4aZazQj50f3IP8tYzJiBkLwKk6bVwpbXsO3U1azzIo8t+4h6FafUcwlI1EsAuPR62VGGFmnjLzD306iVbM/3OSeKh8fqNOKSxQAQeJW76mbwVonlYRgoGcksgQXMYaNycO3vvwGjKxgauIb/pJ+TgQzsy6YrzpXBO4BpYYw9KNAUdTRA9rcV5AOnkx7wqUjOTWQVsv+J32+1znWX665r1iv6jExxwDXpJrTOFcuQ1Yobmx0y51crdFy9zsNERx63Vi19RA2dvrWpVuJEK0AevcF11OdL4ipx2Sg/UBRp/YDnVuAoDJJqXT0t1XPzE+MBkGCSqGSIb3DQEJFDEMHgoAdABnAGEAcABwMCEGCSqGSIb3DQEJFTEUBBJUaW1lIDE3OTQxNjIwMjQ4NDcwggRBBgkqhkiG9w0BBwagggQyMIIELgIBADCCBCcGCSqGSIb3DQEHATBmBgkqhkiG9w0BBQ0wWTA4BgkqhkiG9w0BBQwwKwQU//6PIIsN/Megx08dj9eQMkh3VecCAicQAgEgMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAEqBBBRWGinUHalJkqKtldyPdTjgIIDsGcGjy7ODJLwoKPtvnOlxc43rYlU0atNxudS3hh4a+YXsRyfYAiRkjvcyjV8UbHTSvH5lcSw+FxBO7bDAg1UyNuxbwyLdygMFUjpQ5Cxsg2kj/W4ADZlZuLNuJc8MEycMGds7F68tAtO/OwiI/lv+qCsbMhZN4sNleVHofuI5hUekKUGYYYlG10Wh+gMaaX0Id/+ACejDwn+Ym/VeOHn0xhh4GancWpQgCGYybnIWppwpALk1GykhpdS4j9+9a7CxEJZoMfEW8ouuGYpOqbm3S5/jd14LVB/2LihLgmItC+zr0/0Ne8AzssUxYblMQCu2ANJYEloEF2neU71lVAFczIa1QA8d6SddriZA2gOBPONN0y31G5TGqqWd7JrvXVbDJ1noH+z/+vcvhtvJvGtNK3IFz8gV599SUhiTqg5Ls17myHcyy2DBogP+oKV0wKyxvWt89lcBReDYsJmtmJZMvvBvO6VrOqnu69kVDUQeLC7ZIhWHaU/sojQ9XFAe8M8b/IcPOyXIv2y2QFHEWJ2rDsx+zl4hazeFebTkzFkwX+iF6WlxN5aKMwCwChafnKBcfcvFrlzhXF5KYVTBINevotVBEw4b+AMZLMXSH6h8y5f4alw73b85stQuXn4A8qEVdwIgBvSjJU9H5IH0IFasbalKv1qNPGwhInLbZZhSGAOV3+NPw9UPsZ6opSlwKpt+B96q4vFFKjY6xbA3GehS3QIlKnPZs7t5MxJ9b1C21vFTR/WSzXT4W/oyXjXDZVX7yMW8rT7FQtyv0FIENymrxaItOuBYSQtwFiU841aMZAs0zswia9lxwZ85AFr/i2dIdY0EB0zsavVEBPU+wAb493JLANiUqxokKox7VgoGsd8atBvsoKY1cWoWgnmwmi/pAgQGxUWZsNDiFpNlxyejxC7w33HMyGKgPYTMKcIUnV0cfqfGfkt+/UaThbOG1gWrfhhfcb7OlJe/Is0ySmnpBXNzCHL/QjAlZcz/NmetccDoS2QgwjVoc9wquJI0PN4tZ/YwO4qmqemOImdUjGy8/3RypnYqEk3bs7dOAfF13D1a7d+2FxbxL+UzseTYgcEJ8bQhdJDJKhHIzdgDO4iX9spRoixQqWNvTwkgTqxsZY4oc773zD6Q9iu98AaMSfNMLcdN81z3ZnG9n+rItW1qp5fGQ98Nv9OPTWUL+LJJQxmR9XmkXG88yllP02mmDV8iFjt9jMvx8hc58lzDvhI9CZEp3m07m0WhNtSKdxnIFE9ME0wMTANBglghkgBZQMEAgEFAAQgoPTz1/T+jzFtRiHyXeN4FeJKKmkuUrpelcH6l+OrtC0EFJv2G8OneZ/qWUIORwIf3CEdtevmAgInEA==" | base64 -d > TMessagesProj/config/release.keystore
           {
-            echo "RELEASE_KEY_PASSWORD=$KEYSTORE_PASS"
+            echo "RELEASE_KEY_PASSWORD=XXJBiC8tQuLC6Uu6"
             echo "RELEASE_KEY_ALIAS=tgapp"
-            echo "RELEASE_STORE_PASSWORD=$KEYSTORE_PASS"
+            echo "RELEASE_STORE_PASSWORD=XXJBiC8tQuLC6Uu6"
             echo "org.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
           } >> gradle.properties
 
