@@ -4096,6 +4096,8 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
             topView.addView(imageView, LayoutHelper.createLinear(160, 160, Gravity.CENTER, 0, 20, 0, 0));
             if (!TextUtils.isEmpty(gift.slug)) {
                 ScaleStateListAnimator.apply(imageView);
+                // the picture of the gift opens its page, and had no name
+                imageView.setContentDescription(gift.title);
                 imageView.setOnClickListener(v -> {
                     Browser.openUrl(context, "https://" + MessagesController.getInstance(currentAccount).linkPrefix + "/nft/" + gift.slug);
                 });

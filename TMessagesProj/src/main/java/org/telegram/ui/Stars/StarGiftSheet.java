@@ -2411,7 +2411,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             craftView.setVisibility(View.GONE);
 
             optionsView = new ImageView(context);
-            optionsView.setContentDescription(getString(R.string.AccDescrGoBack));
+            // it opens the menu of the gift, and was named Go back
+            optionsView.setContentDescription(getString(R.string.AccDescrMoreOptions));
             optionsView.setImageResource(R.drawable.media_more);
             optionsView.setScaleType(ImageView.ScaleType.CENTER);
             optionsView.setBackground(Theme.createSelectorDrawable(0x20ffffff, Theme.RIPPLE_MASK_CIRCLE_20DP));
