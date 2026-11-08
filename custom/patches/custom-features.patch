@@ -570,7 +570,7 @@ index 0000000..cf77e75
 +
 +    /** Runs on the storage queue and waits. Returns false on timeout/failure. */
 +    private static boolean runOnStorageSync(int account, Runnable runnable) {
-+        DispatchQueue queue = MessagesStorage.getInstance(account).getStorageQueue();
++        DispatchQueue2 queue = MessagesStorage.getInstance(account).getStorageQueue();
 +        if (Thread.currentThread() == queue) {
 +            runnable.run();
 +            return true;
