@@ -1,51 +1,99 @@
-name: Auto Build APK
+name: Build TG app
 
 on:
-  push:
-    branches:
-      - master
-      - main
-  pull_request:
-    branches:
-      - master
-      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 120
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 17
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
 
-      - name: Install Android tools
+      - name: Install SDK / NDK
         run: |
-          sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;27.2.12479018"
-          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
-      - name: Write local.properties
+      # ---------- امضا ----------
+      # اگر سکرت KEYSTORE_B64 ست شده باشد از همان استفاده می‌شود (برای آپدیت‌های بعدی لازم است)
+      # وگرنه یک keystore جدید با org.tgapp ساخته می‌شود
+      - name: Prepare keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'tgapp123456' }}
         run: |
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/27.2.12479018" >> local.properties
+          mkdir -p TMessagesProj/config
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > TMessagesProj/config/release.keystore
+          else
+            keytool -genkeypair -v \
+              -keystore TMessagesProj/config/release.keystore \
+              -alias tgapp -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KEYSTORE_PASS" -keypass "$KEYSTORE_PASS" \
+              -dname "CN=TG app, OU=org.tgapp, O=org.tgapp, C=US"
+          fi
+          {
+            echo "RELEASE_KEY_PASSWORD=$KEYSTORE_PASS"
+            echo "RELEASE_KEY_ALIAS=tgapp"
+            echo "RELEASE_STORE_PASSWORD=$KEYSTORE_PASS"
+            echo "org.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
+          } >> gradle.properties
 
-      - name: Build APK
-        run: ./gradlew assembleDebug
+      # ---------- Firebase (باید برای org.tgapp ساخته شود) ----------
+      - name: google-services.json
+        env:
+          GS_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS_JSON" ]; then
+            for d in TMessagesProj TMessagesProj_App; do echo "$GS_JSON" > $d/google-services.json; done
+          fi
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      # ---------- api_id / api_hash ----------
+      - name: Patch BuildVars
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+        run: |
+          F=TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          if [ -n "$API_ID" ]; then
+            sed -i -E "s/(APP_ID *= *)[0-9]+;/\1$API_ID;/" $F
+            sed -i -E "s/(APP_HASH *= *\")[^\"]*(\")/\1$API_HASH\2/" $F
+          fi
+
+      # ---------- تغییر applicationId و اسم برنامه ----------
+      - name: Rename app
+        run: |
+          grep -rl --include=build.gradle 'applicationId' . | while read f; do
+            sed -i -E 's/applicationId[ =]+"[^"]+"/applicationId "org.tgapp"/' "$f"
+            sed -i -E "s/applicationId[ =]+'[^']+'/applicationId \"org.tgapp\"/" "$f"
+          done
+          # اسم برنامه در لانچر
+          sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values/strings.xml
+          sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values*/strings.xml || true
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :TMessagesProj_App:assembleAfatRelease
+
+      - name: Collect single APK
+        run: |
+          mkdir -p out
+          APK=$(find TMessagesProj_App/build/outputs/apk -name '*.apk' | head -n 1)
+          cp "$APK" "out/TG app.apk"
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: telegram-debug-apk
-          path: |
-            **/build/outputs/apk/**/*.apk
+          name: TG-app
+          path: out/TG app.apk
+          if-no-files-found: error
