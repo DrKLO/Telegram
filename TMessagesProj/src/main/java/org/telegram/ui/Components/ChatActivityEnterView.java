@@ -2995,13 +2995,25 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (!isSendButtonEnabled()) {
                     return false;
                 }
+                // a press that starts where the attach button is drawn belongs to it, as hovering there does:
+                // the container took it, and a long press there opened the send options in place of the
+                // attach menu
+                if (ev.getAction() == MotionEvent.ACTION_DOWN && !isRecording() && !isOverShownButton(ev.getX(), ev.getY())) {
+                    return false;
+                }
                 return super.dispatchTouchEvent(ev);
+            }
+
+            // while recording, the button of this container is faded out and the recording circle takes its
+            // place, so the container keeps taking what happens over it
+            private boolean isRecording() {
+                return recordingAudioVideo || recordCircle != null && recordCircle.isSendButtonVisible();
             }
 
             @Override
             public boolean dispatchHoverEvent(MotionEvent event) {
                 // the container is wider than its buttons and covers the attach button, don't steal explore-by-touch there
-                if (event.getAction() != MotionEvent.ACTION_HOVER_EXIT && !isOverShownButton(event.getX(), event.getY())) {
+                if (event.getAction() != MotionEvent.ACTION_HOVER_EXIT && !isRecording() && !isOverShownButton(event.getX(), event.getY())) {
                     return false;
                 }
                 return super.dispatchHoverEvent(event);
