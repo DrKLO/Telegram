@@ -46,7 +46,7 @@ jobs:
       # ---------- امضا ----------
       # اگر سکرت KEYSTORE_B64 و KEYSTORE_PASSWORD تنظیم شده باشد از همان استفاده می‌شود
       # (برای اینکه امضا بین بیلدها ثابت بماند و آپدیت روی هم نصب شود).
-      # اگر نباشد، یک keystore موقت ساخته می‌شود.
+      # اگر نباشد، یک keystore یک‌بار ساخته و در ریپو (ci/tgapp.keystore) ذخیره می‌شود تا امضا همیشه ثابت بماند.
       - name: Prepare keystore
         env:
           KS_B64: ${{ secrets.KEYSTORE_B64 }}
@@ -58,14 +58,26 @@ jobs:
             echo "$KS_B64" | base64 -d > TMessagesProj/config/release.keystore
             ALIAS="${KS_ALIAS:-tgapp}"
             PASS="$KS_PASS"
+          elif [ -f ci/tgapp.keystore ]; then
+            echo "Using persistent keystore from repo (ci/tgapp.keystore)"
+            cp ci/tgapp.keystore TMessagesProj/config/release.keystore
+            ALIAS=tgapp
+            PASS=tgapp-ci-key-2026
           else
-            echo "No keystore secrets, generating a temporary keystore"
+            echo "No keystore found, generating a PERSISTENT keystore and saving it to the repo (ci/tgapp.keystore)"
             rm -f TMessagesProj/config/release.keystore
             ALIAS=tgapp
-            PASS=$(openssl rand -hex 12)
+            PASS=tgapp-ci-key-2026
             keytool -genkeypair -v -keystore TMessagesProj/config/release.keystore \
               -storetype PKCS12 -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "$PASS" -keypass "$PASS" -dname "CN=TG app"
+            mkdir -p ci
+            cp TMessagesProj/config/release.keystore ci/tgapp.keystore
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add -f ci/tgapp.keystore
+            git commit -m "Add persistent signing keystore [skip ci]" || true
+            git push || echo "WARNING: could not push keystore; next build will generate a new key again"
           fi
           {
             echo "RELEASE_KEY_PASSWORD=$PASS"
