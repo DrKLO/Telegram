@@ -1136,6 +1136,241 @@ jobs:
               print('Input box glass: applied')
           CHATEOF
 
+      # ---------- هدر چت: آواتار چپ، اسم وسط، بازگشت راست (نگه داشتن روی بازگشت = منوی گزینه‌ها، روی اسم = جستجو) ----------
+      - name: Flip chat header
+        run: |
+          python3 - <<'FLIPEOF'
+          import os, sys
+
+          ROOT = os.environ.get('SRC_ROOT', 'TMessagesProj/src/main/java/org/telegram/ui')
+          FLAT = os.environ.get('FLAT') == '1'
+
+          def path(rel):
+              return os.path.join(ROOT, os.path.basename(rel)) if FLAT else os.path.join(ROOT, rel)
+
+          def rep(s, old, new, label, cnt=1):
+              n = s.count(old)
+              if n < 1:
+                  print('WARNING: pattern not found, skipped:', label)
+                  return s, False
+              if cnt > 0 and n != cnt:
+                  print('WARNING: pattern count %d != %d, replacing all:' % (n, cnt), label)
+              return s.replace(old, new), True
+
+          # ======================= ActionBar =======================
+          p = path('ActionBar/ActionBar.java')
+          s = open(p, encoding='utf-8').read()
+          if 'flipHeader' in s:
+              print('Flip header (ActionBar): already present, skipped')
+          else:
+              ok_all = True
+
+              s, ok = rep(s, "    private boolean glassOnlyBack;\n", """    private boolean glassOnlyBack;
+
+              public boolean flipHeader;
+              private BlurredBackgroundDrawable glassDrawableAvatar;
+              private View flipAvatarHit;
+
+              public void setFlipHeader(boolean value) {
+                  flipHeader = value;
+                  if (value && flipAvatarHit == null) {
+                      flipAvatarHit = new View(getContext());
+                      flipAvatarHit.setOnClickListener(v -> {
+                          if (chatAvatarContainer != null && chatAvatarContainer.avatarImageView != null) {
+                              chatAvatarContainer.avatarImageView.performClick();
+                          }
+                      });
+                      addView(flipAvatarHit, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
+                  }
+                  if (backButtonImageView != null) {
+                      backButtonImageView.setTranslationX(value ? -dp(2) : dp(2));
+                  }
+                  requestLayout();
+                  invalidate();
+              }
+
+              public void setBackButtonLongClickListener(View.OnLongClickListener listener) {
+                  if (backButtonImageView != null) {
+                      backButtonImageView.setOnLongClickListener(listener);
+                  }
+              }
+
+              private int menuSearchInset() {
+                  return flipHeader ? dp(112) : dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66);
+              }
+          """, 'ActionBar fields'); ok_all &= ok
+
+              s, ok = rep(s, """        glassDrawableMenu = factory.create(this)
+                      .setColorProvider(colorProvider)
+                      .setRadius(dp(23))
+                      .setPadding(dp(6));
+          """, """        glassDrawableMenu = factory.create(this)
+                      .setColorProvider(colorProvider)
+                      .setRadius(dp(23))
+                      .setPadding(dp(6));
+
+                  glassDrawableAvatar = factory.create(this)
+                      .setColorProvider(colorProvider)
+                      .setRadius(dp(23))
+                      .setPadding(dp(6));
+          """, 'ActionBar setupGlass avatar drawable'); ok_all &= ok
+
+              s, ok = rep(s, """        if (glassDrawableBack != null) {
+                      glassDrawableBack.updateColors();
+                  }""", """        if (glassDrawableBack != null) {
+                      glassDrawableBack.updateColors();
+                  }
+                  if (glassDrawableAvatar != null) {
+                      glassDrawableAvatar.updateColors();
+                  }""", 'ActionBar updateColors'); ok_all &= ok
+
+              # onMeasure: menu width while the search field is open
+              s, ok = rep(s, "width - dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66)", "width - menuSearchInset()", 'ActionBar onMeasure inset', cnt=2); ok_all &= ok
+
+              # onLayout: back button on the right
+              s, ok = rep(s, """            backButtonImageView.layout(0, additionalTop, backButtonImageView.getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());""",
+          """            if (flipHeader) {
+                          backButtonImageView.layout(getMeasuredWidth() - backButtonImageView.getMeasuredWidth(), additionalTop, getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());
+                      } else {
+                          backButtonImageView.layout(0, additionalTop, backButtonImageView.getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());
+                      }""", 'ActionBar onLayout back'); ok_all &= ok
+
+              # onLayout: menu position + hide it (search field excepted)
+              s, ok = rep(s, """            int menuLeft = menu.searchFieldVisible() ? dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66) : (getMeasuredWidth()) - menu.getMeasuredWidth();
+                      menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());""",
+          """            int menuLeft = menu.searchFieldVisible() ? (flipHeader ? dp(52) : dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66)) : (getMeasuredWidth()) - menu.getMeasuredWidth();
+                      menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());
+                      if (flipHeader && menu.getVisibility() != GONE) {
+                          final int wantedVisibility = (menu.searchFieldVisible() || isSearchFieldVisible) ? VISIBLE : INVISIBLE;
+                          if (menu.getVisibility() != wantedVisibility) {
+                              final ActionBarMenu menuToChange = menu;
+                              post(() -> menuToChange.setVisibility(wantedVisibility));
+                          }
+                      }
+                      if (flipHeader && flipAvatarHit != null) {
+                          final boolean hasAvatarNow = chatAvatarContainer != null && chatAvatarContainer.hasVisibleAvatar();
+                          if (hasAvatarNow) {
+                              flipAvatarHit.layout(0, additionalTop, dp(54), additionalTop + getCurrentActionBarHeight());
+                          } else {
+                              flipAvatarHit.layout(0, 0, 0, 0);
+                          }
+                      }""", 'ActionBar onLayout menu'); ok_all &= ok
+
+              s, ok = rep(s, "child == additionalSubtitleTextView || child == avatarSearchImageView) {\n                continue;\n            }\n\n            LayoutParams lp",
+                             "child == additionalSubtitleTextView || child == avatarSearchImageView || child == flipAvatarHit) {\n                continue;\n            }\n\n            LayoutParams lp", 'ActionBar onLayout skip hit view'); ok_all &= ok
+
+              # dispatchDraw
+              s, ok = rep(s, "            final int rightOffset = lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());",
+                             "            final int rightOffset = flipHeader ? (hasBackButton ? s + p : 0) : lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar rightOffset'); ok_all &= ok
+              s, ok = rep(s, "            final int leftDefault = lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());",
+                             "            final int leftDefault = flipHeader ? lerp(0, s + p, chatAvatarContainer == null ? 0f : animatorAvatarContainerHasAvatar.getFloatValue()) : lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar leftDefault'); ok_all &= ok
+              s, ok = rep(s, """                chatAvatarContainer.setPivotX((chatAvatarContainer.getMeasuredWidth()) / 2f - translationX );
+          """, """                chatAvatarContainer.setPivotX((chatAvatarContainer.getMeasuredWidth()) / 2f - translationX );
+                          if (flipHeader && chatAvatarContainer.avatarImageView != null) {
+                              final float avatarTargetX = (s + p * 2 - chatAvatarContainer.avatarImageView.getMeasuredWidth()) / 2f;
+                              chatAvatarContainer.setFlipAvatarTranslationX(avatarTargetX - (chatAvatarContainer.getLeft() + translationX + 1 + chatAvatarContainer.getLeftPadding()));
+                          }
+          """, 'ActionBar avatar translation'); ok_all &= ok
+              s, ok = rep(s, """        if (glassDrawableBack != null && hasBackButton) {
+                      glassDrawableBack.setBounds(0, t, s + p * 2, b);
+                      glassDrawableBack.draw(canvas);
+                  }""", """        if (flipHeader && glassDrawableAvatar != null && chatAvatarContainer != null) {
+                      final float avatarGlassAlpha = animatorAvatarContainerHasAvatar.getFloatValue();
+                      if (avatarGlassAlpha > 0f) {
+                          glassDrawableAvatar.setBounds(0, t, s + p * 2, b);
+                          glassDrawableAvatar.setAlpha((int) (255 * avatarGlassAlpha));
+                          glassDrawableAvatar.draw(canvas);
+                      }
+                  }
+                  if (glassDrawableBack != null && hasBackButton) {
+                      if (flipHeader) {
+                          glassDrawableBack.setBounds(getWidth() - (s + p * 2), t, getWidth(), b);
+                      } else {
+                          glassDrawableBack.setBounds(0, t, s + p * 2, b);
+                      }
+                      glassDrawableBack.draw(canvas);
+                  }""", 'ActionBar draw back/avatar glass'); ok_all &= ok
+              s, ok = rep(s, "if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu) {",
+                             "if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu && !flipHeader) {", 'ActionBar skip menu glass'); ok_all &= ok
+
+              s, ok = rep(s, """                    contains |= glassDrawableMenu != null && glassDrawableMenu.getBounds().contains(x, y);
+                          }
+          """, """                    contains |= glassDrawableMenu != null && glassDrawableMenu.getBounds().contains(x, y);
+                          }
+                          if (flipHeader && glassDrawableAvatar != null && flipAvatarHit != null && flipAvatarHit.getWidth() > 0) {
+                              contains |= glassDrawableAvatar.getBounds().contains(x, y);
+                          }
+          """, 'ActionBar touch passthrough'); ok_all &= ok
+
+              open(p, 'w', encoding='utf-8').write(s)
+              print('Flip header (ActionBar):', 'applied' if ok_all else 'applied PARTIALLY (see warnings)')
+
+          # ======================= ChatAvatarContainer =======================
+          p = path('Components/ChatAvatarContainer.java')
+          s = open(p, encoding='utf-8').read()
+          if 'flipAvatar' in s:
+              print('Flip header (ChatAvatarContainer): already present, skipped')
+          else:
+              ok_all = True
+              s, ok = rep(s, "    public boolean hasVisibleAvatar() {", """    public boolean flipAvatar;
+
+              public void setFlipAvatar(boolean value) {
+                  if (flipAvatar != value) {
+                      flipAvatar = value;
+                      if (!value) {
+                          setFlipAvatarTranslationX(0);
+                      }
+                      requestLayout();
+                  }
+              }
+
+              public void setFlipAvatarTranslationX(float x) {
+                  if (avatarImageView != null) avatarImageView.setTranslationX(x);
+                  if (communityItem != null) communityItem.setTranslationX(x);
+                  if (timeItem != null) timeItem.setTranslationX(x);
+                  if (starBgItem != null) starBgItem.setTranslationX(x);
+                  if (starFgItem != null) starFgItem.setTranslationX(x);
+              }
+
+              public boolean hasVisibleAvatar() {""", 'Container methods'); ok_all &= ok
+              s, ok = rep(s, "avatarImageView.getVisibility() == VISIBLE ? 54 : 0", "avatarImageView.getVisibility() == VISIBLE && !flipAvatar ? 54 : 0", 'Container measure', cnt=2); ok_all &= ok
+              s, ok = rep(s, "(avatarImageView.getVisibility() == VISIBLE ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1))", "(avatarImageView.getVisibility() == VISIBLE && !flipAvatar ? dp(glassMode ? 49.66f : 55) : dp(glassMode ? 13 : 1))", 'Container layout'); ok_all &= ok
+              s, ok = rep(s, "        if (hasVisibleAvatar()) {\n            width += dp(52 + 18);", "        if (hasVisibleAvatar() && !flipAvatar) {\n            width += dp(52 + 18);", 'Container visual width'); ok_all &= ok
+              open(p, 'w', encoding='utf-8').write(s)
+              print('Flip header (ChatAvatarContainer):', 'applied' if ok_all else 'applied PARTIALLY (see warnings)')
+
+          # ======================= ChatActivity =======================
+          p = path('ChatActivity.java')
+          s = open(p, encoding='utf-8').read()
+          if 'setFlipHeader' in s:
+              print('Flip header (ChatActivity): already present, skipped')
+          else:
+              old = """        actionBar.setupGlass(
+                      glassBackgroundDrawableFactory,
+                      BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
+                      ChatObject.isForum(currentChat));
+          """
+              new = old + """
+                  if (chatMode == 0 && !isComments && !inPreviewMode && !inBubbleMode && !isInsideContainer && !isReport() && startLoadFromDate == 0 && headerItem != null && avatarContainer != null) {
+                      actionBar.setChatAvatarContainer(avatarContainer);
+                      avatarContainer.setActionBar(actionBar);
+                      avatarContainer.setFlipAvatar(true);
+                      actionBar.setFlipHeader(true);
+                      actionBar.setBackButtonLongClickListener(v -> {
+                          if (headerItem != null) {
+                              headerItem.toggleSubMenu();
+                              return true;
+                          }
+                          return false;
+                      });
+                  }
+          """
+              s, ok = rep(s, old, new, 'ChatActivity flip hook')
+              if ok:
+                  open(p, 'w', encoding='utf-8').write(s)
+                  print('Flip header (ChatActivity): applied')
+          FLIPEOF
+
       - name: Build
         run: |
           chmod +x gradlew
