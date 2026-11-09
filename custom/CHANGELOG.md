@@ -1,3 +1,17 @@
+## [1.0.3]
+
+### Anti-Unsend
+- No functional change.
+
+### Edit History
+- No functional change.
+
+### Other changes
+- Version bump to 1.0.3.
+
+### Known issues
+- See project documentation for known limitations.
+
 ## [1.0.2]
 
 ### Anti-Unsend
