@@ -315,3 +315,16 @@ index 574e3b8..0e9fbcf 100644
  IS_PRIVATE=false
  RELEASE_KEY_PASSWORD=android
  RELEASE_KEY_ALIAS=androidkey
+
+diff --git a/TMessagesProj/src/main/res/values/strings.xml b/TMessagesProj/src/main/res/values/strings.xml
+--- a/TMessagesProj/src/main/res/values/strings.xml
++++ b/TMessagesProj/src/main/res/values/strings.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <resources>
+-    <string name="AppName">Telegram</string>
+-    <string name="AppNameBeta">Telegram Beta</string>
++    <string name="AppName">MyGram</string>
++    <string name="AppNameBeta">MyGram Beta</string>
+     <string name="LanguageName">English</string>
+     <string name="English">English</string>
