@@ -59,6 +59,12 @@ public class ProfileActionsView extends View {
     private final List<Action> actions = new ArrayList<>();
     private final Paint paint = new Paint();
     private final Paint shaderPaint = new Paint();
+    private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF circleTmp = new RectF();
+    /** iOS-style round button diameter (dp) */
+    public static final int CIRCLE_DP = 52;
+    /** total height of the actions strip (dp) - keep in sync with ProfileActivity */
+    public static final int VIEW_HEIGHT_DP = 92;
     private float parentExpanded;
 
     public boolean isAnimatingCallAction = false;
@@ -130,6 +136,9 @@ public class ProfileActionsView extends View {
 
         paint.setColor(Color.BLACK);
         paint.setAlpha(40);
+        paint.setAntiAlias(true);
+        strokePaint.setStyle(Paint.Style.STROKE);
+        strokePaint.setStrokeWidth(dpf2(1f));
 
         xpadding = dpf2(14);
         ypadding = dpf2(12);
@@ -200,13 +209,12 @@ public class ProfileActionsView extends View {
         int w = getMeasuredWidth();
         if (w <= 0) return;
 
-        float betweenPadding = xpadding / 2f;
-        float width = (w - betweenPadding * Math.max(0, activeCount - 1) - xpadding * 2f) / Math.max(1, activeCount);
+        final float cs = dp(CIRCLE_DP);
 
         this.radialGradient = new RadialGradient(
-                width / 2f,
-                targetHeight / 2f,
-                hasColorById ? width * 0.65f : 1f,
+                cs / 2f,
+                cs / 2f,
+                hasColorById ? cs * 0.65f : 1f,
                 Theme.multAlpha(color, 0.8f),
                 color,
                 Shader.TileMode.CLAMP
@@ -234,6 +242,20 @@ public class ProfileActionsView extends View {
         return (w - betweenPadding * (activeCount - 1) - xpadding * 2f) / activeCount;
     }
 
+    /** Round (iOS style) button area inside the action cell: circle on top, label below. */
+    private void getCircleRect(Action action, RectF out) {
+        final float s = Math.max(0f, Math.min(Math.min(action.rect.width(), dp(CIRCLE_DP)), action.rect.height()));
+        final float cx = action.rect.centerX();
+        out.set(cx - s / 2f, action.rect.top, cx + s / 2f, action.rect.top + s);
+    }
+
+    private void getScaledCircleRect(Action action, RectF out) {
+        getCircleRect(action, out);
+        final float sc = action.getScale();
+        final float d = out.width() / 2f * (1f - sc);
+        out.inset(d, d);
+    }
+
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         if (clipHeight >= 0f) {
@@ -253,7 +275,6 @@ public class ProfileActionsView extends View {
         final float betweenPadding = xpadding / 2f;
         final float width = getItemWidth();
         float left = xpadding;
-        float r = getRoundRadius();
 
         if (renderNode != null) {
             clipPath.rewind();
@@ -277,13 +298,10 @@ public class ProfileActionsView extends View {
 
             action.updatePosition();
             if (renderNode != null) {
-                AndroidUtilities.rectTmp.set(action.rect);
-                AndroidUtilities.rectTmp.inset(
-                    action.rect.width() / 2.0f * (1.0f - action.getScale()),
-                    action.rect.height() / 2.0f * (1.0f - action.getScale())
-                );
+                getScaledCircleRect(action, AndroidUtilities.rectTmp);
                 AndroidUtilities.rectTmp.inset(-1, -1);
-                clipPath.addRoundRect(AndroidUtilities.rectTmp, r, r, Path.Direction.CCW);
+                final float rr = AndroidUtilities.rectTmp.width() / 2f;
+                clipPath.addRoundRect(AndroidUtilities.rectTmp, rr, rr, Path.Direction.CCW);
             }
         }
         firstAction = newFirstAction;
@@ -299,11 +317,8 @@ public class ProfileActionsView extends View {
             for (int i = 0; i < c; i++) {
                 Action action = actions.get(i);
                 if (!action.isDeleted) {
-                    AndroidUtilities.rectTmp.set(action.rect);
-                    AndroidUtilities.rectTmp.inset(
-                        action.rect.width() / 2.0f * (1.0f - action.getScale()),
-                        action.rect.height() / 2.0f * (1.0f - action.getScale())
-                    );
+                    getScaledCircleRect(action, AndroidUtilities.rectTmp);
+                    final float r = AndroidUtilities.rectTmp.width() / 2f;
                     int wasAlpha = paint.getAlpha();
                     int newAlpha = (int) (action.getAlpha() * alphaFraction1 * wasAlpha);
                     paint.setAlpha((int) (newAlpha * (radialGradient != null ? 0.1f : 1f)));
@@ -323,6 +338,13 @@ public class ProfileActionsView extends View {
                         canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, shaderPaint);
                         shaderPaint.setAlpha(wasAlpha2);
                     }
+                    // thin glass edge like iOS
+                    final float edgeAlpha = action.getAlpha() * alphaFraction1;
+                    strokePaint.setColor(isButtonColorLight()
+                            ? Color.argb((int) (22 * edgeAlpha), 0, 0, 0)
+                            : Color.argb((int) (56 * edgeAlpha), 255, 255, 255));
+                    AndroidUtilities.rectTmp.inset(dpf2(.5f), dpf2(.5f));
+                    canvas.drawOval(AndroidUtilities.rectTmp, strokePaint);
                     paint.setAlpha(wasAlpha);
                 }
             }
@@ -385,19 +407,19 @@ public class ProfileActionsView extends View {
 
     private void updateBounds(Action action) {
         final float cx = action.rect.centerX();
-        final float cy = action.rect.centerY();
+        final float circleSize = dp(CIRCLE_DP);
+        final float cy = action.rect.top + circleSize / 2f;
 
-        final int drawableSize = dp(24);
+        final int drawableSize = dp(26);
         final float drawableR = drawableSize * 0.5f;
 
         action.text.setMaxWidth(action.rect.width() - dp(2));
         action.textScale = action.text.getLineCount() >= 3 ? 0.75f : action.text.getLineCount() >= 2 ? 0.85f : 1.0f;
-        final float drawableTop = Math.max(0, (targetHeight - action.text.getHeight() * action.textScale) / 3f + dpf2(1.33f));
         action.setBounds(
             (int) (cx - drawableR),
-            (int) (drawableTop),
+            (int) (cy - drawableR),
             (int) (cx + drawableR),
-            (int) (drawableTop + drawableSize)
+            (int) (cy + drawableR)
         );
     }
 
@@ -427,11 +449,11 @@ public class ProfileActionsView extends View {
         final float cy = action.rect.centerY();
         fraction *= action.getScale();
         canvas.scale(fraction, fraction, cx, cy);
-        canvas.clipRect(action.rect);
+        canvas.clipRect(action.rect.left - dp(4), action.rect.top - dp(2), action.rect.right + dp(4), action.rect.bottom + ypadding);
 
         updateBounds(action);
 
-        final float textY = action.bounds.bottom + action.bounds.top - action.text.getHeight() * action.textScale / 2.0f - dp(4.66f);
+        final float textY = action.rect.top + dp(CIRCLE_DP) + dp(5);
         canvas.save();
         canvas.scale(action.textScale, action.textScale, cx, textY + action.text.getHeight() * action.textScale / 2.0f);
         action.text.draw(canvas, cx - action.text.getWidth() / 2f, textY, textColor, alpha);
@@ -502,15 +524,16 @@ public class ProfileActionsView extends View {
         }
 
         if (action.loadingDrawable != null) {
-            action.loadingDrawable.setBounds(action.rect);
-            action.loadingDrawable.setRadii(getRoundRadius());
+            getCircleRect(action, circleTmp);
+            action.loadingDrawable.setBounds(circleTmp);
+            action.loadingDrawable.setRadii(circleTmp.width() / 2f);
             action.loadingDrawable.setAlpha((int) (0xFF * alpha));
             action.loadingDrawable.draw(canvas);
         }
     }
 
     public float getRoundRadius() {
-        return dp(16);
+        return dp(CIRCLE_DP) / 2f;
     }
 
     private Action hit = null;
@@ -1027,7 +1050,7 @@ public class ProfileActionsView extends View {
         }
 
         public void setText(CharSequence cs) {
-            this.text = new Text(cs, 11, AndroidUtilities.bold())
+            this.text = new Text(cs, 12, AndroidUtilities.getTypeface("fonts/rmedium.ttf"))
                 .multiline(3)
                 .align(Layout.Alignment.ALIGN_CENTER);
         }
