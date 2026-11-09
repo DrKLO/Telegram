@@ -30,6 +30,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.VectorDrawable;
 import android.text.SpannableString;
 import android.text.TextPaint;
@@ -194,6 +196,33 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     private boolean glassMode;
+
+    // iOS-style round translucent back button (used by the profile screen)
+    private boolean roundBackButton;
+
+    public void setRoundBackButton(boolean round) {
+        if (roundBackButton == round) {
+            return;
+        }
+        roundBackButton = round;
+        if (backButtonImageView != null) {
+            backButtonImageView.setBackgroundDrawable(createBackButtonBackground(itemsBackgroundColor));
+        }
+    }
+
+    private Drawable createBackButtonBackground(int color) {
+        final Drawable selector = Theme.createSelectorDrawable(color);
+        if (!roundBackButton) {
+            return selector;
+        }
+        final GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(0x59FFFFFF);
+        circle.setStroke(Math.max(1, dp(1)), 0x14000000);
+        final LayerDrawable layers = new LayerDrawable(new Drawable[]{circle, selector});
+        layers.setLayerInset(0, dp(7), dp(7), dp(7), dp(7));
+        return layers;
+    }
     private boolean glassOnlyBack;
     private boolean glassModeIsForum;
 
@@ -265,7 +294,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
         backButtonImageView = new ImageView(getContext());
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
-        backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+        backButtonImageView.setBackgroundDrawable(createBackButtonBackground(itemsBackgroundColor));
         backButtonImageView.setPadding(dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
 
@@ -1101,7 +1130,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (drawable instanceof BackDrawable) {
                 ((BackDrawable) drawable).setRotation(0, true);
             }
-            backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+            backButtonImageView.setBackgroundDrawable(createBackButtonBackground(itemsBackgroundColor));
         }
     }
 
@@ -1791,7 +1820,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         } else {
             itemsBackgroundColor = color;
             if (backButtonImageView != null) {
-                backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+                backButtonImageView.setBackgroundDrawable(createBackButtonBackground(itemsBackgroundColor));
             }
             if (menu != null) {
                 menu.updateItemsBackgroundColor();
