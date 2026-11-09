@@ -5,6 +5,17 @@ Release notes are generated from the section of the version being released
 Every section must contain the three headings **Anti-Unsend**, **Edit History** and **Known issues**.
 A release cannot be published without its section (`scripts/gen-release-notes.sh` fails).
 
+## [1.0.2]
+
+### Anti-Unsend
+- Existing anti-unsend functionality.
+
+### Edit History
+- Existing local edit history functionality.
+
+### Known issues
+- Existing known issues remain.
+
 ## [1.0.0]
 
 ### Anti-Unsend
