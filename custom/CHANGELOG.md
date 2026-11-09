@@ -5,17 +5,6 @@ Release notes are generated from the section of the version being released
 Every section must contain the three headings **Anti-Unsend**, **Edit History** and **Known issues**.
 A release cannot be published without its section (`scripts/gen-release-notes.sh` fails).
 
-## [1.0.2]
-
-### Anti-Unsend
-- Existing anti-unsend functionality.
-
-### Edit History
-- Existing local edit history functionality.
-
-### Known issues
-- Existing known issues remain.
-
 ## [1.0.0]
 
 ### Anti-Unsend
@@ -29,6 +18,7 @@ A release cannot be published without its section (`scripts/gen-release-notes.sh
 - "Copy" still copies only the latest text.
 
 ### Other changes
+- Patch v6: corrected CustomHistory storage queue type to DispatchQueue2.
 - Custom launcher icon generated from `tg-icon.png` at build time.
 - Independent versioning (`custom/version.properties`) instead of Telegram's version numbers.
 - Retained data is stored only in two additive tables inside the existing local Telegram database; nothing is uploaded.

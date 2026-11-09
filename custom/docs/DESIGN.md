@@ -8,7 +8,7 @@
 | Version in `gradle.properties` | `APP_VERSION_NAME=13.1.1`, `APP_VERSION_CODE=7237` |
 | Source archive | `Telegram-master.zip`, sha256 `4b65e10b8fc63b4cbcb7377026a5da470782547fc0c0575bf0b71da676028c10` |
 | Upstream commit hash | **unknown** – the zip has no `.git`. Fill in after cloning (`git rev-parse HEAD`). |
-| Patch | `custom/patches/custom-features.patch` (7 files, +649 / −5, patch version 4) |
+| Patch | `custom/patches/custom-features.patch` (7 files, +649 / −5, patch version 6) |
 
 Apply: `git apply --check custom/patches/custom-features.patch && git apply custom/patches/custom-features.patch`
 (verified against pristine copies of the 6 modified upstream files from the zip).
