@@ -202,6 +202,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     private ArrayList<MessageObject> playlist;
+
+    private RecyclerListView suggestionsListView;
+    private SuggestionsAdapter suggestionsAdapter;
+    private final ArrayList<MessageObject> suggestedMusic = new ArrayList<>();
+    private int suggestionsHeight;
+    private static final int MAX_VISIBLE_SUGGESTIONS = 4;
     private MessageObject lastMessageObject;
     private boolean noforwards;
 
@@ -386,7 +392,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                     if (listAdapter.getItemCount() > 0) {
                         dismiss = ev.getY() < scrollOffsetY + dp(12);
                     } else {
-                        dismiss = ev.getY() < getMeasuredHeight() - dp(179 + (!isMyList() && !noforwards ? 52 : 0) + 12);
+                        dismiss = ev.getY() < getMeasuredHeight() - dp(179 + (!isMyList() && !noforwards ? 52 : 0) + 12) - suggestionsHeight;
                     }
                     if (dismiss) {
                         dismiss();
@@ -407,7 +413,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             @Override
             protected void onDraw(Canvas canvas) {
                 if (playlist.size() <= 1) {
-                    shadowDrawable.setBounds(0, getMeasuredHeight() - playerLayout.getMeasuredHeight() - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
+                    shadowDrawable.setBounds(0, getMeasuredHeight() - playerLayout.getMeasuredHeight() - suggestionsHeight - backgroundPaddingTop, getMeasuredWidth(), getMeasuredHeight());
                     shadowDrawable.draw(canvas);
                     if (isProfilePlaylist) {
                         actionBar.setVisibility(View.GONE);
@@ -1183,6 +1189,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         listView.setHorizontalScrollBarEnabled(false);
         listView.setVerticalScrollBarEnabled(false);
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
+
+        suggestionsListView = new RecyclerListView(context);
+        suggestionsListView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        suggestionsListView.setVerticalScrollBarEnabled(false);
+        suggestionsListView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
+        suggestionsListView.setVisibility(View.GONE);
+        suggestionsListView.setAdapter(suggestionsAdapter = new SuggestionsAdapter(context));
+        suggestionsListView.setOnItemClickListener((view, position) -> onSuggestionClicked(position));
+        containerView.addView(suggestionsListView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 0));
         listView.setAdapter(listAdapter = new ListAdapter(context));
         listView.setGlowColor(getThemedColor(Theme.key_dialogScrollGlow));
         listView.setOnItemClickListener((view, position) -> {
@@ -1258,7 +1273,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 .createSimpleBulletin(R.raw.saved_messages, getString(R.string.AudioSaveToMyProfileSaved))
                 .show();
         });
-        playerLayout.addView(saveToProfileButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 12, 12, 12, 12));
+        playerLayout.addView(saveToProfileButton, LayoutHelper.createFrame(240, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 16));
 
         unsaveFromProfileButton = new ButtonWithCounterView(context, resourcesProvider).setRound().setNeutral();
         unsaveFromProfileButton.setText(getString(R.string.AudioRemoveFromProfile));
@@ -1273,7 +1288,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 .createSimpleBulletin(R.raw.ic_delete, getString(R.string.AudioSaveToMyProfileUnsaved))
                 .show();
         });
-        playerLayout.addView(unsaveFromProfileButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 42, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 12, 12, 12, 12));
+        playerLayout.addView(unsaveFromProfileButton, LayoutHelper.createFrame(240, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 16));
 
         savedMusicList = MediaController.getInstance().currentSavedMusicList;
         isProfilePlaylist = savedMusicList != null;
@@ -1481,7 +1496,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             return 0;
         }
         if (playlist.size() <= 1) {
-            return playerLayout.getMeasuredHeight() + backgroundPaddingTop;
+            return playerLayout.getMeasuredHeight() + suggestionsHeight + backgroundPaddingTop;
         } else {
             int offset = dp(13);
             int top = scrollOffsetY - backgroundPaddingTop - offset;
@@ -1836,6 +1851,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.messagePlayingDidStart || id == NotificationCenter.messagePlayingPlayStateChanged || id == NotificationCenter.messagePlayingDidReset) {
             updateTitle(id == NotificationCenter.messagePlayingDidReset && (Boolean) args[1]);
+            if (id == NotificationCenter.messagePlayingDidStart) {
+                playlist = MediaController.getInstance().getPlaylist();
+                if ((playlist.size() > 1) != listAdapter.listViewIsVisible) {
+                    listAdapter.notifyDataSetChanged();
+                } else {
+                    updateSuggestions();
+                }
+            }
             if (id == NotificationCenter.messagePlayingDidReset || id == NotificationCenter.messagePlayingPlayStateChanged) {
                 int count = listView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -2405,6 +2428,73 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
+    private void updateSuggestions() {
+        if (suggestionsListView == null || playlist == null) {
+            return;
+        }
+        suggestedMusic.clear();
+        if (playlist.size() <= 1 && !searching) {
+            suggestedMusic.addAll(MediaController.getInstance().getSuggestedMusic(MediaController.getInstance().getPlayingMessageObject()));
+        }
+        final boolean show = !suggestedMusic.isEmpty();
+        suggestionsHeight = show ? dp(56) * Math.min(suggestedMusic.size(), MAX_VISIBLE_SUGGESTIONS) : 0;
+
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) suggestionsListView.getLayoutParams();
+        lp.height = suggestionsHeight;
+        lp.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
+        suggestionsListView.setLayoutParams(lp);
+
+        suggestionsAdapter.notifyDataSetChanged();
+        suggestionsListView.setVisibility(show ? View.VISIBLE : View.GONE);
+        containerView.invalidate();
+    }
+
+    private void onSuggestionClicked(int position) {
+        if (position < 0 || position >= suggestedMusic.size()) {
+            return;
+        }
+        final MessageObject clicked = suggestedMusic.get(position);
+        final ArrayList<MessageObject> newPlaylist = new ArrayList<>(suggestedMusic);
+        MediaController.getInstance().setPlaylist(newPlaylist, clicked, 0);
+    }
+
+    private class SuggestionsAdapter extends RecyclerListView.SelectionAdapter {
+
+        private final Context context;
+
+        SuggestionsAdapter(Context context) {
+            this.context = context;
+        }
+
+        @Override
+        public int getItemCount() {
+            return suggestedMusic.size();
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            return true;
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new RecyclerListView.Holder(new AudioPlayerCell(context, AudioPlayerCell.VIEW_TYPE_DEFAULT, resourcesProvider));
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            final AudioPlayerCell cell = (AudioPlayerCell) holder.itemView;
+            final MessageObject messageObject = suggestedMusic.get(position);
+            cell.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            cell.setMessageObject(messageObject, false, null, position + 1 < suggestedMusic.size(), null);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 0;
+        }
+    }
+
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context context;
@@ -2462,6 +2552,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 listView.setPadding(0, listView.getPaddingTop(), 0, 0);
             }
             updateEmptyView();
+            updateSuggestions();
         }
 
         @Override

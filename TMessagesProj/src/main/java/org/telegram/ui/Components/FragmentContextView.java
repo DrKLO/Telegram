@@ -17,18 +17,23 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
@@ -66,7 +71,10 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MediaController;
+import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -164,6 +172,15 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private int currentStyle = STYLE_NOT_SET;
     private String lastString;
     private boolean isMusic;
+
+    private static final int COVER_BG_ALPHA = 120;
+    private static final int COVER_SHIFT_DP = 32;
+
+    private BackupImageView coverView;
+    private CoverBackgroundDrawable coverBgDrawable;
+    private ValueAnimator coverBgAnimator;
+    private MessageObject coverMessageObject;
+    private int coverShift = -1;
     private boolean supportsCalls = true;
     private AvatarsImageView avatars;
 
@@ -405,6 +422,20 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
         selector = new View(context);
         frameLayout.addView(selector, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+        coverView = new BackupImageView(context);
+        coverView.setRoundRadius(dp(14));
+        coverView.setVisibility(GONE);
+        coverView.getImageReceiver().setDelegate((imageReceiver, set, thumb, memCache) -> {
+            if (!set || coverMessageObject == null || coverMessageObject != lastMessageObject) {
+                return;
+            }
+            CoverBackgroundDrawable d = getCoverDrawableForMessage(coverMessageObject);
+            if (d != null) {
+                setCoverBackground(d, true);
+            }
+        });
+        addView(coverView, LayoutHelper.createFrame(28, 28, Gravity.TOP | Gravity.LEFT, 6, 4, 0, 0));
 
         playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -1172,6 +1203,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
         }
         currentStyle = style;
+        if (style != STYLE_AUDIO_PLAYER) {
+            hideCoverUi();
+        }
         frameLayout.setWillNotDraw(currentStyle != STYLE_INACTIVE_GROUP_CALL);
         if (style != STYLE_INACTIVE_GROUP_CALL) {
             notifyButtonEnabled = false;
@@ -2008,7 +2042,184 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.bold(), 0, getThemedColor(Theme.key_inappPlayerPerformer));
                 stringBuilder.setSpan(span, 0, messageObject.getMusicAuthor().length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 titleTextView.setText(stringBuilder, !create && wasVisible && isMusic);
+                updateCoverUi(messageObject, !create && wasVisible);
             }
+        }
+    }
+
+    private void updateCoverUi(MessageObject messageObject, boolean animated) {
+        if (coverView == null || frameLayout == null || messageObject == null) {
+            return;
+        }
+        final int shift = isMusic ? COVER_SHIFT_DP : 0;
+        if (coverShift != shift) {
+            coverShift = shift;
+            playButton.setLayoutParams(LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.LEFT, 3 + shift, 0, 0, 0));
+            titleTextView.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.LEFT | Gravity.TOP, 37 + shift, 0, (isSideMenued ? 64 : 0) + 36, 0));
+        }
+        if (!isMusic) {
+            coverMessageObject = null;
+            coverView.setVisibility(GONE);
+            setCoverBackground(null, false);
+            return;
+        }
+        coverMessageObject = messageObject;
+        coverView.setVisibility(VISIBLE);
+
+        final AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
+        if (audioInfo != null && audioInfo.getCover() != null) {
+            coverView.setImageBitmap(audioInfo.getCover());
+        } else {
+            final String artworkUrl = messageObject.getArtworkUrl(false);
+            final ImageLocation thumbLocation = getArtworkThumbImageLocation(messageObject);
+            if (!TextUtils.isEmpty(artworkUrl)) {
+                coverView.setImage(ImageLocation.getForPath(artworkUrl), null, thumbLocation, null, null, 0, 1, messageObject);
+            } else if (thumbLocation != null) {
+                coverView.setImage(null, null, thumbLocation, null, null, 0, 1, messageObject);
+            } else {
+                coverView.setImageDrawable(null);
+            }
+        }
+        setCoverBackground(getCoverDrawableForMessage(messageObject), animated);
+    }
+
+    private void hideCoverUi() {
+        coverMessageObject = null;
+        coverShift = -1;
+        coverBgDrawable = null;
+        if (coverBgAnimator != null) {
+            coverBgAnimator.cancel();
+            coverBgAnimator = null;
+        }
+        if (coverView != null) {
+            coverView.setVisibility(GONE);
+        }
+    }
+
+    private CoverBackgroundDrawable getCoverDrawableForMessage(MessageObject messageObject) {
+        Bitmap bitmap = null;
+        final AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
+        if (audioInfo != null) {
+            bitmap = audioInfo.getCover();
+        }
+        if (bitmap == null && coverView != null) {
+            bitmap = coverView.getImageReceiver().getBitmap();
+        }
+        if (bitmap == null || bitmap.isRecycled()) {
+            return null;
+        }
+        return new CoverBackgroundDrawable(bitmap);
+    }
+
+    private void setCoverBackground(CoverBackgroundDrawable d, boolean animated) {
+        if (frameLayout == null) {
+            return;
+        }
+        if (d == null) {
+            if (coverBgAnimator != null) {
+                coverBgAnimator.cancel();
+                coverBgAnimator = null;
+            }
+            if (coverBgDrawable != null) {
+                coverBgDrawable = null;
+                frameLayout.setBackground(null);
+            }
+            return;
+        }
+        if (coverBgDrawable != null && coverBgDrawable.getBitmap() == d.getBitmap()) {
+            return;
+        }
+        if (coverBgAnimator != null) {
+            coverBgAnimator.cancel();
+            coverBgAnimator = null;
+        }
+        coverBgDrawable = d;
+        frameLayout.setBackground(d);
+        if (!animated) {
+            d.setAlpha(COVER_BG_ALPHA);
+            return;
+        }
+        d.setAlpha(0);
+        coverBgAnimator = ValueAnimator.ofInt(0, COVER_BG_ALPHA);
+        coverBgAnimator.addUpdateListener(a -> d.setAlpha((Integer) a.getAnimatedValue()));
+        coverBgAnimator.setDuration(300);
+        coverBgAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
+        coverBgAnimator.start();
+    }
+
+    private ImageLocation getArtworkThumbImageLocation(MessageObject messageObject) {
+        final TLRPC.Document document = messageObject.getDocument();
+        TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 360) : null;
+        if (!(thumb instanceof TLRPC.TL_photoSize) && !(thumb instanceof TLRPC.TL_photoSizeProgressive)) {
+            thumb = null;
+        }
+        if (thumb != null) {
+            return ImageLocation.getForDocument(thumb, document);
+        }
+        final String smallArtworkUrl = messageObject.getArtworkUrl(true);
+        if (smallArtworkUrl != null) {
+            return ImageLocation.getForPath(smallArtworkUrl);
+        }
+        return null;
+    }
+
+    private static class CoverBackgroundDrawable extends Drawable {
+        private final Bitmap bitmap;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        private final Matrix matrix = new Matrix();
+
+        CoverBackgroundDrawable(Bitmap bitmap) {
+            this.bitmap = bitmap;
+        }
+
+        Bitmap getBitmap() {
+            return bitmap;
+        }
+
+        @Override
+        protected void onBoundsChange(Rect bounds) {
+            super.onBoundsChange(bounds);
+            if (bitmap.isRecycled() || bounds.isEmpty() || bitmap.getWidth() == 0 || bitmap.getHeight() == 0) {
+                return;
+            }
+            final float scale = Math.max(bounds.width() / (float) bitmap.getWidth(), bounds.height() / (float) bitmap.getHeight());
+            final float dx = bounds.left + (bounds.width() - bitmap.getWidth() * scale) / 2f;
+            final float dy = bounds.top + (bounds.height() - bitmap.getHeight() * scale) / 2f;
+            matrix.setScale(scale, scale);
+            matrix.postTranslate(dx, dy);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            if (bitmap.isRecycled()) {
+                return;
+            }
+            canvas.save();
+            canvas.clipRect(getBounds());
+            canvas.drawBitmap(bitmap, matrix, paint);
+            canvas.restore();
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getAlpha() {
+            return paint.getAlpha();
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+            paint.setColorFilter(colorFilter);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
         }
     }
 
