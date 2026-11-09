@@ -1136,7 +1136,7 @@ jobs:
               print('Input box glass: applied')
           CHATEOF
 
-      # ---------- هدر چت: آواتار چپ، اسم وسط، بازگشت راست (نگه داشتن روی بازگشت = منوی گزینه‌ها، روی اسم = جستجو) ----------
+      # ---------- هدر چت: بازگشت چپ، اسم وسط، آواتار پروفایل راست (نگه داشتن روی بازگشت = منوی گزینه‌ها) ----------
       - name: Flip chat header
         run: |
           python3 - <<'FLIPEOF'
@@ -1183,7 +1183,7 @@ jobs:
                       addView(flipAvatarHit, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
                   }
                   if (backButtonImageView != null) {
-                      backButtonImageView.setTranslationX(value ? -dp(2) : dp(2));
+                      backButtonImageView.setTranslationX(dp(2));
                   }
                   requestLayout();
                   invalidate();
@@ -1196,7 +1196,7 @@ jobs:
               }
 
               private int menuSearchInset() {
-                  return flipHeader ? dp(112) : dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66);
+                  return dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66);
               }
           """, 'ActionBar fields'); ok_all &= ok
 
@@ -1227,18 +1227,12 @@ jobs:
               # onMeasure: menu width while the search field is open
               s, ok = rep(s, "width - dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66)", "width - menuSearchInset()", 'ActionBar onMeasure inset', cnt=2); ok_all &= ok
 
-              # onLayout: back button on the right
-              s, ok = rep(s, """            backButtonImageView.layout(0, additionalTop, backButtonImageView.getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());""",
-          """            if (flipHeader) {
-                          backButtonImageView.layout(getMeasuredWidth() - backButtonImageView.getMeasuredWidth(), additionalTop, getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());
-                      } else {
-                          backButtonImageView.layout(0, additionalTop, backButtonImageView.getMeasuredWidth(), additionalTop + backButtonImageView.getMeasuredHeight());
-                      }""", 'ActionBar onLayout back'); ok_all &= ok
+              # دکمه برگشت سمت چپ می‌ماند (چیدمان پیش‌فرض)
 
               # onLayout: menu position + hide it (search field excepted)
               s, ok = rep(s, """            int menuLeft = menu.searchFieldVisible() ? dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66) : (getMeasuredWidth()) - menu.getMeasuredWidth();
                       menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());""",
-          """            int menuLeft = menu.searchFieldVisible() ? (flipHeader ? dp(52) : dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66)) : (getMeasuredWidth()) - menu.getMeasuredWidth();
+          """            int menuLeft = menu.searchFieldVisible() ? dp(menuOccupyBack ? 0 : AndroidUtilities.isTablet() ? 74 : 66) : (getMeasuredWidth()) - menu.getMeasuredWidth();
                       menu.layout(menuLeft, additionalTop, menuLeft + menu.getMeasuredWidth(), additionalTop + menu.getMeasuredHeight());
                       if (flipHeader && menu.getVisibility() != GONE) {
                           final int wantedVisibility = (menu.searchFieldVisible() || isSearchFieldVisible) ? VISIBLE : INVISIBLE;
@@ -1250,7 +1244,7 @@ jobs:
                       if (flipHeader && flipAvatarHit != null) {
                           final boolean hasAvatarNow = chatAvatarContainer != null && chatAvatarContainer.hasVisibleAvatar();
                           if (hasAvatarNow) {
-                              flipAvatarHit.layout(0, additionalTop, dp(54), additionalTop + getCurrentActionBarHeight());
+                              flipAvatarHit.layout(getMeasuredWidth() - dp(54), additionalTop, getMeasuredWidth(), additionalTop + getCurrentActionBarHeight());
                           } else {
                               flipAvatarHit.layout(0, 0, 0, 0);
                           }
@@ -1261,13 +1255,13 @@ jobs:
 
               # dispatchDraw
               s, ok = rep(s, "            final int rightOffset = lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());",
-                             "            final int rightOffset = flipHeader ? (hasBackButton ? s + p : 0) : lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar rightOffset'); ok_all &= ok
+                             "            final int rightOffset = flipHeader ? lerp(0, s + p, chatAvatarContainer == null ? 0f : animatorAvatarContainerHasAvatar.getFloatValue()) : lerp(menuWidthWithPadding, Math.max(menuWidthWithPadding, p + s), chatAvatarContainer == null ? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar rightOffset'); ok_all &= ok
               s, ok = rep(s, "            final int leftDefault = lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());",
-                             "            final int leftDefault = flipHeader ? lerp(0, s + p, chatAvatarContainer == null ? 0f : animatorAvatarContainerHasAvatar.getFloatValue()) : lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar leftDefault'); ok_all &= ok
+                             "            final int leftDefault = flipHeader ? (hasBackButton ? s + p : 0) : lerp(hasBackButton ? s + p : 0, s + p, chatAvatarContainer == null? 0f : 1f - animatorAvatarContainerHasAvatar.getFloatValue());", 'ActionBar leftDefault'); ok_all &= ok
               s, ok = rep(s, """                chatAvatarContainer.setPivotX((chatAvatarContainer.getMeasuredWidth()) / 2f - translationX );
           """, """                chatAvatarContainer.setPivotX((chatAvatarContainer.getMeasuredWidth()) / 2f - translationX );
                           if (flipHeader && chatAvatarContainer.avatarImageView != null) {
-                              final float avatarTargetX = (s + p * 2 - chatAvatarContainer.avatarImageView.getMeasuredWidth()) / 2f;
+                              final float avatarTargetX = getMeasuredWidth() - (s + p * 2 + chatAvatarContainer.avatarImageView.getMeasuredWidth()) / 2f;
                               chatAvatarContainer.setFlipAvatarTranslationX(avatarTargetX - (chatAvatarContainer.getLeft() + translationX + 1 + chatAvatarContainer.getLeftPadding()));
                           }
           """, 'ActionBar avatar translation'); ok_all &= ok
@@ -1277,17 +1271,13 @@ jobs:
                   }""", """        if (flipHeader && glassDrawableAvatar != null && chatAvatarContainer != null) {
                       final float avatarGlassAlpha = animatorAvatarContainerHasAvatar.getFloatValue();
                       if (avatarGlassAlpha > 0f) {
-                          glassDrawableAvatar.setBounds(0, t, s + p * 2, b);
+                          glassDrawableAvatar.setBounds(getWidth() - (s + p * 2), t, getWidth(), b);
                           glassDrawableAvatar.setAlpha((int) (255 * avatarGlassAlpha));
                           glassDrawableAvatar.draw(canvas);
                       }
                   }
                   if (glassDrawableBack != null && hasBackButton) {
-                      if (flipHeader) {
-                          glassDrawableBack.setBounds(getWidth() - (s + p * 2), t, getWidth(), b);
-                      } else {
-                          glassDrawableBack.setBounds(0, t, s + p * 2, b);
-                      }
+                      glassDrawableBack.setBounds(0, t, s + p * 2, b);
                       glassDrawableBack.draw(canvas);
                   }""", 'ActionBar draw back/avatar glass'); ok_all &= ok
               s, ok = rep(s, "if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu) {",
@@ -1370,6 +1360,115 @@ jobs:
                   open(p, 'w', encoding='utf-8').write(s)
                   print('Flip header (ChatActivity): applied')
           FLIPEOF
+
+      # ---------- باکس تایپ بالاتر + ژست دو انگشت به بالا (انتخاب همه / پاکسازی تاریخچه) ----------
+      - name: Input box higher and two-finger select-all
+        run: |
+          python3 - <<'GESTEOF'
+          import re
+          p = 'TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java'
+          s = open(p, encoding='utf-8').read()
+
+          # ---- 1) باکس تایپ ~10dp بالاتر ----
+          if 'inputBoxRaised' in s:
+              print('Input raise: already present, skipped')
+          else:
+              anchor = "glassBackgroundDrawableFactory.create(chatInputViewsContainer, inputGlassColorProvider));"
+              if anchor not in s:
+                  print('WARNING: input raise anchor not found, skipped')
+              else:
+                  raise_code = anchor + """
+                  chatInputViewsContainer.post(() -> {
+                      try {
+                          ViewGroup.LayoutParams inputBoxRaised = chatInputViewsContainer.getLayoutParams();
+                          if (inputBoxRaised instanceof ViewGroup.MarginLayoutParams) {
+                              ((ViewGroup.MarginLayoutParams) inputBoxRaised).bottomMargin = AndroidUtilities.dp(10);
+                              chatInputViewsContainer.setLayoutParams(inputBoxRaised);
+                          } else {
+                              chatInputViewsContainer.setTranslationY(-AndroidUtilities.dp(10));
+                          }
+                      } catch (Throwable e) {
+                          FileLog.e(e);
+                      }
+                  });"""
+                  s = s.replace(anchor, raise_code, 1)
+                  print('Input raise: applied')
+
+          # ---- 2) ژست دو انگشت از پایین به بالا روی لیست پیام‌ها ----
+          if 'twoFingerSwipeHooked' in s:
+              print('Two-finger gesture: already present, skipped')
+          else:
+              m = re.search(r'\n([ \t]*)public void onResume\(\) \{\s*super\.onResume\(\);', s)
+              if m is None:
+                  print('WARNING: onResume not found, two-finger gesture skipped')
+              else:
+                  methods = '''
+              private boolean twoFingerSwipeHooked;
+
+              private void hookTwoFingerSwipe() {
+                  if (twoFingerSwipeHooked || chatListView == null) {
+                      return;
+                  }
+                  twoFingerSwipeHooked = true;
+                  chatListView.addOnItemTouchListener(new androidx.recyclerview.widget.RecyclerView.OnItemTouchListener() {
+                      private float startY;
+                      private boolean tracking;
+
+                      @Override
+                      public boolean onInterceptTouchEvent(androidx.recyclerview.widget.RecyclerView rv, android.view.MotionEvent e) {
+                          int a = e.getActionMasked();
+                          if (a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
+                              startY = (e.getY(0) + e.getY(1)) / 2f;
+                              tracking = true;
+                          } else if (a == android.view.MotionEvent.ACTION_MOVE && tracking && e.getPointerCount() == 2) {
+                              float y = (e.getY(0) + e.getY(1)) / 2f;
+                              if (startY - y > AndroidUtilities.dp(90)) {
+                                  tracking = false;
+                                  showSelectAllClearDialog();
+                              }
+                          } else if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL || e.getPointerCount() > 2) {
+                              tracking = false;
+                          }
+                          return false;
+                      }
+
+                      @Override
+                      public void onTouchEvent(androidx.recyclerview.widget.RecyclerView rv, android.view.MotionEvent e) {
+                      }
+
+                      @Override
+                      public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+                      }
+                  });
+              }
+
+              private void showSelectAllClearDialog() {
+                  if (getParentActivity() == null) {
+                      return;
+                  }
+                  try {
+                      final boolean canBoth = currentUser != null || currentEncryptedChat != null;
+                      org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity(), themeDelegate);
+                      builder.setTitle("انتخاب همه پیام‌ها");
+                      CharSequence[] items = canBoth
+                          ? new CharSequence[]{"حذف برای من", "حذف برای هر دو طرف"}
+                          : new CharSequence[]{"حذف برای من"};
+                      builder.setItems(items, (dialog, which) -> performHistoryClear(getThreadId(), which == 1, true));
+                      builder.setNegativeButton("لغو", null);
+                      showDialog(builder.create());
+                  } catch (Throwable e) {
+                      FileLog.e(e);
+                  }
+              }
+          '''
+                  indent = m.group(1)
+                  s = s[:m.start()] + '\n' + methods + s[m.start():]
+                  m2 = re.search(r'public void onResume\(\) \{\s*super\.onResume\(\);', s)
+                  s = s[:m2.end()] + '\n        hookTwoFingerSwipe();' + s[m2.end():]
+                  print('Two-finger gesture: applied')
+
+          open(p, 'w', encoding='utf-8').write(s)
+          GESTEOF
 
       - name: Build
         run: |
