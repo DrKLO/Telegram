@@ -831,7 +831,8 @@ jobs:
           mkdir -p out
           echo "=== all APK/AAB files ==="
           find . -type f \( -name '*.apk' -o -name '*.aab' \) -not -path './.git/*' -print
-          APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | grep -i arm64 | head -n 1)
+          APK=$(find . -type f -name '*.apk' -path '*/outputs/apk/*' -path '*elease*' -not -path './.git/*' | head -n 1)
+          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | grep -i arm64 | head -n 1); fi
           if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | head -n 1); fi
           if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -not -path './.git/*' | head -n 1); fi
           if [ -z "$APK" ]; then
@@ -841,6 +842,26 @@ jobs:
           fi
           echo "Using $APK"
           cp "$APK" "out/TG app.apk"
+
+      # ---------- هم‌ترازسازی و امضای نهایی (برای رفع ارور invalid هنگام نصب) ----------
+      - name: Align and sign APK
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          echo "Using build-tools: $BT"
+          PASS=$(grep '^RELEASE_STORE_PASSWORD=' gradle.properties | tail -n 1 | cut -d= -f2-)
+          ALIAS=$(grep '^RELEASE_KEY_ALIAS=' gradle.properties | tail -n 1 | cut -d= -f2-)
+          cd out
+          "$BT/zipalign" -f -P 16 4 "TG app.apk" aligned.apk
+          "$BT/apksigner" sign \
+            --ks ../TMessagesProj/config/release.keystore \
+            --ks-key-alias "$ALIAS" \
+            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+            --v4-signing-enabled false \
+            --out signed.apk aligned.apk
+          "$BT/apksigner" verify --verbose --print-certs signed.apk
+          mv -f signed.apk "TG app.apk"
+          rm -f aligned.apk
+          "$BT/aapt" dump badging "TG app.apk" | head -n 3 || true
 
       - uses: actions/upload-artifact@v4
         with:
