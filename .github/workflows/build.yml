@@ -3,6 +3,14 @@ name: Build TG app
 on:
   push:
   workflow_dispatch:
+    inputs:
+      abis:
+        description: "Which CPU types to build (arm64 = 64-bit only, arm64+v7a = 64-bit and 32-bit)"
+        type: choice
+        options:
+          - arm64
+          - arm64+v7a
+        default: arm64
 
 permissions:
   contents: write
@@ -15,6 +23,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      ABI_MODE: ${{ github.event.inputs.abis || 'arm64' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,20 +94,27 @@ jobs:
 
       - name: Rename app
         run: |
-          grep -rl --include=build.gradle 'applicationId' . | while read f; do
-            sed -i -E 's/applicationId[ =]+"[^"]+"/applicationId "org.tgapp"/' "$f"
-            sed -i -E "s/applicationId[ =]+'[^']+'/applicationId \"org.tgapp\"/" "$f"
+          echo "=== applicationId BEFORE ==="
+          grep -rnE '[aA]pplicationId' --include=*.gradle --include=*.kts --include=*.kt --include=*.properties . 2>/dev/null | grep -v '/build/' | head -30 || true
+          grep -rlE '[aA]pplicationId' --include=*.gradle --include=*.kts --include=*.kt --include=*.properties . 2>/dev/null | grep -v '/build/' | while read f; do
+            sed -i -E 's/([aA]pplicationId[[:space:]]*(=|\()?[[:space:]]*)"[^"]+"/\1"org.tgapp"/g' "$f"
+            sed -i -E "s/([aA]pplicationId[[:space:]]*(=|\()?[[:space:]]*)'[^']+'/\1\"org.tgapp\"/g" "$f"
           done
+          echo "=== applicationId AFTER ==="
+          grep -rnE '[aA]pplicationId' --include=*.gradle --include=*.kts --include=*.kt --include=*.properties . 2>/dev/null | grep -v '/build/' | head -30 || true
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values/strings.xml
           sed -i -E 's#(<string name="AppName">)[^<]*(</string>)#\1TG app\2#' TMessagesProj/src/main/res/values*/strings.xml || true
 
-      - name: Only arm64
+      - name: Select ABIs
         run: |
           python3 - <<'PYEOF'
-          import re, glob
+          import re, glob, os
+          mode = os.environ.get('ABI_MODE', 'arm64')
+          filt = 'abiFilters "arm64-v8a"' if mode == 'arm64' else 'abiFilters "armeabi-v7a", "arm64-v8a"'
+          print('ABI mode:', mode, '->', filt)
           for f in glob.glob('TMessagesProj*/build.gradle') + glob.glob('build.gradle'):
               s = open(f, encoding='utf-8').read()
-              n = re.sub(r'abiFilters[ \t(]+[^\n]*', 'abiFilters "arm64-v8a"', s)
+              n = re.sub(r'abiFilters[ \t(]+[^\n]*', lambda m: filt, s)
               if n != s:
                   open(f, 'w', encoding='utf-8').write(n)
                   print('abiFilters patched in', f)
@@ -821,10 +838,292 @@ jobs:
           open(p, 'w', encoding='utf-8').write(s)
           PYEOF
 
+      # ---------- اعمال تغییرات دیزاین (منو + باکس تایپ شیشه‌ای) روی سورس موقع بیلد ----------
+      - name: Apply design changes
+        run: |
+          python3 - <<'MENU1EOF'
+          import re
+          BASE = 'TMessagesProj/src/main/java/org/telegram/ui/ActionBar/'
+          def rep(s, old, new, cnt=1):
+              if s.count(old) < 1:
+                  print('WARNING: pattern not found, skipped:', old[:70].replace(chr(10), ' '))
+                  return s
+              return s.replace(old, new, cnt)
+
+          # ---------------- ActionBarPopupWindow ----------------
+          p = BASE + 'ActionBarPopupWindow.java'
+          s = open(p, encoding='utf-8').read()
+          if 'IOSMenuDrawable' in s:
+              print('Popup menu design: already present, skipped')
+              raise SystemExit(0)
+
+          s = rep(s, "import android.graphics.ColorFilter;\n", "import android.graphics.ColorFilter;\nimport android.graphics.LinearGradient;\nimport android.graphics.Matrix;\n")
+          s = rep(s, "import android.graphics.RectF;\n", "import android.graphics.RectF;\nimport android.graphics.Shader;\n")
+          s = rep(s, "import android.view.Gravity;\n", "import android.os.Build;\nimport android.view.Gravity;\n")
+          s = rep(s, "import androidx.annotation.Nullable;\n", "import androidx.annotation.Nullable;\nimport androidx.core.graphics.ColorUtils;\n")
+
+          # background drawable: iOS glass instead of the 9-patch
+          s = rep(s, """            if (resId != 0) {
+                          backgroundDrawable = getResources().getDrawable(resId).mutate();
+                          setPadding(dp(8), dp(8), dp(8), dp(8));
+                      }""", """            if (resId != 0) {
+                          backgroundDrawable = new IOSMenuDrawable();
+                          setPadding(dp(8), dp(8), dp(8), dp(8));
+                      }""")
+
+          # setBackgroundColor
+          s = rep(s, """        public void setBackgroundColor(int color) {
+                      if (backgroundColor != color && backgroundDrawable != null) {""", """        public void setBackgroundColor(int color) {
+                      if (backgroundDrawable instanceof IOSMenuDrawable) {
+                          backgroundColor = color;
+                          ((IOSMenuDrawable) backgroundDrawable).setBaseColor(color);
+                          invalidate();
+                          return;
+                      }
+                      if (backgroundColor != color && backgroundDrawable != null) {""")
+
+          # thin dividers between items
+          s = rep(s, """                @Override
+                          protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                              if (child instanceof GapView && backgroundDrawable != null) {
+                                  return false;
+                              }
+                              return super.drawChild(canvas, child, drawingTime);
+                          }""", """                @Override
+                          protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                              if (child instanceof GapView && backgroundDrawable != null) {
+                                  return false;
+                              }
+                              boolean result = super.drawChild(canvas, child, drawingTime);
+                              if (backgroundDrawable instanceof IOSMenuDrawable && child instanceof ActionBarMenuSubItem && child.getVisibility() == VISIBLE) {
+                                  View next = null;
+                                  for (int i = indexOfChild(child) + 1; i < getChildCount(); i++) {
+                                      View v = getChildAt(i);
+                                      if (v.getVisibility() == VISIBLE) {
+                                          next = v;
+                                          break;
+                                      }
+                                  }
+                                  if (next instanceof ActionBarMenuSubItem) {
+                                      boolean dark = ColorUtils.calculateLuminance(backgroundColor) < 0.5;
+                                      int base = dark ? 0x2EFFFFFF : 0x24000000;
+                                      dividerPaint.setColor(ColorUtils.setAlphaComponent(base, (int) (Color.alpha(base) * child.getAlpha())));
+                                      float h = Math.max(1f, AndroidUtilities.dpf2(0.5f));
+                                      float y = child.getY() + child.getHeight();
+                                      canvas.drawRect(child.getLeft(), y - h, child.getRight(), y, dividerPaint);
+                                  }
+                              }
+                              return result;
+                          }""")
+          s = rep(s, "        private int backgroundColor = Color.WHITE;\n", "        private int backgroundColor = Color.WHITE;\n        private final Paint dividerPaint = new Paint();\n")
+
+          # rounded gap clip radius to match the panel
+          s = rep(s, "path.addRoundRect(AndroidUtilities.rectTmp, dp(12), dp(12), Path.Direction.CW);", "path.addRoundRect(AndroidUtilities.rectTmp, dp(20), dp(20), Path.Direction.CW);")
+
+          # blur behind (Android 12+)
+          s = rep(s, """        p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                  p.dimAmount = amount;
+                  wm.updateViewLayout(container, p);""", """        p.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                  p.dimAmount = amount;
+                  if (Build.VERSION.SDK_INT >= 31) {
+                      try {
+                          if (wm.isCrossWindowBlurEnabled()) {
+                              p.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
+                              p.setBlurBehindRadius(dp(18));
+                          }
+                      } catch (Throwable ignore) {
+                      }
+                  }
+                  wm.updateViewLayout(container, p);""")
+          s = rep(s, """            if ((p.flags & WindowManager.LayoutParams.FLAG_DIM_BEHIND) != 0) {
+                          p.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                          p.dimAmount = 0.0f;
+                          wm.updateViewLayout(container, p);
+                      }""", """            if ((p.flags & (WindowManager.LayoutParams.FLAG_DIM_BEHIND | WindowManager.LayoutParams.FLAG_BLUR_BEHIND)) != 0) {
+                          p.flags &= ~(WindowManager.LayoutParams.FLAG_DIM_BEHIND | WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+                          p.dimAmount = 0.0f;
+                          wm.updateViewLayout(container, p);
+                      }""")
+
+          # GapView: flat translucent thick separator
+          s = rep(s, """            this.shadowDrawable = Theme.getThemedDrawable(getContext(), R.drawable.greydivider, shadowColor);
+                      setBackgroundColor(color);""", """            this.shadowDrawable = null;
+                      setBackgroundColor(Theme.isCurrentThemeDark() ? 0x66000000 : 0x26000000);""")
+
+          # IOSMenuDrawable class (insert before GapView)
+          drawable = '''    /** iOS-style frosted glass panel for popup menus. */
+              public static class IOSMenuDrawable extends Drawable {
+                  private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final Paint sheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  private final RectF rect = new RectF();
+                  private final Matrix sheenMatrix = new Matrix();
+                  private final LinearGradient lightSheen = new LinearGradient(0, 0, 0, 1, new int[]{0x55FFFFFF, 0x10FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+                  private final LinearGradient darkSheen = new LinearGradient(0, 0, 0, 1, new int[]{0x22FFFFFF, 0x08FFFFFF, 0x00FFFFFF}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+                  private final int pad = dp(8);
+                  private final float radius = dp(20);
+                  private int baseColor = Color.WHITE;
+                  private boolean dark;
+                  private int alpha = 255;
+
+                  public IOSMenuDrawable() {
+                      strokePaint.setStyle(Paint.Style.STROKE);
+                      strokePaint.setStrokeWidth(Math.max(1f, AndroidUtilities.dpf2(0.5f)));
+                  }
+
+                  public void setBaseColor(int color) {
+                      baseColor = color;
+                      dark = ColorUtils.calculateLuminance(color) < 0.5;
+                      invalidateSelf();
+                  }
+
+                  @Override
+                  public boolean getPadding(Rect padding) {
+                      padding.set(pad, pad, pad, pad);
+                      return true;
+                  }
+
+                  @Override
+                  public void draw(Canvas canvas) {
+                      Rect b = getBounds();
+                      rect.set(b.left + pad, b.top + pad, b.right - pad, b.bottom - pad);
+                      if (rect.width() <= 0 || rect.height() <= 0) {
+                          return;
+                      }
+                      float r = Math.min(radius, Math.min(rect.width(), rect.height()) / 2f);
+                      float a = alpha / 255f;
+
+                      // soft shadow
+                      for (int i = 3; i >= 1; i--) {
+                          float e = i * AndroidUtilities.dpf2(1.5f);
+                          shadowPaint.setColor(Color.argb((int) (255 * a * (dark ? 0.10f : 0.045f)), 0, 0, 0));
+                          canvas.drawRoundRect(rect.left - e, rect.top - e + dp(2), rect.right + e, rect.bottom + e + dp(2), r + e, r + e, shadowPaint);
+                      }
+
+                      // translucent glass body
+                      fillPaint.setColor(ColorUtils.setAlphaComponent(baseColor, (int) ((dark ? 208 : 218) * a)));
+                      canvas.drawRoundRect(rect, r, r, fillPaint);
+
+                      // top sheen
+                      sheenMatrix.setScale(1f, rect.height());
+                      sheenMatrix.postTranslate(0, rect.top);
+                      LinearGradient sheen = dark ? darkSheen : lightSheen;
+                      sheen.setLocalMatrix(sheenMatrix);
+                      sheenPaint.setShader(sheen);
+                      sheenPaint.setAlpha((int) (255 * a));
+                      canvas.drawRoundRect(rect, r, r, sheenPaint);
+
+                      // rim light
+                      float half = strokePaint.getStrokeWidth() / 2f;
+                      strokePaint.setColor(ColorUtils.setAlphaComponent(dark ? 0x38FFFFFF : 0x99FFFFFF, (int) (Color.alpha(dark ? 0x38FFFFFF : 0x99FFFFFF) * a)));
+                      canvas.drawRoundRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half, r, r, strokePaint);
+                  }
+
+                  @Override
+                  public void setAlpha(int alpha) {
+                      if (this.alpha != alpha) {
+                          this.alpha = alpha;
+                          invalidateSelf();
+                      }
+                  }
+
+                  @Override
+                  public int getAlpha() {
+                      return alpha;
+                  }
+
+                  @Override
+                  public void setColorFilter(@Nullable ColorFilter colorFilter) {
+                  }
+
+                  @Override
+                  public int getOpacity() {
+                      return PixelFormat.TRANSLUCENT;
+                  }
+              }
+
+          '''
+          s = rep(s, "    public static class GapView extends FrameLayout {", drawable + "    public static class GapView extends FrameLayout {")
+          open(p, 'w', encoding='utf-8').write(s)
+
+          print('Popup menu design: applied')
+          MENU1EOF
+          python3 - <<'MENU2EOF'
+          import re
+          BASE = 'TMessagesProj/src/main/java/org/telegram/ui/ActionBar/'
+          def rep(s, old, new, cnt=1):
+              if s.count(old) < 1:
+                  print('WARNING: pattern not found, skipped:', old[:70].replace(chr(10), ' '))
+                  return s
+              return s.replace(old, new, cnt)
+
+          # ---------------- ActionBarMenuSubItem ----------------
+          p = BASE + 'ActionBarMenuSubItem.java'
+          s = open(p, encoding='utf-8').read()
+          if 'iconAtEnd' in s:
+              print('Menu item design: already present, skipped')
+              raise SystemExit(0)
+          s = rep(s, "    int selectorRad = 12;", "    int selectorRad = 20;")
+          s = rep(s, "    private int itemHeight = 48;", "    private int itemHeight = 48;\n    private boolean iconAtEnd = true;")
+          s = rep(s, "addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT)));",
+                     "addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT)));")
+          s = rep(s, "textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);\n        addView(textView", "textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);\n        addView(textView")
+          s = rep(s, "    public void makeCheckView(int needCheck) {\n        if (needCheck > 0) {", """    private void setIconAtEnd(boolean end) {
+                  iconAtEnd = end;
+                  FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) imageView.getLayoutParams();
+                  lp.gravity = Gravity.CENTER_VERTICAL | ((end != LocaleController.isRTL) ? Gravity.RIGHT : Gravity.LEFT);
+                  imageView.setLayoutParams(lp);
+              }
+
+              public void makeCheckView(int needCheck) {
+                  if (needCheck > 0) {
+                      setIconAtEnd(false);""")
+          # right icon: keep the main icon at the start side
+          s = rep(s, "    public void setRightIcon(int icon) {\n", "    public void setRightIcon(int icon) {\n        if (iconAtEnd) {\n            setIconAtEnd(false);\n            boolean hasIcon = imageView.getVisibility() == VISIBLE;\n            textView.setPadding(LocaleController.isRTL ? 0 : (hasIcon ? dp(43) : 0), 0, LocaleController.isRTL ? (hasIcon ? dp(43) : 0) : 0, 0);\n        }\n")
+          s = rep(s, "            imageView.setVisibility(VISIBLE);\n            textView.setPadding(checkViewLeft ?", """            imageView.setVisibility(VISIBLE);
+                      if (iconAtEnd && checkView == null) {
+                          boolean hasIcon = icon != 0 || iconDrawable != null;
+                          textView.setPadding(LocaleController.isRTL && hasIcon ? dp(34) : 0, 0, !LocaleController.isRTL && hasIcon ? dp(34) : 0, 0);
+                      } else
+                      textView.setPadding(checkViewLeft ?""")
+          open(p, 'w', encoding='utf-8').write(s)
+          print("Menu item design: applied")
+          MENU2EOF
+          python3 - <<'CHATEOF'
+          p = 'TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java'
+          s = open(p, encoding='utf-8').read()
+          if 'inputGlassColorProvider' in s:
+              print('Input box glass: already present, skipped')
+              raise SystemExit(0)
+          old = """        chatInputViewsContainer.setInputIslandBubbleDrawable(
+                      glassBackgroundDrawableFactory.create(chatInputViewsContainer, blurredBackgroundColorProvider));"""
+          new = """        final BlurredBackgroundColorProviderThemed inputGlassColorProvider = new BlurredBackgroundColorProviderThemed(themeDelegate, Theme.key_chat_messagePanelBackground) {
+                      @Override
+                      public int getBackgroundColor() {
+                          if (!BlurredBackgroundProviderImpl.checkBlurEnabled(currentAccount, themeDelegate)) {
+                              return ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelBackground), 255);
+                          }
+                          final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
+                          return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? 130 : 140);
+                      }
+                  };
+                  chatInputViewsContainer.setInputIslandBubbleDrawable(
+                      glassBackgroundDrawableFactory.create(chatInputViewsContainer, inputGlassColorProvider));"""
+          if s.count(old) < 1:
+              print('WARNING: input box pattern not found, skipped')
+          else:
+              s = s.replace(old, new, 1)
+              open(p, 'w', encoding='utf-8').write(s)
+              print('Input box glass: applied')
+          CHATEOF
+
       - name: Build
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon -Pandroid.injected.build.abi=arm64-v8a :TMessagesProj_App:assembleAfatRelease
+          if [ "$ABI_MODE" = "arm64" ]; then EXTRA="-Pandroid.injected.build.abi=arm64-v8a"; else EXTRA=""; fi
+          echo "ABI mode: $ABI_MODE (extra: $EXTRA)"
+          ./gradlew --no-daemon $EXTRA :TMessagesProj_App:assembleAfatRelease
 
       - name: Collect single APK
         run: |
