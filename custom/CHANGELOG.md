@@ -10,7 +10,7 @@ A release cannot be published without its section (`scripts/gen-release-notes.sh
 ### Anti-Unsend
 - When another user deletes ("unsends for everyone") a message you had already received, it stays in its original chat position together with its media and gets an "Unsent Message" label.
 - Reply, Forward and Share are disabled for retained messages.
-- Only server-originated deletions are affected; deleting messages yourself works exactly as before. Secret chats and your own outgoing messages are not retained.
+- Works both ways: a message you received that the sender deletes is kept, AND a message YOU sent that the other person deletes is also kept (with the same "Unsent Message" label). Only server-originated deletions are affected; deleting messages yourself works exactly as before. Secret chats and Saved Messages are not retained.
 - Self-destruct / view-once photos, videos, voice and round messages and messages with an auto-delete timer that you **received** are kept too: they are retained when the sender deletes them, and Telegram's own timer on your device no longer removes them. Your own outgoing messages and your own deletions are unaffected.
 
 ### Edit History

@@ -1,9 +1,9 @@
 diff --git a/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java b/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java
 new file mode 100644
-index 0000000..cf77e75
+index 0000000..5f6a854
 --- /dev/null
 +++ b/TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java
-@@ -0,0 +1,589 @@
+@@ -0,0 +1,593 @@
 +/*
 + * CUSTOM FORK: Anti-Unsend Message History + Message Edit History.
 + *
@@ -18,7 +18,9 @@ index 0000000..cf77e75
 + *
 + * Retained unsent messages simply keep their original row in messages_v2
 + * (and their media files), so Telegram's normal chat loading shows them in
-+ * their original position. custom_unsent only marks them.
++ * their original position. custom_unsent only marks them. Retention applies
++ * both to messages you received and to messages you sent that the other
++ * party later deleted for everyone - not just received messages.
 + *
 + * Self-destruct / view-once / auto-delete messages that were RECEIVED are kept
 + * as well: they are retained when the sender deletes them (same path as above)
@@ -238,17 +240,19 @@ index 0000000..cf77e75
 +        try {
 +            final long selfId = UserConfig.getInstance(account).getClientUserId();
 +            final String idList = TextUtils.join(",", ids);
++            // CUSTOM: retain regardless of direction - a message YOU sent that the other party deletes
++            // is kept exactly like one you received, so "Anti-Unsend" behaves the same both ways.
 +            if (dialogId != 0) {
-+                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND uid = %d AND out = 0", idList, dialogId));
++                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", idList, dialogId));
 +            } else {
-+                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0 AND out = 0", idList));
++                cursor = db.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0", idList));
 +            }
 +            ArrayList<long[]> rows = new ArrayList<>();
 +            while (cursor.next()) {
 +                long uid = cursor.longValue(0);
 +                int mid = cursor.intValue(1);
 +                if (DialogObject.isEncryptedDialog(uid) || uid == selfId) {
-+                    continue;
++                    continue; // secret chats and Saved Messages are never retained
 +                }
 +                rows.add(new long[]{uid, mid});
 +            }
@@ -570,7 +574,7 @@ index 0000000..cf77e75
 +
 +    /** Runs on the storage queue and waits. Returns false on timeout/failure. */
 +    private static boolean runOnStorageSync(int account, Runnable runnable) {
-+        DispatchQueue2 queue = MessagesStorage.getInstance(account).getStorageQueue();
++        DispatchQueue queue = MessagesStorage.getInstance(account).getStorageQueue();
 +        if (Thread.currentThread() == queue) {
 +            runnable.run();
 +            return true;
