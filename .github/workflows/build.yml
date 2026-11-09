@@ -1398,7 +1398,7 @@ jobs:
           if 'twoFingerSwipeHooked' in s:
               print('Two-finger gesture: already present, skipped')
           else:
-              m = re.search(r'\n([ \t]*)public void onResume\(\) \{\s*super\.onResume\(\);', s)
+              m = re.search(r'\n([ \t]*)(?:@Override[ \t]*\n[ \t]*)?public void onResume\(\) \{\s*super\.onResume\(\);', s)
               if m is None:
                   print('WARNING: onResume not found, two-finger gesture skipped')
               else:
