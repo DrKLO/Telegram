@@ -225,6 +225,9 @@ public class SecretChatHelper extends BaseController {
             } else if (existingChat == null && startingSecretChat) {
                 delayedEncryptedChatUpdates.add(update);
             }
+        } else if (newChat instanceof TLRPC.TL_encryptedChatDiscarded && existingChat instanceof TLRPC.TL_encryptedChatRequested) {
+            // either another device took it or the other side gave up, no point in keeping it around
+            AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(dialog_id, 0));
         } else {
             TLRPC.EncryptedChat exist = existingChat;
             if (exist != null) {
@@ -247,7 +250,7 @@ public class SecretChatHelper extends BaseController {
                 getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
             });
         }
-        if (newChat instanceof TLRPC.TL_encryptedChatDiscarded && newChat.history_deleted) {
+        if (newChat instanceof TLRPC.TL_encryptedChatDiscarded && newChat.history_deleted && !(existingChat instanceof TLRPC.TL_encryptedChatRequested)) {
             AndroidUtilities.runOnUIThread(() -> getMessagesController().deleteDialog(dialog_id, 0));
         }
     }
@@ -1838,6 +1841,19 @@ public class SecretChatHelper extends BaseController {
         });
     }
 
+    private void onAcceptSecretChatFailed(TLRPC.EncryptedChat encryptedChat, boolean canRetry) {
+        acceptingChats.remove(encryptedChat.id);
+        encryptedChat.a_or_b = null;
+        encryptedChat.auth_key = null;
+        AndroidUtilities.runOnUIThread(() -> {
+            if (canRetry) {
+                getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, encryptedChat);
+            } else {
+                getMessagesController().deleteDialog(DialogObject.makeEncryptedDialogId(encryptedChat.id), 0);
+            }
+        });
+    }
+
     public void acceptSecretChat(TLRPC.EncryptedChat encryptedChat) {
         if (acceptingChats.get(encryptedChat.id) != null) {
             return;
@@ -1851,8 +1867,8 @@ public class SecretChatHelper extends BaseController {
                 TLRPC.messages_DhConfig res = (TLRPC.messages_DhConfig) response;
                 if (response instanceof TLRPC.TL_messages_dhConfig) {
                     if (!Utilities.isGoodPrime(res.p, res.g)) {
-                        acceptingChats.remove(encryptedChat.id);
                         declineSecretChat(encryptedChat.id, false);
+                        onAcceptSecretChatFailed(encryptedChat, false);
                         return;
                     }
 
@@ -1874,8 +1890,8 @@ public class SecretChatHelper extends BaseController {
                 BigInteger g_a = new BigInteger(1, encryptedChat.g_a);
 
                 if (!Utilities.isGoodGaAndGb(g_a, p)) {
-                    acceptingChats.remove(encryptedChat.id);
                     declineSecretChat(encryptedChat.id, false);
+                    onAcceptSecretChatFailed(encryptedChat, false);
                     return;
                 }
 
@@ -1914,8 +1930,8 @@ public class SecretChatHelper extends BaseController {
                 req2.peer.access_hash = encryptedChat.access_hash;
                 req2.key_fingerprint = Utilities.bytesToLong(authKeyId);
                 getConnectionsManager().sendRequest(req2, (response1, error1) -> {
-                    acceptingChats.remove(encryptedChat.id);
                     if (error1 == null) {
+                        acceptingChats.remove(encryptedChat.id);
                         TLRPC.EncryptedChat newChat = (TLRPC.EncryptedChat) response1;
                         newChat.auth_key = encryptedChat.auth_key;
                         newChat.user_id = encryptedChat.user_id;
@@ -1930,10 +1946,14 @@ public class SecretChatHelper extends BaseController {
                             getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, newChat);
                             sendNotifyLayerMessage(newChat, null);
                         });
+                    } else {
+                        // we lost the race if someone else got there first, the request is gone for us
+                        boolean gone = "ENCRYPTION_ALREADY_ACCEPTED".equals(error1.text) || "ENCRYPTION_ALREADY_DECLINED".equals(error1.text) || "CHAT_ID_INVALID".equals(error1.text);
+                        onAcceptSecretChatFailed(encryptedChat, !gone);
                     }
                 }, ConnectionsManager.RequestFlagInvokeAfter);
             } else {
-                acceptingChats.remove(encryptedChat.id);
+                onAcceptSecretChatFailed(encryptedChat, true);
             }
         });
     }
