@@ -5,12 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       abis:
-        description: "Which CPU types to build (arm64 = 64-bit only, arm64+v7a = 64-bit and 32-bit)"
+        description: "Which CPU types to build (all = arm64 + v7a + x86 + x86_64, covers every device)"
         type: choice
         options:
-          - arm64
+          - all
           - arm64+v7a
-        default: arm64
+          - arm64
+        default: all
 
 permissions:
   contents: write
@@ -24,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      ABI_MODE: ${{ github.event.inputs.abis || 'arm64' }}
+      ABI_MODE: ${{ github.event.inputs.abis || 'all' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,8 +110,13 @@ jobs:
         run: |
           python3 - <<'PYEOF'
           import re, glob, os
-          mode = os.environ.get('ABI_MODE', 'arm64')
-          filt = 'abiFilters "arm64-v8a"' if mode == 'arm64' else 'abiFilters "armeabi-v7a", "arm64-v8a"'
+          mode = os.environ.get('ABI_MODE', 'all')
+          filters = {
+              'arm64': 'abiFilters "arm64-v8a"',
+              'arm64+v7a': 'abiFilters "armeabi-v7a", "arm64-v8a"',
+              'all': 'abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"',
+          }
+          filt = filters.get(mode, filters['all'])
           print('ABI mode:', mode, '->', filt)
           for f in glob.glob('TMessagesProj*/build.gradle') + glob.glob('build.gradle'):
               s = open(f, encoding='utf-8').read()
@@ -1121,51 +1127,76 @@ jobs:
       - name: Build
         run: |
           chmod +x gradlew
-          if [ "$ABI_MODE" = "arm64" ]; then EXTRA="-Pandroid.injected.build.abi=arm64-v8a"; else EXTRA=""; fi
+          case "$ABI_MODE" in
+            arm64) EXTRA="-Pandroid.injected.build.abi=arm64-v8a" ;;
+            *) EXTRA="" ;;
+          esac
           echo "ABI mode: $ABI_MODE (extra: $EXTRA)"
           ./gradlew --no-daemon $EXTRA :TMessagesProj_App:assembleAfatRelease
 
-      - name: Collect single APK
+      - name: Collect APKs
         run: |
           mkdir -p out
           echo "=== all APK/AAB files ==="
           find . -type f \( -name '*.apk' -o -name '*.aab' \) -not -path './.git/*' -print
-          APK=$(find . -type f -name '*.apk' -path '*/outputs/apk/*' -path '*elease*' -not -path './.git/*' | head -n 1)
-          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | grep -i arm64 | head -n 1); fi
-          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | head -n 1); fi
-          if [ -z "$APK" ]; then APK=$(find . -type f -name '*.apk' -not -path './.git/*' | head -n 1); fi
-          if [ -z "$APK" ]; then
+          find . -type f -name '*.apk' -path '*/outputs/apk/*' -path '*elease*' -not -path './.git/*' | sort > apks.txt
+          if [ ! -s apks.txt ]; then
+            find . -type f -name '*.apk' -path '*elease*' -not -path './.git/*' | sort > apks.txt
+          fi
+          if [ ! -s apks.txt ]; then
+            find . -type f -name '*.apk' -not -path './.git/*' | sort > apks.txt
+          fi
+          if [ ! -s apks.txt ]; then
             echo "No APK found. Build output dirs:"
             find . -type d -name outputs -path '*build*' -not -path './.git/*'
             exit 1
           fi
-          echo "Using $APK"
-          cp "$APK" "out/TG app.apk"
+          i=0
+          while read -r APK; do
+            B=$(basename "$APK" .apk | tr 'A-Z' 'a-z')
+            case "$B" in
+              *arm64*) N=arm64-v8a ;;
+              *x86_64*|*x86-64*) N=x86_64 ;;
+              *x86*) N=x86 ;;
+              *armeabi*|*armv7*|*v7a*) N=armeabi-v7a ;;
+              *) N=universal ;;
+            esac
+            if [ -e "out/TG-app-$N.apk" ]; then N="$N-$i"; fi
+            i=$((i + 1))
+            echo "Using $APK -> out/TG-app-$N.apk"
+            cp "$APK" "out/TG-app-$N.apk"
+          done < apks.txt
+          ls -la out
 
-      # ---------- هم‌ترازسازی و امضای نهایی (برای رفع ارور invalid هنگام نصب) ----------
-      - name: Align and sign APK
+      # ---------- هم‌ترازسازی و امضای نهایی همه APK ها (برای رفع ارور invalid هنگام نصب) ----------
+      - name: Align and sign APKs
         run: |
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
           echo "Using build-tools: $BT"
           PASS=$(grep '^RELEASE_STORE_PASSWORD=' gradle.properties | tail -n 1 | cut -d= -f2-)
           ALIAS=$(grep '^RELEASE_KEY_ALIAS=' gradle.properties | tail -n 1 | cut -d= -f2-)
+          KS="$GITHUB_WORKSPACE/TMessagesProj/config/release.keystore"
           cd out
-          "$BT/zipalign" -f -P 16 4 "TG app.apk" aligned.apk
-          "$BT/apksigner" sign \
-            --ks ../TMessagesProj/config/release.keystore \
-            --ks-key-alias "$ALIAS" \
-            --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
-            --v4-signing-enabled false \
-            --out signed.apk aligned.apk
-          "$BT/apksigner" verify --verbose --print-certs signed.apk
-          mv -f signed.apk "TG app.apk"
-          rm -f aligned.apk
-          "$BT/aapt" dump badging "TG app.apk" | head -n 3 || true
+          for f in TG-app-*.apk; do
+            echo "=== $f ==="
+            "$BT/zipalign" -f -P 16 4 "$f" "aligned-$f"
+            "$BT/apksigner" sign \
+              --ks "$KS" \
+              --ks-key-alias "$ALIAS" \
+              --ks-pass "pass:$PASS" --key-pass "pass:$PASS" \
+              --v4-signing-enabled false \
+              --out "signed-$f" "aligned-$f"
+            "$BT/apksigner" verify --verbose --print-certs "signed-$f"
+            mv -f "signed-$f" "$f"
+            rm -f "aligned-$f"
+            "$BT/aapt" dump badging "$f" | head -n 3 || true
+          done
+          ls -la
 
       - uses: actions/upload-artifact@v4
         with:
           name: TG-app
-          path: out/TG app.apk
+          path: out/TG-app-*.apk
           if-no-files-found: error
 
       # ---------- ساخت ریلیز خودکار (اولی 1.0.0، هر بیلد موفق بعدی 0.1 بالاتر) ----------
@@ -1184,8 +1215,14 @@ jobs:
             VER="$MAJOR.$((MINOR + 1)).0"
           fi
           echo "Previous: ${LAST:-none} -> New: v$VER"
-          cp "out/TG app.apk" "out/TG-app-v$VER.apk"
-          gh release create "v$VER" "out/TG-app-v$VER.apk" \
+          FILES=()
+          for f in out/TG-app-*.apk; do
+            N="${f#out/TG-app-}"
+            N="${N%.apk}"
+            cp "$f" "out/TG-app-v$VER-$N.apk"
+            FILES+=("out/TG-app-v$VER-$N.apk")
+          done
+          gh release create "v$VER" "${FILES[@]}" \
             --target "${{ github.sha }}" \
             --title "TG app v$VER" \
-            --notes "Build #${{ github.run_number }} (commit ${{ github.sha }})"
+            --notes "Build #${{ github.run_number }} (commit ${{ github.sha }}) - ABI mode: $ABI_MODE"
