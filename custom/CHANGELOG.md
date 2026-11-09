@@ -1,3 +1,17 @@
+## [1.0.4]
+
+### Anti-Unsend
+- No functional change.
+
+### Edit History
+- No functional change.
+
+### Other changes
+- MyGram branding and package update.
+
+### Known issues
+- None reported.
+
 ## [1.0.3]
 
 ### Anti-Unsend
