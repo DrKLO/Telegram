@@ -1,3 +1,17 @@
+## [1.0.2]
+
+### Anti-Unsend
+- Existing anti-unsend functionality.
+
+### Edit History
+- Existing local edit history functionality.
+
+### Other changes
+- Custom patch maintenance and compatibility updates.
+
+### Known issues
+- See project documentation for known limitations.
+
 # Changelog
 
 Release notes are generated from the section of the version being released
