@@ -75,7 +75,7 @@ public class SecretChatHelper extends BaseController {
     private SparseArray<ArrayList<TL_decryptedMessageHolder>> secretHolesQueue = new SparseArray<>();
     private SparseArray<ArrayList<TLRPC.Update>> pendingSecretMessages = new SparseArray<>();
     private SparseArray<SparseIntArray> requestedHoles = new SparseArray<>();
-    private SparseArray<TLRPC.EncryptedChat> acceptingChats = new SparseArray<>();
+    private ConcurrentHashMap<Integer, TLRPC.EncryptedChat> acceptingChats = new ConcurrentHashMap<>();
     public ArrayList<TLRPC.Update> delayedEncryptedChatUpdates = new ArrayList<>();
     private ArrayList<Long> pendingEncMessagesToDelete = new ArrayList<>();
     private boolean startingSecretChat = false;
@@ -216,7 +216,6 @@ public class SecretChatHelper extends BaseController {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
             });
             getMessagesStorage().putEncryptedChat(newChat, user, dialog);
-            acceptSecretChat(newChat);
         } else if (newChat instanceof TLRPC.TL_encryptedChat) {
             if (existingChat instanceof TLRPC.TL_encryptedChatWaiting && (existingChat.auth_key == null || existingChat.auth_key.length == 1)) {
                 newChat.a_or_b = existingChat.a_or_b;
@@ -1841,6 +1840,10 @@ public class SecretChatHelper extends BaseController {
         });
     }
 
+    public boolean isAcceptingSecretChat(int chatId) {
+        return acceptingChats.containsKey(chatId);
+    }
+
     private void onAcceptSecretChatFailed(TLRPC.EncryptedChat encryptedChat, boolean canRetry) {
         acceptingChats.remove(encryptedChat.id);
         encryptedChat.a_or_b = null;
@@ -1859,6 +1862,7 @@ public class SecretChatHelper extends BaseController {
             return;
         }
         acceptingChats.put(encryptedChat.id, encryptedChat);
+        getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, encryptedChat);
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;
         req.version = getMessagesStorage().getLastSecretVersion();

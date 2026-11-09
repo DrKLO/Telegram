@@ -198,6 +198,12 @@
     <string name="AwaitingEncryption">Waiting for %s to get online...</string>
     <string name="EncryptionRejected">Secret chat cancelled</string>
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
+    <string name="SecretChatRequest">Secret chat request</string>
+    <string name="SecretChatRequestJoin">Join</string>
+    <string name="SecretChatRequestIgnore">Ignore</string>
+    <string name="SecretChatRequestDeclineTitle">Decline secret chat?</string>
+    <string name="SecretChatRequestDeclineText">This cancels the request on all your devices. If you just don\'t want it on this one, use Ignore instead.</string>
+    <string name="SecretChatRequestGone">This secret chat request is no longer available.</string>
     <string name="EncryptedChatStartedOutgoing">%s joined your secret chat.</string>
     <string name="EncryptedChatStartedIncoming">You joined the secret chat.</string>
     <string name="ClearHistory">Clear history</string>
