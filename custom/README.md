@@ -8,7 +8,8 @@ Feature design and limits: [`docs/DESIGN.md`](docs/DESIGN.md).
 
 | Path | Purpose |
 |---|---|
-| `custom/patches/custom-features.patch` | **All** custom source changes (the only place they live) |
+| `custom/patches/custom-features.patch` | Anti-Unsend / Edit History source changes |
+| `custom/patches/mygram-package.patch` | MyGram package identity and Android account/intent isolation |
 | `custom/version.properties` | Custom version name/code, patch version, upstream version + commit |
 | `custom/CHANGELOG.md` | Source of the release notes (one `## [X.Y.Z]` section per release) |
 | `tg-icon.png` (repo root, you provide) | Source of the launcher icon, never modified by any script |
@@ -24,7 +25,7 @@ Feature design and limits: [`docs/DESIGN.md`](docs/DESIGN.md).
 | `.github/workflows/build-release.yml` | Validate → build → verify → artifacts → (optional) GitHub Release |
 | `.github/workflows/sync-upstream.yml` | Weekly/manual upstream sync, opens a PR |
 
-The patch is applied **in the CI workspace only**; your fork branch stays "upstream + custom/ + scripts/ + workflows".
+The custom feature and MyGram package patches are applied **in the CI workspace only**; your fork branch stays upstream source plus patch files, scripts, and workflows.
 That is why syncing with upstream never conflicts with your features, and a real conflict shows up as a clear patch report.
 
 ## One-time setup
@@ -40,7 +41,7 @@ That is why syncing with upstream never conflicts with your features, and a real
 | `KEYSTORE_BASE64` | release (required) | `base64 -w0 my.keystore`. Without it only a **test-key** build is possible (the upstream key is public). |
 | `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` | release (required) | |
 | `TG_API_ID`, `TG_API_HASH` | release (required) | From <https://my.telegram.org/apps>. Telegram's README requires your own api_id. |
-| `GOOGLE_SERVICES_JSON_BASE64` | optional | Your own Firebase config (push notifications). |
+| `GOOGLE_SERVICES_JSON_BASE64` | release (required) | Base64 of your Firebase config for `org.saimum.messenger` (push notifications). |
 
    Optional repository **variable** `ICON_REPLACE_ALTERNATES=true` also replaces the six alternative app icons in Settings → Appearance.
 6. For the sync PR: Settings → Actions → General → allow Actions to create pull requests.
@@ -55,7 +56,7 @@ That is why syncing with upstream never conflicts with your features, and a real
 
 ## Decisions that are yours
 
-* **Package name / coexistence.** The build keeps `org.telegram.messenger`. With your own signing key it cannot be installed over the official Telegram (signature mismatch) and cannot run side by side with it. Changing the package also needs a matching `google-services.json` – not automated here.
+* **Package name / coexistence.** MyGram uses `org.saimum.messenger`; Java source namespaces remain `org.telegram.messenger`. A matching Firebase config is required via `GOOGLE_SERVICES_JSON_BASE64`. Debug builds add `.beta`, so Firebase needs a second registered Android app (`org.saimum.messenger.beta`) if you build the debug variant with Google Services enabled.
 * **Update check.** `BuildVars.CHECK_UPDATES` stays `true` (upstream behaviour). Telegram's update service is not aware of your fork; decide whether to disable it (that would be another source change in the patch).
 * **Push notifications** need your own Firebase project (`GOOGLE_SERVICES_JSON_BASE64`); with the upstream file they will most likely not arrive.
 

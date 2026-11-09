@@ -182,6 +182,11 @@ jobs:
       - name: Apply custom patch
         run: ./scripts/apply-patch.sh
 
+      - name: Apply MyGram package patch
+        run: |
+          git apply --check custom/patches/mygram-package.patch
+          git apply custom/patches/mygram-package.patch
+
       - name: Apply API credentials
         env:
           TG_API_ID: ${{ secrets.TG_API_ID }}
@@ -211,10 +216,30 @@ jobs:
             echo "SIGNING=dummy" >> "$GITHUB_ENV"
           fi
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "::add-mask::$GOOGLE_SERVICES_JSON_BASE64"
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > "$RUNNER_TEMP/mygram-google-services.json"
+            python3 - "$RUNNER_TEMP/mygram-google-services.json" <<'PYJSON'
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              data = json.load(f)
+          packages = {
+              c.get("client_info", {}).get("android_client_info", {}).get("package_name")
+              for c in data.get("client", [])
+          }
+          if "org.saimum.messenger" not in packages:
+              raise SystemExit("Firebase config does not contain Android package org.saimum.messenger")
+          PYJSON
             for f in TMessagesProj_App/google-services.json TMessagesProj/google-services.json; do
-              [ -f "$f" ] && printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > "$f"
+              [ -f "$f" ] || { echo "::error::expected Firebase config target missing: $f"; exit 1; }
+              cp "$RUNNER_TEMP/mygram-google-services.json" "$f"
             done
-            echo "own google-services.json installed"
+            rm -f "$RUNNER_TEMP/mygram-google-services.json"
+            echo "MyGram google-services.json installed and package-validated"
+          elif [ "$IS_RELEASE" = "true" ]; then
+            echo "::error::release builds require GOOGLE_SERVICES_JSON_BASE64 for org.saimum.messenger"
+            exit 1
+          else
+            echo "::warning::no MyGram Firebase config - push notifications will use the repository fallback config and may not work"
           fi
 
       - name: Apply custom icon
