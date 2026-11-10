@@ -32,6 +32,8 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Outline;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -51,6 +53,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -147,6 +150,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     private TextView emptySubtitleTextView;
 
     private FrameLayout playerLayout;
+    private final int CARD_HEIGHT_EXPANDED = dp(520);
+    private final int CARD_MARGIN = dp(16);
+    private int[] currentCoverColors = new int[]{0xFF1E1E1E, 0xFF121212};
     private ButtonWithCounterView saveToProfileButton;
     private ButtonWithCounterView unsaveFromProfileButton;
     private ItemTouchHelper itemTouchHelper;
@@ -556,6 +562,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
         };
+        playerLayout.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(24));
+            }
+        });
+        playerLayout.setClipToOutline(true);
+        playerLayout.setBackgroundColor(0xFF1E1E1E);
 
         // blurred copy of the cover behind the player (cross-fades when the song changes)
         for (int i = 0; i < 2; i++) {
@@ -1294,7 +1308,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 .createSimpleBulletin(R.raw.saved_messages, getString(R.string.AudioSaveToMyProfileSaved))
                 .show();
         });
-        playerLayout.addView(saveToProfileButton, LayoutHelper.createFrame(240, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 16));
+        saveToProfileButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), 0x33FFFFFF, 0x55FFFFFF));
+        saveToProfileButton.setTextColor(Color.WHITE);
+        playerLayout.removeView(saveToProfileButton);
+        playerLayout.addView(saveToProfileButton, LayoutHelper.createFrame(220, 44, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 20));
 
         unsaveFromProfileButton = new ButtonWithCounterView(context, resourcesProvider).setRound().setNeutral();
         unsaveFromProfileButton.setText(getString(R.string.AudioRemoveFromProfile));
@@ -1309,7 +1326,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 .createSimpleBulletin(R.raw.ic_delete, getString(R.string.AudioSaveToMyProfileUnsaved))
                 .show();
         });
-        playerLayout.addView(unsaveFromProfileButton, LayoutHelper.createFrame(240, 38, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 16));
+        unsaveFromProfileButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(20), 0x33FFFFFF, 0x55FFFFFF));
+        unsaveFromProfileButton.setTextColor(Color.WHITE);
+        playerLayout.removeView(unsaveFromProfileButton);
+        playerLayout.addView(unsaveFromProfileButton, LayoutHelper.createFrame(220, 44, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 20));
 
         savedMusicList = MediaController.getInstance().currentSavedMusicList;
         isProfilePlaylist = savedMusicList != null;
@@ -1477,27 +1497,27 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        containerView.addView(playerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 179 + (!isMyList() && !noforwards ? 52 : 0), Gravity.LEFT | Gravity.BOTTOM));
-        containerView.addView(playerShadow, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.LEFT | Gravity.BOTTOM));
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) playerLayout.getLayoutParams();
-        layoutParams.height = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
-        layoutParams = (FrameLayout.LayoutParams) playerShadow.getLayoutParams();
-        layoutParams.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
+        FrameLayout.LayoutParams playerParams = LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT, CARD_HEIGHT_EXPANDED,
+                Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM,
+                CARD_MARGIN, 0, CARD_MARGIN, dp(24));
+        containerView.addView(playerLayout, playerParams);
         containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
         containerView.addView(actionBar);
 
         blurredView = new FrameLayout(context) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
-                if (blurredView.getTag() != null) {
-                    showAlbumCover(false, true);
-                }
+                dismiss();
                 return true;
             }
         };
-        blurredView.setAlpha(0.0f);
-        blurredView.setVisibility(View.INVISIBLE);
-        getContainer().addView(blurredView);
+        ScrimOptions.makeGlobalBlurBitmaps((bitmapBg, bitmapOptions) ->
+                blurredView.setBackground(new BitmapDrawable(context.getResources(), bitmapBg)));
+        blurredView.setBackgroundColor(0x99000000);
+        blurredView.setAlpha(1.0f);
+        blurredView.setVisibility(View.VISIBLE);
+        getContainer().addView(blurredView, 0);
 
         bigAlbumConver = new BackupImageView(context);
         bigAlbumConver.setAspectFit(true);
@@ -2099,9 +2119,32 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     };
 
+    private boolean dismissAnimating;
+
     @Override
     public void dismiss() {
-        super.dismiss();
+        if (dismissAnimating) {
+            return;
+        }
+        dismissAnimating = true;
+        ValueAnimator anim = ValueAnimator.ofFloat(1f, 0f);
+        anim.setDuration(250);
+        anim.addUpdateListener(animation -> {
+            float val = (float) animation.getAnimatedValue();
+            playerLayout.setAlpha(val);
+            playerLayout.setTranslationY(dp(50) * (1f - val));
+        });
+        anim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                AudioPlayerAlert.super.dismiss();
+                releaseOnDismiss();
+            }
+        });
+        anim.start();
+    }
+
+    private void releaseOnDismiss() {
         if (tintAnimator != null) {
             tintAnimator.cancel();
             tintAnimator = null;
@@ -2308,13 +2351,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             if (noforwards != this.noforwards) {
                 this.noforwards = noforwards;
 
-                FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) playerLayout.getLayoutParams();
-                layoutParams.height = dp(179 + (!noforwards && !isMyList() ? 52 : 0));
-                playerLayout.setLayoutParams(layoutParams);
-
-                layoutParams = (FrameLayout.LayoutParams) playerShadow.getLayoutParams();
-                layoutParams.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
-                playerShadow.setLayoutParams(layoutParams);
             }
             if (noforwards) {
                 optionsButton.hideSubItem(1);
@@ -2378,26 +2414,22 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
-    /** Fades the player background to a gradient built from the cover colors (null = theme color). */
     private void updateCoverTint(Bitmap cover) {
-        final int base = getThemedColor(Theme.key_player_background);
+        if (playerLayout == null) return;
         final int[] colors = cover != null ? extractCoverColors(cover) : null;
-        final int toTop = colors == null ? base : ColorUtils.blendARGB(base, colors[0], 0.30f);
-        final int toBottom = colors == null ? base : ColorUtils.blendARGB(base, colors[1], 0.38f);
-        final int fromTop = playerTopColor != 0 ? playerTopColor : base;
-        final int fromBottom = playerBottomColor != 0 ? playerBottomColor : base;
-        if (tintAnimator != null) {
-            tintAnimator.cancel();
+        int topColor, bottomColor;
+        if (colors != null) {
+            currentCoverColors = colors;
+            topColor = ColorUtils.blendARGB(0xFF1E1E1E, colors[0], 0.45f);
+            bottomColor = ColorUtils.blendARGB(0xFF1E1E1E, colors[1], 0.45f);
+        } else {
+            topColor = 0xFF1E1E1E;
+            bottomColor = 0xFF1E1E1E;
         }
-        tintAnimator = ValueAnimator.ofFloat(0f, 1f);
-        tintAnimator.setDuration(450);
-        tintAnimator.addUpdateListener(animation -> {
-            final float t = (float) animation.getAnimatedValue();
-            playerTopColor = ColorUtils.blendARGB(fromTop, toTop, t);
-            playerBottomColor = ColorUtils.blendARGB(fromBottom, toBottom, t);
-            refreshPlayerBackground();
-        });
-        tintAnimator.start();
+        GradientDrawable gradientDrawable = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM, new int[]{topColor, bottomColor});
+        gradientDrawable.setCornerRadius(dp(24));
+        playerLayout.setBackground(gradientDrawable);
         showCoverBlur(cover);
     }
 
@@ -2605,8 +2637,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) suggestionsListView.getLayoutParams();
         lp.height = suggestionsHeight;
-        lp.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
+        lp.bottomMargin = CARD_HEIGHT_EXPANDED + dp(24 + 8);
         suggestionsListView.setLayoutParams(lp);
+        suggestionsListView.setBackgroundColor(Color.TRANSPARENT);
 
         suggestionsAdapter.notifyDataSetChanged();
         suggestionsListView.setVisibility(show ? View.VISIBLE : View.GONE);
@@ -2642,15 +2675,37 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return new RecyclerListView.Holder(new AudioPlayerCell(context, AudioPlayerCell.VIEW_TYPE_DEFAULT, resourcesProvider));
+            AudioPlayerCell cell = new AudioPlayerCell(context, AudioPlayerCell.VIEW_TYPE_DEFAULT, resourcesProvider);
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, dp(64));
+            params.setMargins(dp(16), dp(4), dp(16), dp(4));
+            cell.setLayoutParams(params);
+            cell.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(12));
+                }
+            });
+            cell.setClipToOutline(true);
+            return new RecyclerListView.Holder(cell);
         }
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             final AudioPlayerCell cell = (AudioPlayerCell) holder.itemView;
             final MessageObject messageObject = suggestedMusic.get(position);
-            cell.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
             cell.setMessageObject(messageObject, false, null, position + 1 < suggestedMusic.size(), null);
+            Bitmap cover = null; // در صورت نیاز به استخراج کاور از ImageLoader استفاده شود
+            int[] colors = cover != null ? extractCoverColors(cover) : null;
+            int color1 = colors != null ? colors[0] : 0xFF2C2C2C;
+            int color2 = colors != null ? colors[1] : 0xFF1A1A1A;
+            GradientDrawable bg = new GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[]{
+                        ColorUtils.blendARGB(0xFF1E1E1E, color1, 0.6f),
+                        ColorUtils.blendARGB(0xFF1E1E1E, color2, 0.6f)
+                    });
+            bg.setCornerRadius(dp(12));
+            cell.setBackground(bg);
         }
 
         @Override
@@ -3843,7 +3898,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             )
                 return false;
         }
-        return y < containerView.getTop() + (shadowDrawable != null ? shadowDrawable.getBounds().top : 0) || x < containerView.getLeft() || x > containerView.getRight();
+        Rect playerRect = new Rect();
+        playerLayout.getGlobalVisibleRect(playerRect);
+        Rect suggestionsRect = new Rect();
+        if (suggestionsListView.getVisibility() == View.VISIBLE) {
+            suggestionsListView.getGlobalVisibleRect(suggestionsRect);
+        }
+        return !playerRect.contains((int) x, (int) y) && !suggestionsRect.contains((int) x, (int) y);
     }
 
     private ValueAnimator rightPaddingAnimator;
