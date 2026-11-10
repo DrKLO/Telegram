@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: release-build
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -239,6 +239,7 @@ jobs:
               private Runnable onFinished;
               private int hostX, hostY;
               private Bitmap bgBmp;
+              private View wallView;   // لایهٔ زیرین: فقط والپیپر خم‌شونده
 
               // اسم کاربر (مبدا سیاه‌چاله)
               private View titleView;
@@ -334,17 +335,7 @@ jobs:
                   effect.hostY = hostLoc[1];
                   effect.setupTitle(host, titleOrigin);   // اسم را می‌گیرد و پنهان می‌کند
                   list.setAlpha(0f);
-                  try {
-                      int bw = Math.max(1, host.getWidth() / 2);
-                      int bh = Math.max(1, host.getHeight() / 2);
-                      Bitmap bg = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
-                      Canvas bc = new Canvas(bg);
-                      bc.scale(0.5f, 0.5f);
-                      host.draw(bc);
-                      effect.bgBmp = bg;
-                  } catch (Throwable ignore) {
-                      effect.bgBmp = null;
-                  }
+                  effect.bgBmp = captureWallpaper(host);
                   if (!effect.attach(host)) {
                       return false;
                   }
@@ -442,8 +433,8 @@ jobs:
                               effect.palpha[n] = a / 255f;
                               effect.psz[n] = step * 0.9f;
                               effect.pdelay[n] = 0.5f * x / w + 0.2f * effect.rnd.nextFloat();
-                              effect.pvx[n] = (effect.rnd.nextFloat() * 1.3f - 0.3f) * u * 120f;
-                              effect.pvy[n] = (effect.rnd.nextFloat() * 1.1f - 0.9f) * u * 100f;
+                              effect.pvx[n] = (effect.rnd.nextFloat() - 0.5f) * u * 30f;
+                              effect.pvy[n] = (effect.rnd.nextFloat() * -0.6f) * u * 40f;
                               effect.palive[n] = true;
                               n++;
                           }
@@ -461,10 +452,72 @@ jobs:
 
               // ------------------------------------------------------------------------------------
 
+              /** فقط والپیپر/تم را عکس می‌گیرد (همهٔ ویوهای فرزند موقتاً پنهان می‌شوند: هدر، باکس تایپ، دکمه‌ها و ...). */
+              private static Bitmap captureWallpaper(ViewGroup host) {
+                  int n = host.getChildCount();
+                  int[] vis = new int[n];
+                  try {
+                      for (int i = 0; i < n; i++) {
+                          View c = host.getChildAt(i);
+                          vis[i] = c.getVisibility();
+                          if (vis[i] == VISIBLE) {
+                              c.setVisibility(INVISIBLE);
+                          }
+                      }
+                      Bitmap bg = Bitmap.createBitmap(Math.max(1, host.getWidth() / 2), Math.max(1, host.getHeight() / 2), Bitmap.Config.ARGB_8888);
+                      Canvas bc = new Canvas(bg);
+                      bc.scale(0.5f, 0.5f);
+                      host.draw(bc);
+                      return bg;
+                  } catch (Throwable e) {
+                      return null;
+                  } finally {
+                      for (int i = 0; i < n && i < host.getChildCount(); i++) {
+                          View c = host.getChildAt(i);
+                          if (c.getVisibility() != vis[i]) {
+                              c.setVisibility(vis[i]);
+                          }
+                      }
+                  }
+              }
+
+              /** لایهٔ زیرین (بالای لیست پیام‌ها، زیر هدر و باکس تایپ): فقط والپیپر که به سمت سیاه‌چاله خم می‌شود. */
+              private class WallLayer extends View {
+                  private final int[] loc = new int[2];
+
+                  WallLayer(Context context) {
+                      super(context);
+                  }
+
+                  @Override
+                  protected void onDraw(Canvas canvas) {
+                      BlackHoleClearEffect fx = BlackHoleClearEffect.this;
+                      if (fx.finished || fx.bgBmp == null) {
+                          return;
+                      }
+                      float t = (System.nanoTime() - fx.startTime) / 1_000_000_000f;
+                      getLocationInWindow(loc);
+                      canvas.save();
+                      canvas.translate(fx.hostX - loc[0], fx.hostY - loc[1]);
+                      fx.drawBackground(canvas, fx.holeAmount(t), fx.holeCx, fx.holeCy, 0f);
+                      canvas.restore();
+                      invalidate();
+                  }
+              }
+
               private boolean attach(ViewGroup host) {
                   try {
+                      int li = (bgBmp != null && listView != null) ? host.indexOfChild(listView) : -1;
+                      if (li >= 0) {
+                          wallView = new WallLayer(getContext());
+                          host.addView(wallView, li + 1, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                      }
                       host.addView(this, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                   } catch (Throwable e) {
+                      if (wallView != null && wallView.getParent() instanceof ViewGroup) {
+                          ((ViewGroup) wallView.getParent()).removeView(wallView);
+                      }
+                      wallView = null;
                       cleanup();
                       return false;
                   }
@@ -481,7 +534,9 @@ jobs:
                   int[] tl = new int[2];
                   host.getLocationInWindow(hl);
                   View found = null;
-                  if (origin instanceof ViewGroup) {
+                  if (origin != null && origin.getVisibility() == VISIBLE && origin.getWidth() > 0 && origin.getHeight() > 0) {
+                      found = origin;   // کل کارت (آواتار + اسم + وضعیت)
+                  } else if (origin instanceof ViewGroup) {
                       ViewGroup g = (ViewGroup) origin;
                       for (int i = 0; i < g.getChildCount(); i++) {
                           View c = g.getChildAt(i);
@@ -499,7 +554,7 @@ jobs:
                       found.getLocationInWindow(tl);
                       titleX = tl[0] - hl[0];
                       titleY = tl[1] - hl[1];
-                      titleW = Math.min(found.getWidth(), AndroidUtilities.dp(180));
+                      titleW = found.getWidth();
                       titleH = found.getHeight();
                       try {
                           titleBmp = Bitmap.createBitmap(found.getWidth(), found.getHeight(), Bitmap.Config.ARGB_8888);
@@ -573,7 +628,7 @@ jobs:
                   float cx = holeCx;
                   float cy = holeCy;
                   float T = clamp((t - SWALLOW_START) / SWALLOW);
-                  drawBackground(canvas, h, cx, cy, maxRadius * (0.3f + 0.7f * h));
+                  drawVignette(canvas, h, cx, cy, maxRadius * (0.3f + 0.7f * h));
                   for (int n = 0; n < items.size(); n++) {
                       Item item = items.get(n);
                       float p = clamp((T - item.delay) / (1f - STAGGER));
@@ -636,7 +691,6 @@ jobs:
                       }
                   }
                   canvas.drawBitmapMesh(bgBmp, BC, BR, bgVerts, 0, null, 0, null);
-                  drawVignette(canvas, h, cx, cy, radius);
               }
 
               private void drawVignette(Canvas canvas, float h, float cx, float cy, float radius) {
@@ -675,18 +729,20 @@ jobs:
                           continue;
                       }
                       if (t >= pdelay[i]) {
-                          pvx[i] += (rnd.nextFloat() - 0.5f) * u * 220f * dt;
-                          pvy[i] += (rnd.nextFloat() - 0.5f) * u * 220f * dt;
                           if (pulling) {
                               float dx = cx - ppx[i];
                               float dy = cy - ppy[i];
                               float d = (float) Math.sqrt(dx * dx + dy * dy) + 0.001f;
-                              float a = u * 1400f * ramp;
-                              pvx[i] += (dx / d * a - dy / d * a * 0.7f) * dt;
-                              pvy[i] += (dy / d * a + dx / d * a * 0.7f) * dt;
+                              float speed = Math.max(Math.min(u * (250f + 1700f * ramp), d * 9f), u * 90f);
+                              float k = Math.min(1f, 10f * dt);
+                              pvx[i] += (dx / d * speed - pvx[i]) * k;
+                              pvy[i] += (dy / d * speed - pvy[i]) * k;
+                          } else {
+                              pvx[i] += (rnd.nextFloat() - 0.5f) * u * 60f * dt;
+                              pvy[i] += (rnd.nextFloat() - 0.5f) * u * 60f * dt;
+                              pvx[i] *= damp;
+                              pvy[i] *= damp;
                           }
-                          pvx[i] *= damp;
-                          pvy[i] *= damp;
                           ppx[i] += pvx[i] * dt;
                           ppy[i] += pvy[i] * dt;
                       }
@@ -732,6 +788,7 @@ jobs:
                       // کپسولِ اندازهٔ اسم به دایره تبدیل می‌شود
                       float rw = titleW / 2f + (maxRadius - titleW / 2f) * h;
                       float rh = titleH / 2f + (maxRadius - titleH / 2f) * h;
+                      holePaint.setAlpha((int) (255 * clamp(h / 0.2f)));
                       canvas.drawRoundRect(cx - rw, cy - rh, cx + rw, cy + rh, rh, rh, holePaint);
 
                       float ringA = clamp((h - 0.35f) / 0.65f);
@@ -791,6 +848,10 @@ jobs:
                   cleanup();
                   final Runnable done = onFinished;
                   post(() -> {
+                      if (wallView != null && wallView.getParent() instanceof ViewGroup) {
+                          ((ViewGroup) wallView.getParent()).removeView(wallView);
+                      }
+                      wallView = null;
                       if (getParent() instanceof ViewGroup) {
                           ((ViewGroup) getParent()).removeView(this);
                       }
