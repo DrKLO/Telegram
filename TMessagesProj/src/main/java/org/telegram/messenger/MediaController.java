@@ -2728,6 +2728,39 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return playingMessageObject;
     }
 
+    public ArrayList<MessageObject> getSuggestedMusic(MessageObject current) {
+        final ArrayList<MessageObject> result = new ArrayList<>();
+        final ArrayList<MessageObject> sources = new ArrayList<>();
+        if (currentSavedMusicList != null && currentSavedMusicList.list != null) {
+            sources.addAll(currentSavedMusicList.list);
+        }
+        sources.addAll(playlist);
+        for (int a = 0, N = sources.size(); a < N; a++) {
+            final MessageObject object = sources.get(a);
+            if (object == null || !object.isMusic()) {
+                continue;
+            }
+            if (current != null && object.getId() == current.getId() && object.getDialogId() == current.getDialogId()) {
+                continue;
+            }
+            boolean duplicate = false;
+            for (int b = 0; b < result.size(); b++) {
+                final MessageObject added = result.get(b);
+                if (added.getId() == object.getId() && added.getDialogId() == object.getDialogId()) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                result.add(object);
+                if (result.size() >= 20) {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
     public int getPlayingMessageObjectNum() {
         return currentPlaylistNum;
     }
