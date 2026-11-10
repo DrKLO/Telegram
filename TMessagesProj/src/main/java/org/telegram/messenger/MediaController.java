@@ -1714,6 +1714,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private void clearPlaylist() {
         currentSavedMusicList = null;
         playlist.clear();
+        playNextQueue.clear();
         playlistMap.clear();
         shuffledPlaylist.clear();
         playlistClassGuid = 0;
@@ -2976,6 +2977,77 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public boolean hasNoNextVoiceOrRoundVideoMessage() {
         return playingMessageObject == null || (!playingMessageObject.isVoice() && !playingMessageObject.isRoundVideo()) || voiceMessagesPlaylist == null || voiceMessagesPlaylist.size() <= 1 || !voiceMessagesPlaylist.contains(playingMessageObject) || voiceMessagesPlaylist.indexOf(playingMessageObject) >= (voiceMessagesPlaylist.size() - 1);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // "Play Next" queue: songs the user queued with long-press -> "Play Next".
+    // They are inserted right after the current track (after songs queued earlier), so they
+    // play in the order they were added. Works for normal, reversed and shuffled order.
+    // ---------------------------------------------------------------------------------------
+    private final ArrayList<MessageObject> playNextQueue = new ArrayList<>();
+
+    public boolean isQueuedToPlayNext(MessageObject messageObject) {
+        return messageObject != null && playNextQueue.contains(messageObject);
+    }
+
+    public boolean queuePlayNext(MessageObject messageObject) {
+        if (messageObject == null || playingMessageObject == null) {
+            return false;
+        }
+        final ArrayList<MessageObject> active = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
+        if (currentPlaylistNum < 0 || currentPlaylistNum >= active.size()) {
+            return false;
+        }
+        final MessageObject current = active.get(currentPlaylistNum);
+        if (current == messageObject || isSamePlayingMessage(messageObject)) {
+            return false;
+        }
+        final boolean reversed = SharedConfig.playOrderReversed;
+        final int step = reversed ? 1 : -1;
+
+        // forget queued songs that are no longer directly ahead of the current track
+        final ArrayList<MessageObject> ahead = new ArrayList<>();
+        for (int i = currentPlaylistNum + step; i >= 0 && i < active.size() && playNextQueue.contains(active.get(i)); i += step) {
+            ahead.add(active.get(i));
+        }
+        playNextQueue.clear();
+        playNextQueue.addAll(ahead);
+
+        final int newCurrentNum = insertAfterCurrent(active, currentPlaylistNum, messageObject, reversed);
+
+        // keep the list that is not in use in sync, so toggling shuffle keeps the queue
+        final ArrayList<MessageObject> other = active == playlist ? shuffledPlaylist : playlist;
+        final int otherCurrent = other.indexOf(current);
+        if (otherCurrent >= 0) {
+            insertAfterCurrent(other, otherCurrent, messageObject, reversed);
+        }
+
+        playNextQueue.add(messageObject);
+        currentPlaylistNum = newCurrentNum;
+        return true;
+    }
+
+    /** @return the new index of the current track */
+    private int insertAfterCurrent(ArrayList<MessageObject> list, int currentIndex, MessageObject messageObject, boolean reversed) {
+        final int old = list.indexOf(messageObject);
+        if (old >= 0) {
+            list.remove(old);
+            if (old < currentIndex) {
+                currentIndex--;
+            }
+        }
+        final int step = reversed ? 1 : -1;
+        int queuedAhead = 0;
+        for (int i = currentIndex + step; i >= 0 && i < list.size() && playNextQueue.contains(list.get(i)); i += step) {
+            queuedAhead++;
+        }
+        if (reversed) {
+            list.add(Math.min(list.size(), currentIndex + 1 + queuedAhead), messageObject);
+            return currentIndex;
+        } else {
+            list.add(Math.max(0, currentIndex - queuedAhead), messageObject);
+            return currentIndex + 1;
+        }
     }
 
     public void playNextMessage() {
