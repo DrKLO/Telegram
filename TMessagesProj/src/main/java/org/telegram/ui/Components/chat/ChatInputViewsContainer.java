@@ -86,8 +86,6 @@ public class ChatInputViewsContainer extends FrameLayout {
         underKeyboardBackgroundDrawable = drawable;
         underKeyboardBackgroundDrawable.enableInAppKeyboardOptimization();
         underKeyboardBackgroundDrawable.setRadius(dp(INPUT_KEYBOARD_RADIUS), dp(INPUT_KEYBOARD_RADIUS), 0, 0);
-        underKeyboardBackgroundDrawable.setThickness(dp(32));
-        underKeyboardBackgroundDrawable.setIntensity(0.4f);
     }
 
     public void updateColors() {
@@ -166,18 +164,8 @@ public class ChatInputViewsContainer extends FrameLayout {
         checkInAppKeyboardChild();
 
         if (underKeyboardBackgroundDrawable != null) {
-            int leftBottomRadius = 0;
-            int rightBottomRadius = 0;
-            if (Build.VERSION.SDK_INT >= 31) {
-                final WindowInsets insets = getRootWindowInsets();
-                if (insets != null) {
-                    final RoundedCorner bottomLeft = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT);
-                    final RoundedCorner bottomRight = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT);
-                    leftBottomRadius = bottomLeft == null ? 0 : bottomLeft.getRadius();
-                    rightBottomRadius = bottomRight == null ? 0 : bottomRight.getRadius();
-                }
-            }
-            underKeyboardBackgroundDrawable.setRadius(dp(INPUT_KEYBOARD_RADIUS), dp(INPUT_KEYBOARD_RADIUS), rightBottomRadius, leftBottomRadius, true);
+            // bottom corners stay square: the panel must stay glued to the bottom of the screen
+            underKeyboardBackgroundDrawable.setRadius(dp(INPUT_KEYBOARD_RADIUS), dp(INPUT_KEYBOARD_RADIUS), 0, 0, true);
         }
     }
 
@@ -254,7 +242,7 @@ public class ChatInputViewsContainer extends FrameLayout {
             0,
             getMeasuredHeight() - (int) imeBottomInset,
             getMeasuredWidth(),
-            Math.max(getMeasuredHeight(), getMeasuredHeight() - (int) imeBottomInset + dp(INPUT_KEYBOARD_RADIUS * 2))
+            getMeasuredHeight() + dp(INPUT_KEYBOARD_RADIUS * 2)
         );
 
         final int blurTop = getMeasuredHeight() - currentBlurredHeight;
