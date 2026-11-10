@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -234,6 +235,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     long lastUpdateRewindingPlayerTime;
 
     private boolean wasLight;
+
+    // player background tinted with the colors of the current cover
+    private int playerTopColor;
+    private int playerBottomColor;
+    private ValueAnimator tintAnimator;
+    private final ImageView[] coverBlurViews = new ImageView[2];
+    private int coverBlurIndex;
 
     private final static float[] speeds = new float[] {
             .5f, 1f, 1.2f, 1.5f, 1.7f, 2f
@@ -549,6 +557,14 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
         };
 
+        // blurred copy of the cover behind the player (cross-fades when the song changes)
+        for (int i = 0; i < 2; i++) {
+            coverBlurViews[i] = new ImageView(context);
+            coverBlurViews[i].setScaleType(ImageView.ScaleType.CENTER_CROP);
+            coverBlurViews[i].setAlpha(0f);
+            playerLayout.addView(coverBlurViews[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+
         coverContainer = new CoverContainer(context) {
 
             private long pressTime;
@@ -576,6 +592,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 setCustomPaddingRight(padding, true);
                 if (blurredView.getTag() != null) {
                     bigAlbumConver.setImageBitmap(b);
+                }
+                if (padding != 0 && b != null) {
+                    updateCoverTint(b);
+                } else if (padding == 0) {
+                    updateCoverTint(null);
                 }
             }
         };
@@ -2081,6 +2102,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     @Override
     public void dismiss() {
         super.dismiss();
+        if (tintAnimator != null) {
+            tintAnimator.cancel();
+            tintAnimator = null;
+        }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagePlayingDidStart);
@@ -2342,6 +2367,143 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
     }
 
+    private void refreshPlayerBackground() {
+        if (playerLayout == null) {
+            return;
+        }
+        if (playerTopColor == 0) {
+            playerLayout.setBackgroundColor(getThemedColor(Theme.key_player_background));
+        } else {
+            playerLayout.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{playerTopColor, playerBottomColor}));
+        }
+    }
+
+    /** Fades the player background to a gradient built from the cover colors (null = theme color). */
+    private void updateCoverTint(Bitmap cover) {
+        final int base = getThemedColor(Theme.key_player_background);
+        final int[] colors = cover != null ? extractCoverColors(cover) : null;
+        final int toTop = colors == null ? base : ColorUtils.blendARGB(base, colors[0], 0.30f);
+        final int toBottom = colors == null ? base : ColorUtils.blendARGB(base, colors[1], 0.38f);
+        final int fromTop = playerTopColor != 0 ? playerTopColor : base;
+        final int fromBottom = playerBottomColor != 0 ? playerBottomColor : base;
+        if (tintAnimator != null) {
+            tintAnimator.cancel();
+        }
+        tintAnimator = ValueAnimator.ofFloat(0f, 1f);
+        tintAnimator.setDuration(450);
+        tintAnimator.addUpdateListener(animation -> {
+            final float t = (float) animation.getAnimatedValue();
+            playerTopColor = ColorUtils.blendARGB(fromTop, toTop, t);
+            playerBottomColor = ColorUtils.blendARGB(fromBottom, toBottom, t);
+            refreshPlayerBackground();
+        });
+        tintAnimator.start();
+        showCoverBlur(cover);
+    }
+
+    private void showCoverBlur(Bitmap cover) {
+        if (coverBlurViews[0] == null) {
+            return;
+        }
+        final ImageView out = coverBlurViews[coverBlurIndex];
+        coverBlurIndex = 1 - coverBlurIndex;
+        final ImageView in = coverBlurViews[coverBlurIndex];
+        out.animate().cancel();
+        in.animate().cancel();
+        out.animate().alpha(0f).setDuration(450).start();
+        final Bitmap tiny = makeBlurSource(cover);
+        if (tiny == null) {
+            return;
+        }
+        // a tiny bitmap stretched with bilinear filtering looks like a heavy blur and costs nothing
+        in.setImageBitmap(tiny);
+        in.setAlpha(0f);
+        in.animate().alpha(0.5f).setDuration(450).start();
+    }
+
+    private static Bitmap makeBlurSource(Bitmap cover) {
+        if (cover == null || cover.isRecycled()) {
+            return null;
+        }
+        try {
+            Bitmap src = cover;
+            if (src.getConfig() == Bitmap.Config.HARDWARE) {
+                src = src.copy(Bitmap.Config.ARGB_8888, false);
+            }
+            return Bitmap.createScaledBitmap(src, 16, 16, true);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    /** @return {dominant, secondary} colors of the bitmap, or null if it can not be read */
+    private static int[] extractCoverColors(Bitmap source) {
+        try {
+            Bitmap src = source;
+            if (src.getConfig() == Bitmap.Config.HARDWARE) {
+                src = src.copy(Bitmap.Config.ARGB_8888, false);
+            }
+            final int size = 24;
+            final Bitmap small = Bitmap.createScaledBitmap(src, size, size, true);
+            final int[] px = new int[size * size];
+            small.getPixels(px, 0, size, 0, 0, size, size);
+            if (small != src) {
+                small.recycle();
+            }
+            final int[] count = new int[512];
+            final long[] sr = new long[512], sg = new long[512], sb = new long[512];
+            for (int p : px) {
+                final int r = Color.red(p), g = Color.green(p), b = Color.blue(p);
+                final int k = ((r >> 5) << 6) | ((g >> 5) << 3) | (b >> 5);
+                count[k]++;
+                sr[k] += r;
+                sg[k] += g;
+                sb[k] += b;
+            }
+            int best = -1, second = -1;
+            float bestScore = 0, secondScore = 0;
+            final float[] hsv = new float[3];
+            final int[] avg = new int[512];
+            for (int k = 0; k < 512; k++) {
+                if (count[k] == 0) {
+                    continue;
+                }
+                avg[k] = Color.rgb((int) (sr[k] / count[k]), (int) (sg[k] / count[k]), (int) (sb[k] / count[k]));
+                Color.colorToHSV(avg[k], hsv);
+                float score = count[k] * (0.25f + hsv[1]) * (hsv[2] < 0.14f ? 0.2f : 1f);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = k;
+                }
+            }
+            if (best < 0) {
+                return null;
+            }
+            for (int k = 0; k < 512; k++) {
+                if (count[k] == 0 || k == best) {
+                    continue;
+                }
+                final int dr = Color.red(avg[k]) - Color.red(avg[best]);
+                final int dg = Color.green(avg[k]) - Color.green(avg[best]);
+                final int db = Color.blue(avg[k]) - Color.blue(avg[best]);
+                if (Math.sqrt(dr * dr + dg * dg + db * db) < 90) {
+                    continue;
+                }
+                Color.colorToHSV(avg[k], hsv);
+                final float score = count[k] * (0.25f + hsv[1]) * (hsv[2] < 0.14f ? 0.2f : 1f);
+                if (score > secondScore) {
+                    secondScore = score;
+                    second = k;
+                }
+            }
+            return new int[]{avg[best], second >= 0 ? avg[second] : avg[best]};
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
     private void updateCover(MessageObject messageObject, boolean animated) {
         final BackupImageView imageView = animated ? coverContainer.getNextImageView() : coverContainer.getImageView();
         final AudioInfo audioInfo = MediaController.getInstance().getAudioInfo();
@@ -2350,6 +2512,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
         if (audioInfo != null && audioInfo.getCover() != null) {
             imageView.setImageBitmap(audioInfo.getCover());
+            updateCoverTint(audioInfo.getCover());
             currentFile = null;
             currentAudioFinishedLoading = true;
         } else {
@@ -2364,6 +2527,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 imageView.setImage(null, null, thumbImageLocation, null, null, 0, 1, messageObject);
             } else {
                 imageView.setImageDrawable(null);
+                updateCoverTint(null);
             }
             imageView.invalidate();
         }
@@ -2543,11 +2707,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 }
             }
             if (playlist.size() > 1) {
-                playerLayout.setBackgroundColor(getThemedColor(Theme.key_player_background));
+                refreshPlayerBackground();
                 playerShadow.setVisibility(View.VISIBLE);
                 listView.setPadding(0, listView.getPaddingTop(), 0, dp(179 + 52));
             } else {
-                playerLayout.setBackgroundColor(getThemedColor(Theme.key_player_background));
+                refreshPlayerBackground();
                 playerShadow.setVisibility(View.VISIBLE);
                 listView.setPadding(0, listView.getPaddingTop(), 0, 0);
             }
@@ -3039,6 +3203,18 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void showOptions(AudioPlayerCell cell, MessageObject messageObject) {
         final ItemOptions o = ItemOptions.makeOptions(container, resourcesProvider, cell, true);
+
+        // TODO: move "Play Next" / "Will play next" to strings.xml and use a proper icon
+        o.addIf(messageObject != MediaController.getInstance().getPlayingMessageObject(), R.drawable.msg_forward, "Play Next", () -> {
+            o.dismiss();
+            if (MediaController.getInstance().queuePlayNext(messageObject)) {
+                playlist = MediaController.getInstance().getPlaylist();
+                listAdapter.notifyDataSetChanged();
+                BulletinFactory.of((FrameLayout) containerView, resourcesProvider)
+                    .createSimpleBulletin(R.raw.saved_messages, "Will play next")
+                    .show();
+            }
+        });
 
         if (isMyList()) {
             o.addIf(!noforwards, R.drawable.msg_forward, getString(R.string.Forward), () -> {
