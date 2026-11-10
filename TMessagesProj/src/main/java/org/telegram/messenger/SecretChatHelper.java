@@ -216,6 +216,7 @@ public class SecretChatHelper extends BaseController {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
             });
             getMessagesStorage().putEncryptedChat(newChat, user, dialog);
+            getNotificationsController().showSecretChatRequestNotification(newChat.id);
         } else if (newChat instanceof TLRPC.TL_encryptedChat) {
             if (existingChat instanceof TLRPC.TL_encryptedChatWaiting && (existingChat.auth_key == null || existingChat.auth_key.length == 1)) {
                 newChat.a_or_b = existingChat.a_or_b;
@@ -1862,6 +1863,7 @@ public class SecretChatHelper extends BaseController {
             return;
         }
         acceptingChats.put(encryptedChat.id, encryptedChat);
+        getNotificationsController().cancelSecretChatRequestNotification(encryptedChat.id);
         getNotificationCenter().postNotificationName(NotificationCenter.encryptedChatUpdated, encryptedChat);
         TLRPC.TL_messages_getDhConfig req = new TLRPC.TL_messages_getDhConfig();
         req.random_length = 256;

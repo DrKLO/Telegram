@@ -199,6 +199,8 @@
     <string name="EncryptionRejected">Secret chat cancelled</string>
     <string name="EncryptionProcessing">Exchanging encryption keys...</string>
     <string name="SecretChatRequest">Secret chat request</string>
+    <string name="SecretChatRequests">Secret chat requests</string>
+    <string name="SecretChatRequestNotification">You have a new secret chat request</string>
     <string name="SecretChatRequestJoin">Join</string>
     <string name="SecretChatRequestIgnore">Ignore</string>
     <string name="SecretChatRequestDeclineTitle">Decline secret chat?</string>

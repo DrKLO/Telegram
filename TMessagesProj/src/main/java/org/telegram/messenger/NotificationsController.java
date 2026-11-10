@@ -420,6 +420,44 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    public void showSecretChatRequestNotification(int chatId) {
+        notificationsQueue.postRunnable(() -> {
+            try {
+                long dialogId = DialogObject.makeEncryptedDialogId(chatId);
+                if (!isGlobalNotificationsEnabled(dialogId, false, false)) {
+                    return;
+                }
+                String channelId = "secret_chat_requests_" + currentAccount;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    systemNotificationManager.createNotificationChannel(new NotificationChannel(
+                            channelId, LocaleController.getString(R.string.SecretChatRequests), NotificationManager.IMPORTANCE_DEFAULT));
+                }
+                String message = LocaleController.getString(R.string.SecretChatRequestNotification);
+                Intent intent = new Intent(ApplicationLoader.applicationContext, LaunchActivity.class);
+                intent.setAction("com.tmessages.openchat" + Math.random() + Integer.MAX_VALUE);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.putExtra("encId", chatId);
+                intent.putExtra("currentAccount", currentAccount);
+                PendingIntent contentIntent = PendingIntent.getActivity(ApplicationLoader.applicationContext,
+                        chatId, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(ApplicationLoader.applicationContext, channelId)
+                        .setSmallIcon(R.drawable.notification)
+                        .setContentTitle(LocaleController.getString(R.string.SecretChatName))
+                        .setContentText(message)
+                        .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                        .setAutoCancel(true)
+                        .setContentIntent(contentIntent);
+                notificationManager.notify("secret_chat_request_" + currentAccount, chatId, builder.build());
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        });
+    }
+
+    public void cancelSecretChatRequestNotification(int chatId) {
+        notificationsQueue.postRunnable(() -> notificationManager.cancel("secret_chat_request_" + currentAccount, chatId));
+    }
+
     private String getGramTransferNotification(MessageObject messageObject, String name) {
         TLRPC.TL_messageActionGramTransfer action = (TLRPC.TL_messageActionGramTransfer) messageObject.messageOwner.action;
         boolean unknown = UserObject.isService(messageObject.getDialogId());
