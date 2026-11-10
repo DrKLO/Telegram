@@ -1423,7 +1423,7 @@ jobs:
           FLIPEOF
 
       # ---------- باکس تایپ بالاتر + ژست دو انگشت به بالا (انتخاب همه / پاکسازی تاریخچه) ----------
-      - name: Input box higher and two-finger select-all
+      - name: Input box higher
         run: |
           python3 - <<'GESTEOF'
           import re
@@ -1454,79 +1454,6 @@ jobs:
                   });"""
                   s = s.replace(anchor, raise_code, 1)
                   print('Input raise: applied')
-
-          # ---- 2) ژست دو انگشت از پایین به بالا روی لیست پیام‌ها ----
-          if 'twoFingerSwipeHooked' in s:
-              print('Two-finger gesture: already present, skipped')
-          else:
-              m = re.search(r'\n([ \t]*)(?:@Override[ \t]*\n[ \t]*)?public void onResume\(\) \{\s*super\.onResume\(\);', s)
-              if m is None:
-                  print('WARNING: onResume not found, two-finger gesture skipped')
-              else:
-                  methods = '''
-              private boolean twoFingerSwipeHooked;
-
-              private void hookTwoFingerSwipe() {
-                  if (twoFingerSwipeHooked || chatListView == null) {
-                      return;
-                  }
-                  twoFingerSwipeHooked = true;
-                  chatListView.addOnItemTouchListener(new androidx.recyclerview.widget.RecyclerView.OnItemTouchListener() {
-                      private float startY;
-                      private boolean tracking;
-
-                      @Override
-                      public boolean onInterceptTouchEvent(androidx.recyclerview.widget.RecyclerView rv, android.view.MotionEvent e) {
-                          int a = e.getActionMasked();
-                          if (a == android.view.MotionEvent.ACTION_POINTER_DOWN && e.getPointerCount() == 2) {
-                              startY = (e.getY(0) + e.getY(1)) / 2f;
-                              tracking = true;
-                          } else if (a == android.view.MotionEvent.ACTION_MOVE && tracking && e.getPointerCount() == 2) {
-                              float y = (e.getY(0) + e.getY(1)) / 2f;
-                              if (startY - y > AndroidUtilities.dp(90)) {
-                                  tracking = false;
-                                  showSelectAllClearDialog();
-                              }
-                          } else if (a == android.view.MotionEvent.ACTION_UP || a == android.view.MotionEvent.ACTION_CANCEL || e.getPointerCount() > 2) {
-                              tracking = false;
-                          }
-                          return false;
-                      }
-
-                      @Override
-                      public void onTouchEvent(androidx.recyclerview.widget.RecyclerView rv, android.view.MotionEvent e) {
-                      }
-
-                      @Override
-                      public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-                      }
-                  });
-              }
-
-              private void showSelectAllClearDialog() {
-                  if (getParentActivity() == null) {
-                      return;
-                  }
-                  try {
-                      final boolean canBoth = currentUser != null || currentEncryptedChat != null;
-                      org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity(), themeDelegate);
-                      builder.setTitle("انتخاب همه پیام‌ها");
-                      CharSequence[] items = canBoth
-                          ? new CharSequence[]{"حذف برای من", "حذف برای هر دو طرف"}
-                          : new CharSequence[]{"حذف برای من"};
-                      builder.setItems(items, (dialog, which) -> performHistoryClear(getThreadId(), which == 1, true));
-                      builder.setNegativeButton("لغو", null);
-                      showDialog(builder.create());
-                  } catch (Throwable e) {
-                      FileLog.e(e);
-                  }
-              }
-          '''
-                  indent = m.group(1)
-                  s = s[:m.start()] + '\n' + methods + s[m.start():]
-                  m2 = re.search(r'public void onResume\(\) \{\s*super\.onResume\(\);', s)
-                  s = s[:m2.end()] + '\n        hookTwoFingerSwipe();' + s[m2.end():]
-                  print('Two-finger gesture: applied')
 
           open(p, 'w', encoding='utf-8').write(s)
           GESTEOF
