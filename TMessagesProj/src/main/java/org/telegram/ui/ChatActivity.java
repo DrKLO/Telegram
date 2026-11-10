@@ -383,6 +383,9 @@ public class ChatActivity extends BaseFragment implements
     private final static boolean DISABLE_PROGRESS_VIEW = true;
     private final static int SKELETON_DISAPPEAR_MS = 200;
     public static final int ACTION_BAR_BLUR_ALPHA = 178;
+    // single glass opacity shared by every glass surface (same as the message input box)
+    private static final int GLASS_ALPHA_LIGHT = 130;
+    private static final int GLASS_ALPHA_DARK = 140;
 
     private static int SKELETON_LIGHT_OVERLAY_ALPHA = 22;
     private static float SKELETON_SATURATION = 1.4f;
@@ -3626,10 +3629,7 @@ public class ChatActivity extends BaseFragment implements
                 }
 
                 final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
-                if (isThemeLight) {
-                    return ColorUtils.setAlphaComponent(super.getBackgroundColor(), 216);
-                }
-                return super.getBackgroundColor();
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? GLASS_ALPHA_LIGHT : GLASS_ALPHA_DARK);
             }
         };
         blurredBackgroundColorProviderWhite = new BlurredBackgroundColorProviderThemed(themeDelegate, Theme.key_windowBackgroundWhite) {
@@ -3640,10 +3640,7 @@ public class ChatActivity extends BaseFragment implements
                 }
 
                 final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
-                if (isThemeLight) {
-                    return ColorUtils.setAlphaComponent(super.getBackgroundColor(), 216);
-                }
-                return super.getBackgroundColor();
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? GLASS_ALPHA_LIGHT : GLASS_ALPHA_DARK);
             }
         };
 
@@ -4209,6 +4206,16 @@ public class ChatActivity extends BaseFragment implements
             protected void openSearch() {
                 openSearchWithText(isSupportedTags() ? "" : null);
             }
+
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                // while messages are selected the top bar shows delete/copy/forward;
+                // the avatar/title must not steal those taps and open the profile
+                if (actionBar != null && (actionBar.isActionModeShowed() || actionBar.getActionModeFactor() > 0f)) {
+                    return false;
+                }
+                return super.dispatchTouchEvent(ev);
+            }
         };
         avatarContainer.setGlassMode();
         avatarContainer.allowShorterStatus = true;
@@ -4622,7 +4629,7 @@ public class ChatActivity extends BaseFragment implements
 
         actionBar.setupGlass(
             glassBackgroundDrawableFactory,
-            BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
+            blurredBackgroundColorProvider,
             ChatObject.isForum(currentChat));
 
         if (chatMode == MODE_PINNED) {
@@ -4649,7 +4656,7 @@ public class ChatActivity extends BaseFragment implements
                     return ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelBackground), 255);
                 }
                 final boolean isThemeLight = themeDelegate != null && !themeDelegate.isDark();
-                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? 130 : 140);
+                return ColorUtils.setAlphaComponent(super.getBackgroundColor(), isThemeLight ? GLASS_ALPHA_LIGHT : GLASS_ALPHA_DARK);
             }
         };
         chatInputViewsContainer.setInputIslandBubbleDrawable(
@@ -6731,7 +6738,7 @@ public class ChatActivity extends BaseFragment implements
                 if (!foundTopView) {
                     scrolled = super.scrollVerticallyBy(dy, recycler, state);
                 }
-                final boolean allowPullingDownScroll = !isInPollAddOptionMode() && !hasSelectedMessages();
+                final boolean allowPullingDownScroll = false; // pull-up-to-next-chat gesture removed
                 if (allowPullingDownScroll && dy > 0 && scrolled == 0 && (ChatObject.isChannel(currentChat) && !currentChat.megagroup || isTopic && !UserObject.isBotForum(currentUser)) && chatMode != MODE_SAVED && chatMode != MODE_WELCOME_MESSAGES && chatMode != MODE_SCHEDULED && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && !isReport()) {
                     if (pullingDownOffset == 0 && pullingDownDrawable != null) {
                         if (nextChannels != null && !nextChannels.isEmpty()) {
@@ -7842,7 +7849,7 @@ public class ChatActivity extends BaseFragment implements
             hashtagSearchTabs.setTabs(searchViewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE));
             hashtagSearchTabs.setPadding(0, dp(7.66f), 0, dp(7.66f));
             hashtagSearchTabs.setBackground(glassBackgroundDrawableFactory.create(hashtagSearchTabs)
-                .setColorProvider(BlurredBackgroundProviderImpl.topPanelChatActivity(resourceProvider))
+                .setColorProvider(blurredBackgroundColorProvider)
                 .setRadius(dp(18)).setPadding(dp(7f)));
 
             contentView.addView(hashtagSearchTabs, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, 50, Gravity.FILL_HORIZONTAL | Gravity.TOP, 0, -dp(5), 0, 0));
@@ -9009,7 +9016,7 @@ public class ChatActivity extends BaseFragment implements
 
         checkUi_topPanelLayoutWidth();
         topPanelLayout.setBlurredBackground(glassBackgroundDrawableFactory.create(topPanelLayout)
-            .setColorProvider(BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate))
+            .setColorProvider(blurredBackgroundColorProvider)
             .setRadius(dp(18))
             .setPadding(dp(7)));
 
@@ -10036,8 +10043,8 @@ public class ChatActivity extends BaseFragment implements
             checkUi_topFade();
         });
 
-        topicsTabs.setSideMenuBackgroundDrawable(glassBackgroundDrawableFactory.create(topicsTabs, BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate)));
-        topicsTabs.setTopMenuBackgroundDrawable(glassBackgroundDrawableFactory.create(topicsTabs, BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate)));
+        topicsTabs.setSideMenuBackgroundDrawable(glassBackgroundDrawableFactory.create(topicsTabs, blurredBackgroundColorProvider));
+        topicsTabs.setTopMenuBackgroundDrawable(glassBackgroundDrawableFactory.create(topicsTabs, blurredBackgroundColorProvider));
 
         int index = 8;
         topicsTabs.setCurrentTopic(getTopicId());
@@ -47012,6 +47019,8 @@ public class ChatActivity extends BaseFragment implements
             avatarContainer.setScaleY(scale);
             avatarContainer.setAlpha(factor);
             avatarContainer.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+            avatarContainer.setClickable(factor1 <= 0f);
+            avatarContainer.setEnabled(factor1 <= 0f);
         }
     }
 
