@@ -1497,10 +1497,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        FrameLayout.LayoutParams playerParams = LayoutHelper.createFrame(
+        // CARD_* are already in pixels, so LayoutParams is built directly (LayoutHelper.createFrame would apply dp() a second time)
+        FrameLayout.LayoutParams playerParams = new FrameLayout.LayoutParams(
                 LayoutHelper.MATCH_PARENT, CARD_HEIGHT_EXPANDED,
-                Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM,
-                CARD_MARGIN, 0, CARD_MARGIN, dp(24));
+                Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
+        playerParams.setMargins(CARD_MARGIN, 0, CARD_MARGIN, dp(24));
         containerView.addView(playerLayout, playerParams);
         containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
         containerView.addView(actionBar);
