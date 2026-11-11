@@ -586,6 +586,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
     };
 
+    // a view of no alpha counts as gone to a screen reader, which then loses its place
+    private static final float HIDDEN_BUTTON_ALPHA = 1 / 255f;
+
     boolean ctrlPressed = false;
     boolean shiftPressed = false;
 
@@ -6237,9 +6240,9 @@ public class ChatActivityEnterView extends FrameLayout implements
             preferences.edit().putBoolean(isChannel ? "currentModeVideoChannel" : "currentModeVideo", visible).apply();
         }
         audioVideoSendButton.setState(isInVideoMode() ? ChatActivityEnterViewAnimatedIconView.State.VIDEO : ChatActivityEnterViewAnimatedIconView.State.VOICE, animated);
-        audioVideoSendButton.setContentDescription(getString(isInVideoMode() ? R.string.AccDescrVideoMessage : R.string.AccDescrVoiceMessage));
+        audioVideoSendButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         audioVideoButtonContainer.setContentDescription(getString(isInVideoMode() ? R.string.AccDescrVideoMessage : R.string.AccDescrVoiceMessage));
-        audioVideoSendButton.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
+        audioVideoButtonContainer.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
     }
 
     public boolean isRecordingAudioVideo() {
@@ -9042,7 +9045,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 iconChanges.playTogether(ObjectAnimator.ofFloat(controlsView, View.ALPHA, 1));
             }
             if (audioVideoSendButton != null) {
-                iconChanges.playTogether(ObjectAnimator.ofFloat(audioVideoButtonContainer, View.ALPHA, 0));
+                iconChanges.playTogether(ObjectAnimator.ofFloat(audioVideoButtonContainer, View.ALPHA, HIDDEN_BUTTON_ALPHA));
             }
             if (botCommandsMenuButton != null) {
                 iconChanges.playTogether(
