@@ -327,6 +327,35 @@ public class SiblingRecyclerPagerLayout extends FrameLayout implements NestedScr
         addView(commonLayer, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
+    /**
+     * The pager is the bottom layer, under the common list and the tabs, so a screen reader, which goes
+     * through the layers in that order, read the page before the header above it and the tabs that
+     * choose it. It goes as the screen shows them: the common rows, the tabs, then the page.
+     */
+    @Override
+    public void addChildrenForAccessibility(java.util.ArrayList<View> outChildren) {
+        final int start = outChildren.size();
+        super.addChildrenForAccessibility(outChildren);
+        final java.util.List<View> added = new java.util.ArrayList<>(outChildren.subList(start, outChildren.size()));
+        java.util.Collections.sort(added, (x, y) -> Integer.compare(accessibilityLayer(x), accessibilityLayer(y)));
+        for (int i = 0; i < added.size(); i++) {
+            outChildren.set(start + i, added.get(i));
+        }
+    }
+
+    private int accessibilityLayer(View view) {
+        while (view != null && view.getParent() != this) {
+            view = view.getParent() instanceof View ? (View) view.getParent() : null;
+        }
+        if (view == commonLayer) {
+            return 0;
+        }
+        if (view != null && view == tabs) {
+            return 1;
+        }
+        return 2;
+    }
+
     /** Sets the live geometry provider and requests layout; call invalidateGeometry() on changes. */
     public void setGeometry(@NonNull Geometry value) {
         geometry = value;
