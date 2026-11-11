@@ -245,6 +245,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         setVisibility(VISIBLE);
         opened = true;
         openedAt = SystemClock.uptimeMillis();
+        hideScreenFromAccessibility();
         startAnimation();
         bar.setMenuOverlay(this, item);
         computeStartRect();
@@ -289,6 +290,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         menuW = menuH = wobble = 0;
         clearFocus();
         setVisibility(GONE);
+        restoreScreenAccessibility();
         restorePopupLook();
         final ActionBarMenuItem wasItem = item;
         final MenuOverlayHost wasBar = bar;
@@ -306,6 +308,63 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
             onClosed = null;
             r.run();
         }
+    }
+
+    private final ArrayList<View> hiddenFromAccessibility = new ArrayList<>();
+    private final ArrayList<Integer> hiddenImportance = new ArrayList<>();
+
+    // the menu is not a window of its own, so hide the screen under it and move the focus into it
+    private void hideScreenFromAccessibility() {
+        if (!AndroidUtilities.isAccessibilityTouchExplorationEnabled() || !hiddenFromAccessibility.isEmpty() || !(getParent() instanceof ViewGroup)) {
+            return;
+        }
+        final ViewGroup parent = (ViewGroup) getParent();
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            final View child = parent.getChildAt(i);
+            if (child == this) {
+                continue;
+            }
+            hiddenFromAccessibility.add(child);
+            hiddenImportance.add(child.getImportantForAccessibility());
+            child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
+        final View content = this.content;
+        if (content != null) {
+            content.postDelayed(() -> {
+                if (opened && this.content == content) {
+                    final View first = firstFocusable(content);
+                    (first != null ? first : content).performAccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+                }
+            }, 100);
+        }
+    }
+
+    private void restoreScreenAccessibility() {
+        for (int i = 0; i < hiddenFromAccessibility.size(); i++) {
+            hiddenFromAccessibility.get(i).setImportantForAccessibility(hiddenImportance.get(i));
+        }
+        hiddenFromAccessibility.clear();
+        hiddenImportance.clear();
+    }
+
+    @Nullable
+    private static View firstFocusable(View view) {
+        if (view.getVisibility() != VISIBLE) {
+            return null;
+        }
+        if (view.isClickable() || view.isFocusable() && view.getContentDescription() != null) {
+            return view;
+        }
+        if (view instanceof ViewGroup) {
+            final ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                final View found = firstFocusable(group.getChildAt(i));
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 
     /** How the popup layouts looked as popups: the same sub menu may open in a popup window later (one with a view on top). */
