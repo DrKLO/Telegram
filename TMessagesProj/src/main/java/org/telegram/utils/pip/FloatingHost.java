@@ -42,6 +42,7 @@ import androidx.media3.common.C;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
@@ -586,11 +587,14 @@ final class FloatingHost {
         AndroidUtilities.cancelRunOnUIThread(progressRunnable);
         if (content.isPlaying()) {
             playPauseButton.setImageResource(R.drawable.pip_pause_large);
+            playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPause));
             AndroidUtilities.runOnUIThread(progressRunnable, 500);
         } else if (isVideoCompleted) {
             playPauseButton.setImageResource(R.drawable.pip_replay_large);
+            playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
         } else {
             playPauseButton.setImageResource(R.drawable.pip_play_large);
+            playPauseButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
         }
     }
 
@@ -1042,6 +1046,9 @@ final class FloatingHost {
         ThemeBind.selectorBackground(closeButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
         closeButton.setPadding(padding, padding, padding, padding);
         closeButton.setOnClickListener(v -> session.dismiss());
+        // the floating window that replaced the one of calls and videos left its buttons unnamed, as
+        // the old one had them: Close and Open
+        closeButton.setContentDescription(LocaleController.getString(R.string.Close));
         controlsView.addView(closeButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, margin, 0));
 
         final ImageView expandButton = new ImageView(context);
@@ -1050,6 +1057,7 @@ final class FloatingHost {
         ThemeBind.selectorBackground(expandButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
         expandButton.setPadding(padding, padding, padding, padding);
         expandButton.setOnClickListener(v -> session.expand());
+        expandButton.setContentDescription(LocaleController.getString(R.string.Open));
         controlsView.addView(expandButton, LayoutHelper.createFrame(buttonSize, buttonSize, Gravity.RIGHT, 0, margin, buttonSize + margin + 6, 0));
 
         playPauseButton = new ImageView(context);
