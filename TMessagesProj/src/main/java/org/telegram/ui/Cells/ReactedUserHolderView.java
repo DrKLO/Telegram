@@ -259,7 +259,7 @@ public class ReactedUserHolderView extends FrameLayout implements Theme.Colorabl
                 }
                 hasReactImage = true;
             }
-            contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), visibleReaction.emojicon != null ? visibleReaction.emojicon : reaction);
+            contentDescription = LocaleController.formatString("AccDescrReactedWith", R.string.AccDescrReactedWith, titleView.getText(), MessageObject.describeReaction(currentAccount, reaction));
         } else {
             if (reactView != null) {
                 reactView.setAnimatedEmojiDrawable(null);
