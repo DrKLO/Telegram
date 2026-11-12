@@ -132,7 +132,7 @@ class ChatMessagePoll {
     private boolean pressedVoteIsMedia;
     int mediaPressedIndex = PollAttachedMediaPack.INDEX_NONE;
     private float timerTransitionProgress;
-    private TLRPC.PollResults lastResultsObj;
+    TLRPC.PollResults lastResultsObj;
     AvatarsListDrawable recentVotersDrawable;
     private Paint cutAvatarPaint;
     private Paint checkPaint;
@@ -520,6 +520,7 @@ class ChatMessagePoll {
                                 button.pollButtonDrawable.setVotersVisible(isCouterVisible, prevButton != null && !messageIdChanged);
                                 button.pollButtonDrawable.setVotersCount(answer.voters, prevButton != null && !messageIdChanged);
                                 button.pollButtonDrawable.setRecentVoters(answer.recent_voters, prevButton != null && !messageIdChanged);
+                                button.recentVoters = answer.recent_voters;
 
                                 final float votersCountWidth = button.pollButtonDrawable.getVotersCountTargetWidth();
                                 button.moveTitleByCounter = isTitleRtl && titleLinesCount == 1 && (titleLastLineAvail - dp(10)) > votersCountWidth;
