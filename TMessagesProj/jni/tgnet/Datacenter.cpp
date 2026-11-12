@@ -194,10 +194,16 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
     }
 }
 
+bool Datacenter::shouldUseTemporaryAddresses(uint32_t flags) const {
+    return flags == 0 && (authKeyPerm == nullptr || (PFS_ENABLED && authKeyTemp == nullptr)) &&
+           !addressesIpv4Temp.empty() &&
+           (!temporaryAddressFallbackExhausted || addressesIpv4.empty());
+}
+
 TcpAddress *Datacenter::getCurrentAddress(uint32_t flags) {
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (shouldUseTemporaryAddresses(flags)) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -255,7 +261,7 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
     uint32_t currentAddressNum;
     uint32_t currentPortNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (shouldUseTemporaryAddresses(flags)) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -375,7 +381,8 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
     uint32_t currentPortNum;
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    const bool usingImplicitTemporaryAddresses = shouldUseTemporaryAddresses(flags);
+    if (usingImplicitTemporaryAddresses) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -417,6 +424,15 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
         } else {
             repeatCheckingAddresses = true;
             currentAddressNum = 0;
+            // A failed emergency route must not trap auth-key recovery forever.
+            // Explicit temporary/config-fetch connections keep their own retries.
+            if (usingImplicitTemporaryAddresses && !addressesIpv4.empty()) {
+                temporaryAddressFallbackExhausted = true;
+            } else if (flags == 0 && temporaryAddressFallbackExhausted) {
+                // If ordinary routes also fail, retry the emergency routes on
+                // the next cycle. Neither list should starve the other forever.
+                temporaryAddressFallbackExhausted = false;
+            }
         }
         currentPortNum = 0;
     }
@@ -444,7 +460,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
 
 bool Datacenter::isCustomPort(uint32_t flags) {
     uint32_t currentPortNum;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (shouldUseTemporaryAddresses(flags)) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -500,6 +516,18 @@ void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_
     TcpAddress *currentTcpAddress = getCurrentAddress(flags);
     std::string currentAddress = currentTcpAddress != nullptr ? currentTcpAddress->address : "";
     if ((flags & TcpAddressFlagTemp) != 0) {
+        // Receiving the same failing emergency config again is not a new route.
+        const bool changed = addressesIpv4Temp.size() != newAddresses.size() ||
+            !std::is_permutation(addressesIpv4Temp.begin(), addressesIpv4Temp.end(), newAddresses.begin(),
+                        [](const TcpAddress &a, const TcpAddress &b) {
+                            return a.address == b.address && a.port == b.port &&
+                                   a.flags == b.flags && a.secret == b.secret;
+                        });
+        if (changed) {
+            temporaryAddressFallbackExhausted = false;
+            currentAddressNumIpv4Temp = 0;
+            currentPortNumIpv4Temp = 0;
+        }
         addressesIpv4Temp = newAddresses;
     } else if ((flags & TcpAddressFlagDownload) != 0) {
         if ((flags & TcpAddressFlagIpv6) != 0) {
