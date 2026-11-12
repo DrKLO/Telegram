@@ -302,8 +302,26 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable, Them
             text.cancelAnimation();
         }
         text.setText(newText, animated, moveDown);
-        setContentDescription(newText);
+        accessibilityText = newText;
+        updateAccessibilityName();
         invalidate();
+    }
+
+    /*
+     * The button is named by its words and by the line under them. Each of the two set the name to
+     * its own words alone, so the line under them, set after, took the place of the words, and a
+     * button with no line under it (setSubText(null)) was left with no name at all.
+     */
+    private CharSequence accessibilityText, accessibilitySubText;
+
+    private void updateAccessibilityName() {
+        if (android.text.TextUtils.isEmpty(accessibilitySubText)) {
+            setContentDescription(accessibilityText);
+        } else if (android.text.TextUtils.isEmpty(accessibilityText)) {
+            setContentDescription(accessibilitySubText);
+        } else {
+            setContentDescription(android.text.TextUtils.concat(accessibilityText, ", ", accessibilitySubText));
+        }
     }
 
     public TextPaint getTextPaint() {
@@ -331,7 +349,8 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable, Them
             subText.cancelAnimation();
         }
 
-        setContentDescription(newText);
+        accessibilitySubText = newText;
+        updateAccessibilityName();
         invalidate();
         if (subTextVisible && !isNewTextVisible) {
             cleanSubTextVisibleAnimator();
