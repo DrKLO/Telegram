@@ -10329,7 +10329,13 @@ public class MessagesController extends BaseController implements NotificationCe
             if (onlyHistory == 1) {
                 getSecretChatHelper().sendClearHistoryMessage(getEncryptedChat(encryptedId), null);
             } else {
-                getSecretChatHelper().declineSecretChat(encryptedId, revoke);
+                TLRPC.EncryptedChat secretChat = getEncryptedChat(encryptedId);
+                if (secretChat instanceof TLRPC.TL_encryptedChatRequested) {
+                    // pending requests are just dropped here, other devices might still want them
+                    getNotificationsController().cancelSecretChatRequestNotification(encryptedId);
+                } else if (secretChat != null) {
+                    getSecretChatHelper().declineSecretChat(encryptedId, revoke);
+                }
             }
         }
     }

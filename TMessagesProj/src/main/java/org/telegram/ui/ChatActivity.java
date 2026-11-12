@@ -108,6 +108,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Space;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
@@ -491,6 +492,8 @@ public class ChatActivity extends BaseFragment implements
     private boolean bottomOverlayLinks;
     private LinkSpanDrawable.LinksTextView bottomOverlayLinksText;
     private TextView bottomOverlayText;
+    private LinearLayout secretChatRequestLayout;
+    private boolean secretChatRequestHandled;
     private TextView bottomOverlayStartButton;
     private RadialProgressView bottomOverlayProgress;
     private int bottomOverlayProgressColorKey = Theme.key_featuredStickers_buttonText;
@@ -8410,6 +8413,16 @@ public class ChatActivity extends BaseFragment implements
         ThemeBind.textColor(bottomOverlayText, Theme.key_chat_secretChatStatusText, getResourceProvider());
         bottomOverlayText.setPadding(dp(24), 0, dp(24), 0);
         bottomOverlay.addView(bottomOverlayText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+
+        secretChatRequestLayout = new LinearLayout(context);
+        secretChatRequestLayout.setVisibility(View.GONE);
+        secretChatRequestLayout.addView(createSecretChatRequestButton(context, R.string.Decline, Theme.key_text_RedBold, v -> showDeclineSecretChatAlert()), LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+        secretChatRequestLayout.addView(createSecretChatRequestButton(context, R.string.SecretChatRequestIgnore, Theme.key_chat_secretChatStatusText, v -> {
+            secretChatRequestHandled = true;
+            getMessagesController().deleteDialog(dialog_id, 0);
+        }), LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+        secretChatRequestLayout.addView(createSecretChatRequestButton(context, R.string.SecretChatRequestJoin, Theme.key_chat_fieldOverlayText, v -> getSecretChatHelper().acceptSecretChat(currentEncryptedChat)), LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f));
+        bottomOverlay.addView(secretChatRequestLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         
         
         bottomChannelButtonsLayout = new ChatActivityChannelButtonsLayout(context, resourceProvider, blurredBackgroundButtonsColorProvider, glassBackgroundDrawableFactory) {
@@ -19482,10 +19495,44 @@ public class ChatActivity extends BaseFragment implements
         }
     };
 
+    private TextView createSecretChatRequestButton(Context context, int text, int colorKey, View.OnClickListener listener) {
+        TextView button = new TextView(context);
+        button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        button.setTypeface(AndroidUtilities.bold());
+        button.setGravity(Gravity.CENTER);
+        button.setText(LocaleController.getString(text));
+        ThemeBind.textColor(button, colorKey, getResourceProvider());
+        ThemeBind.selectorBackground(button, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2), null, ThemeBind.of(Theme.key_listSelector), getResourceProvider());
+        button.setOnClickListener(listener);
+        return button;
+    }
+
+    private void showDeclineSecretChatAlert() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        AlertDialog dialog = new AlertDialog.Builder(getParentActivity(), themeDelegate)
+            .setTitle(LocaleController.getString(R.string.SecretChatRequestDeclineTitle))
+            .setMessage(LocaleController.getString(R.string.SecretChatRequestDeclineText))
+            .setPositiveButton(LocaleController.getString(R.string.Decline), (d, w) -> {
+                secretChatRequestHandled = true;
+                getSecretChatHelper().declineSecretChat(currentEncryptedChat.id, false);
+                getMessagesController().deleteDialog(dialog_id, 0);
+            })
+            .setNegativeButton(LocaleController.getString(R.string.Cancel), null)
+            .create();
+        showDialog(dialog);
+        TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (button != null) {
+            ThemeBind.textColor(button, Theme.key_text_RedBold, getResourceProvider());
+        }
+    }
+
     private void updateSecretStatus() {
         if (bottomOverlay == null) {
             return;
         }
+        secretChatRequestLayout.setVisibility(View.GONE);
         boolean hideKeyboard = false;
         bottomOverlayText.setBackground(null);
         bottomOverlayText.setOnClickListener(null);
@@ -19554,7 +19601,12 @@ public class ChatActivity extends BaseFragment implements
                 return;
             }
             if (currentEncryptedChat instanceof TLRPC.TL_encryptedChatRequested) {
-                bottomOverlayText.setText(LocaleController.getString(R.string.EncryptionProcessing));
+                if (getSecretChatHelper().isAcceptingSecretChat(currentEncryptedChat.id)) {
+                    bottomOverlayText.setText(LocaleController.getString(R.string.EncryptionProcessing));
+                } else {
+                    bottomOverlayText.setText("");
+                    secretChatRequestLayout.setVisibility(View.VISIBLE);
+                }
                 bottomOverlay.setVisibility(View.VISIBLE);
                 chatActivityEnterView.setVisibility(View.INVISIBLE);
                 hideKeyboard = true;
@@ -24985,6 +25037,9 @@ public class ChatActivity extends BaseFragment implements
             long did = (Long) args[0];
             long topicId = args[1] instanceof Long ? (Long) args[1]: 0;
             if (did == dialog_id && getTopicId() == topicId) {
+                if (currentEncryptedChat instanceof TLRPC.TL_encryptedChatRequested && !secretChatRequestHandled && !inPreviewMode && getParentActivity() != null) {
+                    Toast.makeText(getParentActivity(), LocaleController.getString(R.string.SecretChatRequestGone), Toast.LENGTH_SHORT).show();
+                }
                 if (parentLayout != null && parentLayout.getLastFragment() == this) {
                     finishFragment();
                 } else {
