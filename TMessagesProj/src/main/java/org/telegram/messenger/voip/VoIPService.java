@@ -502,6 +502,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("bt headset state = " + intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0));
 				}
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+					// The HFP profile reports "connected" before the headset shows up among communication devices,
+					// so routing to it right away fails. Trust the communication device list instead; the
+					// AudioDeviceCallback re-checks it once the headset becomes available.
+					checkUpdateBluetoothHeadset();
+					return;
+				}
 				updateBluetoothHeadsetState(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED) == BluetoothProfile.STATE_CONNECTED);
 			} else if (AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED.equals(intent.getAction())) {
 				int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
@@ -4798,7 +4805,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "telegram-voip");
 			cpuWakelock.acquire();
 
-			btAdapter = am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
+			// On Android 12+ call audio is routed with setCommunicationDevice, which does not depend on SCO "off call" support.
+			// Some firmwares (e.g. ColorOS) report isBluetoothScoAvailableOffCall() == false while no headset is connected,
+			// which would disable headset tracking for the whole call and make a headset connected mid-call unusable.
+			btAdapter = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S || am.isBluetoothScoAvailableOffCall() ? BluetoothAdapter.getDefaultAdapter() : null;
 
 			IntentFilter filter = new IntentFilter();
 			filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
