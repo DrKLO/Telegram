@@ -14,6 +14,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -307,6 +308,7 @@ public class HintView extends FrameLayout {
 
         setTag(1);
         setVisibility(VISIBLE);
+        announceForAccessibility();
         if (visibleListener != null) {
             visibleListener.onVisible(true);
         }
@@ -354,6 +356,7 @@ public class HintView extends FrameLayout {
 
         setTag(1);
         setVisibility(VISIBLE);
+        announceForAccessibility();
         if (visibleListener != null) {
             visibleListener.onVisible(true);
         }
@@ -504,6 +507,19 @@ public class HintView extends FrameLayout {
                 setTranslationX(getTranslationX() + diff);
                 arrowImageView.setTranslationX(arrowX - diff);
             }
+        }
+    }
+
+    // a hint appears beside what it is about and takes itself away again after a couple of
+    // seconds. Nothing is focused and nothing is said, so what it holds — often the reason a
+    // button did nothing — never reaches a screen reader at all
+    private void announceForAccessibility() {
+        if (textView == null || !AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+            return;
+        }
+        final CharSequence text = textView.getText();
+        if (!TextUtils.isEmpty(text)) {
+            announceForAccessibility(text);
         }
     }
 
