@@ -9399,7 +9399,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     avatarImage.setHasStories(needInsetForStories());
                 }
                 if (chatId != 0) {
-                    boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
+                    boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && chatInfo != null && chatInfo.stargifts_available;
                     otherItem.setSubItemShown(gift_premium, gift);
                     if (actionsView != null) {
                         actionsView.set(ProfileActionsView.KEY_GIFT, gift);
@@ -10701,7 +10701,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         fetchUsersFromChannelInfo();
         if (chatId != 0) {
-            boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked() && chatInfo != null && chatInfo.stargifts_available;
+            boolean gift = !BuildVars.IS_BILLING_UNAVAILABLE && chatInfo != null && chatInfo.stargifts_available;
             otherItem.setSubItemShown(gift_premium, gift);
             if (actionsView != null) {
                 actionsView.set(ProfileActionsView.KEY_GIFT, gift);
@@ -11018,7 +11018,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!getMessagesController().premiumFeaturesBlocked()) {
                     premiumRow = rowCount++;
                 }
-                if (getMessagesController().starsPurchaseAvailable()) {
+                final StarsController starsController = StarsController.getInstance(currentAccount);
+                final TL_stars.StarsAmount starsBalance = starsController.getBalance();
+                if (!getMessagesController().premiumPurchaseBlocked() || starsController.balanceAvailable() && (starsBalance.positive() || starsBalance.negative())) {
                     starsRow = rowCount++;
                 }
                 StarsController.getInstance(currentAccount, true).getBalance();
@@ -11028,7 +11030,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!getMessagesController().premiumFeaturesBlocked()) {
                     businessRow = rowCount++;
                 }
-                if (!getMessagesController().premiumPurchaseBlocked()) {
+                if (!getMessagesController().premiumPurchaseBlocked() || starsController.balanceAvailable() && starsBalance.positive()) {
                     premiumGiftingRow = rowCount++;
                 }
                 if (premiumRow >= 0 || starsRow >= 0 || tonRow >= 0 || businessRow >= 0 || premiumGiftingRow >= 0) {
@@ -12407,7 +12409,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(delete_contact, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteContact));
                 }
                 if (!UserObject.isDeleted(user) && !isBot && currentEncryptedChat == null && !userBlocked && userId != 333000 && userId != 777000 && userId != 42777) {
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user) && !getMessagesController().premiumPurchaseBlocked()) {
+                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !user.self && !user.bot && !MessagesController.isSupportUser(user)) {
                         StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGift));
                         giftAction = true;
@@ -12499,7 +12501,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         otherItem.addSubItem(share, R.drawable.msg_share, LocaleController.getString(R.string.BotShare));
                         shareAction = !chat.creator;
                     }
-                    if (!BuildVars.IS_BILLING_UNAVAILABLE && !getMessagesController().premiumPurchaseBlocked()) {
+                    if (!BuildVars.IS_BILLING_UNAVAILABLE) {
                         StarsController.getInstance(currentAccount).loadStarGifts();
                         otherItem.addSubItem(gift_premium, R.drawable.msg_gift_premium, LocaleController.getString(R.string.ProfileSendAGiftToChannel));
                         otherItem.setSubItemShown(gift_premium, chatInfo != null && chatInfo.stargifts_available);
@@ -13651,7 +13653,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     isTopic || bizHoursRow != -1 || bizLocationRow != -1
                             );
 
-                            containsGift = !myProfile && today && !getMessagesController().premiumPurchaseBlocked();
+                            containsGift = !myProfile && today;
                         }
                     } else if (position == phoneRow) {
                         String text;
@@ -14052,7 +14054,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == starsRow) {
                         StarsController c = StarsController.getInstance(currentAccount);
                         long balance = c.getBalance().amount;
-                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.MenuTelegramStars), c.balanceAvailable() && balance > 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : "", new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().goldenStarMenuDrawable, dp(24), dp(24)), true);
+                        textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.MenuTelegramStars), c.balanceAvailable() && balance != 0 ? StarsIntroActivity.formatStarsAmount(c.getBalance(), 0.85f, ' ') : "", new AnimatedEmojiDrawable.WrapSizeDrawable(PremiumGradient.getInstance().goldenStarMenuDrawable, dp(24), dp(24)), true);
                         textCell.setImageLeft(23);
                     } else if (position == tonRow) {
                         StarsController c = StarsController.getTonInstance(currentAccount);

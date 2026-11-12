@@ -477,6 +477,9 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         twoButtonsLayout.addView(withdrawButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 1, 0, 0, 0, 0));
 
         balanceLayout.addView(buttonsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER, 20, 17, 20, 0));
+        if (!getMessagesController().starsPurchaseAvailable() || getMessagesController().premiumPurchaseBlocked()) {
+            buttonsLayout.setVisibility(View.GONE);
+        }
 
         giftButton = new ButtonWithCounterView(getContext(), false, resourceProvider);
         giftButton.setRound();
@@ -844,7 +847,7 @@ public class StarsIntroActivity extends GradientHeaderActivity implements Notifi
         items.add(UItem.asCustom(balanceLayout));
 
         if (giftButton != null) {
-            giftButton.setVisibility(getMessagesController().starsGiftsEnabled ? View.VISIBLE : View.GONE);
+            giftButton.setVisibility(getMessagesController().starsGiftsEnabled && !getMessagesController().premiumPurchaseBlocked() ? View.VISIBLE : View.GONE);
         }
 
         items.add(UItem.asShadow(null));

@@ -929,7 +929,7 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
     public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         boolean pushedTopView = false;
-        if (!self && dialogId >= 0 && !(userSettings != null && userSettings.disallow_premium_gifts)) {
+        if (!self && dialogId >= 0 && !MessagesController.getInstance(currentAccount).premiumPurchaseBlocked() && !(userSettings != null && userSettings.disallow_premium_gifts)) {
             items.add(UItem.asCustom(topView));
             pushedTopView = true;
             items.add(UItem.asCustom(premiumHeaderView));
