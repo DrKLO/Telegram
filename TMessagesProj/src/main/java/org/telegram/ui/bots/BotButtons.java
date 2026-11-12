@@ -9,7 +9,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.graphics.Rect;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.view.Gravity;
@@ -17,8 +19,14 @@ import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
+import androidx.customview.widget.ExploreByTouchHelper;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedColor;
@@ -29,6 +37,8 @@ import org.telegram.ui.Components.ButtonBounce;
 import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
+
+import java.util.List;
 
 public class BotButtons extends FrameLayout {
 
@@ -136,6 +146,74 @@ public class BotButtons extends FrameLayout {
 
         buttons[0] = new Button();
         buttons[1] = new Button();
+
+        accessibility = new AccessibilityHelper();
+        ViewCompat.setAccessibilityDelegate(this, accessibility);
+    }
+
+    /**
+     * The main and the secondary button of a Mini App are drawn here and go by where a finger lands,
+     * so a screen reader found neither their words nor anything to press, and the steps of a Mini App
+     * that go on with them could not be taken. Each shown button is a button of its own to it, read by
+     * its words, dimmed while the app holds it inactive or busy, and pressed as a tap presses it.
+     */
+    private final AccessibilityHelper accessibility;
+
+    private class AccessibilityHelper extends ExploreByTouchHelper {
+        private final Rect rect = new Rect();
+
+        AccessibilityHelper() {
+            super(BotButtons.this);
+        }
+
+        private ButtonState stateOf(int id) {
+            return id == 0 ? state.main : state.secondary;
+        }
+
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            final Button hit = getHitButton(x, y);
+            if (hit == buttons[0] && state.main.visible) return 0;
+            if (hit == buttons[1] && state.secondary.visible) return 1;
+            return HOST_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(List<Integer> list) {
+            if (state.main.visible) list.add(0);
+            if (state.secondary.visible) list.add(1);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull AccessibilityNodeInfoCompat info) {
+            final ButtonState s = stateOf(id);
+            buttons[id].bounds.round(rect);
+            if (rect.isEmpty()) {
+                rect.set(0, 0, 1, 1);
+            }
+            info.setBoundsInParent(rect);
+            info.setClassName("android.widget.Button");
+            final String text = s.text == null ? "" : s.text;
+            info.setText(s.progressVisible ? text + ", " + LocaleController.getString(R.string.Loading) : text);
+            info.setEnabled(s.active);
+            info.addAction(AccessibilityNodeInfoCompat.ACTION_CLICK);
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, @Nullable Bundle args) {
+            if (action == AccessibilityNodeInfoCompat.ACTION_CLICK) {
+                if (whenClicked != null) {
+                    whenClicked.run(id == 0);
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    @Override
+    protected boolean dispatchHoverEvent(MotionEvent event) {
+        return accessibility.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
     }
 
     @Override
@@ -230,6 +308,7 @@ public class BotButtons extends FrameLayout {
     public void setMainState(ButtonState newState, boolean animated) {
         final int wasHeight = getTotalHeight();
         this.state.main = newState;
+        accessibility.invalidateRoot();
         buttons[0].textDrawable.cancelAnimation();
         if (newState.emojiId != 0) {
             SpannableStringBuilder ssb = new SpannableStringBuilder();
@@ -253,6 +332,7 @@ public class BotButtons extends FrameLayout {
     public void setSecondaryState(ButtonState newState, boolean animated) {
         final int wasHeight = getTotalHeight();
         this.state.secondary = newState;
+        accessibility.invalidateRoot();
         setText(buttons[1].textDrawable, newState, animated);
         invalidate();
         if (wasHeight != getTotalHeight() && whenResized != null) {
@@ -267,6 +347,7 @@ public class BotButtons extends FrameLayout {
     public void setState(ButtonsState newState, boolean animated) {
         final int wasHeight = getTotalHeight();
         this.state = newState;
+        accessibility.invalidateRoot();
         setText(buttons[0].textDrawable, newState.main, animated);
         setText(buttons[1].textDrawable, newState.secondary, animated);
         invalidate();
