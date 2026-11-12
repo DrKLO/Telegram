@@ -128,7 +128,8 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             final boolean unread = cell.currentMessageObject != null && cell.currentMessageObject.isOut() && !cell.currentMessageObject.scheduled && cell.currentMessageObject.isUnread();
             final boolean contentUnread = cell.currentMessageObject != null && cell.currentMessageObject.isContentUnread();
             final long fileSize = cell.currentMessageObject != null ? cell.currentMessageObject.loadedFileSize : 0;
-            if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize) {
+            final boolean mediaDownloaded = cell.isMediaDownloadedForAccessibility();
+            if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize || cell.accessibilityTextMediaDownloaded != mediaDownloaded) {
                 SpannableStringBuilder sb = new SpannableStringBuilder();
                 if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
                     sb.append(UserObject.getUserName(cell.currentUser));
@@ -263,6 +264,14 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         sb.append(AndroidUtilities.formatFileSize(cell.documentAttach.size));
                     }
                 }
+                // whether what the message holds is already on the phone is drawn as the
+                // button over it and was never said, though it is what decides what pressing
+                // the message does. It comes after the length and the size, where the button
+                // is drawn
+                if (cell.hasAccessibilityDownloadState()) {
+                    sb.append(", ");
+                    sb.append(getString(mediaDownloaded ? R.string.AccDescrMediaDownloaded : R.string.AccDescrMediaNotDownloaded));
+                }
                 if (cell.currentMessageObject.isVoiceTranscriptionOpen()) {
                     sb.append("\n");
                     sb.append(cell.currentMessageObject.getVoiceTranscription());
@@ -373,6 +382,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 cell.accessibilityTextUnread = unread;
                 cell.accessibilityTextContentUnread = contentUnread;
                 cell.accessibilityTextFileSize = fileSize;
+                cell.accessibilityTextMediaDownloaded = mediaDownloaded;
             }
 
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
