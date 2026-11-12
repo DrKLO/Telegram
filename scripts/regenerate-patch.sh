@@ -1,43 +1,53 @@
 #!/usr/bin/env bash
-# Regenerates custom/patches/custom-features.patch from the CURRENT working-tree
-# changes under TMessagesProj/src/main/java (new files included), relative to HEAD.
-#
-# Use after you resolved a conflict (see build-reports/patch-conflict-report.md):
-#   git checkout -b fix-patch
-#   git apply --3way custom/patches/custom-features.patch   # fix the conflict markers
-#   scripts/regenerate-patch.sh
-#
-# Only source files under TMessagesProj/src/main/java are included, so branding
-# (icons), scripts and workflows never leak into the patch.
+# Regenerates the single MyGram patch from the working-tree customizations.
+# Includes custom Java logic, app identity/branding, manifest, XML resources,
+# and Gradle package configuration. Run only after resolving conflicts.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-PATCH="custom/patches/custom-features.patch"
-SRC_PATH="TMessagesProj/src/main/java"
+PATCH="custom/patches/mygram.patch"
 
-die() { echo "regenerate-patch.sh: $*" >&2; exit 1; }
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git work tree"
+PATHS=(
+  TMessagesProj/src/main/AndroidManifest.xml
+  TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+  TMessagesProj/src/main/java/org/telegram/messenger/ContactsController.java
+  TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java
+  TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java
+  TMessagesProj/src/main/java/org/telegram/messenger/CustomHistory.java
+  TMessagesProj/src/main/java/org/telegram/messenger/MessageObject.java
+  TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+  TMessagesProj/src/main/java/org/telegram/messenger/MessagesStorage.java
+  TMessagesProj/src/main/java/org/telegram/messenger/NotificationCenter.java
+  TMessagesProj/src/main/java/org/telegram/ui/Cells/ChatMessageCell.java
+  TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+  TMessagesProj/src/main/java/org/telegram/ui/LaunchActivity.java
+  TMessagesProj/src/main/res/xml/auth.xml
+  TMessagesProj/src/main/res/xml/auth_menu.xml
+  TMessagesProj/src/main/res/xml/contacts.xml
+  TMessagesProj/src/main/res/xml/shortcuts.xml
+  TMessagesProj/src/main/res/xml/sync_contacts.xml
+  TMessagesProj/src/main/res/values/strings.xml
+  gradle.properties
+)
 
-if git ls-files -u -- "$SRC_PATH" | grep -q .; then
-  die "unresolved merge conflicts under $SRC_PATH - resolve them first"
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "not inside a git work tree" >&2; exit 1; }
+if git ls-files -u -- "${PATHS[@]}" | grep -q .; then
+  echo "unresolved merge conflicts in custom patch paths" >&2
+  exit 1
 fi
-if grep -rlE '^(<<<<<<<|>>>>>>>) ' "$SRC_PATH" >/dev/null 2>&1; then
-  die "conflict markers still present under $SRC_PATH:
-$(grep -rlE '^(<<<<<<<|>>>>>>>) ' "$SRC_PATH")"
+if grep -rlE '^(<<<<<<<|=======|>>>>>>>)' "${PATHS[@]}" >/dev/null 2>&1; then
+  echo "conflict markers remain in custom patch paths" >&2
+  exit 1
 fi
 
-git add -N -- "$SRC_PATH"                       # make new files visible to git diff (intent-to-add)
+git add -N -- "${PATHS[@]}" 2>/dev/null || true
 TMP="$(mktemp)"
-git diff --binary HEAD -- "$SRC_PATH" > "$TMP"
-[ -s "$TMP" ] || { rm -f "$TMP"; die "no changes under $SRC_PATH relative to HEAD - nothing to put in a patch"; }
-
-# The patch must describe exactly the working tree: reverse-applying it must work.
-git apply --reverse --check "$TMP" || { rm -f "$TMP"; die "generated patch does not reverse-apply cleanly"; }
-
+trap 'rm -f "$TMP"' EXIT
+git diff --binary HEAD -- "${PATHS[@]}" > "$TMP"
+[ -s "$TMP" ] || { echo "no custom changes found in the configured paths" >&2; exit 1; }
+git apply --reverse --check "$TMP" || { echo "generated patch does not reverse-apply cleanly" >&2; exit 1; }
 mkdir -p "$(dirname "$PATCH")"
-cp "$TMP" "$PATCH"; rm -f "$TMP"
-echo "Wrote $PATCH:"
-git apply --stat "$PATCH" | tail -n 20
-echo
-echo "Next: scripts/version.sh patch-bump && scripts/check-upstream.sh --record"
+cp "$TMP" "$PATCH"
+echo "Wrote $PATCH"
+git apply --stat "$PATCH"
