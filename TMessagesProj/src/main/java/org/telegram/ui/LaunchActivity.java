@@ -587,6 +587,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             case "chat":
                                 if (args != null) {
                                     ChatActivity chat = new ChatActivity(args);
+                                    long topicId = savedInstanceState.getLong("topic_id");
+                                    long chatId = args.getLong("chat_id");
+                                    if (topicId != 0 && chatId != 0) {
+                                        TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
+                                        if (ChatObject.isForum(currentChat) && !ChatObject.areTabsEnabled(currentChat) && !ChatObject.isSidebarEnabled(currentChat)) {
+                                            Bundle topicsArgs = new Bundle();
+                                            topicsArgs.putLong("chat_id", chatId);
+                                            BaseFragment topicsOrChat = TopicsFragment.getTopicsOrChat(this, topicsArgs);
+                                            if (topicsOrChat instanceof TopicsFragment) {
+                                                actionBarLayout.addFragmentToStack(topicsOrChat);
+                                            }
+                                        }
+                                        ForumUtilities.applyTopic(chat, MessagesStorage.TopicKey.of(-chatId, topicId));
+                                    }
                                     if (actionBarLayout.addFragmentToStack(chat)) {
                                         chat.restoreSelfArgs(savedInstanceState);
                                     }
@@ -8530,6 +8544,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 if (lastFragment instanceof ChatActivity && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "chat");
+                    ChatActivity chatActivity = (ChatActivity) lastFragment;
+                    if (chatActivity.isTopic && chatActivity.getChatMode() == 0) {
+                        outState.putLong("topic_id", chatActivity.getTopicId());
+                    }
                 } else if (lastFragment instanceof GroupCreateFinalActivity && args != null) {
                     outState.putBundle("args", args);
                     outState.putString("fragment", "group");

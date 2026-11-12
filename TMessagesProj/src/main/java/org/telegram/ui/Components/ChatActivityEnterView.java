@@ -6268,7 +6268,12 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (audioVideoSendButton != null) {
             audioVideoSendButton.setState(ChatActivityEnterViewAnimatedIconView.State.VOICE, false);
         }
+        // the new view didn't run recordAudioVideoRunnable: without this the record button ignores the send tap
+        calledRecordRunnable = true;
         recordingAudioVideo = true;
+        if (delegate != null) {
+            delegate.needStartRecordAudio(1);
+        }
         updateRecordInterface(RECORD_STATE_ENTER, true);
         if (once) {
             voiceOnce = true;

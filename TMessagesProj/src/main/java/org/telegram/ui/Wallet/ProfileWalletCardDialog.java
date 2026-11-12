@@ -213,8 +213,14 @@ public class ProfileWalletCardDialog extends Dialog {
         card.setDiamondOnCard(true);
         card.setProfileCard(fragment.getCurrentAccount(), user, profileCard);
         card.setCardOnClickListener(v -> {
-            if (isSelf && !dismissing) {
+            if (dismissing) return;
+            if (isSelf) {
                 WalletActivity.openWalletQRAlert(getContext(), fragment.getCurrentAccount(), fragment.getResourceProvider());
+            } else if (!TextUtils.isEmpty(profileCard.address)) {
+                WalletActivity.openWalletQRAlert(getContext(), fragment.getCurrentAccount(), profileCard.address, false, !showSendMoney ? null : () -> {
+                    afterDismiss = () -> fragment.presentFragment(new WalletSendEnterAmount(fragment.getCurrentAccount(), profileCard.address));
+                    dismiss();
+                }, fragment.getResourceProvider());
             }
         });
         card.setOnClickListener(v -> { });

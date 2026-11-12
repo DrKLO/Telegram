@@ -96,6 +96,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MenuOverlayHost;
 import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.SimpleActionBarMenuOverlay;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -584,6 +585,17 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                     FileLog.e(e);
                 }
             });
+        }
+
+        // the header has no background over the map: the title on a glass pill of the buttons' height
+        final SimpleTextView titleView = simpleActionBar.getTitleTextView();
+        if (titleView != null) {
+            titleView.setBackground(getBaseSimpleGlass().factory.create(titleView)
+                .setColorProvider(BlurredBackgroundProviderImpl.simpleActionBar(getResourceProvider()))
+                .setRadius(dp(MAP_BUTTON_DP / 2f)));
+            final Paint.FontMetricsInt metrics = titleView.getTextPaint().getFontMetricsInt();
+            final int vertical = Math.max(0, (dp(MAP_BUTTON_DP) - (metrics.descent - metrics.ascent)) / 2);
+            titleView.setPadding(dp(18), vertical, dp(18), vertical);
         }
 
         locationButton = new ImageView(context);

@@ -32,6 +32,8 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.utils.twidget.WidgetMedia;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -663,8 +665,25 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                 final TLRPC.TL_botInlineMessageRichMessage m = (TLRPC.TL_botInlineMessageRichMessage) message;
                 msg.flags2 |= TLObject.FLAG_13;
                 msg.rich_message = m.rich_message;
+            } else if (message instanceof TLRPC.TL_botInlineMessageWidget) {
+                // Laid out as a widget message; the widget itself is the inline result's preview (getDisplayRichMessage below).
+                final TLRPC.TL_botInlineMessageWidget m = (TLRPC.TL_botInlineMessageWidget) message;
+                final TLRPC.TL_messageMediaWidget media = new TLRPC.TL_messageMediaWidget();
+                media.width = m.width;
+                media.height = m.height;
+                media.payload = m.payload;
+                media.public_data = m.public_data;
+                media.public_data_hash = m.public_data_hash;
+                media.chat_data = m.chat_data;
+                media.widget_id = m.widget_id;
+                msg.message = m.message;
+                msg.entities = m.entities;
+                msg.invert_media = m.invert_media;
+                msg.flags |= 512;
+                msg.media = media;
             }
         }
+        final boolean widgetPreview = result.send_message instanceof TLRPC.TL_botInlineMessageWidget;
 
         if (photo != null) {
             TLRPC.TL_messageMediaPhoto media = new TLRPC.TL_messageMediaPhoto();
@@ -687,6 +706,21 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
         }
 
         final MessageObject messageObject = new MessageObject(currentAccount, msg, true, true) {
+            // No initializer: it may be set during the super constructor's layout.
+            private TL_iv.RichMessage widgetPreviewMessage;
+
+            @Override
+            public TL_iv.RichMessage getDisplayRichMessage() {
+                // Not a message of this chat yet: no widget of its own (state, storage, requests), only the preview.
+                if (widgetPreview) {
+                    if (widgetPreviewMessage == null) {
+                        widgetPreviewMessage = WidgetMedia.previewRichMessage(currentAccount, result);
+                    }
+                    return widgetPreviewMessage;
+                }
+                return super.getDisplayRichMessage();
+            }
+
             @Override
             public boolean isOut() {
                 return false;

@@ -1,2 +1,2 @@
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@string/com.google.firebase.crashlytics.*,@array/android_wear_capabilities,@string/default_web_client_id,@string/google_crash_reporting_api_key" />
+    tools:keep="@string/com.google.firebase.crashlytics.*,@array/android_wear_capabilities,@string/default_web_client_id,@string/google_crash_reporting_api_key,@string/google_app_id,@string/gcm_defaultSenderId,@string/google_api_key,@string/firebase_database_url,@string/google_storage_bucket,@string/project_id" />

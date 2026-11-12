@@ -307,6 +307,13 @@ public final class RichWidgetBlock extends RichMessageLayout.RichBlock
         if (message != null) WidgetMedia.onHidden(message);
     }
 
+    /** UI: the widget's engine process died (WidgetMedia): it starts afresh as when shown, from its last frame. */
+    public void restartWidget() {
+        if (!running || message == null) return;
+        stop();
+        run();
+    }
+
     /** UI: a newer layout of the message took the widget: this one keeps showing its frames only. */
     public void demote() {
         if (!running || player == null) return;

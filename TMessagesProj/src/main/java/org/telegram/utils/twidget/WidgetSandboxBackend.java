@@ -19,11 +19,20 @@ import java.util.HashMap;
 
 /**
  * Java port of upstream LitehtmlBackend.kt. Fonts, image decoding, canvas bitmaps and frame
- * recording are confined to the native renderer's worker. UI never reads these mutable objects:
- * it receives published frames (WidgetFrameNode) and immutable layer descriptions only.
+ * recording are confined to the native renderer's worker: in-process, its threads; with the isolated
+ * engine (WidgetRemoteEngine), the binder threads its calls arrive on, one at a time per engine thread,
+ * where fonts and images come defined by the engine (defineFont, defineImage). UI never reads these
+ * mutable objects: it receives published frames (WidgetFrameNode) and immutable layer descriptions only.
  */
 final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, WidgetCanvas.Resources {
     private static final long MEMORY_BUDGET = 32L * 1024 * 1024;
+    // What the engine's own limits (2000 nodes, 4000 canvas commands, 64 layers) keep far below; here they hold for
+    // an engine whose widget broke out (WidgetGate): it cannot flood this process with fonts, ops or frames.
+    private static final int MAX_FONTS = 4096, MAX_LAYERS = 256, MAX_DISPLAY_OPS = 200_000, MAX_CANVAS_WORDS = 1 << 21,
+            MAX_FRAMES_PER_SECOND = 240;
+    private static final long MAX_LIST_BYTES = 8L * 1024 * 1024;
+    private final long[] recordTimes = new long[MAX_FRAMES_PER_SECOND];
+    private int nextRecord;
     private final WidgetSandboxSession owner;
     // Written on the host thread, read by the recorder thread too (record, selectableText): concurrent.
     private final java.util.concurrent.ConcurrentHashMap<Integer, Paint> fonts = new java.util.concurrent.ConcurrentHashMap<>();
@@ -33,18 +42,21 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
     private final java.util.concurrent.ConcurrentHashMap<Integer, Bitmap> images = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<Integer, WidgetCanvas> canvases = new java.util.concurrent.ConcurrentHashMap<>();
     // Layer content lists by layer index, sent just before the frame that names them.
-    private final HashMap<Integer, JSONArray> pendingLayers = new HashMap<>();
+    private final HashMap<Integer, WidgetDisplayList> pendingLayers = new HashMap<>();
     // Parsing the pending layers' contents, for the next record's work (WidgetSandboxSession#onRecorded).
     private long layerParseNanos;
     // Layer contents of the last frame by element id, reused while their version holds.
     private HashMap<Long, LayerContent> layerContents = new HashMap<>();
     private final WidgetSandboxPainter painter = new WidgetSandboxPainter();
-    private final Rect bounds = new Rect();
     private int nextFont;
     private long imageBytes;
 
     WidgetSandboxBackend(WidgetSandboxSession owner) {
         this.owner = owner;
+    }
+
+    WidgetSandboxSession session() {
+        return owner;
     }
 
     // JNI callbacks, looked up by name. Keep rules accompany this file.
@@ -58,18 +70,37 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
      */
     float[] createFont(byte[] encodedFamilies, float size, int weight, boolean italic, byte[] encodedFeatures) {
         assertWorker();
+        return defineFont(++nextFont, encodedFamilies, size, weight, italic, encodedFeatures);
+    }
+
+    /**
+     * A font the engine measures with, answered by its metrics (createFont): here createFont's, from the isolated
+     * engine its own id. Any thread.
+     */
+    float[] defineFont(int id, byte[] encodedFamilies, float size, int weight, boolean italic, byte[] encodedFeatures) {
+        if (fonts.size() >= MAX_FONTS && !fonts.containsKey(id)) throw new IllegalArgumentException("Too many fonts");
+        Paint[] paints = paints(text(encodedFamilies), size, weight, italic, text(encodedFeatures), owner.density);
+        fonts.put(id, paints[0]);
+        deviceFonts.put(id, paints[1]);
+        return metrics(id, paints[1], owner.density, new Rect());
+    }
+
+    /** The font at `size` CSS px and at the device's size (createFont): {css, device}. */
+    static Paint[] paints(String families, float size, int weight, boolean italic, String encodedFeatures, float density) {
+        if (!(size > 0 && size <= 10_000)) size = 16;
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.SUBPIXEL_TEXT_FLAG);
         paint.setTextSize(size);
-        paint.setTypeface(typeface(text(encodedFamilies), weight, italic));
-        String features = featureSettings(text(encodedFeatures));
+        paint.setTypeface(typeface(families, weight, italic));
+        String features = featureSettings(encodedFeatures);
         if (features != null) paint.setFontFeatureSettings(features);
-        float density = owner.density;
         Paint device = new Paint(paint);
         device.setTextSize(size * density);
+        return new Paint[] {paint, device};
+    }
+
+    /** createFont's answer: the id, then ascent, descent, height, x-height and the width of "0", CSS px. */
+    static float[] metrics(int id, Paint device, float density, Rect bounds) {
         Paint.FontMetrics metrics = device.getFontMetrics();
-        int id = ++nextFont;
-        fonts.put(id, paint);
-        deviceFonts.put(id, device);
         device.getTextBounds("x", 0, 1, bounds);
         return new float[] {
             id,
@@ -110,7 +141,34 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
     }
 
     float[] loadImage(int id, byte[] encodedUrl) {
-        String url = text(encodedUrl);
+        Bitmap image = decodeImage(text(encodedUrl), imageBytes);
+        if (image == null) return null;
+        putImage(id, image);
+        return new float[] {image.getWidth(), image.getHeight()};
+    }
+
+    /**
+     * An image the isolated engine decoded (WidgetEngineBackend#loadImage). It comes from untrusted code: held to the
+     * limits loadImage keeps here.
+     */
+    void defineImage(int id, Bitmap image) {
+        if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0
+                || (long) image.getWidth() * image.getHeight() > MAX_IMAGE_PIXELS
+                || imageBytes + image.getAllocationByteCount() > MAX_IMAGE_BYTES) return;
+        putImage(id, image);
+    }
+
+    private void putImage(int id, Bitmap image) {
+        // Do not recycle bitmaps: previously published frames can still reference them.
+        Bitmap old = images.put(id, image);
+        imageBytes += image.getAllocationByteCount();
+        if (old != null) imageBytes -= old.getAllocationByteCount();
+    }
+
+    static final long MAX_IMAGE_PIXELS = 4 * 1024 * 1024, MAX_IMAGE_BYTES = 32L * 1024 * 1024;
+
+    /** A data: URL's image within the limits, `imageBytes` already taken; null when it is none. */
+    static Bitmap decodeImage(String url, long imageBytes) {
         int comma = url.indexOf(',');
         if (!url.startsWith("data:") || comma < 0 || url.length() > 2 * 1024 * 1024) return null;
         String meta = url.substring(5, comma);
@@ -131,18 +189,13 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
         BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
         if (options.outWidth <= 0
                 || options.outHeight <= 0
-                || (long) options.outWidth * options.outHeight > 4 * 1024 * 1024) return null;
+                || (long) options.outWidth * options.outHeight > MAX_IMAGE_PIXELS) return null;
         long decodedBytes = (long) options.outWidth * options.outHeight * 4;
-        if (imageBytes + decodedBytes > 32L * 1024 * 1024) return null;
+        if (imageBytes + decodedBytes > MAX_IMAGE_BYTES) return null;
         options.inJustDecodeBounds = false;
         Bitmap image = WidgetPng.decodeBroken(bytes);
         if (image == null) image = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
-        if (image == null) return null;
-        // Do not recycle bitmaps: previously published frames can still reference them.
-        Bitmap old = images.put(id, image);
-        imageBytes += image.getAllocationByteCount();
-        if (old != null) imageBytes -= old.getAllocationByteCount();
-        return new float[] {image.getWidth(), image.getHeight()};
+        return image;
     }
 
     void canvasRun(int id, int width, int height, int[] ops) throws Exception {
@@ -152,6 +205,7 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
             return;
         }
         checkCanvasSize(id, width, height);
+        if (ops.length > MAX_CANVAS_WORDS) throw new IllegalArgumentException("Canvas batch");
         WidgetCanvas surface = canvases.get(id);
         if (surface == null) {
             surface = new WidgetCanvas(id);
@@ -236,7 +290,8 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
     void recordLayer(int index, int version, byte[] encodedList) throws Exception {
         assertWorker();
         long started = System.nanoTime();
-        pendingLayers.put(index, new JSONArray(text(encodedList)));
+        if (index < 0 || index >= MAX_LAYERS || encodedList.length > MAX_LIST_BYTES) throw new IllegalArgumentException("Layer");
+        pendingLayers.put(index, WidgetDisplayList.parse(encodedList, MAX_DISPLAY_OPS));
         layerParseNanos += System.nanoTime() - started;
     }
 
@@ -252,6 +307,19 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
             int builds)
             throws Exception {
         assertWorker();
+        if (encodedList.length > MAX_LIST_BYTES) {
+            pendingLayers.clear();
+            throw new IllegalArgumentException("Display list");
+        }
+        // More frames than any refresh rate: dropped, the next one has the same content.
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - recordTimes[nextRecord] < 1000) {
+            pendingLayers.clear();
+            layerParseNanos = 0;
+            return;
+        }
+        recordTimes[nextRecord] = now;
+        nextRecord = (nextRecord + 1) % recordTimes.length;
         owner.lastList = encodedList;
         owner.lastComposition = encodedComposition;
         Trace.beginSection("WidgetSandbox:Record");
@@ -259,7 +327,7 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
         double clockOffset = nativeClock - started / 1e9;
         WidgetFrameNode node = WidgetFrameNode.create("widget-sandbox-content", 0, 0, width, height);
         try {
-            JSONArray list = new JSONArray(text(encodedList));
+            WidgetDisplayList list = WidgetDisplayList.parse(encodedList, MAX_DISPLAY_OPS);
             JSONObject composition = new JSONObject(text(encodedComposition));
             long parsed = System.nanoTime();
             Canvas canvas = node.beginRecording();
@@ -281,7 +349,7 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
                     (System.nanoTime() - started) / 1e6f,
                     passes,
                     builds,
-                    list.length(),
+                    list.count,
                     text);
         } catch (Exception error) {
             node.discard();
@@ -311,7 +379,7 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
             int right = (int) Math.ceil((box.optDouble(0) + box.optDouble(2)) * density);
             int bottom = (int) Math.ceil((box.optDouble(1) + box.optDouble(3)) * density);
             LayerContent content = layerContents.get(id);
-            JSONArray list = pendingLayers.get(i);
+            WidgetDisplayList list = pendingLayers.get(i);
             if (list != null) {
                 WidgetFrameNode node = WidgetFrameNode.create("widget-sandbox-layer", left, top, right, bottom);
                 Canvas canvas = node.beginRecording();
@@ -374,11 +442,11 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
             throw new IllegalStateException("Native layout and recording must run off UI");
     }
 
-    private static String text(byte[] value) {
-        return new String(value, StandardCharsets.UTF_8);
+    static String text(byte[] value) {
+        return value == null ? "" : new String(value, StandardCharsets.UTF_8);
     }
 
-    private static Typeface typeface(String families, int weight, boolean italic) {
+    static Typeface typeface(String families, int weight, boolean italic) {
         Typeface base = Typeface.SANS_SERIF;
         for (String raw : families.split(",")) {
             String name =

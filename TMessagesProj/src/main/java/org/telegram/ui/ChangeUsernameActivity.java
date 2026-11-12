@@ -577,21 +577,16 @@ public class ChangeUsernameActivity extends BaseFragment {
                 needReorder = true;
             }
 
-            swapListElements(usernames, index1, index2);
+            // the target may be several rows away (fast drag / autoscroll), so move, not swap
+            usernames.add(index2, usernames.remove(index1));
 
             notifyItemMoved(fromIndex, toIndex);
 
             int end = 4 + usernames.size() - 1;
             if (fromIndex == end || toIndex == end) {
-                notifyItemChanged(fromIndex, 3);
                 notifyItemChanged(toIndex, 3);
+                notifyItemChanged(toIndex == end ? end - 1 : end, 3);
             }
-        }
-
-        private void swapListElements(List<TLRPC.TL_username> list, int index1, int index2) {
-            TLRPC.TL_username username1 = list.get(index1);
-            list.set(index1, list.get(index2));
-            list.set(index2, username1);
         }
 
         public void moveElement(int fromIndex, int toIndex) {
@@ -1185,6 +1180,9 @@ public class ChangeUsernameActivity extends BaseFragment {
             adapter.swapElements(source.getAdapterPosition(), target.getAdapterPosition());
             return true;
         }
+
+        @Override
+        public void onMoved(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, int fromPos, @NonNull RecyclerView.ViewHolder target, int toPos, int x, int y) {}
 
         @Override
         public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {

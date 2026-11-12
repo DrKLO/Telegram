@@ -111,6 +111,7 @@ import org.telegram.messenger.BotInlineKeyboard;
 import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.ChatObject;
 import org.telegram.utils.code.highlight.CodeHighlighting;
+import org.telegram.utils.twidget.WidgetSandboxTheme;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DocumentObject;
@@ -2344,6 +2345,31 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     // The widget's frame as last drawn, in the cell's px, while its time is over it (getPhotoBottom, the time's x).
     private float widgetRight, widgetBottom;
+
+    // An outgoing widget's bubbles in a theme with gradient bubbles: msgOut, msgOutSelected, msgOutMedia,
+    // msgOutMediaSelected, each one colour (outBubbleDrawable).
+    private MessageDrawable[] widgetBubbles;
+
+    /**
+     * The outgoing bubble drawable for `key` (msgOut, msgOutSelected, msgOutMedia, msgOutMediaSelected). A widget's
+     * bubble in a theme with gradient bubbles is one colour over its whole size, the widget's `bg_color`
+     * (docs/sdk-v1.md §5.1): a widget's own background meets it with no edge.
+     */
+    private MessageDrawable outBubbleDrawable(String key) {
+        final MessageDrawable themed = (MessageDrawable) getThemedDrawable(key);
+        if (currentMessageObject == null || !currentMessageObject.isOutOwner() || !isWidgetMessage()) return themed;
+        final boolean selected = Theme.key_drawable_msgOutSelected.equals(key) || Theme.key_drawable_msgOutMediaSelected.equals(key);
+        final boolean media = Theme.key_drawable_msgOutMedia.equals(key) || Theme.key_drawable_msgOutMediaSelected.equals(key);
+        final Integer color = WidgetSandboxTheme.solidOutBubble(resourcesProvider, selected);
+        if (color == null) return themed;
+        if (widgetBubbles == null) widgetBubbles = new MessageDrawable[4];
+        final int index = (media ? 2 : 0) + (selected ? 1 : 0);
+        if (widgetBubbles[index] == null) {
+            widgetBubbles[index] = new MessageDrawable(media ? MessageDrawable.TYPE_MEDIA : MessageDrawable.TYPE_TEXT, true, selected, resourcesProvider);
+        }
+        widgetBubbles[index].overrideColor = color;
+        return widgetBubbles[index];
+    }
 
     /** A widget message (messageMediaWidget) laid out as a rich message: the widget is its only block. */
     private boolean isWidgetMessage() {
@@ -11428,10 +11454,16 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             newLineForTime = true;
             newLineForTimeDp = 18;
         }
+        // The time goes into the caption under a widget: its line, or one of its own that the caption's layout
+        // adds (captionNewLine). The widget's end takes no time line, only its width stays as for one.
+        final boolean timeInWidgetCaption = (reactionsLayoutInBubble.isEmpty || reactionsLayoutInBubble.isSmall)
+            && isWidgetMessage() && !TextUtils.isEmpty(currentMessageObject.caption) && !captionAbove;
 
         if (newLineForTime) {
-            totalHeight += dp(newLineForTimeDp);
-            hasNewLineForTime = true;
+            if (!timeInWidgetCaption) {
+                totalHeight += dp(newLineForTimeDp);
+                hasNewLineForTime = true;
+            }
             backgroundWidth = Math.max(maxChildWidth, lastLineWidth) + dp(31);
             backgroundWidth = Math.max(backgroundWidth, (currentMessageObject.isOutOwner() ? timeWidth + dp(17) : timeWidth) + dp(31));
         } else {
@@ -13522,7 +13554,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (hasNewLineForTime && !(drawForwardedName && hasLinkPreview && documentAttachType == DOCUMENT_ATTACH_TYPE_AUDIO)) {
                 reactionsLayoutInBubble.y -= dp(16);
             }
-            if (currentMessageObject.type != MessageObject.TYPE_FILE && (captionLayout != null && ((currentMessageObject.type != MessageObject.TYPE_VOICE && currentMessageObject.type != MessageObject.TYPE_POLL && !(currentMessageObject.isOut() && drawForwardedName && !drawPhotoImage)) || (currentPosition != null && currentMessagesGroup != null) || currentMessageObject.type == MessageObject.TYPE_PAID_MEDIA))) {
+            // A widget's caption has its own row in totalHeight above the reactions (measured as a text message's,
+            // without the media path's positionOffsetY): no caption shift for them.
+            if (currentMessageObject.type != MessageObject.TYPE_FILE && !isWidgetMessage() && (captionLayout != null && ((currentMessageObject.type != MessageObject.TYPE_VOICE && currentMessageObject.type != MessageObject.TYPE_POLL && !(currentMessageObject.isOut() && drawForwardedName && !drawPhotoImage)) || (currentPosition != null && currentMessagesGroup != null) || currentMessageObject.type == MessageObject.TYPE_PAID_MEDIA))) {
                 reactionsLayoutInBubble.y -= dp(14);
             }
             reactionsLayoutInBubble.y += reactionsLayoutInBubble.positionOffsetY;
@@ -17657,12 +17691,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         boolean forceMediaByGroup = currentPosition != null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && currentMessagesGroup.isDocuments && !drawPinnedBottom;
         if (currentMessageObject.isOutOwner()) {
             if (transitionParams.changePinnedBottomProgress >= 1 && !mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
-                currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOut);
-                currentBackgroundSelectedDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutSelected);
+                currentBackgroundDrawable = outBubbleDrawable(Theme.key_drawable_msgOut);
+                currentBackgroundSelectedDrawable = outBubbleDrawable(Theme.key_drawable_msgOutSelected);
                 transitionParams.drawPinnedBottomBackground = false;
             } else {
-                currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMedia);
-                currentBackgroundSelectedDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMediaSelected);
+                currentBackgroundDrawable = outBubbleDrawable(Theme.key_drawable_msgOutMedia);
+                currentBackgroundSelectedDrawable = outBubbleDrawable(Theme.key_drawable_msgOutMediaSelected);
                 transitionParams.drawPinnedBottomBackground = true;
             }
             setBackgroundTopY(true);
@@ -17949,7 +17983,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 if (transitionParams.changePinnedBottomProgress != 1f && currentPosition == null) {
                     if (currentMessageObject.isOutOwner()) {
-                        MessageDrawable drawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOut);
+                        MessageDrawable drawable = outBubbleDrawable(Theme.key_drawable_msgOut);
 
                         Rect rect = currentBackgroundDrawable.getBounds();
                         drawable.setBounds(rect.left, rect.top, rect.right + dp(6), rect.bottom);
@@ -19120,9 +19154,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public void drawBackground(Canvas canvas, int left, int top, int right, int bottom, boolean pinnedTop, boolean pinnedBottom, boolean selected, int keyboardHeight) {
         if (currentMessageObject != null && currentMessageObject.isOutOwner()) {
             if (!mediaBackground && !pinnedBottom) {
-                currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(selected ? Theme.key_drawable_msgOutSelected : Theme.key_drawable_msgOut);
+                currentBackgroundDrawable = outBubbleDrawable(selected ? Theme.key_drawable_msgOutSelected : Theme.key_drawable_msgOut);
             } else {
-                currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(selected ? Theme.key_drawable_msgOutMediaSelected : Theme.key_drawable_msgOutMedia);
+                currentBackgroundDrawable = outBubbleDrawable(selected ? Theme.key_drawable_msgOutMediaSelected : Theme.key_drawable_msgOutMedia);
             }
         } else {
             if (!mediaBackground && !pinnedBottom) {
@@ -20393,9 +20427,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             boolean forceMediaByGroup = currentPosition != null && (currentPosition.flags & MessageObject.POSITION_FLAG_BOTTOM) == 0 && currentMessagesGroup.isDocuments && !drawPinnedBottom;
             if (currentMessageObject.isOutOwner()) {
                 if (!mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {
-                    currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOut);
+                    currentBackgroundDrawable = outBubbleDrawable(Theme.key_drawable_msgOut);
                 } else {
-                    currentBackgroundDrawable = (MessageDrawable) getThemedDrawable(Theme.key_drawable_msgOutMedia);
+                    currentBackgroundDrawable = outBubbleDrawable(Theme.key_drawable_msgOutMedia);
                 }
             } else {
                 if (!mediaBackground && !drawPinnedBottom && !forceMediaByGroup) {

@@ -233,8 +233,15 @@ add_library(${NATIVE_LIB} SHARED
         tests.cpp
 )
 
+# HTML widgets are libtwidget.so, apart from the client library: the isolated engine process loads only it
+# (WidgetEngineService), the client never does. What the client needs of the same code (the gesture policy, the CPU
+# filter pass; no widget code reaches either) is compiled into the client library (twidget_client_sources).
 include(twidget/twidget.cmake)
-twidget_target_sources(${NATIVE_LIB})
+add_library(twidget SHARED twidget/twidget-onload.cpp twidget/twidget-seccomp.cpp)
+twidget_target_sources(twidget)
+twidget_client_sources(${NATIVE_LIB})
+target_link_options(twidget PRIVATE "-Wl,-z,max-page-size=16384")
+target_link_options(twidget PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/twidget/exports.map")
 
 # Compile JNI directly into the shared library so archive extraction cannot drop its exports.
 set(PRISMA_BRIDGE_SOURCES

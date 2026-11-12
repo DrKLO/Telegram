@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-// Call once from the client's existing JNI_OnLoad. Returns false on registration failure.
+// Call once from libtwidget's JNI_OnLoad (twidget-onload.cpp). Returns false on registration failure.
 bool registerTwidgetNatives(JNIEnv *env);
 
 #ifdef __cplusplus

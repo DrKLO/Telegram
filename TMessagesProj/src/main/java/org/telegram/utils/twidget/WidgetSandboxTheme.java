@@ -141,6 +141,19 @@ public final class WidgetSandboxTheme {
         return Color.argb(Color.alpha(bubble), r / n, g / n, b / n);
     }
 
+    /**
+     * The one colour an outgoing bubble holding a widget is painted in when the theme's outgoing bubbles have a
+     * gradient (docs/sdk-v1.md §5.1): the `bg_color` passed, so that a widget's own background meets the bubble
+     * with no edge; selected, with the theme's selection overlay over it. Null: the theme's own bubble.
+     */
+    public static Integer solidOutBubble(Theme.ResourcesProvider resourcesProvider, boolean selected) {
+        if (gradientColor(GRADIENT[0], resourcesProvider) == 0) return null;
+        boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+        int color = opaque(fill(resourcesProvider, true), dark);
+        if (selected) color = Theme.blendOver(color, Theme.getColor(Theme.key_chat_outBubbleGradientSelectedOverlay, resourcesProvider));
+        return color;
+    }
+
     /** A gradient colour as MessageDrawable reads it: 0 when the theme has none (no default to fall back to). */
     private static int gradientColor(int key, Theme.ResourcesProvider resourcesProvider) {
         return resourcesProvider != null ? resourcesProvider.getCurrentColor(key) : Theme.getCurrentColor(key);

@@ -270,6 +270,17 @@ public class RichMessageLayout {
         );
     }
 
+    /**
+     * Both layouts are the same widget alone (its url: the message and the payload). Its runtime is shared by the
+     * url, so both draw the same frames: a new copy of the message (a reaction, an edit) needs no crossfade.
+     */
+    public boolean isSameWidget(RichMessageLayout other) {
+        if (other == null || blocks.size() != 1 || other.blocks.size() != 1) return false;
+        final RichBlock a = blocks.get(0), b = other.blocks.get(0);
+        return a instanceof RichWidgetBlock && b instanceof RichWidgetBlock
+            && TextUtils.equals(((RichWidgetBlock) a).embed.url, ((RichWidgetBlock) b).embed.url);
+    }
+
     public boolean needsUpdate(TL_iv.RichMessage newRichMessage, int maxWidth) {
         return (
             richMessage != newRichMessage ||
@@ -8379,6 +8390,8 @@ public class RichMessageLayout {
         private void applyImage(boolean allowMedia) {
             if (photo != null && sizeFull != null) {
                 final ImageLocation thumbLoc = strippedSize != null ? ImageLocation.getForPhoto(strippedSize, photo) : null;
+                // same stripped thumb key with and without the full image, so starting a download keeps the thumb
+                imageReceiver.setStrippedLocation(ImageLocation.getForPhoto(sizeFull, photo));
                 if (allowMedia) {
                     imageReceiver.setImage(
                         null, null,
@@ -8397,6 +8410,7 @@ public class RichMessageLayout {
             } else if (document != null) {
                 final ImageLocation thumbLoc = strippedThumb != null ? ImageLocation.getForDocument(strippedThumb, document) : null;
                 final ImageLocation imageLoc = previewThumb != null ? ImageLocation.getForDocument(previewThumb, document) : null;
+                imageReceiver.setStrippedLocation(ImageLocation.getForDocument(document));
                 if (allowMedia && isVideo && (allowAutoplay() || mediaForced)) {
                     imageReceiver.setAllowStartAnimation(true);
                     imageReceiver.setAutoRepeat(1);

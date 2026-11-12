@@ -1098,7 +1098,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         // in landscape the sheet is centered: popup is positioned in window coordinates
         final int[] containerLocation = new int[2];
         container.getLocationInWindow(containerLocation);
-        ItemOptions.makeOptions(container, resourcesProvider, btn)
+        final ItemOptions options = ItemOptions.makeOptions(container, resourcesProvider, btn)
             .addIf(getUniqueGift() != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(getUniqueGift().owner_id)) && giftsList instanceof StarsController.GiftsList && savedStarGift != null && getInputStarGift() != null, (savedStarGift != null && savedStarGift.pinned_to_top) ? R.drawable.msg_unpin : R.drawable.msg_pin, getString((savedStarGift != null && savedStarGift.pinned_to_top) ? R.string.Gift2Unpin : R.string.Gift2Pin), () -> {
                 if (savedStarGift.unsaved) {
                     savedStarGift.unsaved = false;
@@ -1152,8 +1152,8 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             .setDrawScrim(false)
             .setOnTopOfScrim()
             .setDimAlpha(0)
-            .translate(containerLocation[0] + backgroundPaddingLeft, -dp(2))
-            .show();
+            .translate(containerLocation[0] + backgroundPaddingLeft, -dp(2));
+        showSimpleMenu(btn, options);
     }
 
     private void showGiftOfferSheet() {

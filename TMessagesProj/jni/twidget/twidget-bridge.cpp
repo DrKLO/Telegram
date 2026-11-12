@@ -3,9 +3,7 @@
 #include "twidget-bridge.h"
 #include "backend.h"
 #include "display_list.h"
-#include "filters.h"
 #include "renderer.h"
-#include "twidget/gesture_policy.h"
 #include "twidget/widget_host.h"
 #include <algorithm>
 #include <atomic>
@@ -17,9 +15,9 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
 #include <unordered_map>
 #ifdef __ANDROID__
-#include <android/bitmap.h>
 #include <android/trace.h>
 #endif
 
@@ -262,6 +260,180 @@ void encodeCanvasOp(std::vector<jint> &out, const twlite::CanvasOp &op) {
             putFloat(out, value);
         out.push_back(op.smoothing);
     }
+}
+
+// A display list for WidgetDisplayList (Java) as little-endian int words, floats by their bits, in place of
+// twlite::to_json: the frame's JSON and its parse in Java cost more than the frame itself on a weak phone. Keep in step
+// with WidgetDisplayList, which reads it as untrusted input.
+//   header: 'TWDL', version 1, command count, flags (1: a Backdrop), word offset of the string table
+//   command: kind | present << 8 (1 rect, 2 radii, 4 clip); [rect 4f] [radii 8f] [clip 4f]; then by kind:
+//     FillRect, FillEllipse: argb · StrokeRect, StrokeEllipse: argb, width · Text: argb, font, x, y, string
+//     Image: canvas (0/1), id · Linear, Radial, Conic: ax, ay, bx, by, stops · ClipPush: has path, [path]
+//     Path: has path, [path, svg] · GroupPush: matrix 6f, opacity, hidden · Shadow: argb, ax, ay, bx, by, inset
+//     FilterPush, Backdrop: filters · the pops: nothing
+//   stops: n, n × (offset, argb) · filters: n, n × (kind, amount, x, y, argb)
+//   path: op count, point count, ops a byte each (four to a word), points, evenodd
+//   svg: flags (1 fill, 2 stroke); fill: gradient kind, then argb (0) or 7f and stops (1 linear, 2 radial);
+//     stroke: argb, gradient kind [7f, stops], width, cap, join, miter, dash count, dashes, dash offset
+//   string table: count, then each string as its byte length and UTF-8 bytes, padded to a word
+std::string encodeDisplayList(const twlite::DisplayList &list) {
+    using twlite::Cmd;
+    std::vector<jint> out;
+    out.reserve(list.size() * 10 + 8);
+    out.insert(out.end(), {jint(0x4C445754), 1, jint(list.size()), 0, 0});
+    std::vector<const std::string *> strings;
+    std::unordered_map<std::string_view, jint> known;
+    bool backdrop = false;
+    auto stops = [&](const std::vector<twlite::Stop> &list) {
+        out.push_back(jint(list.size()));
+        for (const auto &stop : list) {
+            putFloat(out, stop.offset);
+            out.push_back(argbOf(stop.color));
+        }
+    };
+    auto geometry = [&](const twlite::Path &path) {
+        out.push_back(jint(path.ops.size()));
+        out.push_back(jint(path.points.size()));
+        size_t at = out.size();
+        out.resize(at + (path.ops.size() + 3) / 4, 0);
+        auto *bytes = reinterpret_cast<uint8_t *>(out.data() + at);
+        for (size_t i = 0; i < path.ops.size(); i++)
+            bytes[i] = uint8_t(path.ops[i]);
+        for (float point : path.points)
+            putFloat(out, point);
+        out.push_back(path.evenodd);
+    };
+    auto gradient = [&](int kind, const float *args, const std::vector<twlite::Stop> &list) {
+        out.push_back(kind);
+        for (int i = 0; i < 7; i++)
+            putFloat(out, args[i]);
+        stops(list);
+    };
+    for (const auto &c : list) {
+        bool rect = c.kind != Cmd::ClipPop && c.kind != Cmd::GroupPop && c.kind != Cmd::FilterPop &&
+                    c.kind != Cmd::Text && c.kind != Cmd::Path;
+        bool radii = c.radii.any();
+        out.push_back(jint(int(c.kind) | ((rect ? 1 : 0) | (radii ? 2 : 0) | (c.has_clip ? 4 : 0)) << 8));
+        if (rect)
+            for (float v : {c.rect.x, c.rect.y, c.rect.w, c.rect.h})
+                putFloat(out, v);
+        if (radii)
+            for (float v : {c.radii.tlx, c.radii.tly, c.radii.trx, c.radii.try_, c.radii.brx, c.radii.bry, c.radii.blx,
+                            c.radii.bly})
+                putFloat(out, v);
+        if (c.has_clip)
+            for (float v : {c.clip.x, c.clip.y, c.clip.w, c.clip.h})
+                putFloat(out, v);
+        switch (c.kind) {
+        case Cmd::FillRect:
+        case Cmd::FillEllipse:
+            out.push_back(argbOf(c.color));
+            break;
+        case Cmd::StrokeRect:
+        case Cmd::StrokeEllipse:
+            out.push_back(argbOf(c.color));
+            putFloat(out, c.width);
+            break;
+        case Cmd::Text: {
+            out.push_back(argbOf(c.color));
+            out.push_back(c.font);
+            putFloat(out, c.x);
+            putFloat(out, c.y);
+            auto found = known.find(c.text);
+            if (found == known.end()) {
+                found = known.emplace(std::string_view(c.text), jint(strings.size())).first;
+                strings.push_back(&c.text);
+            }
+            out.push_back(found->second);
+            break;
+        }
+        case Cmd::Image:
+            out.push_back(c.canvas ? 1 : 0);
+            out.push_back(c.canvas ? c.canvas : c.image);
+            break;
+        case Cmd::Linear:
+        case Cmd::Radial:
+        case Cmd::Conic:
+            for (float v : {c.ax, c.ay, c.bx, c.by})
+                putFloat(out, v);
+            stops(c.stops);
+            break;
+        case Cmd::ClipPush:
+            out.push_back(c.path ? 1 : 0);
+            if (c.path)
+                geometry(*c.path);
+            break;
+        case Cmd::Path: {
+            out.push_back(c.path ? 1 : 0);
+            if (!c.path)
+                break;
+            const twlite::Path &p = *c.path;
+            geometry(p);
+            out.push_back((p.fill ? 1 : 0) | (p.stroke ? 2 : 0));
+            if (p.fill) {
+                if (p.gradient != 0 && p.stops.size() >= 2) {
+                    const float args[] = {p.x1, p.y1, p.x2, p.y2, p.r, p.fx, p.fy};
+                    gradient(p.gradient, args, p.stops);
+                } else {
+                    out.push_back(0);
+                    out.push_back(argbOf(p.fill_color));
+                }
+            }
+            if (p.stroke) {
+                out.push_back(argbOf(p.stroke_color));
+                if (p.stroke_gradient != 0 && p.stroke_stops.size() >= 2)
+                    gradient(p.stroke_gradient, p.sg, p.stroke_stops);
+                else
+                    out.push_back(0);
+                putFloat(out, p.stroke_width);
+                out.push_back(p.line_cap);
+                out.push_back(p.line_join);
+                putFloat(out, p.miter_limit);
+                out.push_back(jint(p.dashes.size()));
+                for (float dash : p.dashes)
+                    putFloat(out, dash);
+                putFloat(out, p.dash_offset);
+            }
+            break;
+        }
+        case Cmd::GroupPush:
+            for (float v : c.matrix)
+                putFloat(out, v);
+            putFloat(out, c.opacity);
+            out.push_back(c.hidden);
+            break;
+        case Cmd::Shadow:
+            out.push_back(argbOf(c.color));
+            for (float v : {c.ax, c.ay, c.bx, c.by})
+                putFloat(out, v);
+            out.push_back(c.inset);
+            break;
+        case Cmd::FilterPush:
+        case Cmd::Backdrop:
+            backdrop |= c.kind == Cmd::Backdrop;
+            out.push_back(c.filter ? jint(c.filter->size()) : 0);
+            if (c.filter) {
+                for (const auto &f : *c.filter) {
+                    out.push_back(jint(f.kind));
+                    putFloat(out, f.amount);
+                    putFloat(out, f.x);
+                    putFloat(out, f.y);
+                    out.push_back(argbOf(f.color));
+                }
+            }
+            break;
+        case Cmd::ClipPop:
+        case Cmd::GroupPop:
+        case Cmd::FilterPop:
+            break;
+        }
+    }
+    out[3] = backdrop ? 1 : 0;
+    out[4] = jint(out.size());
+    out.push_back(jint(strings.size()));
+    for (const std::string *text : strings)
+        putBytes(out, reinterpret_cast<const uint8_t *>(text->data()), text->size());
+    return std::string(reinterpret_cast<const char *>(out.data()), out.size() * sizeof(jint));
 }
 
 class AndroidBackend final : public twlite::Backend {
@@ -589,16 +761,33 @@ class AndroidRenderer final : public twidget::Renderer {
             double paintStarted = nowMs();
             auto job = std::make_shared<RecordJob>();
             job->list = document_.paint();
-            job->composition = document_.composition();
             job->paintMs = nowMs() - paintStarted;
-            // Layer contents go first; the frame that names them follows. Unchanged contents are reused.
+            // Layer contents go first; the frame that names them follows. Unchanged contents are reused, so only the
+            // changed ones are copied for the recorder (a layer's content is a whole display list). Every field of
+            // twlite::Layer but `content` is copied below: keep it in step with compositor.h.
+            const twlite::Composition &composition = document_.composition();
+            job->composition.version = composition.version;
+            job->composition.layers.resize(composition.layers.size());
             std::unordered_map<int64_t, uint64_t> versions;
-            for (size_t i = 0; i < job->composition.layers.size(); i++) {
-                const auto &layer = job->composition.layers[i];
+            for (size_t i = 0; i < composition.layers.size(); i++) {
+                const auto &layer = composition.layers[i];
+                auto &copy = job->composition.layers[i];
+                copy.id = layer.id;
+                copy.bounds = layer.bounds;
+                copy.content_version = layer.content_version;
+                copy.raster_scale = layer.raster_scale;
+                copy.has_clip = layer.has_clip;
+                copy.clip = layer.clip;
+                copy.clip_radii = layer.clip_radii;
+                copy.track_version = layer.track_version;
+                copy.track = layer.track;
+                copy.parent = layer.parent;
                 versions[layer.id] = layer.content_version;
                 auto known = layerVersions_.find(layer.id);
-                if (known == layerVersions_.end() || known->second != layer.content_version)
+                if (known == layerVersions_.end() || known->second != layer.content_version) {
+                    copy.content = layer.content;
                     job->layers.push_back(int(i));
+                }
             }
             layerVersions_ = std::move(versions);
             // The selectable text changes only with a layout; it goes out when it differs.
@@ -662,18 +851,18 @@ class AndroidRenderer final : public twidget::Renderer {
                 for (int i : job.layers) {
                     const auto &layer = job.composition.layers[size_t(i)];
                     double started = nowMs();
-                    std::string content = twlite::to_json(layer.content);
+                    std::string content = encodeDisplayList(layer.content);
                     serializeMs += nowMs() - started;
                     backend_->layer(i, int(layer.content_version), content);
                 }
                 if (job.hasText)
                     backend_->selectable_text(job.text);
                 double started = nowMs();
-                std::string listJson = twlite::to_json(job.list), compositionJson = twlite::to_json(job.composition);
+                std::string listBytes = encodeDisplayList(job.list), compositionJson = twlite::to_json(job.composition);
                 serializeMs += nowMs() - started;
                 if (job.work.isObject())
                     backend_->signal(18, job.work.set("serialize", serializeMs).dump());
-                backend_->record(listJson, compositionJson, job.clock, job.width, job.height, job.dpr, job.stats);
+                backend_->record(listBytes, compositionJson, job.clock, job.width, job.height, job.dpr, job.stats);
             } catch (const std::exception &error) {
                 if (onDiag)
                     onDiag("android-renderer", error.what());
@@ -905,6 +1094,25 @@ std::shared_ptr<twidget::SandboxResources> resources(const std::string &path) {
     return value;
 }
 } // namespace
+
+// The bundles as bytes under `key`, which create then takes as its directory: the isolated process
+// (WidgetEngineService) reads them from the APK's assets and has no files of its own to put them in.
+extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_registerResources(
+    JNIEnv *e, jclass, jbyteArray key, jbyteArray sandbox, jbyteArray validator, jbyteArray renderer,
+    jbyteArray sandboxBytecode, jbyteArray validatorBytecode) {
+    auto value = std::make_shared<twidget::SandboxResources>();
+    value->sandboxBundle = bytes(e, sandbox);
+    value->validatorBundle = bytes(e, validator);
+    value->rendererBundle = bytes(e, renderer);
+    auto binary = [e](jbyteArray array) {
+        std::string data = bytes(e, array);
+        return std::vector<uint8_t>(data.begin(), data.end());
+    };
+    value->sandboxBytecode = binary(sandboxBytecode);
+    value->validatorBytecode = binary(validatorBytecode);
+    std::lock_guard lock(resourcesMutex);
+    resourceCache[bytes(e, key)] = std::move(value);
+}
 
 extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_create(
     JNIEnv *e, jclass, jbyteArray path, jbyteArray html, jbyteArray theme, jfloat width, jfloat dpr,
@@ -1200,94 +1408,6 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxN
     if (s)
         s->input([=](auto &r) { r.hover(action, x, y, modifiers); });
 }
-// widget-sandbox's gesture policy (twidget/gesture_policy.h) for the chat's recognizers over a widget
-// (WidgetGestureArbiter): one arbiter per player, on the UI thread. A verdict crosses as bits: owner (0-1),
-// gesture (2-4), cancel (5), the bubble's action + 1 (6-8), the widget's event + 1 (9-10), edge (11); -1 for
-// no press.
-namespace {
-jint verdictBits(const twidget::GestureVerdict &v) {
-    return jint(int(v.owner) | int(v.gesture) << 2 | (v.cancel ? 1 : 0) << 5 | (v.action ? int(*v.action) + 1 : 0) << 6 |
-                (v.event ? int(*v.event) + 1 : 0) << 9 | (v.edge ? 1 : 0) << 11);
-}
-jint verdictBits(const std::optional<twidget::GestureVerdict> &v) { return v ? verdictBits(*v) : -1; }
-twidget::GestureArbiter *arbiterOf(jlong h) { return reinterpret_cast<twidget::GestureArbiter *>(h); }
-} // namespace
-
-extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterCreate(JNIEnv *, jclass) {
-    return reinterpret_cast<jlong>(new twidget::GestureArbiter());
-}
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterDestroy(JNIEnv *, jclass,
-                                                                                                     jlong h) {
-    delete arbiterOf(h);
-}
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterDown(
-    JNIEnv *, jclass, jlong h, jdouble t, jdouble x, jdouble y, jboolean claimX, jboolean claimY, jboolean hold,
-    jboolean mouse, jint button) {
-    twidget::WidgetGestureClaim claim;
-    claim.x = claimX;
-    claim.y = claimY;
-    claim.hold = hold;
-    return verdictBits(arbiterOf(h)->down(t, x, y, claim, mouse ? twidget::PointerKind::Mouse : twidget::PointerKind::Touch, button));
-}
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterMove(JNIEnv *, jclass,
-                                                                                                  jlong h, jdouble t,
-                                                                                                  jdouble x, jdouble y) {
-    return verdictBits(arbiterOf(h)->move(t, x, y));
-}
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterTick(JNIEnv *, jclass,
-                                                                                                  jlong h, jdouble t) {
-    return verdictBits(arbiterOf(h)->tick(t));
-}
-extern "C" JNIEXPORT jint JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterUp(JNIEnv *, jclass,
-                                                                                                jlong h, jdouble t,
-                                                                                                jdouble x, jdouble y) {
-    return verdictBits(arbiterOf(h)->up(t, x, y));
-}
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterCancel(JNIEnv *, jclass,
-                                                                                                    jlong h) {
-    arbiterOf(h)->cancel();
-}
-extern "C" JNIEXPORT jdouble JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_arbiterHoldDeadline(JNIEnv *,
-                                                                                                            jclass,
-                                                                                                            jlong h) {
-    auto deadline = arbiterOf(h)->holdDeadline();
-    return deadline ? *deadline : -1;
-}
-
-// CSS filters where RenderEffect is missing (before API 31) or the canvas is a bitmap's: a FilterPush's
-// filters ("fl", display_list.h's Filter as [kind, amount, x, y, ARGB]) over an ARGB_8888 bitmap's
-// premultiplied pixels, in place. `scale`: the bitmap's px per CSS px.
-extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_filterPixels(
-    JNIEnv *e, jclass, jobject bitmap, jbyteArray filters, jfloat scale) {
-    auto parsed = twidget::Json::parse(bytes(e, filters));
-    if (!parsed || !parsed->isArray())
-        return;
-    twlite::Filters steps;
-    for (const auto &f : parsed->arr()) {
-        int kind = f[size_t(0)].asInt(-1);
-        if (kind < 0 || kind > int(twlite::Filter::DropShadow))
-            continue;
-        twlite::Filter step;
-        step.kind = twlite::Filter::Kind(kind);
-        step.amount = float(f[size_t(1)].asNumber());
-        step.x = float(f[size_t(2)].asNumber());
-        step.y = float(f[size_t(3)].asNumber());
-        auto argb = uint32_t(f[size_t(4)].asNumber());
-        step.color = twlite::Color{uint8_t(argb >> 16), uint8_t(argb >> 8), uint8_t(argb), uint8_t(argb >> 24)};
-        steps.push_back(step);
-    }
-    AndroidBitmapInfo info;
-    void *pixels = nullptr;
-    if (steps.empty() || AndroidBitmap_getInfo(e, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS ||
-        info.format != ANDROID_BITMAP_FORMAT_RGBA_8888)
-        return;
-    if (AndroidBitmap_lockPixels(e, bitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS)
-        return;
-    twlite::filter_pixels(static_cast<uint8_t *>(pixels), int(info.width), int(info.height), info.stride, false,
-                          steps, scale);
-    AndroidBitmap_unlockPixels(e, bitmap);
-}
-
 extern "C" JNIEXPORT void JNICALL Java_org_telegram_utils_twidget_WidgetSandboxNative_conformance(JNIEnv *, jclass,
                                                                                                   jboolean enabled) {
     conformanceReports = enabled;
@@ -1336,7 +1456,8 @@ extern "C" bool registerTwidgetNatives(JNIEnv *e) {
             reinterpret_cast<void *>(Java_org_telegram_utils_twidget_WidgetSandboxNative_##name)             \
     }
     const JNINativeMethod methods[] = {
-        BIND(create, "([B[B[BFFI[B[B[B[BZLorg/telegram/utils/twidget/WidgetSandboxBackend;)J"),
+        BIND(create, "([B[B[BFFI[B[B[B[BZLjava/lang/Object;)J"),
+        BIND(registerResources, "([B[B[B[B[B[B)V"),
         BIND(destroy, "(J)V"),
         BIND(visible, "(JZ)V"),
         BIND(theme, "(J[B)V"),
@@ -1348,17 +1469,8 @@ extern "C" bool registerTwidgetNatives(JNIEnv *e) {
         BIND(tick, "(JFZZZ)V"),
         BIND(touch, "(JIFFIZZII)V"),
         BIND(hover, "(JIFFI)V"),
-        BIND(filterPixels, "(Landroid/graphics/Bitmap;[BF)V"),
         BIND(conformance, "(Z)V"),
-        BIND(attackScan, "(Z)V"),
-        BIND(arbiterCreate, "()J"),
-        BIND(arbiterDestroy, "(J)V"),
-        BIND(arbiterDown, "(JDDDZZZZI)I"),
-        BIND(arbiterMove, "(JDDD)I"),
-        BIND(arbiterTick, "(JD)I"),
-        BIND(arbiterUp, "(JDDD)I"),
-        BIND(arbiterCancel, "(J)V"),
-        BIND(arbiterHoldDeadline, "(J)D")};
+        BIND(attackScan, "(Z)V")};
 #undef BIND
     int status = e->RegisterNatives(type, methods, sizeof(methods) / sizeof(methods[0]));
     e->DeleteLocalRef(type);

@@ -26,15 +26,13 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 /**
- * Executes TwidgetCore display lists (display_list.h, to_json) on an android.graphics.Canvas
- * already scaled to CSS px. Java port of upstream DisplayListPainter.kt and Paths.kt. One instance
- * per widget worker: its scratch objects are not shared between threads.
+ * Executes TwidgetCore display lists (display_list.h, in the bridge's binary form: WidgetDisplayList) on an
+ * android.graphics.Canvas already scaled to CSS px. Java port of upstream DisplayListPainter.kt and Paths.kt. One
+ * instance per widget worker: its scratch objects are not shared between threads.
  */
 final class WidgetSandboxPainter {
     interface Resources {
@@ -65,6 +63,12 @@ final class WidgetSandboxPainter {
     private final java.util.HashMap<Float, BlurMaskFilter> blurFilters = new java.util.HashMap<>();
     private final java.util.IdentityHashMap<Paint, Paint> textPaints = new java.util.IdentityHashMap<>();
     private final float[] values = new float[9];
+    // The command being painted: its rect, radii and clip (WidgetDisplayList HAS_*).
+    private final RectF cmdRect = new RectF();
+    private final RectF cmdClip = new RectF();
+    private final float[] cmdRadii = new float[8];
+    private boolean hasRadii, hasClip;
+    private float[] points = new float[64];
 
     WidgetSandboxPainter() {
         stroke.setStyle(Paint.Style.STROKE);
@@ -74,121 +78,113 @@ final class WidgetSandboxPainter {
      * Paints `list`. `density` is device px per CSS px, used for blur radii. Clips and groups nest
      * in paint order and unwind together: each is one save.
      */
-    void paint(Canvas canvas, JSONArray list, Resources resources, float density) {
+    void paint(Canvas canvas, WidgetDisplayList list, Resources resources, float density) {
         // A backdrop replaces what lies under its box with the filtered copy (backdrop-filter), so the list goes into
         // a layer of its own that the backdrop can clear its box in: drawn straight onto the bubble, the copy only
         // went over the sharp original, which showed through wherever the copy is not opaque.
-        boolean layered = Build.VERSION.SDK_INT >= 31 && canvas.isHardwareAccelerated() && hasBackdrop(list);
+        boolean layered = Build.VERSION.SDK_INT >= 31 && canvas.isHardwareAccelerated() && list.hasBackdrop;
         int saved = layered ? canvas.saveLayer(null, null) : -1;
-        paint(canvas, list, list.length(), resources, density, true);
+        paint(canvas, list, list.count, resources, density, true);
         if (layered) canvas.restoreToCount(saved);
     }
 
-    private static boolean hasBackdrop(JSONArray list) {
-        for (int i = 0; i < list.length(); i++) {
-            JSONObject command = list.optJSONObject(i);
-            if (command != null && command.optInt("k") == 17) return true;
-        }
-        return false;
-    }
-
     /** The commands before `end`; `backdrops` false while a backdrop replays what lies under it. */
-    private void paint(Canvas canvas, JSONArray list, int end, Resources resources, float density, boolean backdrops) {
+    private void paint(Canvas canvas, WidgetDisplayList list, int end, Resources resources, float density, boolean backdrops) {
         State s = new State(canvas);
+        WidgetDisplayList.Cursor c = list.cursor();
         for (int i = 0; i < end; i++) {
-            JSONObject command = list.optJSONObject(i);
-            if (command == null) continue;
             canvas = s.canvas;
-            int kind = command.optInt("k");
+            int head = c.i();
+            int kind = head & 0xff, present = head >>> 8;
+            if ((present & WidgetDisplayList.HAS_RECT) != 0) c.rect(cmdRect);
+            else cmdRect.setEmpty();
+            hasRadii = (present & WidgetDisplayList.HAS_RADII) != 0;
+            if (hasRadii) c.floats(cmdRadii, 8);
+            hasClip = (present & WidgetDisplayList.HAS_CLIP) != 0;
+            if (hasClip) c.rect(cmdClip);
             switch (kind) {
                 case 0: { // FillRect
-                    boolean clipped = command.has("l");
-                    if (clipped) {
+                    int color = c.i();
+                    if (hasClip) {
                         canvas.save();
-                        clip(canvas, command);
+                        canvas.clipRect(cmdClip);
                     }
-                    solid(fill, argb(command, "c"));
-                    drawRounded(canvas, command, fill);
-                    if (clipped) canvas.restore();
+                    solid(fill, color);
+                    drawRounded(canvas, fill);
+                    if (hasClip) canvas.restore();
                     break;
                 }
-                case 1: // StrokeRect
-                    stroke.setColor(argb(command, "c"));
-                    plainStroke((float) command.optDouble("w", 1));
-                    drawRounded(canvas, command, stroke);
+                case 1: { // StrokeRect
+                    stroke.setColor(c.i());
+                    plainStroke(c.f());
+                    drawRounded(canvas, stroke);
                     break;
+                }
                 case 2: // FillEllipse
-                    solid(fill, argb(command, "c"));
-                    canvas.drawOval(readRect(command, "r", rect), fill);
+                    solid(fill, c.i());
+                    canvas.drawOval(cmdRect, fill);
                     break;
                 case 3: { // StrokeEllipse
-                    float width = (float) command.optDouble("w", 1);
-                    readRect(command, "r", rect).inset(width / 2, width / 2);
-                    stroke.setColor(argb(command, "c"));
+                    int color = c.i();
+                    float width = c.f();
+                    rect.set(cmdRect);
+                    rect.inset(width / 2, width / 2);
+                    stroke.setColor(color);
                     plainStroke(width);
                     canvas.drawOval(rect, stroke);
                     break;
                 }
                 case 4: { // Text
+                    int color = c.i(), fontId = c.i();
+                    float x = c.f(), y = c.f();
+                    String text = list.string(c.i());
                     // At the device's size, as it was measured (WidgetSandboxBackend#createFont).
-                    Paint font = textPaint(resources.deviceFont(command.optInt("f")));
+                    Paint font = textPaint(resources.deviceFont(fontId));
                     if (font == null) break;
-                    font.setColor(argb(command, "c"));
+                    font.setColor(color);
                     font.setShader(null);
                     canvas.save();
                     canvas.scale(1 / density, 1 / density);
-                    canvas.drawText(
-                            command.optString("t"),
-                            (float) command.optDouble("x") * density,
-                            (float) command.optDouble("y") * density,
-                            font);
+                    canvas.drawText(text, x * density, y * density, font);
                     canvas.restore();
                     break;
                 }
                 case 5: { // Image
-                    Bitmap image =
-                            command.has("cv")
-                                    ? resources.canvas(command.optInt("cv"))
-                                    : resources.image(command.optInt("i"));
+                    boolean isCanvas = c.i() != 0;
+                    int id = c.i();
+                    Bitmap image = isCanvas ? resources.canvas(id) : resources.image(id);
                     if (image == null) break;
                     canvas.save();
-                    clip(canvas, command);
+                    if (hasClip) canvas.clipRect(cmdClip);
                     // The layer's border radius bounds the image like the clip does.
-                    if (command.has("q"))
-                        canvas.clipPath(
-                                rounded(command, command.has("l") ? "l" : "r", clipPath));
-                    canvas.drawBitmap(image, null, readRect(command, "r", rect), bitmapPaint);
+                    if (hasRadii) canvas.clipPath(rounded(hasClip ? cmdClip : cmdRect, clipPath));
+                    canvas.drawBitmap(image, null, cmdRect, bitmapPaint);
                     canvas.restore();
                     break;
                 }
                 case 6:
                 case 7:
                 case 8:
-                    gradient(canvas, command, kind);
+                    gradient(canvas, c, kind);
                     break;
                 case 9: { // ClipPush
+                    boolean hasPath = c.i() != 0;
                     canvas.save();
                     s.push();
-                    JSONObject shape = command.optJSONObject("p");
-                    canvas.clipPath(
-                            shape != null
-                                    ? readPath(shape, clipPath)
-                                    : rounded(command, "r", clipPath));
+                    canvas.clipPath(hasPath ? readPath(c, clipPath) : rounded(cmdRect, clipPath));
                     break;
                 }
                 case 10: // ClipPop
                 case 13: // GroupPop
                     if (s.depth > 0) s.pop();
                     break;
-                case 11: { // Path
-                    JSONObject shape = command.optJSONObject("p");
-                    if (shape != null) svgPath(canvas, shape);
+                case 11: // Path
+                    if (c.i() != 0) svgPath(canvas, c);
                     break;
-                }
                 case 12: { // GroupPush
-                    float opacity = (float) command.optDouble("o", 1);
-                    boolean hidden = command.optInt("h") != 0;
-                    floats(command.optJSONArray("m"), numbers, 6, 1, 0, 0, 1, 0, 0);
+                    c.floats(numbers, 6);
+                    float opacity = c.f();
+                    boolean hidden = c.i() != 0;
                     values[0] = numbers[0];
                     values[1] = numbers[2];
                     values[2] = numbers[4];
@@ -205,8 +201,8 @@ final class WidgetSandboxPainter {
                     // buffer the size of the whole clip for every such group, every frame.
                     if (opacity < 1 && !hidden) {
                         int alpha = Math.round(Math.max(0, Math.min(1, opacity)) * 255);
-                        if (readRect(command, "r", box) != null && !box.isEmpty()) {
-                            matrix.mapRect(rect, box);
+                        if (!cmdRect.isEmpty()) {
+                            matrix.mapRect(rect, cmdRect);
                             rect.inset(-1, -1);
                             canvas.saveLayerAlpha(rect, alpha);
                         } else {
@@ -220,22 +216,59 @@ final class WidgetSandboxPainter {
                     break;
                 }
                 case 14:
-                    shadow(canvas, command, density);
+                    shadow(canvas, c, density);
                     break;
                 case 15: // FilterPush
-                    pushFilter(s, command, density);
+                    pushFilter(s, readFilters(c), density);
                     break;
                 case 16: // FilterPop
                     if (!s.filters.isEmpty()) popFilter(s, density);
                     break;
-                case 17: // Backdrop
+                case 17: { // Backdrop
+                    Filters functions = readFilters(c);
                     if (backdrops && Build.VERSION.SDK_INT >= 31 && canvas.isHardwareAccelerated())
-                        Effects.backdrop(this, s, list, i, command, resources, density);
+                        Effects.backdrop(this, s, list, i, functions, new RectF(cmdRect),
+                                hasRadii ? cmdRadii.clone() : null, resources, density);
                     break;
+                }
+                default:
+                    // Unknown kinds have no known length: the rest of the list cannot be read.
+                    throw WidgetDisplayList.invalid();
             }
         }
         while (!s.filters.isEmpty()) popFilter(s, density);
         while (s.depth > 0) s.pop();
+    }
+
+    /** Filter functions (display_list.h Filter), as the list carries them. */
+    static final class Filters {
+        final int[] kind, color;
+        final float[] amount, x, y;
+
+        Filters(int n) {
+            kind = new int[n];
+            color = new int[n];
+            amount = new float[n];
+            x = new float[n];
+            y = new float[n];
+        }
+
+        int size() {
+            return kind.length;
+        }
+    }
+
+    private static Filters readFilters(WidgetDisplayList.Cursor c) {
+        int n = c.count(WidgetDisplayList.MAX_FILTERS, 5);
+        Filters filters = new Filters(n);
+        for (int k = 0; k < n; k++) {
+            filters.kind[k] = c.i();
+            filters.amount[k] = c.f();
+            filters.x[k] = c.f();
+            filters.y[k] = c.f();
+            filters.color[k] = c.i();
+        }
+        return filters;
     }
 
     /** The saves of one paint: their depth, the transform from the list's origin, the open filters. */
@@ -273,23 +306,22 @@ final class WidgetSandboxPainter {
         Bitmap bitmap;
         final Matrix device = new Matrix();
         float scale;
-        JSONArray functions;
+        Filters functions;
     }
 
     /**
      * filter: on API 31+ on a hardware canvas the content is recorded into a RenderNode at the device's
      * resolution and drawn through a RenderEffect; otherwise it is drawn into a bitmap of its own, which
-     * twidget's CPU pass filters (WidgetSandboxNative#filterPixels). Under a rotation or skew, or past
+     * twidget's CPU pass filters (WidgetClientNative#filterPixels). Under a rotation or skew, or past
      * 4096² px, the content draws unfiltered.
      */
-    private void pushFilter(State s, JSONObject command, float density) {
+    private void pushFilter(State s, Filters functions, float density) {
         FilterFrame frame = new FilterFrame();
         frame.outer = s.canvas;
         frame.depth = s.depth;
         s.filters.add(frame);
-        JSONArray functions = command.optJSONArray("fl");
-        if (functions == null || functions.length() == 0) return;
-        readRect(command, "r", box);
+        if (functions.size() == 0) return;
+        box.set(cmdRect);
         if (box.isEmpty()) return;
         // The rect is the content's ink: blurs and shadows paint past it.
         reach(functions, box);
@@ -328,8 +360,8 @@ final class WidgetSandboxPainter {
             Effects.endFilter(frame, density);
             s.canvas = frame.outer;
         } else if (frame.bitmap != null) {
-            WidgetSandboxNative.filterPixels(
-                    frame.bitmap, frame.functions.toString().getBytes(StandardCharsets.UTF_8), frame.scale);
+            Filters f = frame.functions;
+            WidgetClientNative.filterPixels(frame.bitmap, f.kind, f.amount, f.x, f.y, f.color, frame.scale);
             s.canvas = frame.outer;
             // Back from device px to the content's coordinates. The bitmap is not touched again: a
             // recorded display list may hold it.
@@ -345,19 +377,17 @@ final class WidgetSandboxPainter {
     }
 
     /** Grows `box` (CSS px) by how far `functions` paint past it: blurs 3 deviations, a shadow that and its offset. */
-    private static void reach(JSONArray functions, RectF box) {
+    private static void reach(Filters functions, RectF box) {
         float left = 0, top = 0, right = 0, bottom = 0;
-        for (int k = 0; k < functions.length(); k++) {
-            JSONArray f = functions.optJSONArray(k);
-            if (f == null) continue;
-            float amount = Math.max(0, (float) f.optDouble(1));
-            if (f.optInt(0) == 0) {
+        for (int k = 0; k < functions.size(); k++) {
+            float amount = Math.max(0, functions.amount[k]);
+            if (functions.kind[k] == 0) {
                 left += 3 * amount;
                 top += 3 * amount;
                 right += 3 * amount;
                 bottom += 3 * amount;
-            } else if (f.optInt(0) == 9) {
-                float x = (float) f.optDouble(2), y = (float) f.optDouble(3);
+            } else if (functions.kind[k] == 9) {
+                float x = functions.x[k], y = functions.y[k];
                 left = Math.max(left, 1.5f * amount - x);
                 right = Math.max(right, 1.5f * amount + x);
                 top = Math.max(top, 1.5f * amount - y);
@@ -383,13 +413,11 @@ final class WidgetSandboxPainter {
     private static final class Effects {
 
         /** The effect of filter functions [kind, amount, x, y, ARGB] (display_list.h Filter); null: none. */
-        static RenderEffect effect(JSONArray functions, float density, Shader.TileMode edges) {
+        static RenderEffect effect(Filters functions, float density, Shader.TileMode edges) {
             RenderEffect effect = null;
-            for (int k = 0; k < functions.length(); k++) {
-                JSONArray function = functions.optJSONArray(k);
-                if (function == null) continue;
-                float amount = (float) function.optDouble(1);
-                switch (function.optInt(0)) {
+            for (int k = 0; k < functions.size(); k++) {
+                float amount = functions.amount[k];
+                switch (functions.kind[k]) {
                     case 0: { // blur(): the length is the standard deviation
                         float radius = blurRadius(amount * density);
                         if (radius <= 0) break;
@@ -406,9 +434,9 @@ final class WidgetSandboxPainter {
                     case 9: { // drop-shadow(): the content over its alpha in the colour, offset, blurred (sigma = blur / 2)
                         RenderEffect source = effect != null ? effect : RenderEffect.createOffsetEffect(0, 0);
                         RenderEffect shadow = RenderEffect.createColorFilterEffect(
-                                new PorterDuffColorFilter((int) function.optLong(4), PorterDuff.Mode.SRC_IN), source);
+                                new PorterDuffColorFilter(functions.color[k], PorterDuff.Mode.SRC_IN), source);
                         shadow = RenderEffect.createOffsetEffect(
-                                (float) function.optDouble(2) * density, (float) function.optDouble(3) * density, shadow);
+                                functions.x[k] * density, functions.y[k] * density, shadow);
                         float radius = blurRadius(amount / 2 * density);
                         if (radius > 0) shadow = RenderEffect.createBlurEffect(radius, radius, shadow, Shader.TileMode.DECAL);
                         effect = RenderEffect.createBlendModeEffect(shadow, source, BlendMode.SRC_OVER);
@@ -422,7 +450,7 @@ final class WidgetSandboxPainter {
         }
 
         /** A node over `box` (CSS px) at the device's resolution, and its canvas in CSS px; null: no effect. */
-        static Canvas beginFilter(FilterFrame frame, RectF box, JSONArray functions, float density) {
+        static Canvas beginFilter(FilterFrame frame, RectF box, Filters functions, float density) {
             RenderEffect effect = effect(functions, density, Shader.TileMode.DECAL);
             if (effect == null) return null;
             RenderNode node = new RenderNode("widget-filter");
@@ -450,13 +478,11 @@ final class WidgetSandboxPainter {
          * backdrop-filter: what the commands before `end` paint under the box, replayed into a node
          * through the effect, inside the box's rounded rect. The edges clamp, as browsers' do.
          */
-        static void backdrop(WidgetSandboxPainter painter, State s, JSONArray list, int end, JSONObject command,
-                             Resources resources, float density) {
-            JSONArray functions = command.optJSONArray("fl");
-            RenderEffect effect = functions == null ? null : effect(functions, density, Shader.TileMode.CLAMP);
+        static void backdrop(WidgetSandboxPainter painter, State s, WidgetDisplayList list, int end, Filters functions,
+                             RectF box, float[] corners, Resources resources, float density) {
+            RenderEffect effect = effect(functions, density, Shader.TileMode.CLAMP);
             Matrix inverse = new Matrix();
             if (effect == null || !s.current.invert(inverse)) return;
-            RectF box = readRect(command, "r", new RectF());
             if (box.isEmpty()) return;
             RenderNode node = new RenderNode("widget-backdrop");
             int left = (int) Math.floor(box.left * density), top = (int) Math.floor(box.top * density);
@@ -471,7 +497,7 @@ final class WidgetSandboxPainter {
             node.setRenderEffect(effect);
             Canvas into = s.canvas;
             into.save();
-            into.clipPath(painter.rounded(command, "r", painter.clipPath));
+            into.clipPath(roundedPath(box, corners, painter.clipPath));
             // The filtered copy replaces the box's backdrop: clear it in the layer (the list's own, or an opacity
             // group's, which is a backdrop root) before drawing the copy.
             into.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
@@ -493,32 +519,29 @@ final class WidgetSandboxPainter {
         paint.setColor(color);
     }
 
-    private void clip(Canvas canvas, JSONObject command) {
-        if (command.has("l")) canvas.clipRect(readRect(command, "l", clipRect));
+    /** `source` rounded by the command's radii. */
+    private Path rounded(RectF source, Path into) {
+        return roundedPath(source, hasRadii ? cmdRadii : null, into);
     }
 
-    private Path rounded(JSONObject command, String key, Path into) {
-        readRect(command, key, rect);
+    private static Path roundedPath(RectF source, float[] corners, Path into) {
         into.rewind();
-        JSONArray corners = command.optJSONArray("q");
-        if (corners == null) into.addRect(rect, Path.Direction.CW);
-        else {
-            for (int i = 0; i < 8; i++) radii[i] = (float) corners.optDouble(i);
-            into.addRoundRect(rect, radii, Path.Direction.CW);
-        }
+        if (corners == null) into.addRect(source, Path.Direction.CW);
+        else into.addRoundRect(source, corners, Path.Direction.CW);
         return into;
     }
 
-    private void gradient(Canvas canvas, JSONObject command, int kind) {
-        JSONArray stops = command.optJSONArray("s");
-        if (stops == null || stops.length() < 2) return;
-        int[] colors = stopColors(stops);
-        float[] offsets = stopOffsets(stops);
-        floats(command.optJSONArray("a"), numbers, 4);
+    private void gradient(Canvas canvas, WidgetDisplayList.Cursor c, int kind) {
+        c.floats(numbers, 4);
         float ax = numbers[0], ay = numbers[1], bx = numbers[2], by = numbers[3];
+        int n = c.count(WidgetDisplayList.MAX_STOPS, 2);
+        if (n == 0) return;
+        int[] colors = new int[Math.max(2, n)];
+        float[] offsets = n == 1 ? new float[] {0, 1} : new float[n];
+        readStops(c, n, colors, offsets);
         canvas.save();
-        clip(canvas, command);
-        canvas.clipPath(rounded(command, "r", clipPath));
+        if (hasClip) canvas.clipRect(cmdClip);
+        canvas.clipPath(rounded(cmdRect, clipPath));
         // Paint alpha multiplies the shader: a previous translucent fill must not fade the gradient.
         fill.setColor(0xff000000);
         if (kind == 6 && colors.length > 16) {
@@ -542,11 +565,23 @@ final class WidgetSandboxPainter {
             fill.setShader(new SweepGradient(ax, ay, colors, offsets));
             canvas.rotate(bx - 90, ax, ay);
         }
-        readRect(command, "r", rect);
         canvas.drawRect(
-                rect.left - 4000, rect.top - 4000, rect.right + 4000, rect.bottom + 4000, fill);
+                cmdRect.left - 4000, cmdRect.top - 4000, cmdRect.right + 4000, cmdRect.bottom + 4000, fill);
         fill.setShader(null);
         canvas.restore();
+    }
+
+    /**
+     * `n` stops (offset, ARGB) into `colors` and `offsets`, which hold at least two: Android gradients need two
+     * colours, so one stop is drawn as a solid gradient from 0 to 1.
+     */
+    private static void readStops(WidgetDisplayList.Cursor c, int n, int[] colors, float[] offsets) {
+        for (int k = 0; k < n; k++) {
+            float offset = Math.max(0, Math.min(1, c.f()));
+            colors[k] = c.i();
+            if (n > 1) offsets[k] = offset;
+        }
+        if (n == 1) colors[1] = colors[0];
     }
 
     /** A linear gradient as bands across its line, a two-stop gradient (or a solid colour) each. */
@@ -575,45 +610,69 @@ final class WidgetSandboxPainter {
         fill.setShader(null);
     }
 
-    private void svgPath(Canvas canvas, JSONObject shape) {
-        Path geometry = readPath(shape, path);
-        Shader gradient = pathGradient(shape, "g", "ga", "s");
-        if (gradient != null) {
+    private void svgPath(Canvas canvas, WidgetDisplayList.Cursor c) {
+        Path geometry = readPath(c, path);
+        int flags = c.i();
+        Shader fillShader = null;
+        int fillColor = 0;
+        if ((flags & 1) != 0) {
+            int kind = c.i();
+            if (kind == 0) fillColor = c.i();
+            else fillShader = pathGradient(c, kind);
+        }
+        boolean hasStroke = (flags & 2) != 0;
+        int strokeColor = 0, cap = 0, join = 0;
+        float width = 0, miter = 4, dashOffset = 0;
+        Shader strokeShader = null;
+        float[] dashes = null;
+        if (hasStroke) {
+            strokeColor = c.i();
+            int kind = c.i();
+            if (kind != 0) strokeShader = pathGradient(c, kind);
+            width = c.f();
+            cap = c.i();
+            join = c.i();
+            miter = c.f();
+            int n = c.count(WidgetDisplayList.MAX_DASHES, 1);
+            if (n > 0) {
+                dashes = new float[n];
+                c.floats(dashes, n);
+            }
+            dashOffset = c.f();
+        }
+        if (fillShader != null) {
             fill.setColor(0xff000000);
-            fill.setShader(gradient);
+            fill.setShader(fillShader);
             canvas.drawPath(geometry, fill);
             fill.setShader(null);
-        } else if (shape.has("f") && (argb(shape, "f") >>> 24) != 0) {
-            solid(fill, argb(shape, "f"));
+        } else if ((flags & 1) != 0 && (fillColor >>> 24) != 0) {
+            solid(fill, fillColor);
             canvas.drawPath(geometry, fill);
         }
-        float width = (float) shape.optDouble("sw");
-        Shader strokeGradient = width > 0 ? pathGradient(shape, "sg", "sga", "ss") : null;
-        if (shape.has("sc") && ((argb(shape, "sc") >>> 24) != 0 || strokeGradient != null) && width > 0) {
-            stroke.setColor(strokeGradient != null ? 0xff000000 : argb(shape, "sc"));
-            stroke.setShader(strokeGradient);
-            lineStyle(stroke, shape, width, 4);
+        if (width <= 0) strokeShader = null;
+        if (hasStroke && ((strokeColor >>> 24) != 0 || strokeShader != null) && width > 0) {
+            stroke.setColor(strokeShader != null ? 0xff000000 : strokeColor);
+            stroke.setShader(strokeShader);
+            lineStyle(stroke, width, cap, join, miter, dashes, dashOffset);
             canvas.drawPath(geometry, stroke);
             stroke.setPathEffect(null);
             stroke.setShader(null);
         }
     }
 
-    /** An SVG paint server: kind 1 linear (x1, y1 → x2, y2), 2 radial; null when absent. */
-    private Shader pathGradient(JSONObject shape, String kind, String geometry, String stopsKey) {
-        JSONArray stops = shape.optJSONArray(stopsKey);
-        if (!shape.has(kind) || stops == null || stops.length() < 4) return null;
-        int[] colors = stopColors(stops);
-        float[] offsets = stopOffsets(stops);
-        floats(shape.optJSONArray(geometry), numbers, 7);
+    /** An SVG paint server: kind 1 linear (x1, y1 → x2, y2), 2 radial; null when it has fewer than two stops. */
+    private Shader pathGradient(WidgetDisplayList.Cursor c, int kind) {
+        c.floats(numbers, 7);
+        float x1 = numbers[0], y1 = numbers[1], x2 = numbers[2], y2 = numbers[3], r = numbers[4];
+        int n = c.count(WidgetDisplayList.MAX_STOPS, 2);
+        int[] colors = new int[Math.max(2, n)];
+        float[] offsets = n == 1 ? new float[] {0, 1} : new float[Math.max(n, 2)];
+        readStops(c, n, colors, offsets);
+        if (n < 2) return null;
         // Android's radial gradient has no focus: it is centred, as the focus usually is.
-        return shape.optInt(kind) == 1
-                ? new LinearGradient(
-                        numbers[0], numbers[1], numbers[2], numbers[3], colors, offsets,
-                        Shader.TileMode.CLAMP)
-                : new RadialGradient(
-                        numbers[0], numbers[1], Math.max(numbers[4], .01f), colors, offsets,
-                        Shader.TileMode.CLAMP);
+        return kind == 1
+                ? new LinearGradient(x1, y1, x2, y2, colors, offsets, Shader.TileMode.CLAMP)
+                : new RadialGradient(x1, y1, Math.max(r, .01f), colors, offsets, Shader.TileMode.CLAMP);
     }
 
     /**
@@ -621,32 +680,31 @@ final class WidgetSandboxPainter {
      * padding box when inset. Hardware canvases blur shapes since API 28, so it records directly;
      * before, a blurred shadow is left out (a hardware canvas would draw it sharp).
      */
-    private void shadow(Canvas canvas, JSONObject command, float density) {
-        floats(command.optJSONArray("a"), numbers, 4);
+    private void shadow(Canvas canvas, WidgetDisplayList.Cursor c, float density) {
+        int color = c.i();
+        c.floats(numbers, 4);
+        boolean inset = c.i() != 0;
         float dx = numbers[0], dy = numbers[1], blur = Math.max(numbers[2], 0), spread = numbers[3];
-        int color = argb(command, "c");
-        readRect(command, "r", box);
+        box.set(cmdRect);
         if (box.isEmpty() || (color >>> 24) == 0) return;
         if (Build.VERSION.SDK_INT < 28 && blur / 2 * density > .5f) return;
-        boolean inset = command.optInt("n") != 0;
         shadowPaint.setColor(color);
         // Skia: sigma = 0.57735 r + 0.5 in device px; this inverts it for sigma = blur / 2.
         float sigma = blur / 2 * density;
         shadowPaint.setMaskFilter(sigma > .5f ? blurFilter((sigma - .5f) / .57735f / density) : null);
-        JSONArray corners = command.optJSONArray("q");
-        float radius = corners == null ? 0 : uniformRadius(corners);
+        float radius = hasRadii ? uniformRadius(cmdRadii) : 0;
         if (!inset && radius >= 0) {
             // A rect or a round rect of one radius: Skia blurs it analytically on the GPU, where a path's blur is a
             // mask rastered again on every frame.
             rect.set(box.left - spread + dx, box.top - spread + dy, box.right + spread + dx, box.bottom + spread + dy);
             // As the path below: listed radii grow by the spread, absent ones stay square.
-            float grown = corners != null ? Math.max(radius + spread, 0) : 0;
+            float grown = hasRadii ? Math.max(radius + spread, 0) : 0;
             canvas.save();
             if (radius == 0) {
                 if (Build.VERSION.SDK_INT >= 26) canvas.clipOutRect(box);
                 else canvas.clipRect(box, Region.Op.DIFFERENCE);
             } else {
-                Path border = rounded(command, "r", clipPath);
+                Path border = rounded(cmdRect, clipPath);
                 if (Build.VERSION.SDK_INT >= 26) canvas.clipOutPath(border);
                 else canvas.clipPath(border, Region.Op.DIFFERENCE);
             }
@@ -662,15 +720,15 @@ final class WidgetSandboxPainter {
             rect.set(box.left - reach, box.top - reach, box.right + reach, box.bottom + reach);
             shadowPath.addRect(rect, Path.Direction.CW);
             rect.set(box.left + spread, box.top + spread, box.right - spread, box.bottom - spread);
-            if (!rect.isEmpty()) addRounded(shadowPath, command, rect, -spread);
+            if (!rect.isEmpty()) addRounded(shadowPath, rect, -spread);
             shadowPath.setFillType(Path.FillType.EVEN_ODD);
         } else {
             rect.set(box.left - spread, box.top - spread, box.right + spread, box.bottom + spread);
-            addRounded(shadowPath, command, rect, command.has("q") ? spread : 0);
+            addRounded(shadowPath, rect, hasRadii ? spread : 0);
         }
         shadowPath.offset(dx, dy);
         canvas.save();
-        Path border = rounded(command, "r", clipPath);
+        Path border = rounded(cmdRect, clipPath);
         if (inset) canvas.clipPath(border);
         else if (Build.VERSION.SDK_INT >= 26) canvas.clipOutPath(border);
         else canvas.clipPath(border, Region.Op.DIFFERENCE);
@@ -679,21 +737,19 @@ final class WidgetSandboxPainter {
         shadowPaint.setMaskFilter(null);
     }
 
-    /** Draws the rect "r" of `command`, rounded by its "q": a rect or a round rect where it can, a path otherwise. */
-    private void drawRounded(Canvas canvas, JSONObject command, Paint paint) {
-        JSONArray corners = command.optJSONArray("q");
-        float radius = corners == null ? 0 : uniformRadius(corners);
-        if (radius == 0) canvas.drawRect(readRect(command, "r", rect), paint);
-        else if (radius > 0) canvas.drawRoundRect(readRect(command, "r", rect), radius, radius, paint);
-        else canvas.drawPath(rounded(command, "r", path), paint);
+    /** Draws the command's rect, rounded by its radii: a rect or a round rect where it can, a path otherwise. */
+    private void drawRounded(Canvas canvas, Paint paint) {
+        float radius = hasRadii ? uniformRadius(cmdRadii) : 0;
+        if (radius == 0) canvas.drawRect(cmdRect, paint);
+        else if (radius > 0) canvas.drawRoundRect(cmdRect, radius, radius, paint);
+        else canvas.drawPath(rounded(cmdRect, path), paint);
     }
 
     /** The radius all eight of `corners` share (both axes of every corner), or -1 when they differ. */
-    private static float uniformRadius(JSONArray corners) {
-        if (corners.length() < 8) return -1;
-        double first = corners.optDouble(0);
-        for (int i = 1; i < 8; i++) if (corners.optDouble(i) != first) return -1;
-        return (float) first;
+    private static float uniformRadius(float[] corners) {
+        float first = corners[0];
+        for (int i = 1; i < 8; i++) if (corners[i] != first) return -1;
+        return first;
     }
 
     /**
@@ -722,48 +778,40 @@ final class WidgetSandboxPainter {
         return filter;
     }
 
-    /** The radii of `command` grown by `grow`, on `area`. */
-    private void addRounded(Path into, JSONObject command, RectF area, float grow) {
-        JSONArray corners = command.optJSONArray("q");
-        if (corners == null) into.addRect(area, Path.Direction.CW);
+    /** The command's radii grown by `grow`, on `area`. */
+    private void addRounded(Path into, RectF area, float grow) {
+        if (!hasRadii) into.addRect(area, Path.Direction.CW);
         else {
-            for (int i = 0; i < 8; i++)
-                radii[i] = Math.max((float) corners.optDouble(i) + grow, 0);
+            for (int i = 0; i < 8; i++) radii[i] = Math.max(cmdRadii[i] + grow, 0);
             into.addRoundRect(area, radii, Path.Direction.CW);
         }
     }
 
-    // ── JSON helpers shared with WidgetCanvas ──
-
-    /** {"o": op codes (0 move, 1 line, 2 quad, 3 cubic, 4 close), "v": points, "e": evenodd}. */
-    static Path readPath(JSONObject json, Path into) {
+    /** A path (op count, point count, op bytes, points, evenodd) into `into`. */
+    private Path readPath(WidgetDisplayList.Cursor c, Path into) {
         into.rewind();
-        JSONArray ops = json.optJSONArray("o");
-        JSONArray points = json.optJSONArray("v");
-        if (ops == null) return into;
-        int count = points == null ? 0 : points.length();
+        int ops = c.count(WidgetDisplayList.MAX_PATH_OPS, 0);
+        int count = c.count(WidgetDisplayList.MAX_PATH_OPS * 6, 1);
+        int start = c.ops(ops);
+        if (points.length < count) points = new float[Math.max(count, points.length * 2)];
+        c.floats(points, count);
         int i = 0;
-        for (int n = 0; n < ops.length(); n++) {
-            int op = ops.optInt(n);
+        for (int n = 0; n < ops; n++) {
+            int op = c.op(start, n);
             int need = op == 3 ? 6 : op == 2 ? 4 : op == 4 ? 0 : 2;
             if (i + need > count) break;
             switch (op) {
                 case 0:
-                    into.moveTo(point(points, i), point(points, i + 1));
+                    into.moveTo(points[i], points[i + 1]);
                     break;
                 case 1:
-                    into.lineTo(point(points, i), point(points, i + 1));
+                    into.lineTo(points[i], points[i + 1]);
                     break;
                 case 2:
-                    into.quadTo(
-                            point(points, i), point(points, i + 1),
-                            point(points, i + 2), point(points, i + 3));
+                    into.quadTo(points[i], points[i + 1], points[i + 2], points[i + 3]);
                     break;
                 case 3:
-                    into.cubicTo(
-                            point(points, i), point(points, i + 1),
-                            point(points, i + 2), point(points, i + 3),
-                            point(points, i + 4), point(points, i + 5));
+                    into.cubicTo(points[i], points[i + 1], points[i + 2], points[i + 3], points[i + 4], points[i + 5]);
                     break;
                 case 4:
                     into.close();
@@ -771,28 +819,11 @@ final class WidgetSandboxPainter {
             }
             i += need;
         }
-        into.setFillType(
-                json.optInt("e") != 0 ? Path.FillType.EVEN_ODD : Path.FillType.WINDING);
+        into.setFillType(c.i() != 0 ? Path.FillType.EVEN_ODD : Path.FillType.WINDING);
         return into;
     }
 
-    private static float point(JSONArray points, int index) {
-        return (float) points.optDouble(index);
-    }
-
-    /** `[x, y, w, h]` into `out`; empty when absent. */
-    static RectF readRect(JSONObject json, String key, RectF out) {
-        JSONArray box = json.optJSONArray(key);
-        if (box == null) {
-            out.setEmpty();
-            return out;
-        }
-        float x = (float) box.optDouble(0), y = (float) box.optDouble(1);
-        out.set(x, y, x + (float) box.optDouble(2), y + (float) box.optDouble(3));
-        return out;
-    }
-
-    /** The first `count` numbers of `array` into `out`, or `fallback` where absent. */
+    /** The first `count` numbers of `array` into `out`, or `fallback` where absent (the composition's JSON). */
     static void floats(JSONArray array, float[] out, int count, float... fallback) {
         for (int i = 0; i < count; i++) {
             float value = i < fallback.length ? fallback[i] : 0;
@@ -800,47 +831,22 @@ final class WidgetSandboxPainter {
         }
     }
 
-    /** ARGB as the JSON writes it (an unsigned 32-bit number). */
-    static int argb(JSONObject json, String key) {
-        return (int) json.optLong(key);
-    }
-
-    /** Stops as offset, ARGB pairs; Android gradients need two colours at least. */
-    static int[] stopColors(JSONArray stops) {
-        int count = stops.length() / 2;
-        int[] colors = new int[Math.max(2, count)];
-        for (int i = 0; i < count; i++) colors[i] = (int) stops.optLong(i * 2 + 1);
-        if (count == 1) colors[1] = colors[0];
-        return colors;
-    }
-
-    static float[] stopOffsets(JSONArray stops) {
-        int count = stops.length() / 2;
-        if (count == 1) return new float[] {0, 1};
-        float[] offsets = new float[count];
-        for (int i = 0; i < count; i++)
-            offsets[i] = Math.max(0, Math.min(1, (float) stops.optDouble(i * 2)));
-        return offsets;
-    }
-
-    static void lineStyle(Paint paint, JSONObject json, float width, float defaultMiter) {
+    static void lineStyle(Paint paint, float width, int cap, int join, float miter, float[] dashes, float dashOffset) {
         paint.setStrokeWidth(width);
-        int cap = json.optInt("lc"), join = json.optInt("lj");
         paint.setStrokeCap(cap == 1 ? Paint.Cap.ROUND : cap == 2 ? Paint.Cap.SQUARE : Paint.Cap.BUTT);
         paint.setStrokeJoin(
                 join == 1 ? Paint.Join.ROUND : join == 2 ? Paint.Join.BEVEL : Paint.Join.MITER);
-        paint.setStrokeMiter((float) json.optDouble("ml", defaultMiter));
-        JSONArray dashes = json.optJSONArray("d");
+        paint.setStrokeMiter(miter);
         paint.setPathEffect(null);
-        if (dashes == null || dashes.length() == 0) return;
+        if (dashes == null || dashes.length == 0) return;
         // DashPathEffect wants an even count; the canvas and SVG repeat an odd list twice.
-        int count = dashes.length();
+        int count = dashes.length;
         float[] intervals = new float[count % 2 == 1 ? count * 2 : count];
         float sum = 0;
         for (int i = 0; i < intervals.length; i++) {
-            intervals[i] = Math.max(0, (float) dashes.optDouble(i % count));
+            intervals[i] = Math.max(0, dashes[i % count]);
             sum += intervals[i];
         }
-        if (sum > 0) paint.setPathEffect(new DashPathEffect(intervals, (float) json.optDouble("do")));
+        if (sum > 0) paint.setPathEffect(new DashPathEffect(intervals, dashOffset));
     }
 }

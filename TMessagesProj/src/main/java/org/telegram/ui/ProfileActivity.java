@@ -753,6 +753,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     PinchToZoomHelper pinchToZoomHelper;
 
     private View transitionOnlineText;
+    private float transitionOnlineTextOffsetX;
     private int actionBarAnimationColorFrom = 0;
     private int navigationBarAnimationColorFrom = 0;
     private int reportReactionMessageId = 0;
@@ -3679,6 +3680,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             @Override
+            protected void onReorderingChanged() {
+                updateHeaderItems(true);
+            }
+
+            @Override
             protected boolean includeSavedDialogs() {
                 return dialogId == getUserConfig().getClientUserId() && !saved;
             }
@@ -5214,7 +5220,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 super.dispatchDraw(canvas);
                 if (transitionOnlineText != null) {
                     canvas.save();
-                    canvas.translate(onlineTextView.getX(), onlineTextView.getY());
+                    canvas.translate(onlineTextView.getX() + transitionOnlineTextOffsetX, onlineTextView.getY());
                     canvas.saveLayerAlpha(0, 0, transitionOnlineText.getMeasuredWidth(), transitionOnlineText.getMeasuredHeight(), (int) (255 * (1f - avatarAnimationProgress)), Canvas.ALL_SAVE_FLAG);
                     transitionOnlineText.draw(canvas);
                     canvas.restore();
@@ -8027,13 +8033,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (otherItem == null) {
             return;
         }
-        final boolean profile = !mediaHeaderVisible;
+        // the Save button of the reordering takes the right of the header
+        final boolean profile = !mediaHeaderVisible && !(sharedMediaLayout != null && sharedMediaLayout.isReordering());
         final boolean photo = isPulledDown;
         setHeaderItemShown(callItem, profile && !photo && callItemVisible, animated);
         setHeaderItemShown(videoCallItem, profile && !photo && videoCallItemVisible, animated);
         setHeaderItemShown(editItem, profile && !photo && editItemVisible, animated);
         // the media's ⋮ takes the place of the profile's ⋮ (both the last in the pill): the same button, nothing to animate
-        final boolean optionsSwap = sharedMediaLayout != null && sharedMediaLayout.hasSimpleOptions();
+        final boolean optionsSwap = sharedMediaLayout != null && sharedMediaLayout.hasSimpleOptions() && !sharedMediaLayout.isReordering();
         setHeaderItemShown(otherItem, profile, animated && !optionsSwap);
         if (sharedMediaLayout != null) {
             sharedMediaLayout.setSimpleMenuItemsAllowed(mediaHeaderVisible, animated, animated && !optionsSwap);
@@ -8554,7 +8561,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         starFgItem.setTranslationX(avatarContainer.getX() + dp(28) + extra);
         starFgItem.setTranslationY(avatarContainer.getY() + dp(24) + extra);
 
-        float nameScale = AndroidUtilities.lerp(1f, backwardInitialValues[7], backwardDiff);
+        float nameScale = AndroidUtilities.lerp(getPreviousHeaderTextScale(PREVIOUS_HEADER_TITLE), backwardInitialValues[7], backwardDiff);
 
         final float minEndNameY = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
                 + ActionBar.getCurrentActionBarHeight() / 2f
@@ -8567,8 +8574,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         nameY = AndroidUtilities.lerp(minNameY, backwardInitialValues[8], backwardDiff);
         onlineY = AndroidUtilities.lerp(minOnlineY, backwardInitialValues[9], backwardDiff);
 
-        final float nameX = lerp((prevAvatarTranslation - dp(109) + dp(48)), backwardInitialValues[12], backwardDiff);
-        final float onlineX = lerp((prevAvatarTranslation - dp(109) + dp(48)), backwardInitialValues[13], backwardDiff);
+        final float minimizedX = prevAvatarTranslation - dp(109) + dp(48);
+        final float nameX = lerp(getPreviousHeaderTranslationX(nameTextView, PREVIOUS_HEADER_TITLE, minimizedX), backwardInitialValues[12], backwardDiff);
+        final float onlineX = lerp(getPreviousHeaderTranslationX(onlineTextView, PREVIOUS_HEADER_SUBTITLE, minimizedX + customPhotoOffset) - customPhotoOffset, backwardInitialValues[13], backwardDiff);
         nameTextView.setTranslationX(nameX);
         nameTextView.setTranslationY(nameY);
         onlineTextView.setTranslationX(onlineX + customPhotoOffset);
@@ -8577,6 +8585,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         this.onlineX = onlineX;
         nameTextView.setScaleX(nameScale);
         nameTextView.setScaleY(nameScale);
+        final float onlineScale = AndroidUtilities.lerp(getPreviousHeaderTextScale(PREVIOUS_HEADER_SUBTITLE), 1f, backwardDiff);
+        onlineTextView.setScaleX(onlineScale);
+        onlineTextView.setScaleY(onlineScale);
         updateCollectibleHint();
 
         final int newTop = (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + ActionBar.getCurrentActionBarHeight();
@@ -8998,7 +9009,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (giftsView != null) {
                     giftsView.setCollapseProgress(diff, openAnimationInProgress);
                 }
-                final float nameScale = 1.0f + 0.12f * diff;
+                final float nameScale = openAnimationInProgress ? AndroidUtilities.lerp(getPreviousHeaderTextScale(PREVIOUS_HEADER_TITLE), 1.12f, diff) : 1.0f + 0.12f * diff;
                 if (expandAnimator == null || !expandAnimator.isRunning()) {
                     avatarContainer.setScaleX(avatarScale);
                     avatarContainer.setScaleY(avatarScale);
@@ -9033,6 +9044,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 int viewportWidth = listView.getMeasuredWidth();
                 nameTextView.setScaleX(nameScale);
                 nameTextView.setScaleY(nameScale);
+                final float onlineScale = openAnimationInProgress ? AndroidUtilities.lerp(getPreviousHeaderTextScale(PREVIOUS_HEADER_SUBTITLE), 1f, diff) : 1f;
+                onlineTextView.setScaleX(onlineScale);
+                onlineTextView.setScaleY(onlineScale);
                 textMeasured = true;
                 needLayoutText(diff, 0, false);
 
@@ -9048,8 +9062,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 onlineTextRatingPadding = onlinePadding;
                 if (openAnimationInProgress) {
                     // from the title of the chat's header to the centre
-                    nameX = AndroidUtilities.lerp(minimizedX, nameX, diff);
-                    onlineX = AndroidUtilities.lerp(minimizedX, onlineX, diff);
+                    nameX = AndroidUtilities.lerp(getPreviousHeaderTranslationX(nameTextView, PREVIOUS_HEADER_TITLE, minimizedX), nameX, diff);
+                    onlineX = AndroidUtilities.lerp(getPreviousHeaderTranslationX(onlineTextView, PREVIOUS_HEADER_SUBTITLE, minimizedX), onlineX, diff);
                 }
 
                 if (expandAnimator == null || !expandAnimator.isRunning()) {
@@ -10060,6 +10074,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (simpleActionBar != null) {
             simpleActionBar.setAlpha(progress);
         }
+        if (actionBar != null) {
+            // the back button comes from where the previous header has it
+            actionBar.getBackButton().setTranslationX(lerp(getPreviousHeaderTranslationX(actionBar.getBackButton(), PREVIOUS_HEADER_BACK, dp(2)), dp(2), progress));
+        }
         if (playProfileAnimation == 2) {
             avatarImage.setProgressToExpand(progress);
             if (actionsView != null) {
@@ -10184,6 +10202,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (fragment instanceof ChatActivityInterface) {
                 previousTransitionFragment = (ChatActivityInterface) fragment;
             }
+            if (fragment instanceof MainTabsActivity) {
+                fragment = ((MainTabsActivity) fragment).getDialogsActivity();
+            }
             if (fragment instanceof DialogsActivity) {
                 DialogsActivity dialogsActivity = (DialogsActivity) fragment;
                 if (dialogsActivity.rightSlidingDialogContainer != null && dialogsActivity.rightSlidingDialogContainer.currentFragment instanceof ChatActivityInterface) {
@@ -10194,7 +10215,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         final ActionBar previousActionBar;
-        if (previousTransitionFragment instanceof ChatActivity) {
+        if (previousTransitionFragment != null && previousTransitionFragment.getActionBar() != null) {
+            // the profile's name and avatar move from the header of the chat or topics: the original ones stay hidden
             previousActionBar = previousTransitionFragment.getActionBar();
             previousActionBar.setSkipDrawChild(true);
         } else {
@@ -10332,10 +10354,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (previousTransitionFragment != null) {
                 ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
                 if (avatarContainer != null) {
-                    prevAvatarTranslation = ViewPositionWatcher.computeXCoordinateInParent(avatarContainer.avatarImageView, previousTransitionFragment.getContentView());
+                    prevAvatarTranslation = computePreviousAvatarX(avatarContainer);
                 }
-                if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null || avatarContainer.statusMadeShorter[0]) {
+                if (avatarContainer != null && avatarContainer.getSubtitleTextView() instanceof SimpleTextView && ((SimpleTextView) avatarContainer.getSubtitleTextView()).getLeftDrawable() != null || avatarContainer.statusMadeShorter[0] || isPreviousTopicsSubtitleDifferent(avatarContainer)) {
                     transitionOnlineText = avatarContainer.getSubtitleTextView();
+                    transitionOnlineTextOffsetX = getTransitionOnlineTextOffsetX();
                     avatarContainer2.invalidate();
                     onlineTextCrosafade = true;
                     onlineTextView.setAlpha(0f);
@@ -10438,6 +10461,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     crossfadeOnlineText = true;
                     animators.add(ObjectAnimator.ofFloat(onlineTextView, View.ALPHA, 0.0f));
                 }
+            } else if (previousTransitionFragment != null && previousTransitionFragment.getAvatarContainer() != null) {
+                // topics, also in the side panel of the chat list: the avatar goes back to where the header shows it
+                final ChatAvatarContainer avatarContainer = previousTransitionFragment.getAvatarContainer();
+                AndroidUtilities.doOnPreDraw(avatarContainer, () -> {
+                    prevAvatarTranslation = computePreviousAvatarX(avatarContainer);
+                    fixAvatarImageInCenter();
+                });
+                if (isPreviousTopicsSubtitleDifferent(avatarContainer)) {
+                    transitionOnlineText = avatarContainer.getSubtitleTextView();
+                    transitionOnlineTextOffsetX = getTransitionOnlineTextOffsetX();
+                    avatarContainer2.invalidate();
+                    crossfadeOnlineText = true;
+                    animators.add(ObjectAnimator.ofFloat(onlineTextView, View.ALPHA, 0.0f));
+                }
             }
             if (!crossfadeOnlineText && playProfileAnimation == 2) {
                 animators.add(ObjectAnimator.ofFloat(onlineTextView, View.ALPHA, 0.0f));
@@ -10505,6 +10542,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     avatarsViewPager.setVisibility(View.VISIBLE);
                 }
                 transitionOnlineText = null;
+                transitionOnlineTextOffsetX = 0;
                 avatarContainer2.invalidate();
                 profileTransitionInProgress = false;
                 previousTransitionFragment = null;
@@ -10517,6 +10555,78 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         AndroidUtilities.runOnUIThread(animatorSet::start, 50);
         return animatorSet;
     }
+
+    /** Where the avatar of the previous header is on the screen: the topics in the side panel are not in their content view. */
+    private float computePreviousAvatarX(ChatAvatarContainer avatarContainer) {
+        return ViewPositionWatcher.computeRectInParent(avatarContainer.avatarImageView, getPreviousTransitionRoot(), previousAvatarRect) ? previousAvatarRect.left : 0;
+    }
+
+    private View getPreviousTransitionRoot() {
+        return previousTransitionMainFragment != null && previousTransitionMainFragment.getFragmentView() != null ? previousTransitionMainFragment.getFragmentView() : previousTransitionFragment.getContentView();
+    }
+
+    private static final int PREVIOUS_HEADER_TITLE = 0, PREVIOUS_HEADER_SUBTITLE = 1, PREVIOUS_HEADER_BACK = 2;
+
+    /**
+     * The translation of {@code view} that puts it where the previous header shows its title, subtitle or back button.
+     * The header of the topics lays them out other than the chat's, so they are measured instead of {@code fallback}.
+     */
+    private float getPreviousHeaderTranslationX(View view, int which, float fallback) {
+        if (previousTransitionFragment == null || previousTransitionFragment instanceof ChatActivity || fragmentView == null || !(view.getParent() instanceof View)) {
+            return fallback;
+        }
+        final ChatAvatarContainer previousAvatarContainer = previousTransitionFragment.getAvatarContainer();
+        final ActionBar previousActionBar = previousTransitionFragment.getActionBar();
+        final View previousView;
+        if (which == PREVIOUS_HEADER_TITLE) {
+            previousView = previousAvatarContainer != null ? previousAvatarContainer.getTitleTextView() : null;
+        } else if (which == PREVIOUS_HEADER_SUBTITLE) {
+            previousView = previousAvatarContainer != null ? previousAvatarContainer.getSubtitleTextView() : null;
+        } else {
+            previousView = previousActionBar != null ? previousActionBar.getBackButton() : null;
+        }
+        if (previousView == null || !ViewPositionWatcher.computeRectInParent(previousView, getPreviousTransitionRoot(), previousAvatarRect)) {
+            return fallback;
+        }
+        final float previousX = previousAvatarRect.left;
+        if (!ViewPositionWatcher.computeRectInParent((View) view.getParent(), fragmentView, previousAvatarRect)) {
+            return fallback;
+        }
+        if (which == PREVIOUS_HEADER_BACK) {
+            return previousX - (previousAvatarRect.left + view.getLeft());
+        }
+        return previousX + previousView.getPaddingLeft() - (previousAvatarRect.left + view.getLeft() + view.getPaddingLeft());
+    }
+
+    /** The topics' header may show another status than the profile, e.g. without the online count: then they crossfade. */
+    private boolean isPreviousTopicsSubtitleDifferent(ChatAvatarContainer previousAvatarContainer) {
+        if (previousTransitionFragment instanceof ChatActivity || !(previousAvatarContainer.getSubtitleTextView() instanceof SimpleTextView)) {
+            return false;
+        }
+        final CharSequence previousText = ((SimpleTextView) previousAvatarContainer.getSubtitleTextView()).getText();
+        return !TextUtils.equals(previousText != null ? previousText.toString() : null, onlineTextView.getText() != null ? onlineTextView.getText().toString() : null);
+    }
+
+    /** The status of the topics' header is drawn over the profile's: their texts start at the same place. */
+    private float getTransitionOnlineTextOffsetX() {
+        if (previousTransitionFragment instanceof ChatActivity || transitionOnlineText == null) {
+            return 0;
+        }
+        return onlineTextView.getPaddingLeft() - transitionOnlineText.getPaddingLeft();
+    }
+
+    /** The topics' header has larger texts than the chat's: the name and the status start at their size. */
+    private float getPreviousHeaderTextScale(int which) {
+        if (previousTransitionFragment == null || previousTransitionFragment instanceof ChatActivity || previousTransitionFragment.getAvatarContainer() == null) {
+            return 1f;
+        }
+        final ChatAvatarContainer previousAvatarContainer = previousTransitionFragment.getAvatarContainer();
+        final View previousText = which == PREVIOUS_HEADER_TITLE ? previousAvatarContainer.getTitleTextView() : previousAvatarContainer.getSubtitleTextView();
+        final float size = (which == PREVIOUS_HEADER_TITLE ? nameTextView : onlineTextView).getPaint().getTextSize();
+        return previousText instanceof SimpleTextView && size > 0 ? ((SimpleTextView) previousText).getPaint().getTextSize() / size : 1f;
+    }
+
+    private final RectF previousAvatarRect = new RectF();
 
     private int getAverageColor(ImageReceiver imageReceiver) {
         if (imageReceiver.getDrawable() instanceof VectorAvatarThumbDrawable) {
@@ -11513,6 +11623,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             BaseFragment fragment = parentLayout.getFragmentStack().get(parentLayout.getFragmentStack().size() - 2);
             if (fragment instanceof ChatActivityInterface) {
                 prevFragment = fragment;
+            }
+            if (fragment instanceof MainTabsActivity) {
+                fragment = ((MainTabsActivity) fragment).getDialogsActivity();
             }
             if (fragment instanceof DialogsActivity) {  //
                 DialogsActivity dialogsActivity = (DialogsActivity) fragment;
@@ -15510,6 +15623,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         writeButtonSetBackground();
         fullyVisible = true;
         createBirthdayEffect();
+        // a main tab that appears without a transition (animations off, or a tab switch done in one frame)
+        // never gets onTransitionAnimationEnd, so the header is left without its pull-down padding
+        if (hasMainTabs && !fragmentOpened && fragmentView != null) {
+            fragmentOpened = true;
+            invalidateScroll = true;
+            fragmentView.requestLayout();
+        }
     }
 
     private View writeButtonBgFor;

@@ -18,6 +18,7 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.os.Build;
 import androidx.annotation.Nullable;
 import android.view.Surface;
 
@@ -190,8 +191,20 @@ public class ScreenCapturerAndroid implements VideoCapturer, VideoSink {
     // with frame processing, which happens on the same thread (we serialize events by running
     // them on the same thread).
     ThreadUtils.invokeAtFrontUninterruptibly(surfaceTextureHelper.getHandler(), () -> {
-      virtualDisplay.release();
-      createVirtualDisplay();
+      if (virtualDisplay == null) {
+        return;
+      }
+      // Since Android 14 a MediaProjection allows only one createVirtualDisplay() call and
+      // re-creating it stops the projection, so resize the existing display instead
+      // (before Android 12 resizing can scale the captured screen incorrectly).
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        virtualDisplay.release();
+        createVirtualDisplay();
+      } else {
+        surfaceTextureHelper.setTextureSize(width, height);
+        virtualDisplay.resize(width, height, VIRTUAL_DISPLAY_DPI);
+        virtualDisplay.setSurface(new Surface(surfaceTextureHelper.getSurfaceTexture()));
+      }
     });
   }
 
