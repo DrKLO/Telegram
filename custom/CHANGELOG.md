@@ -1,3 +1,14 @@
+## [1.0.5]
+
+### Anti-Unsend
+- No functional change.
+
+### Edit History
+- No functional change.
+  
+### Known issues
+- None reported.
+
 ## [1.0.4]
 
 ### Anti-Unsend
