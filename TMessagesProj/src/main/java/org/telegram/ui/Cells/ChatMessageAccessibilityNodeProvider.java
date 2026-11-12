@@ -432,14 +432,18 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 cell.seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
             }
 
+            cell.reportedVirtualViewIds.clear();
+
             if (cell.useTranscribeButton && cell.transcribeButton != null) {
                 info.addChild(cell, TRANSCRIBE);
+                cell.reportedVirtualViewIds.add(TRANSCRIBE);
             }
 
             int i;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                 if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
                     info.addChild(cell, PROFILE);
+                    cell.reportedVirtualViewIds.add(PROFILE);
                 }
                 if (cell.currentMessageObject.messageText instanceof Spannable) {
                     Spannable buffer = (Spannable) cell.currentMessageObject.messageText;
@@ -447,6 +451,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     i = 0;
                     for (CharacterStyle link : links) {
                         info.addChild(cell, LINK_IDS_START + i);
+                        cell.reportedVirtualViewIds.add(LINK_IDS_START + i);
                         i++;
                     }
                 }
@@ -456,6 +461,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     i = 0;
                     for (CharacterStyle link : links) {
                         info.addChild(cell, LINK_CAPTION_IDS_START + i);
+                        cell.reportedVirtualViewIds.add(LINK_CAPTION_IDS_START + i);
                         i++;
                     }
                 }
@@ -463,43 +469,54 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             i = 0;
             for (BotButton button : cell.botButtons) {
                 info.addChild(cell, BOT_BUTTONS_START + i);
+                cell.reportedVirtualViewIds.add(BOT_BUTTONS_START + i);
                 i++;
             }
             if (cell.hintButtonVisible && cell.pollHintX != -1 && cell.currentMessageObject.isPoll()) {
                 info.addChild(cell, POLL_HINT);
+                cell.reportedVirtualViewIds.add(POLL_HINT);
             }
             i = 0;
             for (ChatMessageCell.PollButton button : cell.pollButtons) {
                 info.addChild(cell, POLL_BUTTONS_START + i);
+                cell.reportedVirtualViewIds.add(POLL_BUTTONS_START + i);
                 i++;
             }
             if (cell.drawInstantView && !cell.instantButtonRect.isEmpty()) {
                 info.addChild(cell, INSTANT_VIEW);
+                cell.reportedVirtualViewIds.add(INSTANT_VIEW);
             }
             if (cell.contact != null && cell.contact.visible && cell.contactRect != null && !cell.contactRect.isEmpty()) {
                 info.addChild(cell, CONTACT);
+                cell.reportedVirtualViewIds.add(CONTACT);
                 if (cell.contact.buttons != null && cell.contact.buttons.size() > 1) {
                     for (ChatMessageCell.InstantViewButton instantViewButton : cell.contact.buttons) {
                         if (cell.contact.drawView && instantViewButton.type == ChatMessageCell.INSTANT_BUTTON_TYPE_CONTACT_VIEW && !instantViewButton.rect.isEmpty()) {
                             info.addChild(cell, CONTACT_VIEW);
+                            cell.reportedVirtualViewIds.add(CONTACT_VIEW);
                         }
                         if (cell.contact.drawAdd && instantViewButton.type == ChatMessageCell.INSTANT_BUTTON_TYPE_CONTACT_ADD && !instantViewButton.rect.isEmpty()) {
                             info.addChild(cell, CONTACT_ADD);
+                            cell.reportedVirtualViewIds.add(CONTACT_ADD);
                         }
                         if (cell.contact.drawSendMessage && instantViewButton.type == ChatMessageCell.INSTANT_BUTTON_TYPE_CONTACT_SEND_MESSAGE && !instantViewButton.rect.isEmpty()) {
                             info.addChild(cell, CONTACT_MESSAGE);
+                            cell.reportedVirtualViewIds.add(CONTACT_MESSAGE);
                         }
                     }
                 }
             }
             if (cell.commentLayout != null) {
                 info.addChild(cell, COMMENT);
+                cell.reportedVirtualViewIds.add(COMMENT);
             }
             if (cell.drawSideButton == 1 || cell.drawSideButton == 2) {
                 info.addChild(cell, SHARE);
+                cell.reportedVirtualViewIds.add(SHARE);
             }
             if (cell.replyNameLayout != null) {
                 info.addChild(cell, REPLY);
+                cell.reportedVirtualViewIds.add(REPLY);
             }
             if (cell.currentMessageObject != null && cell.currentMessageObject.richLayout != null) {
                 final RichMessageLayout richLayout = cell.currentMessageObject.richLayout;
@@ -512,6 +529,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     final int count = block.getAccessibilityElementCount();
                     for (int e = 0; e < count; e++) {
                         info.addChild(cell, RICH_MEDIA_START + acc + e);
+                        cell.reportedVirtualViewIds.add(RICH_MEDIA_START + acc + e);
                     }
                     acc += count;
                 }
@@ -891,8 +909,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setBoundsInScreen(rect);
                 info.setClickable(true);
             }
+            // a message not laid out yet has buttons with no place on the screen
+            info.getBoundsInScreen(rect);
+            if (rect.isEmpty()) {
+                return null;
+            }
+            // tie each button to the one before it, so going back follows going forward
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                final int previous = cell.previousVirtualViewId(virtualViewId);
+                if (previous != ChatMessageCell.NO_PREVIOUS_VIRTUAL_VIEW) {
+                    info.setTraversalAfter(cell, previous);
+                }
+            }
             info.setFocusable(true);
-            info.setVisibleToUser(true);
+            info.setVisibleToUser(cell.isAccessibilityStopOnScreen(rect, pos));
             return info;
         }
     }
@@ -903,7 +933,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             cell.performAccessibilityAction(action, arguments);
         } else {
             if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+                cell.accessibilityFocusedStop = virtualViewId;
                 cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED);
+            } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+                if (cell.accessibilityFocusedStop == virtualViewId) {
+                    cell.accessibilityFocusedStop = ChatMessageCell.NO_ACCESSIBILITY_STOP;
+                }
             } else if (action == AccessibilityNodeInfo.ACTION_CLICK) {
                 if (virtualViewId == PROFILE) {
                     if (cell.delegate != null) {

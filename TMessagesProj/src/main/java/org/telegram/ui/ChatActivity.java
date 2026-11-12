@@ -4757,6 +4757,56 @@ public class ChatActivity extends BaseFragment implements
                 return super.requestChildRectangleOnScreen(child, rect, immediate);
             }
 
+            private final Rect accessibilityVisibleRect = new Rect();
+
+            // a screen reader scrolls a page at a time, which may not reach the next stop of a tall message
+            @Override
+            public boolean performAccessibilityAction(int action, Bundle arguments) {
+                if ((action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD || action == AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) && scrollToAccessibilityStop(action == AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                    return true;
+                }
+                return super.performAccessibilityAction(action, arguments);
+            }
+
+            private boolean scrollToAccessibilityStop(boolean forward) {
+                if (!canScrollVertically(forward ? 1 : -1) || !getLocalVisibleRect(accessibilityVisibleRect)) {
+                    return false;
+                }
+                final int top = Math.max(accessibilityVisibleRect.top, (int) chatListViewPaddingTop);
+                final int bottom = Math.min(accessibilityVisibleRect.bottom, getHeight() - getPaddingBottom());
+                final int page = bottom - top;
+                if (page <= 0) {
+                    return false;
+                }
+                for (int i = 0; i < getChildCount(); i++) {
+                    final View child = getChildAt(i);
+                    if (!(child instanceof ChatMessageCell) || !((ChatMessageCell) child).hasAccessibilityFocusedStop()) {
+                        continue;
+                    }
+                    final ChatMessageCell cell = (ChatMessageCell) child;
+                    final int stop = cell.getAccessibilityStopEdge(forward);
+                    if (forward) {
+                        // the next stop in this message, or else the message after it
+                        final int target = ChatMessageCell.isAccessibilityStopEdge(stop) ? cell.getTop() + stop : cell.getBottom();
+                        if (target - bottom < page) {
+                            return false;
+                        }
+                        scrollBy(0, target - top);
+                    } else {
+                        if (!ChatMessageCell.isAccessibilityStopEdge(stop)) {
+                            return false;
+                        }
+                        final int target = cell.getTop() + stop;
+                        if (top - target < page) {
+                            return false;
+                        }
+                        scrollBy(0, target - bottom);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
             @Override
             public boolean onInterceptTouchEvent(MotionEvent e) {
                 textSelectionHelper.checkSelectionCancel(e);
