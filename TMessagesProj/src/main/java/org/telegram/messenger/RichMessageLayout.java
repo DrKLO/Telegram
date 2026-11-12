@@ -9444,6 +9444,15 @@ public class RichMessageLayout {
         return maxSizeWidth / Math.max(0.0001f, sum);
     }
 
+    /** The kind the first block that has one gives the message, for a screen reader; null for none. */
+    public CharSequence getAccessibilityKind() {
+        for (int i = 0; i < blocks.size(); i++) {
+            final CharSequence kind = blocks.get(i).getAccessibilityKind();
+            if (kind != null) return kind;
+        }
+        return null;
+    }
+
     public static abstract class RichBlock implements MultiLayoutTypingAnimator.Block {
 
         public final RichMessageLayout root;
@@ -9653,6 +9662,28 @@ public class RichMessageLayout {
 
         protected boolean onBlockAccessibilityElementClick(int element, View host) {
             return false;
+        }
+
+        /**
+         * The last word on an element's node, after the message has filled it in: what it is (its class, a
+         * heading), its states and value, and whether it takes a press, for a block whose elements are more
+         * than text and buttons.
+         */
+        public void onInitializeAccessibilityElementInfo(int element, android.view.accessibility.AccessibilityNodeInfo info) {
+        }
+
+        /**
+         * The next (or previous) element of this block after `from` of the kind a screen reader asks for when
+         * it goes through web content (ACTION_ARGUMENT_HTML_ELEMENT_STRING: "HEADING", "LINK", "CONTROL", ...;
+         * null for any), or -1 when there is none or the block is no web content.
+         */
+        public int findAccessibilityHtmlElement(int from, boolean forward, String type) {
+            return -1;
+        }
+
+        /** What kind of message a block makes its message, said before the rest of it (a widget); null for none. */
+        public CharSequence getAccessibilityKind() {
+            return null;
         }
 
         private int getCheckboxAccessibilityElementCount() {

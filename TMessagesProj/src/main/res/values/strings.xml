@@ -11679,4 +11679,7 @@
     <string name="FpnvConsentSimSlot">SIM Slot</string>
     <string name="FpnvConsentSimSlotValue">SIM %1$d</string>
     <string name="FpnvConsentPhoneNumber">Phone Number</string>
+    <string name="AccDescrWidgetTab">Tab</string>
+    <string name="AccDescrWidgetPartlyChecked">Partly checked</string>
+    <string name="AccDescrWidgetMessage">Widget</string>
 </resources>

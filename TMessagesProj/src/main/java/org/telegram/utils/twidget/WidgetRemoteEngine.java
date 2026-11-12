@@ -432,6 +432,15 @@ final class WidgetRemoteEngine extends WidgetEngine {
         }
 
         @Override
+        public void accessibilityTree(byte[] tree) {
+            byte[] whole = large(tree);
+            guard(() -> {
+                backend.accessibilityTree(whole);
+                return null;
+            });
+        }
+
+        @Override
         public void signal(int kind, byte[] message) {
             byte[] whole = large(message);
             guard(() -> {
