@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
@@ -279,6 +280,18 @@ public class MentionsContainerView extends FrameLayout implements NotificationCe
 
     public MentionsListView getListView() {
         return listView;
+    }
+
+    /**
+     * The list is laid out much taller than the panel it is seen in, and moved so that only the
+     * part inside the panel is drawn: the rest is behind the chat, or under the bar at the bottom.
+     * Drawing stops at the edge of the panel and a screen reader did not, so swiping went on past
+     * the last row that can be seen, onto rows nobody can see, and the focus seemed to jump off
+     * somewhere. What is outside the panel is left out for a screen reader as it is for the eye.
+     * This is where the panel is, from the top of this view.
+     */
+    private boolean isInsidePanel(float top, float bottom) {
+        return bottom > containerTop && top < containerBottom;
     }
 
     public MentionsAdapter getAdapter() {
@@ -696,7 +709,51 @@ public class MentionsContainerView extends FrameLayout implements NotificationCe
         getListView().setOnTouchListener((v, event) -> ContentPreviewViewer.getInstance().onTouch(event, getListView(), 0, mentionsOnItemClickListener, null, resourcesProvider));
     }
 
+    // a finger on the part of the list that is not drawn goes through to what is under it, as a
+    // touch there does
+    @Override
+    public boolean dispatchHoverEvent(MotionEvent event) {
+        if (listView != null && getVisibility() == View.VISIBLE && !isInsidePanel(event.getY(), event.getY())) {
+            return false;
+        }
+        return super.dispatchHoverEvent(event);
+    }
+
     public class MentionsListView extends RecyclerListView {
+
+        private final Rect accessibilityChildRect = new Rect();
+
+        @Override
+        public void addChildrenForAccessibility(ArrayList<View> outChildren) {
+            final int start = outChildren.size();
+            super.addChildrenForAccessibility(outChildren);
+            final float offset = getTop() + getTranslationY();
+            for (int i = outChildren.size() - 1; i >= start; --i) {
+                final View child = outChildren.get(i);
+                accessibilityChildRect.set(0, 0, child.getWidth(), child.getHeight());
+                offsetDescendantRectToMyCoords(child, accessibilityChildRect);
+                if (!isInsidePanel(accessibilityChildRect.top + offset, accessibilityChildRect.bottom + offset)) {
+                    outChildren.remove(i);
+                }
+            }
+        }
+
+        // what part of the list is in sight is asked for when a screen reader has the list
+        // scrolled, so that a page is only as tall as the panel and no row is carried past
+        @Override
+        public boolean getGlobalVisibleRect(Rect r, Point globalOffset) {
+            if (globalOffset == null) {
+                globalOffset = new Point();
+            }
+            if (!super.getGlobalVisibleRect(r, globalOffset)) {
+                return false;
+            }
+            final float containerY = globalOffset.y - getTop() - getTranslationY();
+            r.top = Math.max(r.top, (int) (containerY + containerTop));
+            r.bottom = Math.min(r.bottom, (int) (containerY + containerBottom));
+            return r.bottom > r.top;
+        }
+
         private boolean isScrolling, isDragging;
 
         public MentionsListView(Context context, Theme.ResourcesProvider resourcesProvider) {
