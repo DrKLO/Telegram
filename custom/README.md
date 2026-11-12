@@ -8,8 +8,7 @@ Feature design and limits: [`docs/DESIGN.md`](docs/DESIGN.md).
 
 | Path | Purpose |
 |---|---|
-| `custom/patches/custom-features.patch` | Anti-Unsend / Edit History source changes |
-| `custom/patches/mygram-package.patch` | MyGram package identity and Android account/intent isolation |
+| `custom/patches/mygram.patch` | Combined MyGram package identity, branding, and custom feature changes |
 | `custom/version.properties` | Custom version name/code, patch version, upstream version + commit |
 | `custom/CHANGELOG.md` | Source of the release notes (one `## [X.Y.Z]` section per release) |
 | `tg-icon.png` (repo root, you provide) | Source of the launcher icon, never modified by any script |
@@ -51,7 +50,7 @@ That is why syncing with upstream never conflicts with your features, and a real
 * **Build a test APK:** Actions → *Build & Release* → Run workflow (publish unticked). Artifacts: APK, sha256, build-info, logs.
 * **Local build:** `scripts/apply-patch.sh && scripts/apply-buildvars.sh && scripts/apply-icon.sh && ./gradlew $(scripts/version.sh gradle-args) :TMessagesProj_App:assembleAfatRelease` (JDK 17, SDK 36, build-tools 36.0.0, NDK 27.2.12479018, CMake 3.22.1).
 * **Follow upstream:** the *Sync upstream* workflow (or `scripts/sync-upstream.sh`) merges upstream into `upstream-sync`, verifies the patch and opens a PR. No APK, no release.
-* **If the patch conflicts:** download the `patch-conflict-report`, then on a throw-away branch `git apply --3way custom/patches/custom-features.patch`, fix the markers, `scripts/regenerate-patch.sh`, `scripts/version.sh patch-bump`, `scripts/check-upstream.sh --record`.
+* **If the patch conflicts:** download the `patch-conflict-report`, then on a throw-away branch `git apply --3way custom/patches/mygram.patch`, fix the markers, `scripts/regenerate-patch.sh`, `scripts/version.sh patch-bump`, `scripts/check-upstream.sh --record`.
 * **Release:** `scripts/version.sh bump minor` → add a `## [X.Y.Z]` section to `custom/CHANGELOG.md` (must contain *Anti-Unsend*, *Edit History*, *Known issues*) → commit → run the workflow with *publish* ticked, or push tag `vX.Y.Z`. A release needs your own signing key, api_id, a matching tag, notes and a verified APK; otherwise nothing is published.
 
 ## Decisions that are yours
