@@ -1237,6 +1237,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     CharSequence accessibilityText;
     boolean accessibilityTextUnread, accessibilityTextContentUnread;
     long accessibilityTextFileSize;
+    int accessibilityTextButtonState = Integer.MIN_VALUE, accessibilityTextMiniButtonState = Integer.MIN_VALUE;
+    int accessibilityTextTransferIndex = -1;
     boolean wasTranscriptionOpen;
 
     private int nameLayoutSelectorColor;
@@ -5825,6 +5827,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
 
+        accessibilityFocused = false;
+        accessibilityHovered = false;
+        announcedTransferOnce = false;
+
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
@@ -6505,6 +6511,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             captionAbove = currentMessageObject.messageOwner != null && currentMessageObject.messageOwner.invert_media || groupedMessages != null && groupedMessages.captionAbove;
             isSmallImage = false;
             lastLoadingSizeTotal = 0;
+            lastAnnouncedTransferStep = -1;
+            lastAnnouncedTransferPercent = -1;
+            lastAnnouncedTransferSize = -1;
+            announcedTransferOnce = false;
+            lastAnnouncedTransferTime = 0;
+            accessibilityFocused = false;
+            accessibilityHovered = false;
             if (scheduledInvalidate) {
                 AndroidUtilities.cancelRunOnUIThread(invalidateRunnable);
                 scheduledInvalidate = false;
@@ -10445,6 +10458,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             loadingProgressLayout = null;
             animatingLoadingProgressProgress = 0;
             lastLoadingSizeTotal = 0;
+            lastAnnouncedTransferStep = -1;
             selectedBackgroundProgress = 0f;
             if (statusDrawableAnimator != null) {
                 statusDrawableAnimator.removeAllListeners();
@@ -15401,11 +15415,107 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private int lastAnnouncedTransferStep = -1;
+    private int lastAnnouncedTransferPercent = -1;
+    private long lastAnnouncedTransferSize = -1;
+    private boolean announcedTransferOnce;
+    private long lastAnnouncedTransferTime;
+    private boolean accessibilityFocused;
+    private boolean accessibilityHovered;
+
+    private static final int TRANSFER_ANNOUNCE_STEP_PERCENT = 10;
+    private static final long TRANSFER_ANNOUNCE_INTERVAL = 2500;
+
+    private boolean hasTransferSizeInfo() {
+        return documentAttach != null && (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT || documentAttachType == DOCUMENT_ATTACH_TYPE_GIF || documentAttachType == DOCUMENT_ATTACH_TYPE_VIDEO);
+    }
+
+    private CharSequence formatTransferProgress(boolean sending, int percent, long loadedSize, long totalSize) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(getString(sending ? R.string.AccDescrMsgSending : R.string.Downloading));
+        sb.append(" ").append(percent).append("%");
+        if (totalSize > 0) {
+            sb.append(", ").append(formatString(R.string.AccDescrTransferredSize, AndroidUtilities.formatFileSize(loadedSize), AndroidUtilities.formatFileSize(totalSize)));
+        }
+        return sb;
+    }
+
+    int getTransferPercent() {
+        if (currentMessageObject == null) {
+            return -1;
+        }
+        if (getIconForCurrentState() != MediaActionDrawable.ICON_CANCEL && getMiniIconForCurrentState() != MediaActionDrawable.ICON_CANCEL) {
+            return -1;
+        }
+        final float progress;
+        if (hasTransferSizeInfo() && loadingProgressLayout != null && lastLoadingSizeTotal > 0) {
+            progress = Math.min(1f, currentMessageObject.loadedFileSize / (float) lastLoadingSizeTotal);
+        } else {
+            progress = drawVideoImageButton ? videoRadialProgress.getProgress() : radialProgress.getProgress();
+        }
+        return Math.round(progress * 100);
+    }
+
+    CharSequence getTransferProgressText() {
+        final int percent = getTransferPercent();
+        if (percent < 0) {
+            return null;
+        }
+        final boolean hasSize = hasTransferSizeInfo() && loadingProgressLayout != null && lastLoadingSizeTotal > 0;
+        return formatTransferProgress(currentMessageObject.isSending(), percent, currentMessageObject.loadedFileSize, hasSize ? lastLoadingSizeTotal : 0);
+    }
+
+    private boolean isExploredByAccessibility() {
+        if (!accessibilityHovered && !accessibilityFocused && !isAccessibilityFocused()) {
+            return false;
+        }
+        return AndroidUtilities.isAccessibilityScreenReaderEnabled();
+    }
+
+    private void announceTransferProgress(boolean sending, long loadedSize, long totalSize) {
+        if (currentMessageObject == null || totalSize <= 0) {
+            return;
+        }
+        final boolean hovered = accessibilityHovered;
+        if (!isExploredByAccessibility()) {
+            return;
+        }
+        final int percent = (int) Math.min(100, Math.round(loadedSize / (float) totalSize * 100));
+        final int step = percent / TRANSFER_ANNOUNCE_STEP_PERCENT;
+        final long now = SystemClock.elapsedRealtime();
+        if (hovered) {
+            // while the finger explores the message, follow every step of the progress
+            if (step == lastAnnouncedTransferStep) {
+                return;
+            }
+        } else if (now - lastAnnouncedTransferTime < TRANSFER_ANNOUNCE_INTERVAL) {
+            // the message only holds accessibility focus, so keep the updates rare
+            return;
+        } else if (percent == lastAnnouncedTransferPercent && loadedSize == lastAnnouncedTransferSize) {
+            // nothing moved since the last update: there is nothing to say
+            return;
+        }
+        lastAnnouncedTransferStep = step;
+        lastAnnouncedTransferTime = now;
+        lastAnnouncedTransferPercent = percent;
+        lastAnnouncedTransferSize = loadedSize;
+        // the first update after reaching the message tells the whole of it, as reaching it does,
+        // and the ones after that only tell what has changed since
+        if (announcedTransferOnce) {
+            announceForAccessibility(hasTransferSizeInfo() ? percent + "%, " + AndroidUtilities.formatFileSize(loadedSize) : percent + "%");
+        } else {
+            announcedTransferOnce = true;
+            announceForAccessibility(formatTransferProgress(sending, percent, loadedSize, hasTransferSizeInfo() ? totalSize : 0));
+        }
+    }
+
+
     @Override
     public void onProgressDownload(String fileName, long downloadedSize, long totalSize) {
         float progress = totalSize == 0 ? 0 : Math.min(1f, downloadedSize / (float) totalSize);
         currentMessageObject.loadedFileSize = downloadedSize;
         createLoadingProgressLayout(downloadedSize, totalSize);
+        announceTransferProgress(false, downloadedSize, totalSize);
         if (drawVideoImageButton) {
             videoRadialProgress.setProgress(progress, true);
         } else {
@@ -15452,6 +15562,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             lastLoadingSizeTotal = totalSize;
         }
         createLoadingProgressLayout(uploadedSize, totalSize);
+        announceTransferProgress(true, uploadedSize, totalSize);
     }
 
     private void createLoadingProgressLayout(TLRPC.Document document) {
@@ -23130,6 +23241,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if (action == AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = true;
+        } else if (action == AccessibilityNodeInfo.ACTION_CLEAR_ACCESSIBILITY_FOCUS) {
+            accessibilityFocused = false;
+            announcedTransferOnce = false;
+        }
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
             return false;
         }
@@ -23215,6 +23332,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         int x = (int) getEventX(event);
         int y = (int) getEventY(event);
         if (event.getAction() == MotionEvent.ACTION_HOVER_ENTER || event.getAction() == MotionEvent.ACTION_HOVER_MOVE) {
+            accessibilityHovered = true;
             for (int i = 0; i < accessibilityVirtualViewBounds.size(); i++) {
                 Rect rect = accessibilityVirtualViewBounds.valueAt(i);
                 if (rect.contains(x, y)) {
@@ -23228,6 +23346,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         } else if (event.getAction() == MotionEvent.ACTION_HOVER_EXIT) {
             currentFocusedVirtualView = 0;
+            accessibilityHovered = false;
+            announcedTransferOnce = false;
         }
         return super.onHoverEvent(event);
     }
