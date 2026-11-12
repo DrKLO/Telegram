@@ -2007,7 +2007,7 @@ public class ChatActivity extends BaseFragment implements
             if (messageObject.isSecret() || !messageObject.canSetReaction() || messageObject.isExpiredStory() || messageObject.type == MessageObject.TYPE_JOINED_CHANNEL) {
                 return;
             }
-            if (!(currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canUserDoAction(currentChat, ChatObject.ACTION_SEND_REACTIONS))) {
+            if (!(currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canSendReactions(currentChat))) {
                 return;
             }
 
@@ -32008,7 +32008,7 @@ public class ChatActivity extends BaseFragment implements
                         || currentUser != null
                         || ChatObject.isMonoForum(currentChat)
                     )
-                    && (currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canUserDoAction(currentChat, ChatObject.ACTION_SEND_REACTIONS));
+                    && (currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canSendReactions(currentChat));
             }
             final boolean showMessageSeen = !suggestEdit && !isEphemeral && !isReactionsViewAvailable && !isInScheduleMode() && currentChat != null && message.isOutOwner() && message.isSent() && !message.isEditing() && !message.isSending() && !message.isSendError() && !message.isContentUnread() && !message.isUnread() && (ConnectionsManager.getInstance(currentAccount).getCurrentTime() - message.messageOwner.date < getMessagesController().chatReadMarkExpirePeriod) && (ChatObject.isMegagroup(currentChat) || !ChatObject.isChannel(currentChat)) && chatInfo != null && chatInfo.participants_count <= getMessagesController().chatReadMarkSizeThreshold && !(message.messageOwner.action instanceof TLRPC.TL_messageActionChatJoinedByRequest) && chatMode != MODE_SAVED && message.canSetReaction() && !ChatObject.isMonoForum(currentChat);
             final boolean showMessageAuthor = !suggestEdit && !isEphemeral && currentChat != null && !message.isOut() && ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat) && -currentChat.linked_monoforum_id == message.getFromChatId();
@@ -33858,7 +33858,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
 
-        if (!primaryMessage.hasChosenReaction(visibleReaction) && (!(currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canUserDoAction(currentChat, ChatObject.ACTION_SEND_REACTIONS)))) {
+        if (!primaryMessage.hasChosenReaction(visibleReaction) && (!(currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canSendReactions(currentChat)))) {
             BulletinFactory.of(this).createSimpleBulletin(R.raw.e_hand_2, getString(R.string.SendReactionsIsRestrictedInThisChat)).show();
             return;
         }

@@ -2234,6 +2234,13 @@ public class ChatObject {
         return canUserDoAction(chat, ACTION_SEND);
     }
 
+    public static boolean canSendReactions(TLRPC.Chat chat) {
+        if (isIgnoredChatRestrictionsForBoosters(chat)) {
+            return true;
+        }
+        return canUserDoAction(chat, ACTION_SEND_REACTIONS);
+    }
+
     public static boolean canSendPlain(TLRPC.Chat chat) {
         if (isIgnoredChatRestrictionsForBoosters(chat)) {
             return true;
