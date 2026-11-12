@@ -1841,6 +1841,7 @@ public class QrShareView extends View {
         toastText = message;
         toastAction = action;
         toastUntil = System.currentTimeMillis() + (action != null ? 4000 : 2800);
+        announceForAccessibility(message);
         invalidate();
     }
 
@@ -2137,6 +2138,7 @@ public class QrShareView extends View {
     private boolean immediateFrame;
 
     private void onDrawInner(@NonNull Canvas canvas) {
+        checkA11yState();
         final long now = System.currentTimeMillis();
         final int w = getWidth(), h = getHeight();
         step(now);
@@ -6957,6 +6959,265 @@ public class QrShareView extends View {
         } else if (!shareHidden && hit(saveRect, x, y)) {
             if (delegate != null) delegate.onSave();
         }
+    }
+
+    // ---- screen reader: the view draws everything, so each thing it draws is given as a node of its own
+    private static final int A11Y_CLOSE = 1, A11Y_SCAN = 2, A11Y_CODE = 3, A11Y_CHIP = 4, A11Y_TAB = 5, A11Y_SHARE = 8, A11Y_SAVE = 9,
+        A11Y_MENU = 10, A11Y_BUY = 13, A11Y_GIFTS_INFO = 14, A11Y_TOAST_ACTION = 15, A11Y_COLOR = 1000, A11Y_GIFT = 3000;
+    private final RectF a11yRect = new RectF();
+    private final android.graphics.Rect a11yBounds = new android.graphics.Rect();
+    private final java.util.ArrayList<Integer> a11yIds = new java.util.ArrayList<>();
+    private int a11yState;
+
+    private final androidx.customview.widget.ExploreByTouchHelper a11y = new androidx.customview.widget.ExploreByTouchHelper(this) {
+        @Override
+        protected int getVirtualViewAt(float x, float y) {
+            a11yIds.clear();
+            collectA11yIds(a11yIds);
+            for (int i = 0; i < a11yIds.size(); i++) {
+                if (a11yRectOf(a11yIds.get(i), a11yRect) && a11yRect.contains(x, y)) return a11yIds.get(i);
+            }
+            return INVALID_ID;
+        }
+
+        @Override
+        protected void getVisibleVirtualViews(java.util.List<Integer> virtualViewIds) {
+            collectA11yIds(virtualViewIds);
+        }
+
+        @Override
+        protected void onPopulateNodeForVirtualView(int id, @NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat node) {
+            final CharSequence text = a11yText(id);
+            node.setContentDescription(text != null ? text : "");
+            if (a11yRectOf(id, a11yRect)) {
+                a11yRect.roundOut(a11yBounds);
+                a11yBounds.intersect(0, 0, getWidth(), getHeight());
+            } else {
+                a11yBounds.set(0, 0, 1, 1);
+            }
+            node.setBoundsInParent(a11yBounds);
+            if (id != A11Y_CODE && id != A11Y_GIFTS_INFO) {
+                node.setClassName("android.widget.Button");
+                node.setClickable(true);
+                node.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_CLICK);
+            }
+            if (id >= A11Y_COLOR) {
+                node.setSelected(a11ySelected(id));
+            }
+        }
+
+        @Override
+        protected void onPopulateNodeForHost(@NonNull androidx.core.view.accessibility.AccessibilityNodeInfoCompat node) {
+            if (a11yScrolls()) {
+                node.setScrollable(true);
+                if (sheetScroll > 0) {
+                    node.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_BACKWARD);
+                }
+                if (sheetScroll < maxScroll()) {
+                    node.addAction(androidx.core.view.accessibility.AccessibilityNodeInfoCompat.ACTION_SCROLL_FORWARD);
+                }
+            }
+        }
+
+        @Override
+        protected boolean onPerformActionForVirtualView(int id, int action, android.os.Bundle arguments) {
+            if (action != android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK) return false;
+            if (id == A11Y_TOAST_ACTION) {
+                toastUntil = 0;
+                invalidate();
+                if (delegate != null) delegate.onPremiumSubscribe();
+                return true;
+            }
+            if (!a11yRectOf(id, a11yRect)) return false;
+            onTap(a11yRect.centerX(), a11yRect.centerY());
+            invalidate();
+            invalidateVirtualView(id);
+            if (id >= A11Y_COLOR && a11ySelected(id)) {
+                sendEventForVirtualView(id, android.view.accessibility.AccessibilityEvent.TYPE_VIEW_SELECTED);
+            }
+            return true;
+        }
+    };
+
+    {
+        androidx.core.view.ViewCompat.setAccessibilityDelegate(this, a11y);
+    }
+
+    private boolean a11yScrolls() {
+        return menu <= 0.5f && sheet > 0.5f && tab != SCENE_EMOJI && maxScroll() > 0;
+    }
+
+    private void collectA11yIds(java.util.List<Integer> out) {
+        if (toastShown && shownToastAction != null && !toastRect.isEmpty()) out.add(A11Y_TOAST_ACTION);
+        if (menu > 0.5f) {
+            if (!scanHidden) out.add(A11Y_SCAN);
+            for (int i = 0; i < menuRows.length; i++) {
+                if (!menuRows[i].isEmpty()) out.add(A11Y_MENU + i);
+            }
+            return;
+        }
+        out.add(A11Y_CLOSE);
+        if (sheet > 0.5f) {
+            if (chipShown) out.add(A11Y_CHIP);
+            if (tab == SCENE_COLOR) {
+                for (int slot = 0; slot < PRESET_COUNT + Backdrops.CENTER.length; slot++) {
+                    if (a11yRectOf(A11Y_COLOR + slot, a11yRect) && a11yCenterInSheet(a11yRect)) out.add(A11Y_COLOR + slot);
+                }
+            } else if (tab == SCENE_GIFT) {
+                if (giftsEmpty()) {
+                    out.add(A11Y_GIFTS_INFO);
+                    if (!buyRect.isEmpty()) out.add(A11Y_BUY);
+                } else if (gifts.isEmpty()) {
+                    out.add(A11Y_GIFTS_INFO);
+                }
+                for (int i = 0; i < giftCount(); i++) {
+                    if (a11yRectOf(A11Y_GIFT + i, a11yRect) && a11yCenterInSheet(a11yRect)) out.add(A11Y_GIFT + i);
+                }
+            }
+            return;
+        }
+        if (!scanHidden) out.add(A11Y_SCAN);
+        out.add(A11Y_CODE);
+        if (chipShown) out.add(A11Y_CHIP);
+        if (themeEditable) {
+            for (int i = 0; i < 3; i++) out.add(A11Y_TAB + i);
+        }
+        if (!shareHidden) {
+            out.add(A11Y_SHARE);
+            out.add(A11Y_SAVE);
+        }
+    }
+
+    private boolean a11yCenterInSheet(RectF r) {
+        return r.centerY() >= sheetRect.top && r.centerY() <= sheetRect.bottom;
+    }
+
+    private boolean a11yRectOf(int id, RectF out) {
+        if (id >= A11Y_GIFT) {
+            final int i = id - A11Y_GIFT, cols = giftCols();
+            if (i >= giftCount()) return false;
+            final float sw = sheetRect.width() - dp(8), cell = sw / 3f, cw = sw / cols;
+            final float x = sheetRect.left + dp(4) + cw * (i % cols), y = sheetRect.top + gridPad() + GIFT_HEADER + cell * (i / cols) - sheetScroll;
+            out.set(x, y, x + cw, y + cell);
+        } else if (id >= A11Y_COLOR) {
+            final int slot = id - A11Y_COLOR;
+            if (slot >= PRESET_COUNT + Backdrops.CENTER.length) return false;
+            final float cell = (sheetRect.width() - dp(8)) / 6f;
+            final float x = sheetRect.left + dp(4) + cell * (slot % 6), y = sheetRect.top + gridPad() + cell * (slot / 6) - sheetScroll;
+            out.set(x, y, x + cell, y + cell);
+        } else if (id >= A11Y_TAB && id < A11Y_TAB + 3) {
+            final float seg = tabsRect.width() / 3f;
+            out.set(tabsRect.left + seg * (id - A11Y_TAB), tabsRect.top, tabsRect.left + seg * (id - A11Y_TAB + 1), tabsRect.bottom);
+        } else if (id >= A11Y_MENU && id < A11Y_MENU + menuRows.length) {
+            out.set(menuRows[id - A11Y_MENU]);
+        } else if (id == A11Y_CLOSE) {
+            out.set(closeRect);
+        } else if (id == A11Y_SCAN) {
+            out.set(scanRect);
+        } else if (id == A11Y_CODE) {
+            out.set(cardCenterX() - cardW() / 2f, cardTop(), cardCenterX() + cardW() / 2f, cardTop() + cardH());
+        } else if (id == A11Y_CHIP) {
+            out.set(chipRect);
+        } else if (id == A11Y_SHARE) {
+            out.set(shareRect);
+        } else if (id == A11Y_SAVE) {
+            out.set(saveRect);
+        } else if (id == A11Y_BUY) {
+            out.set(buyRect);
+        } else if (id == A11Y_GIFTS_INFO) {
+            out.set(sheetRect);
+        } else if (id == A11Y_TOAST_ACTION) {
+            out.set(toastRect.right - toastActionWidth() - dp(28), toastRect.top - dp(6), toastRect.right + dp(6), toastRect.bottom + dp(6));
+        } else {
+            return false;
+        }
+        return !out.isEmpty();
+    }
+
+    private boolean a11ySelected(int id) {
+        if (id >= A11Y_GIFT) return pattern.type == PAT_GIFT && pattern.giftIndex == id - A11Y_GIFT;
+        return scene != null && scene.type == SCENE_COLOR && scene.index == slotIndex(id - A11Y_COLOR);
+    }
+
+    private CharSequence a11yText(int id) {
+        if (id >= A11Y_GIFT) {
+            final int i = id - A11Y_GIFT;
+            if (i >= gifts.size()) return null;
+            final TL_stars.TL_starGiftUnique gift = gifts.get(i);
+            return gift.title + " #" + gift.num;
+        }
+        if (id >= A11Y_COLOR) {
+            final int i = slotIndex(id - A11Y_COLOR);
+            return i >= 0 && i < Backdrops.NAMES.length ? Backdrops.NAMES[i] : null;
+        }
+        if (id >= A11Y_TAB && id < A11Y_TAB + 3) {
+            final int t = id - A11Y_TAB;
+            return org.telegram.messenger.LocaleController.getString(t == SCENE_COLOR ? R.string.ColorTheme : t == SCENE_EMOJI ? R.string.Emoji : R.string.QrGift);
+        }
+        if (id >= A11Y_MENU && id < A11Y_MENU + menuRows.length) {
+            final int i = id - A11Y_MENU;
+            final String sub = menuSubtitles(menuTimerOn)[i];
+            return menuTitles(menuTimerOn)[i] + (sub != null ? ", " + sub : "");
+        }
+        switch (id) {
+            case A11Y_CLOSE:
+                return org.telegram.messenger.LocaleController.getString(R.string.Close);
+            case A11Y_SCAN:
+                return scanLabel;
+            case A11Y_CODE: {
+                final StringBuilder sb = new StringBuilder(org.telegram.messenger.LocaleController.getString(R.string.QrCode));
+                if (tempK > 0.5f) {
+                    if (!TextUtils.isEmpty(tempChipText)) sb.append(", ").append(tempChipText);
+                } else if (!TextUtils.isEmpty(caption)) {
+                    sb.append(", ").append(captionIsUsername ? "@" : "").append(caption);
+                }
+                return sb;
+            }
+            case A11Y_CHIP:
+                return free ? lastChip : feeA + "\u2605" + feeB;
+            case A11Y_SHARE:
+                return org.telegram.messenger.LocaleController.getString(R.string.ShareLink);
+            case A11Y_SAVE:
+                return org.telegram.messenger.LocaleController.getString(R.string.SaveToGallery);
+            case A11Y_BUY:
+                return buyLabel;
+            case A11Y_GIFTS_INFO:
+                return giftsEmpty() ? emptyTitleText : org.telegram.messenger.LocaleController.getString(!giftsEndReached ? R.string.QrLoadingGifts : giftsOwner < 0 ? R.string.QrChatNoCollectibles : R.string.QrNoCollectibles);
+            case A11Y_TOAST_ACTION:
+                return shownToastAction;
+        }
+        return null;
+    }
+
+    // what is on the screen is decided as it is drawn, and the stops follow it
+    private void checkA11yState() {
+        if (!org.telegram.messenger.AndroidUtilities.isAccessibilityScreenReaderEnabled()) return;
+        int state = (menu > 0.5f ? 1 : 0) | (sheet > 0.5f ? 2 : 0) | (chipShown ? 4 : 0) | (free ? 8 : 0) | (scanHidden ? 16 : 0)
+            | (shareHidden ? 32 : 0) | (themeEditable ? 64 : 0) | (toastShown && shownToastAction != null ? 128 : 0) | (giftsEndReached ? 256 : 0);
+        state = 31 * (31 * state + tab) + giftCount();
+        if (state != a11yState) {
+            a11yState = state;
+            post(a11y::invalidateRoot);
+        }
+    }
+
+    @Override
+    public boolean dispatchHoverEvent(MotionEvent event) {
+        return a11y.dispatchHoverEvent(event) || super.dispatchHoverEvent(event);
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+        if ((action == android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_FORWARD || action == android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) && a11yScrolls()) {
+            final float page = sheetRect.height() * 0.8f;
+            sheetScroll = Math.max(0, Math.min(maxScroll(), sheetScroll + (action == android.view.accessibility.AccessibilityNodeInfo.ACTION_SCROLL_FORWARD ? page : -page)));
+            scroller.forceFinished(true);
+            invalidate();
+            a11y.invalidateRoot();
+            sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_SCROLLED);
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
     }
 
     @Override
