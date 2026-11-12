@@ -13336,6 +13336,24 @@ public class MessagesController extends BaseController implements NotificationCe
     private int DIALOGS_LOAD_TYPE_CHANNEL = 2;
     private int DIALOGS_LOAD_TYPE_UNKNOWN = 3;
 
+    /** The top message of the last dialog of a page that has it among the page's messages, null for none. */
+    private static TLRPC.Message findLastDialogMessage(TLRPC.messages_Dialogs dialogsRes) {
+        for (int a = dialogsRes.dialogs.size() - 1; a >= 0; a--) {
+            final TLRPC.Dialog dialog = dialogsRes.dialogs.get(a);
+            if (dialog == null || dialog.peer == null || dialog.top_message == 0) {
+                continue;
+            }
+            final long dialogId = MessageObject.getPeerId(dialog.peer);
+            for (int b = 0; b < dialogsRes.messages.size(); b++) {
+                final TLRPC.Message message = dialogsRes.messages.get(b);
+                if (message != null && message.date != 0 && message.id == dialog.top_message && message.peer_id != null && MessageObject.getPeerId(message.peer_id) == dialogId) {
+                    return message;
+                }
+            }
+        }
+        return null;
+    }
+
     public void processLoadedDialogs(final TLRPC.messages_Dialogs dialogsRes, ArrayList<TLRPC.EncryptedChat> encChats, ArrayList<TLRPC.UserFull> fullUsers, int folderId, int offset, int count, int loadType, boolean resetEnd, boolean migrate, boolean fromCache) {
         Utilities.stageQueue.postRunnable(() -> {
             if (!firstGettingTask) {
@@ -13442,6 +13460,16 @@ public class MessagesController extends BaseController implements NotificationCe
                 long dialogsLoadOffsetChatId = 0;
                 long dialogsLoadOffsetUserId = 0;
                 long dialogsLoadOffsetAccess = 0;
+                // The next page starts after the last dialog of this one, in the order the server sent
+                // them. It was started after the oldest message of the page instead, and a page is not
+                // in the order of its messages' dates: a dialog can be placed above its last message
+                // (by a draft, say). When such a dialog had an old message, the next request went back
+                // to that date, and every dialog between it and the end of the page was never loaded:
+                // after a new login they were missing until found by a search.
+                final TLRPC.Message pageEnd = findLastDialogMessage(dialogsRes);
+                if (pageEnd != null) {
+                    lastMessage = pageEnd;
+                }
                 if (lastMessage != null && lastMessage.id != dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId]) {
                     totalDialogsLoadCount += dialogsRes.dialogs.size();
                     dialogsLoadOffsetId = lastMessage.id;
