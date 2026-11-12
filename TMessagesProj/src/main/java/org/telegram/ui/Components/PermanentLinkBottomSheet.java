@@ -66,6 +66,7 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = AndroidUtilities.dp(8);
         closeView.setPadding(closeViewPadding, closeViewPadding, closeViewPadding, closeViewPadding);

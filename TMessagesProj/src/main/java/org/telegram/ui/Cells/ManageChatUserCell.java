@@ -134,6 +134,7 @@ public class ManageChatUserCell extends FrameLayout implements Theme.Colorable {
 
     public void setStoryItem(TL_stories.StoryItem storyItem, OnClickListener listener) {
         this.storyItem = storyItem;
+        avatarImageView.setContentDescription(LocaleController.getString(R.string.AccDescrProfilePicture));
         avatarImageView.setOnClickListener(listener);
     }
 

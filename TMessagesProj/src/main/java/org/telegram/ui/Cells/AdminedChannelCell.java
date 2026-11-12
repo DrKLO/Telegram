@@ -80,6 +80,7 @@ public class AdminedChannelCell extends FrameLayout implements Theme.Colorable {
             deleteButton = new ImageView(context);
             deleteButton.setScaleType(ImageView.ScaleType.CENTER);
             deleteButton.setImageResource(R.drawable.msg_panel_clear);
+            deleteButton.setContentDescription(LocaleController.getString(R.string.Delete));
             deleteButton.setOnClickListener(onClickListener);
             ThemeBind.selectorBackground(deleteButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector));
             ThemeBind.colorFilter(deleteButton, Theme.key_windowBackgroundWhiteGrayText, PorterDuff.Mode.MULTIPLY);

@@ -175,6 +175,7 @@ public class DialogsHintCell extends FrameLayout implements Theme.Colorable {
     public void setOnCloseListener(OnClickListener closeListener) {
         chevronView.setVisibility(INVISIBLE);
         closeView.setVisibility(VISIBLE);
+        closeView.setContentDescription(LocaleController.getString(R.string.Close));
         closeView.setOnClickListener(closeListener);
     }
 

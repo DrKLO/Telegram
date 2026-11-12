@@ -140,6 +140,7 @@ public class TableView extends TableLayout implements Theme.Colorable {
             copyView.setImageResource(R.drawable.msg_copy);
             copyView.setScaleType(ImageView.ScaleType.CENTER);
             ThemeBind.colorFilter(copyView, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
+            copyView.setContentDescription(getString(R.string.Copy));
             copyView.setOnClickListener(v -> {
                 AndroidUtilities.addToClipboard(text);
                 copyButton.run();

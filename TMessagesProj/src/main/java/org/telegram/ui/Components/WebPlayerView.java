@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.LocaleController;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -1699,6 +1701,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             shareButton.setScaleType(ImageView.ScaleType.CENTER);
             shareButton.setImageResource(R.drawable.ic_share_video);
             controlsView.addView(shareButton, LayoutHelper.createFrame(56, 48, Gravity.RIGHT | Gravity.TOP));
+            shareButton.setContentDescription(LocaleController.getString(R.string.ShareFile));
             shareButton.setOnClickListener(v -> {
                 if (delegate != null) {
                     delegate.onSharePressed();
@@ -1874,11 +1877,14 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         if (!videoPlayer.isPlaying()) {
             if (isCompleted) {
                 playButton.setImageResource(isInline ? R.drawable.ic_againinline : R.drawable.ic_again);
+                playButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
             } else {
                 playButton.setImageResource(isInline ? R.drawable.ic_playinline : R.drawable.ic_play);
+                playButton.setContentDescription(LocaleController.getString(R.string.AccActionPlay));
             }
         } else {
             playButton.setImageResource(isInline ? R.drawable.ic_pauseinline : R.drawable.ic_pause);
+            playButton.setContentDescription(LocaleController.getString(R.string.AccActionPause));
             AndroidUtilities.runOnUIThread(progressRunnable, 500);
             checkAudioFocus();
         }
@@ -1931,9 +1937,11 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         fullscreenButton.setVisibility(VISIBLE);
         if (!inFullscreen) {
             fullscreenButton.setImageResource(R.drawable.ic_gofullscreen);
+            fullscreenButton.setContentDescription(LocaleController.getString(R.string.AccSwitchToFullscreen));
             fullscreenButton.setLayoutParams(LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 5));
         } else {
             fullscreenButton.setImageResource(R.drawable.ic_outfullscreen);
+            fullscreenButton.setContentDescription(LocaleController.getString(R.string.AccExitFullscreen));
             fullscreenButton.setLayoutParams(LayoutHelper.createFrame(56, 56, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, 1));
         }
     }
@@ -1958,6 +1966,7 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
             return;
         }
         inlineButton.setImageResource(isInline ? R.drawable.ic_goinline : R.drawable.ic_outinline);
+        inlineButton.setContentDescription(LocaleController.getString(R.string.AccDescrPipMode));
         inlineButton.setVisibility(videoPlayer.isPlayerPrepared() ? VISIBLE : GONE);
         if (isInline) {
             inlineButton.setLayoutParams(LayoutHelper.createFrame(40, 40, Gravity.RIGHT | Gravity.TOP));

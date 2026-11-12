@@ -298,7 +298,7 @@ public class TopicCreateFragment extends BaseFragment {
         if (topicForEdit == null) {
             actionBar.createMenu().addItem(CREATE_ID, LocaleController.getString(R.string.Create));
         } else {
-            actionBar.createMenu().addItem(EDIT_ID, R.drawable.ic_ab_done);
+            actionBar.createMenu().addItem(EDIT_ID, R.drawable.ic_ab_done).setContentDescription(LocaleController.getString(R.string.Done));
         }
         ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundGray, getResourceProvider());
         actionBar.setCastShadows(false);

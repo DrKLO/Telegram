@@ -862,6 +862,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
                 actionModeCloseView.setImageDrawable(new BackDrawable(true));
                 ThemeBind.colorFilter(actionModeCloseView, Theme.key_actionBarActionModeDefaultIcon, PorterDuff.Mode.MULTIPLY);
                 ThemeBind.selectorBackground(actionModeCloseView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector));
+                actionModeCloseView.setContentDescription(getString(R.string.Close));
                 actionModeCloseView.setOnClickListener(v -> hideActionMode());
                 actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, 0f, Gravity.CENTER_VERTICAL));
             }

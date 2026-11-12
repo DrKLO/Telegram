@@ -1818,6 +1818,9 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                 if (dialog_id == profileActivity.getUserConfig().getClientUserId() && profileActivity instanceof MediaActivity && canShowSearchItem()) {
                     searchItemIcon = menu.addItem(11, R.drawable.outline_header_search);
                 }
+                if (searchItemIcon != null) {
+                    searchItemIcon.setContentDescription(getString(R.string.Search));
+                }
                 searchMenuItem = menu.addItem(0, 0);
             }
             searchItem = searchMenuItem.setIsSearchField(true).setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {

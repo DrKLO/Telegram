@@ -1706,6 +1706,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
             }
         }.show());
 		if (creator) {
+			optionsView.setContentDescription(getString(R.string.AccDescrMoreOptions));
 			optionsView.setOnClickListener(v -> ItemOptions.makeOptions(sheet.getContainer(), resourcesProvider, optionsView)
                 .add(R.drawable.menu_link_revoke, getString(R.string.GroupCallCreatedLinkRevoke), revoke)
                 .setOnTopOfScrim()

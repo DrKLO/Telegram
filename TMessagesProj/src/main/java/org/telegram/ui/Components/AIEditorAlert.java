@@ -166,6 +166,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
         actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
+        closeView.setContentDescription(getString(R.string.Close));
         closeView.setOnClickListener(v -> this.dismiss());
 
         tabsContainer = new FrameLayout(context);
@@ -1965,6 +1966,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
             actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
             ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
+            closeView.setContentDescription(getString(R.string.Close));
             closeView.setOnClickListener(v -> this.dismiss());
 
             iconCell = new FrameLayout(context);

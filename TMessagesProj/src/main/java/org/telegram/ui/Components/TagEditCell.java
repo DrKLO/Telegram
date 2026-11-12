@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -133,6 +134,7 @@ public class TagEditCell extends LinearLayout {
         ThemeBind.colorFilter(clearImageView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         editTextCell.addView(clearImageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 20, 0));
         ScaleStateListAnimator.apply(clearImageView);
+        clearImageView.setContentDescription(getString(R.string.ClearButton));
         clearImageView.setOnClickListener(v -> {
             editText.setText("");
         });
@@ -357,6 +359,7 @@ public class TagEditCell extends LinearLayout {
                 }
             });
         });
+        closeView.setContentDescription(getString(R.string.Close));
         closeView.setOnClickListener(v -> sheet.dismiss());
 
         sheet.show();

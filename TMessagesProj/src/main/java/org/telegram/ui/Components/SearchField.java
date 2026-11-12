@@ -1,6 +1,7 @@
 package org.telegram.ui.Components;
 
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -81,6 +82,7 @@ public class SearchField extends FrameLayout implements Theme.Colorable {
             lp = LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, horizontalMargin, 11, horizontalMargin, 0);
         }
         addView(clearSearchImageView, lp);
+        clearSearchImageView.setContentDescription(LocaleController.getString(R.string.ClearButton));
         clearSearchImageView.setOnClickListener(v -> {
             searchEditText.setText("");
             AndroidUtilities.showKeyboard(searchEditText);

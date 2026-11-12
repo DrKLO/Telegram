@@ -186,6 +186,7 @@ public class StatisticPostInfoCell extends FrameLayout {
     }
 
     public void setImageViewAction(View.OnClickListener action){
+        imageView.setContentDescription(LocaleController.getString(R.string.AccDescrProfilePicture));
         imageView.setOnClickListener(action);
     }
 
