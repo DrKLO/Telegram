@@ -419,14 +419,6 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.drawSummarizeButton || cell.drawSummaryReply) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
             }
-            if (cell.currentMessageObject.textLayoutBlocks != null) {
-                for (MessageObject.TextLayoutBlock block : cell.currentMessageObject.textLayoutBlocks) {
-                    if (block.hasCodeCopyButton) {
-                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_copy_code, getString("CopyCode", R.string.CopyCode)));
-                        break;
-                    }
-                }
-            }
 
             if ((cell.currentMessageObject.isVoice() || cell.currentMessageObject.isRoundVideo() || cell.currentMessageObject.isMusic()) && MediaController.getInstance().isPlayingMessage(cell.currentMessageObject)) {
                 cell.seekBarAccessibilityDelegate.onInitializeAccessibilityNodeInfoInternal(info);
@@ -518,6 +510,16 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             }
             if (cell.forwardedNameLayout[0] != null && cell.forwardedNameLayout[1] != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
+            }
+            // every run of monospace text and every block of code that can be copied gets an
+            // action of its own, and the action carries what it would copy, so which of them
+            // is which is known without having to try one and look at the clipboard after
+            cell.collectCopyableTexts();
+            for (int c = 0; c < cell.copyableTexts.size(); c++) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(
+                    cell.copyTextActionId(c),
+                    formatString(R.string.AccActionCopyText, cell.copyActionLabel(cell.copyableTexts.get(c).text))
+                ));
             }
             if (cell.drawSelectionBackground || cell.getBackground() != null) {
                 info.setSelected(true);
