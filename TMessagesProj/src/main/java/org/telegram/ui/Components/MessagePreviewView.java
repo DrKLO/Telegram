@@ -113,6 +113,7 @@ public class MessagePreviewView extends FrameLayout {
         ChatListItemAnimator itemAnimator;
         GridLayoutManagerFixed chatLayoutManager;
         Adapter adapter;
+        private boolean adapterUpdatePosted;
 
         MessagePreviewParams.Messages messages;
 
@@ -128,6 +129,28 @@ public class MessagePreviewView extends FrameLayout {
         int menuBack;
         ChatMessageSharedResources sharedResources;
         private boolean firstLayout = true;
+
+        /**
+         * RecyclerView rejects adapter changes while it is laying out children. A layout
+         * recovery or a size change can arrive from the main queue at exactly that time,
+         * so keep retrying on subsequent queue turns until it is safe to notify.
+         */
+        private void notifyAdapterWhenIdle() {
+            if (adapter == null || chatListView == null) {
+                return;
+            }
+            if (chatListView.isComputingLayout()) {
+                if (!adapterUpdatePosted) {
+                    adapterUpdatePosted = true;
+                    chatListView.post(() -> {
+                        adapterUpdatePosted = false;
+                        notifyAdapterWhenIdle();
+                    });
+                }
+                return;
+            }
+            adapter.notifyDataSetChanged();
+        }
 
         int scrollToQuoteStartY = -1;
         int scrollToQuoteEndY = -1;
@@ -762,7 +785,7 @@ public class MessagePreviewView extends FrameLayout {
                             super.onLayoutChildren(recycler, state);
                         } catch (Exception e) {
                             FileLog.e(e);
-                            AndroidUtilities.runOnUIThread(() -> adapter.notifyDataSetChanged());
+                            AndroidUtilities.runOnUIThread(Page.this::notifyAdapterWhenIdle);
                         }
                     }
                 }
@@ -1414,7 +1437,7 @@ public class MessagePreviewView extends FrameLayout {
                     pm.resetLayout();
                     pm.forceUpdate = true;
                     if (adapter != null) {
-                        adapter.notifyDataSetChanged();
+                        notifyAdapterWhenIdle();
                     }
                 }
                 firstLayout = true;
