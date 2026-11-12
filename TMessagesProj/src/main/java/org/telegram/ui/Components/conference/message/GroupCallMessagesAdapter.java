@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.voip.GroupCallMessage;
 import org.telegram.messenger.voip.GroupCallMessagesController;
 import org.telegram.tgnet.TLRPC;
@@ -67,6 +68,24 @@ public class GroupCallMessagesAdapter extends RecyclerView.Adapter<GroupCallMess
 
         messages.add(0, message);
         notifyItemInserted(0);
+        // nothing told a screen reader a comment had come: it is said while the reader is in the list
+        if (recyclerView instanceof GroupCallMessagesListView && ((GroupCallMessagesListView) recyclerView).isAccessibilityFocusInside()) {
+            AndroidUtilities.makeAccessibilityAnnouncement(GroupCallMessageCell.getAccessibilityText(message));
+        }
+    }
+
+    private RecyclerView recyclerView;
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        this.recyclerView = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        this.recyclerView = null;
     }
 
     @Override
