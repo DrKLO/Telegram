@@ -49,7 +49,7 @@ public class ProfileBalanceView extends ProfileMusicView {
     public void setBalance(long nanograms) {
         final String formatted = balanceFormat.format(new BigDecimal(GramWallet.formatGramsBalance(nanograms, false)));
         amount = new Text(formatted, 11, AndroidUtilities.bold());
-        setContentDescription(getString(R.string.StarsBalance) + ": " + formatted);
+        setContentDescription(getString(R.string.StarsBalance) + ": " + GramWallet.formatGramsWithUnit(formatted));
         invalidate();
     }
 

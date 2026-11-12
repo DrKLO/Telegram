@@ -493,6 +493,21 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
         infoLayout.addView(walletDisplayLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, -4, 0, 4));
         ScaleStateListAnimator.apply(walletDisplayLayout, 0.025f, 1.5f);
         walletDisplayLayout.setOnClickListener(v -> toggleWalletDisplay());
+        walletDisplayLayout.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setClassName("android.widget.CheckBox");
+                info.setCheckable(true);
+                info.setChecked(walletDisplayCheckbox.isChecked());
+            }
+
+            @Override
+            public void onInitializeAccessibilityEvent(View host, android.view.accessibility.AccessibilityEvent event) {
+                super.onInitializeAccessibilityEvent(host, event);
+                event.setChecked(walletDisplayCheckbox.isChecked());
+            }
+        });
         walletDisplayLayout.setVisibility(View.GONE);
 
         upgradeLayout = new LinearLayout(context) {
