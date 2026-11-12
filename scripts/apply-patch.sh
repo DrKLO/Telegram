@@ -68,6 +68,19 @@ if CHECK_OUT="$(git apply --check --verbose "$PATCH" 2>&1)"; then
   exit 0
 fi
 
+# 2b. Stale patch: try a 3-way merge against the current upstream tree.
+# This is common when the upstream Telegram source has moved since the patch was generated.
+if CHECK_OUT_3WAY="$(git apply --3way --check --verbose "$PATCH" 2>&1)"; then
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    echo "apply-patch: check OK via 3-way merge - patch applies cleanly."
+    exit 0
+  fi
+  git apply --3way --verbose "$PATCH" || die "git apply --3way failed unexpectedly after a successful 3-way check"
+  git apply --reverse --check "$PATCH" >/dev/null 2>&1 || die "post-apply verification failed after 3-way merge (patch not fully present)"
+  echo "apply-patch: patch applied and verified via 3-way merge."
+  exit 0
+fi
+
 # 3. Conflict -> stop, report.
 mkdir -p "$REPORT_DIR"
 REPORT="$REPORT_DIR/patch-conflict-report.md"
@@ -76,7 +89,7 @@ UPSTREAM="$(prop UPSTREAM_COMMIT)"
 
 # Files git complains about (one per line, de-duplicated).
 FAILED_FILES="$(printf '%s\n' "$CHECK_OUT" \
-  | sed -nE 's/^error: patch failed: (.*):[0-9]+$/\1/p; s/^error: (.*): patch does not apply$/\1/p; s/^error: (.*): already exists in working directory$/\1/p; s/^error: (.*): does not exist in (index|working directory)$/\1/p' \
+  | sed -nE 's/^error: patch failed: (.*):[0-9]+$/\1/p; s/^error: (.*): patch does not apply$/\1/p; s/^error: (.*): already exists in working directory$/\1/p; s/^error: (.*): does not exist in .*$/\1/p' \
   | sort -u)"
 
 {
