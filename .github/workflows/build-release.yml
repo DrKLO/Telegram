@@ -155,8 +155,12 @@ jobs:
             echo "submodule fetch failed, retry $i/3"; sleep 15
           done
           [ "$ok" = 1 ] || { echo "::error::could not fetch submodules"; exit 1; }
-          if git submodule status --recursive | grep -E '^[-+U]'; then
-            echo "::error::submodules are not in a clean checked-out state"; exit 1
+
+          # Only validate the direct submodules declared by the repo.
+          # Nested fixtures (for example QuickJS test262 or optional nested vendor repos)
+          # may intentionally be absent from a dependency checkout.
+          if git submodule status | grep -E '^[-+U]'; then
+            echo "::error::top-level submodules are not in a clean checked-out state"; exit 1
           fi
 
       - uses: actions/setup-java@v4
