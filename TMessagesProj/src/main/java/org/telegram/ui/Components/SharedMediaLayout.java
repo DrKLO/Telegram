@@ -1126,11 +1126,11 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                     ArrayList<MessageObject> arr = (ArrayList<MessageObject>) args[2];
                     boolean enc = DialogObject.isEncryptedDialog(did);
                     int loadIndex = did == dialogId ? 0 : 1;
-                    if (type == 0 || type == 6 || type == 7) {
-                        if (type != sharedMediaData[0].filterType) {
+                    if (type == MEDIA_PHOTOVIDEO || type == MediaDataController.MEDIA_PHOTOS_ONLY || type == MediaDataController.MEDIA_VIDEOS_ONLY) {
+                        if (type != sharedMediaData[0].getPhotoVideoMediaType()) {
                             return;
                         }
-                        type = 0;
+                        type = MEDIA_PHOTOVIDEO;
                     }
                     if (type != 0 && type != 1 && type != 2 && type != 4) {
                         sharedMediaData[type].setTotalCount(loadIndex, (Integer) args[1]);
@@ -1472,6 +1472,14 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
 
         public int getTotalCount() {
             return totalCount[0] + totalCount[1];
+        }
+
+        private int getPhotoVideoMediaType() {
+            switch (filterType) {
+                case FILTER_PHOTOS_ONLY: return MediaDataController.MEDIA_PHOTOS_ONLY;
+                case FILTER_VIDEOS_ONLY: return MediaDataController.MEDIA_VIDEOS_ONLY;
+                default: return MEDIA_PHOTOVIDEO;
+            }
         }
 
         public void setMaxId(int num, int value) {
@@ -5930,8 +5938,11 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             int type = (Integer) args[4];
             boolean fromStart = (boolean) args[6];
 
-            if (type == 6 || type == 7) {
-                type = 0;
+            if (type == MEDIA_PHOTOVIDEO || type == MediaDataController.MEDIA_PHOTOS_ONLY || type == MediaDataController.MEDIA_VIDEOS_ONLY) {
+                if (type != sharedMediaData[0].getPhotoVideoMediaType()) {
+                    return;
+                }
+                type = MEDIA_PHOTOVIDEO;
             }
 
             if (guid == profileActivity.getClassGuid() && requestIndex == sharedMediaData[type].requestIndex) {
