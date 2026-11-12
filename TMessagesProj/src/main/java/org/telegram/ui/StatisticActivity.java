@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -28,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -3032,6 +3034,36 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
     }
 
+    /**
+     * Each figure of an overview is a number, what has changed since the period before, and under
+     * them what the number is of. A screen reader stopped on each of the three in turn, and heard
+     * the number before it knew what it counted. The three are one stop, said name first.
+     */
+    public static void groupOverviewEntry(ViewGroup entry, TextView title, TextView... values) {
+        entry.setFocusable(true);
+        entry.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        title.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        for (TextView value : values) {
+            value.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+        entry.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                final StringBuilder sb = new StringBuilder();
+                if (!TextUtils.isEmpty(title.getText())) {
+                    sb.append(title.getText());
+                }
+                for (TextView value : values) {
+                    if (value.getVisibility() == View.VISIBLE && !TextUtils.isEmpty(value.getText())) {
+                        sb.append(sb.length() > 0 ? ", " : "").append(value.getText());
+                    }
+                }
+                info.setText(sb);
+            }
+        });
+    }
+
     public static class OverviewCell extends LinearLayout implements Theme.Colorable {
 
         TextView[] primary;
@@ -3076,6 +3108,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
                     contentCell.addView(infoLayout);
                     contentCell.addView(title[i * 2 + j]);
+                    groupOverviewEntry(contentCell, title[i * 2 + j], primary[i * 2 + j], secondary[i * 2 + j]);
                     linearLayout.addView(contentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 1f));
                 }
                 addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0, 16));
