@@ -253,6 +253,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                     sb.append(title);
                 }
+                // a checklist is drawn with the same two lines a poll is: what kind of list it
+                // is, under the title, and how much of it is done, under the items. Neither was
+                // ever spoken, because the block above is only entered for a poll, so all a
+                // checklist said was its title
+                if (cell.currentMessageObject.isTodo()) {
+                    if (cell.docTitleLayout != null && !TextUtils.isEmpty(cell.docTitleLayout.getText())) {
+                        sb.append(", ");
+                        sb.append(cell.docTitleLayout.getText());
+                    }
+                    if (cell.animatedInfoLayout != null && !TextUtils.isEmpty(cell.animatedInfoLayout.getText())) {
+                        sb.append(", ");
+                        sb.append(cell.animatedInfoLayout.getText());
+                    }
+                }
                 if (cell.documentAttach != null) {
                     if (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO) {
                         sb.append(", ");
