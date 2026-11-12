@@ -49,6 +49,9 @@ public class DownloadController extends BaseController implements NotificationCe
     public static final int AUTODOWNLOAD_TYPE_AUDIO = 2;
     public static final int AUTODOWNLOAD_TYPE_VIDEO = 4;
     public static final int AUTODOWNLOAD_TYPE_DOCUMENT = 8;
+    public static final int AUTODOWNLOAD_TYPE_FILE_IMAGE = 16;
+    public static final int AUTODOWNLOAD_TYPE_FILE_VIDEO = 32;
+    public static final int AUTODOWNLOAD_TYPE_FILES = AUTODOWNLOAD_TYPE_DOCUMENT | AUTODOWNLOAD_TYPE_FILE_IMAGE | AUTODOWNLOAD_TYPE_FILE_VIDEO;
 
     public static final int PRESET_NUM_CONTACT = 0;
     public static final int PRESET_NUM_PM = 1;
@@ -96,6 +99,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
         public Preset(int[] m, long p, long v, long f, boolean pv, boolean pm, boolean e, boolean l, int bitrate, boolean preloadStories) {
             System.arraycopy(m, 0, mask, 0, Math.max(m.length, mask.length));
+            ensureFileSubtypeMasks(mask);
             sizes[PRESET_SIZE_NUM_PHOTO] = p;
             sizes[PRESET_SIZE_NUM_VIDEO] = v;
             sizes[PRESET_SIZE_NUM_DOCUMENT] = f;
@@ -147,6 +151,9 @@ public class DownloadController extends BaseController implements NotificationCe
                     }
                     preloadStories = Utilities.parseInt(defaultArgs[13]) == 1;
                 }
+                if (args.length < 15) {
+                    ensureFileSubtypeMasks(mask);
+                }
             }
         }
 
@@ -180,9 +187,9 @@ public class DownloadController extends BaseController implements NotificationCe
                     mask[a] &=~ AUTODOWNLOAD_TYPE_VIDEO;
                 }
                 if (settings.file_size_max != 0 && !settings.disabled) {
-                    mask[a] |= AUTODOWNLOAD_TYPE_DOCUMENT;
+                    mask[a] |= AUTODOWNLOAD_TYPE_FILES;
                 } else {
-                    mask[a] &=~ AUTODOWNLOAD_TYPE_DOCUMENT;
+                    mask[a] &=~ AUTODOWNLOAD_TYPE_FILES;
                 }
             }
             //TODO stories
@@ -202,7 +209,8 @@ public class DownloadController extends BaseController implements NotificationCe
                     "_" + (enabled ? 1 : 0) +
                     "_" + (lessCallData ? 1 : 0) +
                     "_" + maxVideoBitrate +
-                    "_" + (preloadStories ? 1 : 0);
+                    "_" + (preloadStories ? 1 : 0) +
+                    "_1";
         }
 
         public boolean equals(Preset obj) {
@@ -442,10 +450,78 @@ public class DownloadController extends BaseController implements NotificationCe
             return PRESET_SIZE_NUM_DOCUMENT;
         } else if (type == AUTODOWNLOAD_TYPE_VIDEO) {
             return PRESET_SIZE_NUM_VIDEO;
-        } else if (type == AUTODOWNLOAD_TYPE_DOCUMENT) {
+        } else if (type == AUTODOWNLOAD_TYPE_DOCUMENT || type == AUTODOWNLOAD_TYPE_FILE_IMAGE || type == AUTODOWNLOAD_TYPE_FILE_VIDEO || type == AUTODOWNLOAD_TYPE_FILES) {
             return PRESET_SIZE_NUM_DOCUMENT;
         }
         return PRESET_SIZE_NUM_PHOTO;
+    }
+
+    private static void ensureFileSubtypeMasks(int[] masks) {
+        for (int a = 0; a < masks.length; a++) {
+            if ((masks[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                masks[a] |= AUTODOWNLOAD_TYPE_FILE_IMAGE | AUTODOWNLOAD_TYPE_FILE_VIDEO;
+            }
+        }
+    }
+
+    public static int getDocumentAutoDownloadType(TLRPC.Document document) {
+        if (document == null) {
+            return AUTODOWNLOAD_TYPE_DOCUMENT;
+        }
+        if (document.attributes != null) {
+            for (int a = 0, N = document.attributes.size(); a < N; a++) {
+                TLRPC.DocumentAttribute attribute = document.attributes.get(a);
+                if (attribute instanceof TLRPC.TL_documentAttributeSticker
+                        || attribute instanceof TLRPC.TL_documentAttributeCustomEmoji
+                        || attribute instanceof TLRPC.TL_documentAttributeAudio
+                        || attribute instanceof TLRPC.TL_documentAttributeVideo && attribute.round_message) {
+                    return AUTODOWNLOAD_TYPE_DOCUMENT;
+                }
+            }
+        }
+        String name = FileLoader.getDocumentFileName(document);
+        if (name != null) {
+            int dot = name.lastIndexOf('.');
+            if (dot >= 0 && dot < name.length() - 1) {
+                String ext = name.substring(dot + 1).toLowerCase(Locale.US);
+                if (isImageFileExtension(ext)) {
+                    return AUTODOWNLOAD_TYPE_FILE_IMAGE;
+                }
+                if (isVideoFileExtension(ext)) {
+                    return AUTODOWNLOAD_TYPE_FILE_VIDEO;
+                }
+            }
+        }
+        if (document.mime_type != null) {
+            String mime = document.mime_type.toLowerCase(Locale.US);
+            if (mime.startsWith("image/")) {
+                return AUTODOWNLOAD_TYPE_FILE_IMAGE;
+            }
+            if (mime.startsWith("video/")) {
+                return AUTODOWNLOAD_TYPE_FILE_VIDEO;
+            }
+        }
+        return AUTODOWNLOAD_TYPE_DOCUMENT;
+    }
+
+    private static boolean isImageFileExtension(String ext) {
+        switch (ext) {
+            case "jpg": case "jpeg": case "jpe": case "png": case "webp": case "heic": case "heif":
+            case "bmp": case "tif": case "tiff": case "gif": case "dng": case "raw": case "jxl": case "avif":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static boolean isVideoFileExtension(String ext) {
+        switch (ext) {
+            case "mp4": case "m4v": case "mov": case "mkv": case "webm": case "avi": case "3gp": case "3gpp":
+            case "mpeg": case "mpg": case "wmv": case "flv": case "ts": case "mts":
+                return true;
+            default:
+                return false;
+        }
     }
 
     public void cleanup() {
@@ -503,6 +579,12 @@ public class DownloadController extends BaseController implements NotificationCe
             if ((masksArray[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
                 mask |= AUTODOWNLOAD_TYPE_DOCUMENT;
             }
+            if ((masksArray[a] & AUTODOWNLOAD_TYPE_FILE_IMAGE) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_FILE_IMAGE;
+            }
+            if ((masksArray[a] & AUTODOWNLOAD_TYPE_FILE_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_FILE_VIDEO;
+            }
             result |= mask << (a * 8);
         }
         return result;
@@ -525,6 +607,12 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
                 mask |= AUTODOWNLOAD_TYPE_DOCUMENT;
+            }
+            if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_IMAGE) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_IMAGE) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_IMAGE) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_FILE_IMAGE;
+            }
+            if ((getCurrentMobilePreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_VIDEO) != 0 || (getCurrentWiFiPreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_VIDEO) != 0 || (getCurrentRoamingPreset().mask[a] & AUTODOWNLOAD_TYPE_FILE_VIDEO) != 0) {
+                mask |= AUTODOWNLOAD_TYPE_FILE_VIDEO;
             }
         }
         return mask;
@@ -564,9 +652,9 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             audioDownloadQueue.clear();
         }
-        if ((currentMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+        if ((currentMask & AUTODOWNLOAD_TYPE_FILES) != 0) {
             if (documentDownloadQueue.isEmpty()) {
-                newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_DOCUMENT);
+                newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_FILES);
             }
         } else {
             for (int a = 0; a < documentDownloadQueue.size(); a++) {
@@ -602,6 +690,12 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) == 0) {
                 getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_FILE_IMAGE) == 0) {
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_FILE_IMAGE);
+            }
+            if ((mask & AUTODOWNLOAD_TYPE_FILE_VIDEO) == 0) {
+                getMessagesStorage().clearDownloadQueue(AUTODOWNLOAD_TYPE_FILE_VIDEO);
             }
         }
     }
@@ -700,7 +794,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(msg) || MessageObject.isStickerMessage(msg) || MessageObject.isAnimatedStickerMessage(msg)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(msg) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(msg));
         } else {
             return 0;
         }
@@ -790,7 +884,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(msg) || MessageObject.isStickerMessage(msg) || MessageObject.isAnimatedStickerMessage(msg)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(msg) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(msg));
         } else {
             return 0;
         }
@@ -871,7 +965,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (MessageObject.isPhoto(message) || MessageObject.isStickerMessage(message) || MessageObject.isAnimatedStickerMessage(message)) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (MessageObject.getDocument(message) != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(MessageObject.getDocument(message));
         } else {
             return 0;
         }
@@ -953,7 +1047,7 @@ public class DownloadController extends BaseController implements NotificationCe
         } else if (media instanceof TLRPC.TL_messageMediaPhoto) {
             type = AUTODOWNLOAD_TYPE_PHOTO;
         } else if (media.document != null) {
-            type = AUTODOWNLOAD_TYPE_DOCUMENT;
+            type = getDocumentAutoDownloadType(media.document);
         } else {
             return 0;
         }
@@ -1094,7 +1188,7 @@ public class DownloadController extends BaseController implements NotificationCe
             if ((preset.mask[a] & AUTODOWNLOAD_TYPE_VIDEO) != 0) {
                 video = true;
             }
-            if ((preset.mask[a] & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+            if ((preset.mask[a] & AUTODOWNLOAD_TYPE_FILES) != 0) {
                 document = true;
             }
             if (photo && video && document) {
@@ -1131,6 +1225,11 @@ public class DownloadController extends BaseController implements NotificationCe
 
     protected void processDownloadObjects(int type, ArrayList<DownloadObject> objects) {
         if (objects.isEmpty()) {
+            if (type == AUTODOWNLOAD_TYPE_DOCUMENT) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_FILE_IMAGE | AUTODOWNLOAD_TYPE_FILE_VIDEO);
+            } else if (type == AUTODOWNLOAD_TYPE_FILE_IMAGE) {
+                newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_FILE_VIDEO);
+            }
             return;
         }
         ArrayList<DownloadObject> queue;
@@ -1197,8 +1296,15 @@ public class DownloadController extends BaseController implements NotificationCe
         if ((mask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_VIDEO) != 0 && videoDownloadQueue.isEmpty()) {
             getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_VIDEO);
         }
-        if ((mask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && (downloadMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0 && documentDownloadQueue.isEmpty()) {
-            getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+        if (documentDownloadQueue.isEmpty()) {
+            int fileMask = mask & downloadMask & AUTODOWNLOAD_TYPE_FILES;
+            if ((fileMask & AUTODOWNLOAD_TYPE_DOCUMENT) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_DOCUMENT);
+            } else if ((fileMask & AUTODOWNLOAD_TYPE_FILE_IMAGE) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_FILE_IMAGE);
+            } else if ((fileMask & AUTODOWNLOAD_TYPE_FILE_VIDEO) != 0) {
+                getMessagesStorage().getDownloadQueue(AUTODOWNLOAD_TYPE_FILE_VIDEO);
+            }
         }
     }
 
@@ -1225,10 +1331,10 @@ public class DownloadController extends BaseController implements NotificationCe
                 if (videoDownloadQueue.isEmpty()) {
                     newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_VIDEO);
                 }
-            } else if (downloadObject.type == AUTODOWNLOAD_TYPE_DOCUMENT) {
+            } else if ((downloadObject.type & AUTODOWNLOAD_TYPE_FILES) != 0) {
                 documentDownloadQueue.remove(downloadObject);
                 if (documentDownloadQueue.isEmpty()) {
-                    newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_DOCUMENT);
+                    newDownloadObjectsAvailable(AUTODOWNLOAD_TYPE_FILES);
                 }
             }
         }
