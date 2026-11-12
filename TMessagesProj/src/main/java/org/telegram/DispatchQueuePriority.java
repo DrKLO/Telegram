@@ -10,46 +10,37 @@ import java.util.concurrent.TimeUnit;
 
 public class DispatchQueuePriority {
 
-    ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1, 60, TimeUnit.SECONDS, new PriorityBlockingQueue<>(10, new Comparator<Runnable>() {
-
-        @Override
-        public int compare(Runnable o1, Runnable o2) {
-            int priority1 = 1;
-            int priority2 = 1;
-            if (o1 instanceof PriorityRunnable) {
-                priority1 = ((PriorityRunnable) o1).priority;
-            }
-            if (o2 instanceof PriorityRunnable) {
-                priority2 = ((PriorityRunnable) o2).priority;
-            }
-            return priority2 - priority1;
-        }
-    })) {
-        @Override
-        protected void beforeExecute(Thread t, Runnable r) {
-            CountDownLatch latch = pauseLatch;
-            if (latch != null) {
-                try {
-                    latch.await();
-                } catch (InterruptedException e) {
-                    FileLog.e(e);
-                }
-            }
-        }
-    };
-
+    private final ThreadPoolExecutor threadPoolExecutor;
     private volatile CountDownLatch pauseLatch;
 
     public DispatchQueuePriority(String threadName) {
+        this.threadPoolExecutor = new ThreadPoolExecutor(
+                1, 
+                1, 
+                60, 
+                TimeUnit.SECONDS, 
+                new PriorityBlockingQueue<>(10, new PriorityRunnableComparator())
+        ) {
+            @Override
+            protected void beforeExecute(Thread t, Runnable r) {
+                awaitPauseLatch();
+            }
+        };
+    }
 
+    private void awaitPauseLatch() {
+        if (pauseLatch != null) {
+            try {
+                pauseLatch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore interrupt status
+                FileLog.e(e);
+            }
+        }
     }
 
     public static Runnable wrap(Runnable runnable, int priority) {
-        if (priority == 1) {
-            return runnable;
-        } else {
-            return new PriorityRunnable(priority, runnable);
-        }
+        return priority == 1 ? runnable : new PriorityRunnable(priority, runnable);
     }
 
     public void postRunnable(Runnable runnable) {
@@ -65,10 +56,9 @@ public class DispatchQueuePriority {
     }
 
     public void cancelRunnable(Runnable runnable) {
-        if (runnable == null) {
-            return;
+        if (runnable != null) {
+            threadPoolExecutor.remove(runnable);
         }
-        threadPoolExecutor.remove(runnable);
     }
 
     public void pause() {
@@ -81,7 +71,7 @@ public class DispatchQueuePriority {
         CountDownLatch latch = pauseLatch;
         if (latch != null) {
             latch.countDown();
-            pauseLatch = null;
+            pauseLatch = null; // Allow future pauses
         }
     }
 
@@ -97,6 +87,21 @@ public class DispatchQueuePriority {
         @Override
         public void run() {
             runnable.run();
+        }
+    }
+
+    private static class PriorityRunnableComparator implements Comparator<Runnable> {
+        @Override
+        public int compare(Runnable o1, Runnable o2) {
+            int priority1 = getPriority(o1);
+            int priority2 = getPriority(o2);
+            return Integer.compare(priority2, priority1); // Higher priority first
+        }
+
+        private int getPriority(Runnable runnable) {
+            return (runnable instanceof PriorityRunnable)
+                    ? ((PriorityRunnable) runnable).priority 
+                    : 1; // Default priority
         }
     }
 }
