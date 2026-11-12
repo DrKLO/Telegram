@@ -375,10 +375,15 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 cell.accessibilityTextFileSize = fileSize;
             }
 
+            CharSequence spokenText = cell.accessibilityText;
+            final CharSequence timer = cell.getAccessibilityTimerText();
+            if (timer != null) {
+                spokenText = TextUtils.concat(cell.accessibilityText, timer);
+            }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                info.setContentDescription(cell.accessibilityText.toString());
+                info.setContentDescription(spokenText.toString());
             } else {
-                info.setText(cell.accessibilityText);
+                info.setText(spokenText);
             }
 
             info.setEnabled(true);
