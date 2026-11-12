@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Applies custom/patches/custom-features.patch to the working tree.
+# Applies custom/patches/mygram.patch to the working tree.
 #
 #   scripts/apply-patch.sh            apply (idempotent: "already applied" is detected)
 #   scripts/apply-patch.sh --check    only check, change nothing
@@ -12,7 +12,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PATCH="$ROOT/custom/patches/custom-features.patch"
+PATCH="$ROOT/custom/patches/mygram.patch"
 REPORT_DIR="$ROOT/build-reports"
 CHECK_ONLY=0
 
@@ -141,7 +141,7 @@ FAILED_FILES="$(printf '%s\n' "$CHECK_OUT" \
   echo
   echo "## How to fix"
   echo
-  echo "1. In a throw-away branch run \`git apply --3way custom/patches/custom-features.patch\` and resolve the conflict markers in the files above."
+  echo "1. In a throw-away branch run \`git apply --3way custom/patches/mygram.patch\` and resolve the conflict markers in the files above."
   echo "2. Rebuild the patch with \`scripts/regenerate-patch.sh\` and bump \`CUSTOM_PATCH_VERSION\` (\`scripts/version.sh patch-bump\`)."
   echo "3. Re-run \`scripts/apply-patch.sh --check\` on a clean checkout, then \`scripts/check-upstream.sh --record\`."
   echo
