@@ -14385,6 +14385,20 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    // a video that can be streamed draws two buttons: one in the middle, which opens the viewer
+    // and plays what is there while the rest arrives, and a small one of its own that carries the
+    // download. The state of the button speaks for the small one, so a message that was left while
+    // it was still downloading offered to cancel that download and, being asked to, did nothing at
+    // all: the press it was turned into is only taken while the small button is not drawn.
+    //
+    // touching the middle is what touching the message does, and it is what is done here.
+    int getIconForAccessibilityClick() {
+        if (drawVideoImageButton) {
+            return autoPlayingMedia ? MediaActionDrawable.ICON_NONE : MediaActionDrawable.ICON_PLAY;
+        }
+        return getIconForCurrentState();
+    }
+
     int getIconForCurrentState() {
         if (currentMessageObject == null || currentMessageObject.hasExtendedMedia()) {
             return MediaActionDrawable.ICON_NONE;
@@ -23134,8 +23148,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return false;
         }
         if (action == AccessibilityNodeInfo.ACTION_CLICK) {
-            int icon = getIconForCurrentState();
-            if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
+            int icon = getIconForAccessibilityClick();
+            if (drawVideoImageButton) {
+                didClickedImage();
+            } else if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
                 didPressButton(true, false);
             } else if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
                 delegate.didPressOther(this, otherX, otherY);
