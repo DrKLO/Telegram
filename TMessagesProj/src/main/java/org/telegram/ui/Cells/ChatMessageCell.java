@@ -1708,6 +1708,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     TLRPC.User currentForwardUser;
     private TLRPC.User currentViaBotUser;
+    // the bot a message was sent through, in the words drawn at its top, while they are drawn
+    CharSequence accessibilityViaBotText;
     TLRPC.Chat currentForwardChannel;
     String currentForwardName;
     private String currentForwardNameString;
@@ -15977,6 +15979,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         String viaUsername = null;
+        accessibilityViaBotText = null;
         CharSequence viaString = null;
         if (messageObject.isWelcomeMessage() && !messageObject.isWelcomeAnchored() && delegate != null && delegate.getChatMode() == ChatActivity.MODE_DEFAULT && messageObject.messageOwner.from_id != null && messageObject.messageOwner.from_id.user_id != 0) {
             final TLRPC.User botUser = MessagesController.getInstance(currentAccount).getUser(messageObject.messageOwner.from_id.user_id);
@@ -16130,6 +16133,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     color = getThemedColor(currentMessageObject.isOutOwner() ? Theme.key_chat_outViaBotNameText : Theme.key_chat_inViaBotNameText);
                 }
                 String viaBotString = getString(R.string.ViaBot);
+                accessibilityViaBotText = viaBotString + " " + viaUsername;
                 if (currentNameString.length() > 0) {
                     SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
                     stringBuilder.append(nameStringFinal).append(" ").append(viaBotString).append(" ").append(viaUsername);
@@ -23141,6 +23145,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 delegate.didPressOther(this, otherX, otherY);
             } else {
                 didClickedImage();
+            }
+            return true;
+        } else if (action == R.id.acc_action_via_bot) {
+            // what a press on the bot's name does
+            if (delegate != null && currentMessageObject != null && !TextUtils.isEmpty(accessibilityViaBotText)) {
+                if (currentViaBotUser != null && currentViaBotUser.bot_inline_placeholder == null) {
+                    delegate.didPressViaBotNotInline(this, currentViaBotUser.id);
+                } else {
+                    String username = UserObject.getPublicUsername(currentViaBotUser);
+                    delegate.didPressViaBot(this, username != null ? username : currentMessageObject.messageOwner.via_bot_name);
+                }
             }
             return true;
         } else if (action == R.id.acc_action_small_button) {
