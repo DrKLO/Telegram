@@ -1011,46 +1011,8 @@ class ChatMessagePoll {
                 if (pressedVoteIsMedia) {
                     PollButton button = cell.pollButtons.get(cell.pressedVoteButton);
                     cell.didClickedPollImage(cell, button.pollButtonDrawable.getImageReceiver(), button.answer, button.answer.media, event.getX(), event.getY(), button.answer.unshuffled_index);
-                } else if (cell.currentMessageObject.scheduled) {
-                    Toast.makeText(cell.getContext(), getString(cell.currentMessageObject.isTodo() ? R.string.MessageScheduledTodo : R.string.MessageScheduledVote), Toast.LENGTH_LONG).show();
                 } else {
-                    PollButton button = cell.pollButtons.get(cell.pressedVoteButton);
-                    TLRPC.PollAnswer answer = button.answer;
-                    if (cell.pollVoted || cell.pollClosed) {
-                        ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
-                        answers.add(answer);
-                        cell.delegate.didLongPressPollOption(cell, answer);
-                    } else if (hasVoteRestrictions) {
-                        ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
-                        answers.add(answer);
-                        cell.delegate.didPressVoteButtons(cell, answers, button.count, button.x + dp(50), button.y + cell.namesOffset);
-                    } else {
-                        if (cell.lastPoll != null && cell.lastPoll.multiple_choice) {
-                            if (cell.currentMessageObject.checkedVotes.contains(answer)) {
-                                cell.currentMessageObject.checkedVotes.remove(answer);
-                                cell.pollCheckBox[cell.pressedVoteButton].setChecked(false, true);
-                            } else {
-                                cell.currentMessageObject.checkedVotes.add(answer);
-                                cell.pollCheckBox[cell.pressedVoteButton].setChecked(true, true);
-                            }
-                            checkInstantButtonForPoll(true);
-                        } else {
-                            cell.pollVoteInProgressNum = cell.pressedVoteButton;
-                            cell.pollVoteInProgress = true;
-                            cell.voteCurrentProgressTime = 0.0f;
-                            cell.firstCircleLength = true;
-                            cell.voteCurrentCircleLength = 360;
-                            cell.voteRisingCircleLength = false;
-                            if (button.task != null) {
-                                cell.toggleTodoCheck(cell.pressedVoteButton, true);
-                            } else {
-                                cell.vibrateOnPollVote = true;
-                                ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
-                                answers.add(answer);
-                                cell.delegate.didPressVoteButtons(cell, answers, -1, 0, 0);
-                            }
-                        }
-                    }
+                    performPollButtonPress(cell.pressedVoteButton);
                 }
                 cell.pressedVoteButton = -1;
                 cell.invalidate();
@@ -1063,6 +1025,65 @@ class ChatMessagePoll {
             resetPollButtonSelectors();
         }
         return result;
+    }
+
+    boolean isPollOptionTickable(PollButton button) {
+        return button != null && button.answer != null && cell.lastPoll != null && cell.currentMessageObject != null
+            && cell.lastPoll.multiple_choice && !cell.pollVoted && !cell.pollClosed && !cell.pollResultsPreview
+            && !hasVoteRestrictions && !cell.currentMessageObject.scheduled;
+    }
+
+    boolean isPollOptionTicked(int index, PollButton button) {
+        if (cell.pollCheckBox != null && index >= 0 && index < cell.pollCheckBox.length && cell.pollCheckBox[index] != null) {
+            return cell.pollCheckBox[index].isChecked();
+        }
+        return cell.currentMessageObject != null && button.answer != null && cell.currentMessageObject.checkedVotes.contains(button.answer);
+    }
+
+    // what a press on an answer of a poll, or on a task of a checklist, does. A finger and a
+    // screen reader both come here, so that the two cannot come to do different things
+    void performPollButtonPress(int index) {
+        if (cell.currentMessageObject.scheduled) {
+            Toast.makeText(cell.getContext(), getString(cell.currentMessageObject.isTodo() ? R.string.MessageScheduledTodo : R.string.MessageScheduledVote), Toast.LENGTH_LONG).show();
+            return;
+        }
+        PollButton button = cell.pollButtons.get(index);
+        TLRPC.PollAnswer answer = button.answer;
+        if (cell.pollVoted || cell.pollClosed) {
+            ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
+            answers.add(answer);
+            cell.delegate.didLongPressPollOption(cell, answer);
+        } else if (hasVoteRestrictions) {
+            ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
+            answers.add(answer);
+            cell.delegate.didPressVoteButtons(cell, answers, button.count, button.x + dp(50), button.y + cell.namesOffset);
+        } else {
+            if (cell.lastPoll != null && cell.lastPoll.multiple_choice) {
+                if (cell.currentMessageObject.checkedVotes.contains(answer)) {
+                    cell.currentMessageObject.checkedVotes.remove(answer);
+                    cell.pollCheckBox[index].setChecked(false, true);
+                } else {
+                    cell.currentMessageObject.checkedVotes.add(answer);
+                    cell.pollCheckBox[index].setChecked(true, true);
+                }
+                checkInstantButtonForPoll(true);
+            } else {
+                cell.pollVoteInProgressNum = index;
+                cell.pollVoteInProgress = true;
+                cell.voteCurrentProgressTime = 0.0f;
+                cell.firstCircleLength = true;
+                cell.voteCurrentCircleLength = 360;
+                cell.voteRisingCircleLength = false;
+                if (button.task != null) {
+                    cell.toggleTodoCheck(index, true);
+                } else {
+                    cell.vibrateOnPollVote = true;
+                    ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
+                    answers.add(answer);
+                    cell.delegate.didPressVoteButtons(cell, answers, -1, 0, 0);
+                }
+            }
+        }
     }
 
     void resetPollButtonSelectors() {

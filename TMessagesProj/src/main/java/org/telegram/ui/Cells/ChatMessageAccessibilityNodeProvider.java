@@ -689,11 +689,21 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 }
                 ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
                 StringBuilder sb = new StringBuilder(button.title.getText());
-                if (!cell.pollVoted) {
+                if (cell.isPollOptionTickable(button)) {
+                    // the tick beside an option is state, so it is left to the screen reader
+                    // to say in its own words rather than written into the text
+                    info.setClassName("android.widget.CheckBox");
+                    info.setCheckable(true);
+                    info.setChecked(cell.isPollOptionTicked(buttonIndex, button));
+                } else if (!cell.pollVoted) {
                     info.setClassName("android.widget.Button");
                 } else {
                     info.setSelected(button.chosen);
                     sb.append(", ").append(button.percent).append("%");
+                    if (button.answer != null) {
+                        // the number beside the bar, which only the bar carried until now
+                        sb.append(", ").append(formatPluralString(cell.lastPoll != null && cell.lastPoll.quiz ? "Answer" : "Vote", button.count));
+                    }
                     if (cell.lastPoll != null && cell.lastPoll.quiz && (button.chosen || button.correct)) {
                         sb.append(", ").append(button.correct ? getString("AccDescrQuizCorrectAnswer", R.string.AccDescrQuizCorrectAnswer) : getString("AccDescrQuizIncorrectAnswer", R.string.AccDescrQuizIncorrectAnswer));
                     }
@@ -701,6 +711,13 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.setText(sb);
                 info.setEnabled(true);
                 info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                // a long press on an option opens the menu that belongs to it, where who
+                // added it, quoting it and removing it are. A press held on the screen got
+                // there; nothing offered it to a screen reader
+                if (cell.delegate != null && (button.answer != null || button.task != null)) {
+                    info.setLongClickable(true);
+                    info.addAction(AccessibilityNodeInfo.ACTION_LONG_CLICK);
+                }
 
                 final int y = button.y + cell.namesOffset;
                 final int w = cell.backgroundWidth - dp(76);
@@ -948,10 +965,13 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         return false;
                     }
                     ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
+                    // a press went straight to sending a vote, whatever the option was: an
+                    // option of a poll that takes more than one answer was sent on its own
+                    // instead of being ticked, and one of a poll already voted in or closed
+                    // sent a vote again instead of opening the menu it has. Do what a press
+                    // on the option itself does
                     if (cell.delegate != null) {
-                        ArrayList<TLRPC.PollAnswer> answers = new ArrayList<>();
-                        answers.add(button.answer);
-                        cell.delegate.didPressVoteButtons(cell, answers, -1, 0, 0);
+                        cell.performPollButtonPress(buttonIndex);
                     }
                     cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                 } else if (virtualViewId == POLL_HINT) {
@@ -1006,6 +1026,22 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     cell.transcribeButton.onTap();
                 }
             } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+                if (virtualViewId >= POLL_BUTTONS_START && virtualViewId < BOT_BUTTONS_START) {
+                    int buttonIndex = virtualViewId - POLL_BUTTONS_START;
+                    if (buttonIndex >= cell.pollButtons.size()) {
+                        return false;
+                    }
+                    ChatMessageCell.PollButton button = cell.pollButtons.get(buttonIndex);
+                    if (cell.delegate != null) {
+                        if (button.task != null) {
+                            cell.delegate.didLongPressToDoButton(cell, button.task);
+                        } else if (button.answer != null) {
+                            cell.delegate.didLongPressPollOption(cell, button.answer);
+                        }
+                        cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_LONG_CLICKED);
+                    }
+                    return true;
+                }
                 ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);
                 if (link != null && cell.delegate != null) {
                     cell.delegate.didPressUrl(cell, link, true);
