@@ -3583,6 +3583,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         sendButtonBlockedByTypingView = new SendButtonBlockedByTypingView(context, resourcesProvider);
         sendButtonBlockedByTypingView.setVisibility(View.INVISIBLE);
+        sendButtonBlockedByTypingView.setContentDescription(getString(R.string.Stop));
         sendButtonBlockedByTypingView.setOnClickListener(v -> {
             if (streamingState == BotForumHelper.SteamingSendButtonState.STOP) {
                 if (delegate != null) {

@@ -395,6 +395,7 @@ public class GiftMessageBottomSheet extends BottomSheet {
                 return true;
             }
         };
+        writeButton.setContentDescription(LocaleController.getString(R.string.Send));
         writeButton.setCircleSize(dp(38), dp(38));
         writeButton.setCirclePadding(dp(6), dp(8));
         writeButton.newCounterPos = true;

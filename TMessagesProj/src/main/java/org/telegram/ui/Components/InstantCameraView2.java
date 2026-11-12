@@ -257,6 +257,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         flashButton.setScaleType(ImageView.ScaleType.CENTER);
         buttonsLayout.addView(flashButton, LayoutHelper.createLinear(44, 44));
         flashButton.setOnClickListener(view -> toggleFlash());
+        flashButton.setContentDescription(LocaleController.getString(R.string.AccDescrCameraFlashOff));
 
         buttonIconSize = dp(isNewDesign ? 24 : 28);
         switchCameraDrawable = new RLottieDrawable(
@@ -1011,6 +1012,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
     private void updateFlashIcon() {
         boolean enabled = stateInfo != null && stateInfo.isFlashEnabled();
+        flashButton.setContentDescription(LocaleController.getString(enabled ? R.string.AccDescrCameraFlashOn : R.string.AccDescrCameraFlashOff));
         if (enabled) {
             if (flashOffDrawable == null) {
                 flashOffDrawable = new RLottieDrawable(
@@ -1380,6 +1382,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         };
         view.setOpaque(true);
         view.setClickable(true);
+        // clickable only to take the pinch that zooms; it is no button, and a screen reader found it
+        // as one with no name before Switch camera
+        view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         view.setCameraDistance(dp(8000));
         view.setOutlineProvider(new ViewOutlineProvider() {
             @Override

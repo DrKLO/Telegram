@@ -1729,6 +1729,13 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         writeButton = new ChatActivityEnterView.SendButton(context, R.drawable.send_plane_24, resourcesProvider) {
             @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                info.setContentDescription(LocaleController.formatPluralString("AccDescrShareInChats", selectedDialogs.size()));
+                info.setClassName(Button.class.getName());
+            }
+
+            @Override
             public boolean isOpen() {
                 return true;
             }
@@ -1757,6 +1764,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         writeButton.setCirclePadding(dp(1), dp(6));
         writeButton.newCounterPos = true;
         writeButtonContainer.addView(writeButton, LayoutHelper.createFrameMatchParent());
+        // the name was on the container around the button, which takes no press, and the button
+        // inside, which sends, was a second stop of its own with no name. The button carries the
+        // name now, and the container is left out
+        writeButtonContainer.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         writeButton.setOnClickListener(v -> sendInternal(true));
         writeButton.setOnLongClickListener(v -> {
             return onSendLongClick(writeButton);

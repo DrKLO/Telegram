@@ -43,6 +43,8 @@ public class EndCloseLayout extends FrameLayout {
         super(context);
         setWillNotDraw(false);
         endCloseView = new EndCloseView(context);
+        // drawn as a picture: "Close" once the call is over
+        endCloseView.setContentDescription(LocaleController.getString(R.string.Close));
         this.addView(endCloseView, LayoutHelper.createFrame(52, 52, Gravity.RIGHT));
 
         transitionSet = new TransitionSet();

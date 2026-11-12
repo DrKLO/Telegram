@@ -745,11 +745,13 @@ public class LPhotoPaintView extends SizeNotifierFrameLayoutPhoto implements IPh
 
         cancelButton = new PaintCancelView(context);
         cancelButton.setPadding(dp(8), dp(8), dp(8), dp(8));
+        cancelButton.setContentDescription(LocaleController.getString(R.string.Cancel));
         cancelButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         bottomLayout.addView(cancelButton, LayoutHelper.createFrame(32, 32, Gravity.BOTTOM | Gravity.LEFT, 12, 0, 0, 4));
 
         doneButton = new PaintDoneView(context);
         doneButton.setPadding(dp(8), dp(8), dp(8), dp(8));
+        doneButton.setContentDescription(LocaleController.getString(R.string.Done));
         doneButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR));
         doneButton.setOnClickListener(v -> {
             if (isColorListShown) {
