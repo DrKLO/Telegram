@@ -2014,6 +2014,11 @@ class ChatMessagePoll {
             }
 
             cell.instantButtonRect.set(textX, instantY, textX + cell.instantWidth, instantY + dp(44));
+            // a poll draws its button here rather than under a link preview, and the place
+            // kept for the tree was only ever filled over there: the button that opens who
+            // voted, or sends the answers of a poll that takes more than one, stood in the
+            // message with nothing in the tree to reach it by
+            cell.instantButtonAccessibilityRect.set(cell.instantButtonRect);
             if (cell.selectorDrawable[0] != null && cell.selectorDrawableMaskType[0] == 2) {
                 cell.selectorDrawable[0].setBounds(textX - dp(instantViewTouchesBottom ? 6 : 0), instantY, textX + cell.instantWidth, instantY + dp(44));
                 cell.selectorDrawable[0].draw(canvas);

@@ -473,7 +473,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.addChild(cell, POLL_BUTTONS_START + i);
                 i++;
             }
-            if (cell.drawInstantView && !cell.instantButtonRect.isEmpty()) {
+            if (cell.drawInstantView && !cell.instantButtonAccessibilityRect.isEmpty()) {
                 info.addChild(cell, INSTANT_VIEW);
             }
             if (cell.contact != null && cell.contact.visible && cell.contactRect != null && !cell.contactRect.isEmpty()) {
@@ -733,7 +733,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     info.setText(cell.instantViewLayout.getText());
                 }
                 info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
-                cell.instantButtonRect.round(rect);
+                cell.instantButtonAccessibilityRect.round(rect);
                 info.setBoundsInParent(rect);
                 if (cell.accessibilityVirtualViewBounds.get(virtualViewId) == null || !cell.accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
                     cell.accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));

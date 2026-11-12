@@ -741,6 +741,9 @@ class ChatMessageLinkPreview {
                     SpoilerEffect.layoutDrawMaybe(cell.instantViewLayout, canvas);
                     canvas.restore();
                 }
+                // the whole row under the divider is the button, from the line above it down to
+                // the bottom of the preview
+                cell.instantButtonAccessibilityRect.set(linkX, startY + linkPreviewHeight + dp(2), linkX + width, startY + linkPreviewHeight + dp(42));
             } else {
                 int instantY = startY + linkPreviewHeight + dp(cell.currentMessageObject.isUnsupported() ? -5 : 10);
                 if (instantButtonLoading != null && !loading && !instantButtonLoading.isDisappeared() && !instantButtonLoading.isDisappearing()) {
@@ -755,6 +758,7 @@ class ChatMessageLinkPreview {
                     instantButtonLoading.resetDisappear();
                 }
                 cell.instantButtonRect.set(linkX, instantY, linkX + cell.instantWidth, instantY + dp(36));
+                cell.instantButtonAccessibilityRect.set(cell.instantButtonRect);
                 float scale = cell.instantButtonBounce.getScale(.02f);
                 boolean scaleRestore = scale != 1;
                 if (scaleRestore) {
