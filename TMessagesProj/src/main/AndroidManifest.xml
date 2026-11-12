@@ -691,10 +691,10 @@
 
         <meta-data android:name="com.google.android.gms.wallet.api.enabled" android:value="true" />
 
-        <!--
         <meta-data android:name="com.google.android.gms.car.notification.SmallIcon" android:resource="@drawable/ic_player" />
         <meta-data android:name="com.google.android.gms.car.application" android:resource="@xml/automotive_app_desc" />
 
+        <!--
         <service
             android:name="org.telegram.messenger.car.TelegramCarAppService"
             android:exported="true"
