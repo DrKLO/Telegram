@@ -400,7 +400,10 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
         }
     }
 
+    private boolean accessibilityAnnounced;
+
     public void forceClose() {
+        accessibilityAnnounced = false;
         if (updateRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(updateRunnable);
             updateRunnable = null;
@@ -567,6 +570,11 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
                         }
                         if (adapter != null) {
                             adapter.notifyDataSetChanged();
+                        }
+                        // the row comes up over the field with nothing said about it
+                        if (!accessibilityAnnounced && param != null && !param.isEmpty()) {
+                            accessibilityAnnounced = true;
+                            AndroidUtilities.makeAccessibilityAnnouncement(LocaleController.formatPluralString("AccDescrEmojiSuggestions", param.size()));
                         }
                     } else {
                         keywordResults = null;
@@ -1013,6 +1021,17 @@ public class SuggestEmojiView extends FrameLayout implements NotificationCenter.
 
         private void setEmoji(String emoji, int direction) {
             this.emoji = emoji;
+            // the view draws its emoji and nothing else: it is named by it, and a custom emoji by the
+            // emoji it stands for
+            CharSequence name = emoji;
+            if (emoji != null && emoji.startsWith("animated_")) {
+                name = null;
+                try {
+                    final TLRPC.Document document = AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, Long.parseLong(emoji.substring(9)));
+                    name = document == null ? null : MessageObject.findAnimatedEmojiEmoticon(document, null);
+                } catch (Exception ignore) {}
+            }
+            setContentDescription(name);
             if (emoji != null && emoji.startsWith("animated_")) {
                 try {
                     long documentId = Long.parseLong(emoji.substring(9));
