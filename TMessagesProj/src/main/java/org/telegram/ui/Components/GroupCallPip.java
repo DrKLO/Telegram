@@ -31,6 +31,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.voip.VoIPService;
@@ -325,6 +326,59 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
                 return true;
             }
 
+            /*
+             * The bubble of a voice chat floats over every screen while one is on, and goes by where a
+             * finger lands: a tap opens its card (open the chat, mute, leave), a press held down speaks.
+             * A screen reader found a blank in it. It says it is the voice chat and whether the
+             * microphone is on, a double tap opens the card as a tap does, and the microphone can be
+             * turned on and off by name, as long as one may speak.
+             */
+            @Override
+            public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                final VoIPService service = VoIPService.getSharedInstance();
+                final StringBuilder text = new StringBuilder(LocaleController.getString(R.string.VoipGroupVoiceChat));
+                if (service != null && service.groupCall != null) {
+                    text.append(", ").append(LocaleController.getString(service.isMicMute() ? R.string.AccDescrVoipMicOff : R.string.AccDescrVoipMicOn));
+                }
+                info.setContentDescription(text);
+                info.setClassName("android.widget.Button");
+                // a group with words and an action is not always taken as a stop by a screen reader:
+                // the bubble is one button, and says so
+                info.setFocusable(true);
+                info.setClickable(true);
+                info.addAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);
+                if (service != null && service.groupCall != null && canToggleMic(service)) {
+                    info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_voice_chat_mic,
+                        LocaleController.getString(service.isMicMute() ? R.string.VoipUnmute : R.string.VoipMute)));
+                }
+            }
+
+            @Override
+            public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+                if (action == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK) {
+                    onTap();
+                    return true;
+                }
+                if (action == R.id.acc_action_voice_chat_mic) {
+                    final VoIPService service = VoIPService.getSharedInstance();
+                    if (service != null && service.groupCall != null && canToggleMic(service)) {
+                        service.setMicMute(!service.isMicMute(), false, true);
+                    }
+                    return true;
+                }
+                return super.performAccessibilityAction(action, arguments);
+            }
+
+            // the same rule the held press goes by: someone muted by the admins may not speak
+            private boolean canToggleMic(VoIPService service) {
+                if (!service.isMicMute()) {
+                    return true;
+                }
+                final TLRPC.GroupCallParticipant participant = service.groupCall.participants.get(service.getSelfId());
+                return participant == null || participant.can_self_unmute || !participant.muted || ChatObject.canManageCalls(service.getChat());
+            }
+
             private void onTap() {
                 if (VoIPService.getSharedInstance() != null) {
                     showAlert(!showAlert);
@@ -333,9 +387,13 @@ public class GroupCallPip implements NotificationCenter.NotificationCenterDelega
             }
         };
         windowView.setAlpha(0.7f);
+        windowView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        windowView.setFocusable(true);
+        windowView.setContentDescription(LocaleController.getString(R.string.VoipGroupVoiceChat));
 
         button = new GroupCallPipButton(context, currentAccount, false);
         windowView.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+        button.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
 
         avatarsImageView = new AvatarsImageView(context, true);
         avatarsImageView.setStyle(5);
