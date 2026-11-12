@@ -8,6 +8,7 @@ import android.graphics.Region;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -126,6 +127,17 @@ public class OutlineTextContainerView extends FrameLayout implements Theme.Color
 
     public void attachEditText(EditText attachedEditText) {
         this.attachedEditText = attachedEditText;
+        // what goes in the field is a label drawn on its outline, and the field had no hint or name:
+        // it is given as a hint a screen reader reads and the screen does not show
+        attachedEditText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                if (android.os.Build.VERSION.SDK_INT >= 26 && android.text.TextUtils.isEmpty(info.getHintText()) && !android.text.TextUtils.isEmpty(mText)) {
+                    info.setHintText(mText);
+                }
+            }
+        });
         invalidate();
     }
 
