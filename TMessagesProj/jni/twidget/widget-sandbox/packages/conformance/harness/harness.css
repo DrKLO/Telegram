@@ -1,4 +1,0 @@
-html,body{margin:0;padding:0}
-body{font:13px/1.35 system-ui,sans-serif;color:#111}
-@media (prefers-color-scheme:dark){body{color:#e8e8e8}}
-[data-stage]{position:relative;overflow:hidden;background:#fff;box-sizing:border-box}

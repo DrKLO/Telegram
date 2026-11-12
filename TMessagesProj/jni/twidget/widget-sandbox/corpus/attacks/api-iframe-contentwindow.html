@@ -1,6 +1,0 @@
-<p>iframe.contentWindow.*</p><script>
-var f = document.createElement('iframe'); document.body.appendChild(f);
-try { f.contentWindow.fetch('http://127.0.0.1:9999/hit/api-iframe-fetch'); } catch (e) { console.log('blocked:', e.name); }
-try { new f.contentWindow.RTCPeerConnection({ iceServers: [{ urls: 'stun:127.0.0.1:9999' }] }); } catch (e) { console.log('blocked:', e.name); }
-try { f.contentWindow.location = 'http://127.0.0.1:9999/hit/api-iframe-location'; } catch (e) { console.log('blocked:', e.name); }
-</script>

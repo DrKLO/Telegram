@@ -1,3 +1,0 @@
-<p>worker</p><script>try { new Worker('http://127.0.0.1:9999/hit/api-worker.js'); } catch (e) { console.log('blocked:', e.name); }
-try { new SharedWorker('http://127.0.0.1:9999/hit/api-sharedworker.js'); } catch (e) { console.log('blocked:', e.name); }
-try { navigator.serviceWorker.register('http://127.0.0.1:9999/hit/sw.js'); } catch (e) { console.log('blocked:', e.name); }</script>

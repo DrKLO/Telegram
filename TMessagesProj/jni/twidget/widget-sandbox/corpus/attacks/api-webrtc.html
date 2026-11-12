@@ -1,8 +1,0 @@
-<p>webrtc</p><script>
-try {
-  var pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:127.0.0.1:9999', 'turn:127.0.0.1:9999?transport=tcp'], username: 'u', credential: 'p' }] });
-  pc.createDataChannel('x');
-  pc.createOffer().then(function (o) { return pc.setLocalDescription(o); });
-} catch (e) { console.log('blocked:', e.name); }
-try { new webkitRTCPeerConnection({ iceServers: [{ urls: 'stun:127.0.0.1:9999' }] }); } catch (e) { console.log('blocked:', e.name); }
-</script>

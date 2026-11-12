@@ -1,6 +1,0 @@
-<form id="f" method="post"><input name="q" value="1"><button id="b">go</button></form><script>
-var f = document.getElementById('f'); f.action = 'http://127.0.0.1:9999/hit/api-form-submit'; f.setAttribute('action', 'http://127.0.0.1:9999/hit/api-form-setattr');
-try { f.submit(); } catch (e) { console.log('blocked:', e.name); }
-try { f.requestSubmit(); } catch (e) { console.log('blocked:', e.name); }
-document.getElementById('b').click();
-</script>

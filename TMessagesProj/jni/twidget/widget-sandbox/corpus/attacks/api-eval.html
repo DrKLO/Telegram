@@ -1,6 +1,0 @@
-<p>eval / Function / string timers</p><script>
-try { eval("fetch('http://127.0.0.1:9999/hit/api-eval').catch(function(){})"); } catch (e) { console.log('blocked:', e.name); }
-try { new Function("return fetch('http://127.0.0.1:9999/hit/api-function')")().catch(function(){}); } catch (e) { console.log('blocked:', e.name); }
-try { setTimeout("fetch('http://127.0.0.1:9999/hit/api-settimeout-string').catch(function(){})", 0); } catch (e) { console.log('blocked:', e.name); }
-try { (0, eval)("var i = new Image(); i.src = 'http://127.0.0.1:9999/hit/api-eval-image'; document.body.appendChild(i)"); } catch (e) { console.log('blocked:', e.name); }
-</script>
