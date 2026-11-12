@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.Paint.PersistColorPalette;
 import org.telegram.ui.Components.RecyclerListView;
@@ -47,7 +49,10 @@ public class PaintColorsListView extends RecyclerListView {
             @NonNull
             @Override
             public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                return new RecyclerListView.Holder(new ColorView(context));
+                final ColorView colorView = new ColorView(context);
+                // a swatch is a colour and nothing else, with no name to give it
+                colorView.setContentDescription(LocaleController.getString(R.string.AccDescrPaintColor));
+                return new RecyclerListView.Holder(colorView);
             }
 
             @Override

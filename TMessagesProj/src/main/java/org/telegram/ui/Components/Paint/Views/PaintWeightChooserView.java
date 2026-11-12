@@ -19,6 +19,8 @@ import androidx.core.math.MathUtils;
 import androidx.core.view.GestureDetectorCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -61,6 +63,7 @@ public class PaintWeightChooserView extends View {
 
     public PaintWeightChooserView(Context context) {
         super(context);
+        setContentDescription(LocaleController.getString(R.string.AccDescrPaintSize));
 
         gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
             float startWeight;
