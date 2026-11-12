@@ -519,6 +519,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.forwardedNameLayout[0] != null && cell.forwardedNameLayout[1] != null) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_open_forwarded_origin, getString("AccActionOpenForwardedOrigin", R.string.AccActionOpenForwardedOrigin)));
             }
+            // the reactions come after everything else a message offers: answering one is the
+            // last thing wanted of a message, and the actions before them are the ones reached
+            // for first
+            if (cell.reactionsLayoutInBubble != null) {
+                cell.reactionsLayoutInBubble.addAccessibilityActions(info);
+            }
             if (cell.drawSelectionBackground || cell.getBackground() != null) {
                 info.setSelected(true);
             }
