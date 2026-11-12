@@ -580,6 +580,17 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 if (clickable) {
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
                 }
+                // a slideshow is turned by dragging alone, which a screen reader cannot do
+                final int slides = block.getAccessibilitySlideCount(localElement[0]);
+                if (slides > 1) {
+                    final int slide = block.getAccessibilitySlide(localElement[0]);
+                    if (slide + 1 < slides) {
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_slide_next, getString(R.string.Next) + ", " + formatString(R.string.Of, slide + 2, slides)));
+                    }
+                    if (slide > 0) {
+                        info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_slide_previous, getString(R.string.AccDescrPrevious) + ", " + formatString(R.string.Of, slide, slides)));
+                    }
+                }
             } else if (virtualViewId >= LINK_CAPTION_IDS_START) {
                 if (!(cell.currentMessageObject.caption instanceof Spannable) || cell.captionLayout == null) {
                     return null;
@@ -1004,6 +1015,17 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     }
                 } else if (virtualViewId == TRANSCRIBE && cell.transcribeButton != null) {
                     cell.transcribeButton.onTap();
+                }
+            } else if ((action == R.id.acc_action_slide_next || action == R.id.acc_action_slide_previous) && virtualViewId >= RICH_MEDIA_START) {
+                final int[] localElement = {0};
+                final RichMessageLayout.RichBlock block = resolveRichElement(virtualViewId, localElement);
+                if (block != null) {
+                    final int slide = block.getAccessibilitySlide(localElement[0]) + (action == R.id.acc_action_slide_next ? 1 : -1);
+                    if (block.showAccessibilitySlide(localElement[0], slide)) {
+                        cell.invalidate();
+                        cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_SCROLLED);
+                        AndroidUtilities.makeAccessibilityAnnouncement(block.getAccessibilityElementText(localElement[0]));
+                    }
                 }
             } else if (action == AccessibilityNodeInfo.ACTION_LONG_CLICK) {
                 ClickableSpan link = getLinkById(virtualViewId, virtualViewId >= LINK_CAPTION_IDS_START);
