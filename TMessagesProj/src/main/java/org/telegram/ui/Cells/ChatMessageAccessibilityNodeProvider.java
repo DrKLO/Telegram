@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.ui.Components.Premium.boosts.cells.msg.GiveawayAccessibilityCard;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatPluralString;
 import static org.telegram.messenger.LocaleController.formatString;
@@ -74,6 +75,10 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
     public static final int CONTACT_VIEW = 491;
     public static final int CONTACT_ADD = 490;
     public static final int CONTACT_MESSAGE = 489;
+    // well clear of the ids that stand for one button each, which run down from 499: a range
+    // that reached up into them would answer for every one of them and hide the lot
+    public static final int GIVEAWAY_BUTTONS_START = 300;
+    public static final int GIVEAWAY_BUTTONS_END = 400;
     private Path linkPath = new Path();
     private RectF rectF = new RectF();
     private Rect rect = new Rect();
@@ -206,6 +211,16 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         }
                     }
                     sb.append(messageText);
+                    // a giveaway is a card drawn by hand: the prize, who can take part, the
+                    // chats it runs in, the countries it is open to and the day the winners
+                    // are picked. None of it is text of the message, so none of it was said
+                    // and the message was as good as empty
+                    final GiveawayAccessibilityCard giveawayCard = cell.giveawayAccessibilityCard();
+                    final CharSequence giveaway = giveawayCard == null ? null : giveawayCard.getAccessibilityText();
+                    if (!TextUtils.isEmpty(giveaway)) {
+                        sb.append(", ");
+                        sb.append(giveaway);
+                    }
                 }
                 if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
                     if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {
@@ -473,6 +488,14 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 info.addChild(cell, POLL_BUTTONS_START + i);
                 i++;
             }
+            final GiveawayAccessibilityCard giveawayCard = cell.giveawayAccessibilityCard();
+            if (giveawayCard != null) {
+                for (int g = 0; g < giveawayCard.getAccessibilityButtonCount(); g++) {
+                    if (!TextUtils.isEmpty(giveawayCard.getAccessibilityButtonTitle(g))) {
+                        info.addChild(cell, GIVEAWAY_BUTTONS_START + g);
+                    }
+                }
+            }
             if (cell.drawInstantView && !cell.instantButtonRect.isEmpty()) {
                 info.addChild(cell, INSTANT_VIEW);
             }
@@ -726,6 +749,28 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 rect.offset(pos[0], pos[1]);
                 info.setBoundsInScreen(rect);
                 info.setClickable(true);
+            } else if (virtualViewId >= GIVEAWAY_BUTTONS_START && virtualViewId < GIVEAWAY_BUTTONS_END) {
+                final int index = virtualViewId - GIVEAWAY_BUTTONS_START;
+                final GiveawayAccessibilityCard giveawayCard = cell.giveawayAccessibilityCard();
+                final CharSequence title = giveawayCard == null ? null : giveawayCard.getAccessibilityButtonTitle(index);
+                final Rect bounds = giveawayCard == null ? null : giveawayCard.getAccessibilityButtonBounds(index);
+                if (TextUtils.isEmpty(title) || bounds == null || bounds.isEmpty()) {
+                    return null;
+                }
+                info.setClassName("android.widget.Button");
+                info.setEnabled(true);
+                info.setText(title);
+                info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
+                rect.set(bounds);
+                info.setBoundsInParent(rect);
+                // the bounds go into the map the cell hit tests against, so a finger on the
+                // screen finds them as well as a swipe
+                if (cell.accessibilityVirtualViewBounds.get(virtualViewId) == null || !cell.accessibilityVirtualViewBounds.get(virtualViewId).equals(rect)) {
+                    cell.accessibilityVirtualViewBounds.put(virtualViewId, new Rect(rect));
+                }
+                rect.offset(pos[0], pos[1]);
+                info.setBoundsInScreen(rect);
+                info.setClickable(true);
             } else if (virtualViewId == INSTANT_VIEW) {
                 info.setClassName("android.widget.Button");
                 info.setEnabled(true);
@@ -956,6 +1001,11 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                     cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                 } else if (virtualViewId == POLL_HINT) {
                     cell.didPressVoteHint();
+                } else if (virtualViewId >= GIVEAWAY_BUTTONS_START && virtualViewId < GIVEAWAY_BUTTONS_END) {
+                    if (cell.delegate != null) {
+                        cell.delegate.didPressGiveawayChatButton(cell, virtualViewId - GIVEAWAY_BUTTONS_START);
+                    }
+                    cell.sendAccessibilityEventForVirtualView(virtualViewId, AccessibilityEvent.TYPE_VIEW_CLICKED);
                 } else if (virtualViewId == INSTANT_VIEW) {
                     if (cell.delegate != null) {
                         cell.delegate.didPressInstantButton(cell, cell.drawInstantViewType);
