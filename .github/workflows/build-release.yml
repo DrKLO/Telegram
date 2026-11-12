@@ -186,10 +186,6 @@ jobs:
       - name: Apply custom patch
         run: ./scripts/apply-patch.sh
 
-      - name: Apply MyGram package patch
-        run: |
-          git apply --check custom/patches/mygram-package.patch
-          git apply custom/patches/mygram-package.patch
 
       - name: Apply API credentials
         env:
