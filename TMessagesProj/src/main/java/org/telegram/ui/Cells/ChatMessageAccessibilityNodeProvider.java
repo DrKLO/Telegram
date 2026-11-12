@@ -130,6 +130,12 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             final long fileSize = cell.currentMessageObject != null ? cell.currentMessageObject.loadedFileSize : 0;
             if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize) {
                 SpannableStringBuilder sb = new SpannableStringBuilder();
+                // what kind of message this is, when a block of it says (a widget), before anything else
+                final CharSequence kind = cell.currentMessageObject.richLayout != null ? cell.currentMessageObject.richLayout.getAccessibilityKind() : null;
+                if (!TextUtils.isEmpty(kind)) {
+                    sb.append(kind);
+                    sb.append(", ");
+                }
                 if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
                     sb.append(UserObject.getUserName(cell.currentUser));
                     sb.setSpan(new ProfileSpan(cell.currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -580,6 +586,7 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                 if (clickable) {
                     info.addAction(AccessibilityNodeInfo.ACTION_CLICK);
                 }
+                block.onInitializeAccessibilityElementInfo(localElement[0], info);
             } else if (virtualViewId >= LINK_CAPTION_IDS_START) {
                 if (!(cell.currentMessageObject.caption instanceof Spannable) || cell.captionLayout == null) {
                     return null;
@@ -899,6 +906,20 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
 
     @Override
     public boolean performAction(int virtualViewId, int action, Bundle arguments) {
+        // a block that is web content (a widget) is gone through as a screen reader goes through a web page:
+        // to the next or previous heading, link, control and the like, among the block's own elements
+        if (virtualViewId >= RICH_MEDIA_START && (action == AccessibilityNodeInfo.ACTION_NEXT_HTML_ELEMENT || action == AccessibilityNodeInfo.ACTION_PREVIOUS_HTML_ELEMENT)) {
+            final int[] localElement = {0};
+            final RichMessageLayout.RichBlock block = resolveRichElement(virtualViewId, localElement);
+            if (block != null) {
+                final String type = arguments == null ? null : arguments.getString(AccessibilityNodeInfo.ACTION_ARGUMENT_HTML_ELEMENT_STRING);
+                final int target = block.findAccessibilityHtmlElement(localElement[0], action == AccessibilityNodeInfo.ACTION_NEXT_HTML_ELEMENT, type);
+                if (target >= 0) {
+                    return performAction(virtualViewId - localElement[0] + target, AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+                }
+            }
+            return false;
+        }
         if (virtualViewId == HOST_VIEW_ID) {
             cell.performAccessibilityAction(action, arguments);
         } else {

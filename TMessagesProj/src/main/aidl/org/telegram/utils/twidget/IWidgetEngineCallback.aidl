@@ -29,6 +29,8 @@ interface IWidgetEngineCallback {
             float layoutMs, int passes, int builds);
     void recordLayer(int index, int version, in byte[] list);
     void selectableText(in byte[] runs);
+    /** What a screen reader finds in the widget (WidgetSandboxBackend#accessibilityTree). */
+    void accessibilityTree(in byte[] tree);
     void signal(int kind, in byte[] message);
     void canvasRun(int id, int width, int height, in int[] ops);
     byte[] canvasRead(int id, int x, int y, int width, int height);

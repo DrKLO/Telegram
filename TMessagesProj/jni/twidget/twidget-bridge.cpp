@@ -452,6 +452,7 @@ class AndroidBackend final : public twlite::Backend {
         canvas_release_ = e->GetMethodID(type, "canvasRelease", "(I)V");
         layer_ = e->GetMethodID(type, "recordLayer", "(II[B)V");
         text_ = e->GetMethodID(type, "selectableText", "([B)V");
+        accessibility_ = e->GetMethodID(type, "accessibilityTree", "([B)V");
         e->DeleteLocalRef(type);
         check(e);
     }
@@ -578,6 +579,14 @@ class AndroidBackend final : public twlite::Backend {
         e->DeleteLocalRef(text);
         check(e);
     }
+    // What a screen reader finds in the widget (Renderer::accessibility_json), before the frame it belongs to.
+    void accessibility(const std::string &tree) {
+        auto *e = env();
+        auto bytesTree = bytes(e, tree);
+        e->CallVoidMethod(object_, accessibility_, bytesTree);
+        e->DeleteLocalRef(bytesTree);
+        check(e);
+    }
     // A layer's content, recorded by the backend before the frame that names it.
     void layer(int index, int version, const std::string &list) {
         auto *e = env();
@@ -601,7 +610,7 @@ class AndroidBackend final : public twlite::Backend {
   private:
     jobject object_;
     std::vector<jint> canvasWords_;
-    jmethodID font_, delete_, width_, image_, record_, signal_, intl_, canvas_run_, canvas_read_, canvas_release_, text_,
+    jmethodID font_, delete_, width_, image_, record_, signal_, intl_, canvas_run_, canvas_read_, canvas_release_, text_, accessibility_,
         layer_;
 };
 
@@ -800,6 +809,16 @@ class AndroidRenderer final : public twidget::Renderer {
                     job->hasText = true;
                 }
             }
+            // What a screen reader finds changes with the layout and with attributes a script sets (aria-pressed,
+            // aria-checked) that move nothing: it is built at every paint and goes out when it differs.
+            {
+                std::string tree = document_.accessibility_json();
+                if (tree != lastAccessibility_) {
+                    lastAccessibility_ = tree;
+                    job->accessibility = std::move(tree);
+                    job->hasAccessibility = true;
+                }
+            }
             job->clock = twlite::Renderer::clock();
             job->width = document_.px_width();
             job->height = document_.px_height();
@@ -835,6 +854,8 @@ class AndroidRenderer final : public twidget::Renderer {
         std::vector<int> layers;
         std::string text;
         bool hasText = false;
+        std::string accessibility;
+        bool hasAccessibility = false;
         double clock = 0, paintMs = 0;
         int width = 0, height = 0;
         float dpr = 1;
@@ -857,6 +878,8 @@ class AndroidRenderer final : public twidget::Renderer {
                 }
                 if (job.hasText)
                     backend_->selectable_text(job.text);
+                if (job.hasAccessibility)
+                    backend_->accessibility(job.accessibility);
                 double started = nowMs();
                 std::string listBytes = encodeDisplayList(job.list), compositionJson = twlite::to_json(job.composition);
                 serializeMs += nowMs() - started;
@@ -933,6 +956,7 @@ class AndroidRenderer final : public twidget::Renderer {
     std::unordered_map<int64_t, uint64_t> layerVersions_;
     uint64_t textLayouts_ = ~0ull;
     std::string lastText_ = "[]";
+    std::string lastAccessibility_ = "[]";
     std::string cursor_ = "auto";
     double scheduled_ = -1;
     // The native work since the last recorded frame, ms (the stress runner's breakdown).

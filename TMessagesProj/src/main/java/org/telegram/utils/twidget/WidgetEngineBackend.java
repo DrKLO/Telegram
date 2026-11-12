@@ -151,6 +151,10 @@ final class WidgetEngineBackend {
         send(encodedRuns, value -> client.selectableText(value));
     }
 
+    void accessibilityTree(byte[] encodedTree) throws Exception {
+        send(encodedTree, value -> client.accessibilityTree(value));
+    }
+
     void recordLayer(int index, int version, byte[] encodedList) throws Exception {
         send(encodedList, value -> client.recordLayer(index, version, value));
     }

@@ -39,6 +39,8 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
     private final java.util.concurrent.ConcurrentHashMap<Integer, Paint> deviceFonts = new java.util.concurrent.ConcurrentHashMap<>();
     // The selectable text of the current layout, null when there is none (worker).
     private WidgetText text;
+    // What a screen reader finds in the current layout (worker); frames carry it.
+    private WidgetAccessibility accessibility = WidgetAccessibility.EMPTY;
     private final java.util.concurrent.ConcurrentHashMap<Integer, Bitmap> images = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<Integer, WidgetCanvas> canvases = new java.util.concurrent.ConcurrentHashMap<>();
     // Layer content lists by layer index, sent just before the frame that names them.
@@ -283,6 +285,12 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
         }
     }
 
+    /** Worker: what a screen reader finds in the widget changed (Renderer::accessibility_json); frames carry it. */
+    void accessibilityTree(byte[] encodedTree) {
+        assertWorker();
+        accessibility = WidgetAccessibility.parse(text(encodedTree));
+    }
+
     /**
      * A compositor layer's content (CSS px, document coordinates). It is recorded in record(),
      * which knows the layer's bounds; layers precede the frame that names them.
@@ -350,7 +358,8 @@ final class WidgetSandboxBackend implements WidgetSandboxPainter.Resources, Widg
                     passes,
                     builds,
                     list.count,
-                    text);
+                    text,
+                    accessibility);
         } catch (Exception error) {
             node.discard();
             throw error;
