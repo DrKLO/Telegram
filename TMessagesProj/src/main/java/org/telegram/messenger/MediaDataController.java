@@ -4758,6 +4758,9 @@ public class MediaDataController extends BaseController {
                                 holeMessageId = cursor.intValue(0);
                             }
                             cursor.dispose();
+                            if (holeMessageId > 1) {
+                                isEnd = false;
+                            }
                             if (topicId != 0) {
                                 if (holeMessageId > 1) {
                                     cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid FROM media_topics m %s WHERE %s m.uid = %d AND m.topic_id = %d AND m.mid >= %d AND m.type = %d ORDER BY m.date DESC, m.mid DESC LIMIT %d", beforeWhere, afterWhere, uid, topicId, holeMessageId, type, countToLoad));
