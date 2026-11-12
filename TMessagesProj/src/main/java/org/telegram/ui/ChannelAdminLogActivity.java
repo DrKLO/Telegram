@@ -1565,6 +1565,7 @@ public class ChannelAdminLogActivity extends BaseFragment implements Notificatio
         searchCalendarButton.setImageResource(R.drawable.msg_calendar);
         ThemeBind.colorFilter(searchCalendarButton, Theme.key_chat_searchPanelIcons, PorterDuff.Mode.MULTIPLY);
         searchContainer.addView(searchCalendarButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP));
+        searchCalendarButton.setContentDescription(getString(R.string.Calendar));
         searchCalendarButton.setOnClickListener(view -> {
             if (getParentActivity() == null) {
                 return;
