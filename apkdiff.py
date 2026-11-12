@@ -14,7 +14,7 @@ def compareFiles(first, second):
 	return True
 
 def compare(first, second):
-	FILES_TO_IGNORE = ["META-INF/MANIFEST.MF", "META-INF/CERT.RSA", "META-INF/CERT.SF"]
+	FILES_TO_IGNORE = ["META-INF/MANIFEST.MF", "META-INF/CERT.RSA", "META-INF/CERT.SF", "META-INF/version-control-info.textproto"]
 
 	firstZip = ZipFile(first, 'r')
 	secondZip = ZipFile(second, 'r')
