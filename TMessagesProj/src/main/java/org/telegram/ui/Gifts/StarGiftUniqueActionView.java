@@ -105,6 +105,33 @@ public class StarGiftUniqueActionView extends View {
         layout.attach();
     }
 
+    private boolean accessibilityPressable = true;
+
+    /** A preview whose button only repeats a button beside it is read and not offered as one more button. */
+    public void setAccessibilityPressable(boolean pressable) {
+        accessibilityPressable = pressable;
+    }
+
+    @Override
+    public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+        super.onInitializeAccessibilityNodeInfo(info);
+        // the gift is drawn, so it is read by its words, and its button is pressed by name
+        info.setText(layout.getAccessibilityDetails());
+        final CharSequence button = layout.getAccessibilityButtonLabel();
+        if (button != null && accessibilityPressable) {
+            info.addAction(new android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK, button));
+        }
+    }
+
+    @Override
+    public boolean performAccessibilityAction(int action, android.os.Bundle arguments) {
+        if (action == android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK && accessibilityPressable) {
+            layout.performAccessibilityClick();
+            return true;
+        }
+        return super.performAccessibilityAction(action, arguments);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         return layout.onTouchEvent(layoutX, layoutY, event);

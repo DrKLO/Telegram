@@ -687,6 +687,52 @@ public class StarGiftUniqueActionLayout {
         return buttonBounce.isPressed() || bounce.isPressed() || messageBounce.isPressed();
     }
 
+    /*
+     * A unique gift is drawn here, its title, number and traits and the button under them, and is
+     * pressed by where a finger lands, so a screen reader had only the line of the service message to
+     * read and nothing to press. These give the words it shows and what its button does.
+     */
+    public CharSequence getAccessibilityDetails() {
+        final StringBuilder sb = new StringBuilder();
+        appendText(sb, title);
+        appendText(sb, subtitle);
+        for (int i = 0; i < table.size(); i++) {
+            final Row row = table.get(i);
+            if (row.name == null || row.value == null) continue;
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(row.name.getText()).append(": ").append(row.value.getText());
+        }
+        return sb;
+    }
+
+    private static void appendText(StringBuilder sb, Text text) {
+        if (text == null || text.getText() == null || text.getText().length() == 0) return;
+        if (sb.length() > 0) sb.append("\n");
+        sb.append(text.getText());
+    }
+
+    public CharSequence getAccessibilityButtonLabel() {
+        return buttonText == null ? null : buttonText.getText();
+    }
+
+    /** What a tap on the button does. */
+    public void performAccessibilityClick() {
+        if (onButtonClick != null) {
+            onButtonClick.run();
+        } else if (burned) {
+            final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+            if (lastFragment != null) {
+                BulletinFactory.of(lastFragment)
+                    .createSimpleBulletin(R.raw.fire_on, getString(R.string.UniqueGiftNotFoundBurned))
+                    .show();
+            }
+        } else if (currentMessageObject != null) {
+            new StarGiftSheet(view.getContext(), currentAccount, currentMessageObject.getDialogId(), resourcesProvider)
+                .set(currentMessageObject)
+                .show();
+        }
+    }
+
     private Runnable onMessageClick;
 
     public void setOnMessageClickListener(Runnable onMessageClick) {

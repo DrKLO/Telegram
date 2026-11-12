@@ -161,6 +161,8 @@ public class GiftMessageBottomSheet extends BottomSheet {
         sizeNotifierFrameLayout.setBackgroundImage(backgroundDrawable, false);
 
         starGiftUniqueActionView = new StarGiftUniqueActionView(context, currentAccount, resourcesProvider);
+        // its button here only sends, as the Send button beside it does
+        starGiftUniqueActionView.setAccessibilityPressable(false);
         starGiftUniqueActionView.set(gift, UserConfig.getInstance(currentAccount).getClientUserId(), null, LocaleController.getString(R.string.GiftMessageSendNow), false);
         starGiftUniqueActionView.setPadding(0, dp(4), 0, dp(4));
         starGiftUniqueActionView.setLayoutBackground(Theme.createServiceDrawable(AndroidUtilities.dp(18), starGiftUniqueActionView, containerView, getThemedPaint(Theme.key_paint_chatActionBackground)));
