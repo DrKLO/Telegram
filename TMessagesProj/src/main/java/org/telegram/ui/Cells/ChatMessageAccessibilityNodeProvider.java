@@ -412,6 +412,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             }
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_CLICK, actionLabel));
             info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK, getString("AccActionEnterSelectionMode", R.string.AccActionEnterSelectionMode)));
+            if (cell.hasMediaDownloadAction()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_download, getString(cell.isMediaDownloading() ? R.string.AccActionCancelDownload : R.string.AccActionDownload)));
+            }
             int smallIcon = cell.getMiniIconForCurrentState();
             if (smallIcon == MediaActionDrawable.ICON_DOWNLOAD) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_small_button, getString("AccActionDownload", R.string.AccActionDownload)));
