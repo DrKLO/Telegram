@@ -157,6 +157,14 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                         sb.append(formatString(R.string.AccDescrDocumentType, fileName.substring(fileName.lastIndexOf('.') + 1).toUpperCase(Locale.ROOT)));
                     }
                 }
+                // a message of an album is one of several, each drawn in a cell of its own, and
+                // nothing said which of them was being read or how many there were: going
+                // through an album was a run of messages that all sounded the same
+                final CharSequence albumPlace = cell.albumAccessibilityPlace();
+                if (albumPlace != null) {
+                    sb.append(albumPlace);
+                    sb.append(", ");
+                }
                 if (cell.currentMessageObject.richLayout != null && !cell.currentMessageObject.richLayout.blocks.isEmpty()) {
                     for (RichMessageLayout.RichBlock block : cell.currentMessageObject.richLayout.blocks) {
                         if (!block.isVisible()) {
@@ -205,7 +213,16 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
                             messageText = ssb;
                         }
                     }
-                    sb.append(messageText);
+                    // a message of an album names itself by its kind, and the album line just
+                    // ahead of it has said that kind already. Leave out only what was said
+                    // there: the word album itself, or the kind. A file names itself by its
+                    // file name, which is neither of those and is the only place it is said
+                    final boolean namedByAlbum = albumPlace != null
+                        && (TextUtils.equals(messageText, getString(R.string.Album))
+                            || TextUtils.equals(messageText, cell.albumAccessibilityKind()));
+                    if (!namedByAlbum) {
+                        sb.append(messageText);
+                    }
                 }
                 if (cell.documentAttach != null && (cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_DOCUMENT || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_GIF || cell.documentAttachType == ChatMessageCell.DOCUMENT_ATTACH_TYPE_VIDEO)) {
                     if (cell.buttonState == 1 && cell.loadingProgressLayout != null) {

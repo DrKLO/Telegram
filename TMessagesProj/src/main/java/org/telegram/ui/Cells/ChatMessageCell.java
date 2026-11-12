@@ -5451,6 +5451,76 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
 
+    /**
+     * That this message belongs to an album, what it is, and which of how many. Every message of an
+     * album is drawn in a cell of its own, so going through one is a run of messages that say the
+     * same thing, with nothing to tell them apart or say how far along they are.
+     */
+    /**
+     * What one message of an album is. The name a message gives itself answers "album" for
+     * anything that belongs to one, which is the word already said before it and no use here.
+     */
+    CharSequence albumAccessibilityKind() {
+        final MessageObject message = currentMessageObject;
+        if (message == null) {
+            return null;
+        }
+        if (message.isVideo()) {
+            return getString(R.string.AttachVideo);
+        }
+        if (message.isGif()) {
+            return getString(R.string.AttachGif);
+        }
+        if (message.isVoice()) {
+            return getString(R.string.AttachAudio);
+        }
+        if (message.isMusic()) {
+            return getString(R.string.AttachMusic);
+        }
+        if (message.type == MessageObject.TYPE_PHOTO) {
+            return getString(R.string.AttachPhoto);
+        }
+        if (message.isDocument()) {
+            return getString(R.string.AttachDocument);
+        }
+        return null;
+    }
+
+    CharSequence albumAccessibilityPlace() {
+        if (currentMessageObject == null || currentMessagesGroup == null || currentPosition == null) {
+            return null;
+        }
+        final ArrayList<MessageObject> messages = currentMessagesGroup.messages;
+        final int count = messages == null ? 0 : messages.size();
+        if (count <= 1) {
+            return null;
+        }
+        int index = -1;
+        for (int a = 0; a < count; a++) {
+            final MessageObject message = messages.get(a);
+            if (message != null && message.getId() == currentMessageObject.getId()) {
+                index = a;
+                break;
+            }
+        }
+        if (index < 0) {
+            return null;
+        }
+        // a group is kept in the order it was sent in, which is turned around when the chat it is
+        // in grows the other way
+        if (currentMessagesGroup.reversed) {
+            index = count - 1 - index;
+        }
+        // what this one is, in the word the app already has for it, so an album of several kinds
+        // says of each of its messages which kind it is
+        final CharSequence kind = albumAccessibilityKind();
+        final CharSequence place = formatString(R.string.Of, index + 1, count);
+        if (TextUtils.isEmpty(kind)) {
+            return TextUtils.concat(getString(R.string.Album), ", ", place);
+        }
+        return TextUtils.concat(getString(R.string.Album), ", ", kind, " ", place);
+    }
+
     void didClickedPollImage(ChatMessageCell cell, ImageReceiver imageReceiver, TLRPC.PollAnswer answer, TLRPC.MessageMedia media, float x, float y, int unshuffledIndex) {
         /*if (unshuffledIndex == PollAttachedMediaPack.INDEX_DESCRIPTION) {
             if (pollContentDrawable != null && pollContentDrawable.getMedia() != null && pollContentDrawable.getMedia().document != null && (pollContentDrawable.isFile() || pollContentDrawable.isMusic())) {
