@@ -1214,7 +1214,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     boolean drawInstantView;
     RectF contactRect;
     ChatMessageContact contact;
-    private ChatMessagePoll poll;
+    ChatMessagePoll poll;
     public int drawInstantViewType;
     public CharSequence instantViewButtonText;
     int imageBackgroundSideColor;
@@ -3221,6 +3221,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (instantViewButton.selectorDrawable != null) {
                     instantViewButton.selectorDrawable.setState(StateSet.NOTHING);
                 }
+            }
+            // the explanation is part of what the message says, so opening or closing it leaves a
+            // screen reader on a message whose text is no longer the one it read
+            if (AndroidUtilities.isAccessibilityScreenReaderEnabled()) {
+                sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
             }
         }
     }
