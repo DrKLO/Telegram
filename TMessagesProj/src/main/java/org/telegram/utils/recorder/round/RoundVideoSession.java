@@ -537,6 +537,8 @@ public final class RoundVideoSession {
     private boolean pauseAfterRecordingStarts;
     private boolean cameraStopPending;
     private boolean cleanupStarted;
+    /** The host released the session while FINISHING; resources go once the output completes. */
+    private boolean releaseAfterCompletion;
     private volatile boolean cancelRequested;
     private long recordedDurationMs;
     private long recordingStartedAtRealtimeMs;
@@ -814,12 +816,24 @@ public final class RoundVideoSession {
         return true;
     }
 
-    /** Releases UI, camera and playback resources. Active recordings are cancelled. */
+    /**
+     * Releases UI, camera and playback resources. Active recordings are cancelled. A release
+     * while the final output is being produced keeps finishing detached from the host, so the
+     * completed output is still delivered, and releases the session right after that.
+     */
     @MainThread
     public void release() {
         requireMainThread();
         if (state == State.RELEASED) {
             if (!cleanupStarted) finishCancellation();
+            return;
+        }
+        if (state == State.FINISHING) {
+            if (releaseAfterCompletion) return;
+            releaseAfterCompletion = true;
+            diagnostics.log("release deferred: output is still finishing");
+            disableCameraEffects();
+            releasePlayer();
             return;
         }
         if (state != State.COMPLETED) {
@@ -942,7 +956,6 @@ public final class RoundVideoSession {
         notifyCapabilities();
         diagnostics.log("camera configured: facing=" + info.facing
                 + ", mode=" + info.cameraResolution
-                + ", preview=" + info.previewSize
                 + ", recording=" + info.recordingSize
                 + ", fps=" + info.frameRate.getValue()
                 + ", maxZoom=" + maximumZoomRatio
@@ -1318,6 +1331,7 @@ public final class RoundVideoSession {
                         hasAudio,
                         activeFrameRate == null ? FrameRate.FPS_30 : activeFrameRate
                 ));
+                if (releaseAfterCompletion) release();
             });
         });
     }

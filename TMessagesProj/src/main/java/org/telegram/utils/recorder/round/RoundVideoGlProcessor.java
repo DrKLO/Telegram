@@ -121,6 +121,8 @@ final class RoundVideoGlProcessor {
     private long glStartedNs;
 
     private volatile boolean started;
+    /** Display rotation applied to the camera quad; see RoundVideoOverlayRenderer. */
+    private volatile int displayRotation;
     private volatile boolean recordingStarted;
     private volatile Runnable firstFrameListener;
     private Runnable dualSwitchFrameListener;
@@ -438,6 +440,19 @@ final class RoundVideoGlProcessor {
         }
     }
 
+    /**
+     * Rotates the recorded and previewed frame by the display rotation (0, 90, 180 or 270
+     * degrees) so a device held in landscape records an upright picture. Safe before start.
+     */
+    public void setDisplayRotation(int degrees) {
+        displayRotation = degrees;
+        Handler currentHandler = handler;
+        if (!started || currentHandler == null) return;
+        currentHandler.post(() -> {
+            if (overlayRenderer != null) overlayRenderer.setDisplayRotation(degrees);
+        });
+    }
+
     public void configureSecondaryInput(
             @NonNull Size size,
             int cropSize,
@@ -566,6 +581,7 @@ final class RoundVideoGlProcessor {
                 sourceCropSize,
                 compositionEnabled
         );
+        overlayRenderer.setDisplayRotation(displayRotation);
         GLES20.glViewport(0, 0, outputSize, outputSize);
     }
 

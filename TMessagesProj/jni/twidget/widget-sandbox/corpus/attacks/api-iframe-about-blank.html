@@ -1,5 +1,0 @@
-<p>about:blank iframe</p><script>
-var f = document.createElement('iframe'); f.src = 'about:blank'; document.body.appendChild(f);
-try { f.contentDocument.write('<img src="http://127.0.0.1:9999/hit/api-about-blank-img"><script>fetch("http://127.0.0.1:9999/hit/api-about-blank-fetch")<\/script>'); } catch (e) { console.log('blocked:', e.name); }
-try { var i = f.contentDocument.createElement('img'); i.src = 'http://127.0.0.1:9999/hit/api-about-blank-img2'; f.contentDocument.body.appendChild(i); } catch (e) { console.log('blocked:', e.name); }
-</script>

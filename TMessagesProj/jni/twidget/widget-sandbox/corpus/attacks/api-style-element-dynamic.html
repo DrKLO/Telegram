@@ -1,5 +1,0 @@
-<p>dynamic style element</p><script>
-var s = document.createElement('style'); s.textContent = '@import url(http://127.0.0.1:9999/hit/api-style-dyn-import); body { background: url(http://127.0.0.1:9999/hit/api-style-dyn-bg) }'; document.head.appendChild(s);
-var s2 = document.createElement('style'); document.head.appendChild(s2); s2.appendChild(document.createTextNode('@font-face { font-family: L; src: url(http://127.0.0.1:9999/hit/api-style-dyn-font) }'));
-var s3 = document.createElement('style'); document.head.appendChild(s3); s3.innerHTML = 'p::after { content: url(http://127.0.0.1:9999/hit/api-style-dyn-content) }';
-</script>

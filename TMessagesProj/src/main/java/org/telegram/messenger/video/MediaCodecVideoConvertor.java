@@ -50,6 +50,8 @@ public class MediaCodecVideoConvertor {
     private static final int MEDIACODEC_TIMEOUT_INCREASED = 22000;
     private static final int MAX_DECODER_INPUTS_PER_LOOP = 8;
     private String outputMimeType;
+    // Set after a failed conversion to retry without the codec speedups, which some devices reject.
+    private boolean legacyCodecSetup;
 
     public boolean convertVideo(ConvertVideoParams convertVideoParams) {
         if (convertVideoParams.isSticker) {
@@ -501,7 +503,9 @@ public class MediaCodecVideoConvertor {
                             selectedEncoderName = encoder.getName();
                             canBeBrokenEncoder = "c2.qti.avc.encoder".equalsIgnoreCase(selectedEncoderName);
                             FileLog.d("selected encoder " + selectedEncoderName);
-                            setEncoderOperatingRate(outputFormat);
+                            if (!legacyCodecSetup) {
+                                setEncoderOperatingRate(outputFormat);
+                            }
                             encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                             inputSurface = new InputSurface(encoder.createInputSurface());
                             inputSurface.makeCurrent();
@@ -532,7 +536,9 @@ public class MediaCodecVideoConvertor {
                                 );
                             }
                             decoder = getDecoderByFormat(videoFormat);
-                            setDecoderOperatingRate(videoFormat);
+                            if (!legacyCodecSetup) {
+                                setDecoderOperatingRate(videoFormat);
+                            }
                             decoder.configure(videoFormat, outputSurface.getSurface(), null, 0);
                             decoder.start();
 
@@ -613,7 +619,7 @@ public class MediaCodecVideoConvertor {
 
                             checkConversionCanceled();
 
-                            if (avatarStartTime < 0) {
+                            if (avatarStartTime < 0 && !legacyCodecSetup) {
                                 // Avatar looping (currently always reset above) seeks the extractor and flushes the decoder, so it would keep feeding on this thread.
                                 feeder = new DecoderFeeder(extractor, decoder, videoIndex, copyAudioBuffer ? audioIndex : -1, muxer, audioTrackIndex, startTime, endTime, durationS, audioBuffer, maxBufferSize);
                                 feeder.start();
@@ -968,6 +974,12 @@ public class MediaCodecVideoConvertor {
                 }
                 inputSurface = null;
             }
+        }
+
+        if (error && !legacyCodecSetup && (callback == null || !callback.checkConversionCanceled())) {
+            FileLog.e("conversion failed, retrying without codec speedups");
+            legacyCodecSetup = true;
+            return convertVideoInternal(convertVideoParams, increaseTimeout, triesCount + 1);
         }
 
         if (repeatWithIncreasedTimeout) {

@@ -1,5 +1,5 @@
-# Include from the client's CMakeLists after creating its existing native target.
-# All engine/render sources are compiled directly into that target. No .a or extra .so.
+# Include from the client's CMakeLists; twidget_target_sources compiles every engine/render source into
+# libtwidget.so (jni/CMakeLists.txt), the only library the isolated engine processes load. No .a.
 #
 # widget-sandbox (host, validator, QuickJS, protocol, bundles) comes from jni/twidget/widget-sandbox.
 # The renderer is twidget's TwidgetCore on twidget's litehtml fork (TW_LITEHTML_TWIDGET), from
@@ -22,8 +22,8 @@ function(twidget_target_sources target)
     set(bridge_dir "${_TWIDGET_BRIDGE_DIR}")
     set(qjs "${root}/packages/ios/Sources/CQuickJS")
     set(sandbox "${root}/packages/desktop/sandbox")
-    set(core "${TWIDGET_SOURCE_DIR}/Sources/TwidgetCore/src")
-    set(litehtml "${TWIDGET_SOURCE_DIR}/Sources/LiteHTML/litehtml")
+    set(core "${TWIDGET_SOURCE_DIR}/core/src")
+    set(litehtml "${TWIDGET_SOURCE_DIR}/litehtml")
     set(gumbo "${litehtml}/src/gumbo")
     foreach(required "${qjs}/quickjs/quickjs.c" "${sandbox}/src/widget_host.cpp"
                      "${core}/renderer.cpp" "${litehtml}/src/document.cpp")
@@ -95,7 +95,24 @@ function(twidget_target_sources target)
     # Do not mix plain/keyword target_link_libraries signatures used by the client.
     set_property(TARGET "${target}" APPEND PROPERTY LINK_LIBRARIES Threads::Threads m)
     if(ANDROID)
-        set_property(TARGET "${target}" APPEND PROPERTY LINK_LIBRARIES android log dl)
+        set_property(TARGET "${target}" APPEND PROPERTY LINK_LIBRARIES android log dl jnigraphics)
     endif()
     set_target_properties("${target}" PROPERTIES TWIDGET_ATTACHED TRUE)
+endfunction()
+
+# The client library's share (jni/CMakeLists.txt): widget-sandbox's gesture policy and twidget's CPU filter pass, with
+# their JNI (twidget-client.cpp, WidgetClientNative), so the client process never maps libtwidget.so. An object
+# library: its own flags rather than the client library's (-ffast-math -Oz), and no archive to drop the unreferenced
+# Java_* exports. gesture_policy.cpp and filters.cpp are in libtwidget too, with the source properties set above.
+function(twidget_client_sources target)
+    set(sandbox "${WIDGET_SANDBOX_SOURCE_DIR}/packages/desktop/sandbox")
+    set(core "${TWIDGET_SOURCE_DIR}/core/src")
+    add_library(twidget_client OBJECT
+        "${sandbox}/src/gesture_policy.cpp"
+        "${core}/filters.cpp"
+        "${_TWIDGET_BRIDGE_DIR}/twidget-client.cpp")
+    target_include_directories(twidget_client PRIVATE "${sandbox}/include" "${core}")
+    set_target_properties(twidget_client PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+    target_compile_options(twidget_client PRIVATE -O2 -fexceptions -frtti -fno-fast-math -fvisibility=hidden)
+    target_sources("${target}" PRIVATE $<TARGET_OBJECTS:twidget_client>)
 endfunction()

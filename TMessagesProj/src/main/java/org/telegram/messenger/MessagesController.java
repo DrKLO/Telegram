@@ -19766,6 +19766,15 @@ public class MessagesController extends BaseController implements NotificationCe
                     updatesOnMainThread = new ArrayList<>();
                 }
                 updatesOnMainThread.add(baseUpdate);
+            } else if (baseUpdate instanceof TL_update.TL_updatePhoneCallSignalingData) {
+                // Handed to the call here, not batched for the UI thread: every signaling leg of a call waits for
+                // this delivery, and the UI thread is busiest while a call starts. iOS delivers it off the main
+                // thread too (CallSessionManager.addCallSignalingData). VoIPService keeps data that arrives before
+                // the call's native instance exists.
+                VoIPService svc = VoIPService.getSharedInstance();
+                if (svc != null) {
+                    svc.onSignalingData((TL_update.TL_updatePhoneCallSignalingData) baseUpdate);
+                }
 //            } else if (
 //                baseUpdate instanceof TLRPC.TL_updateStickerSets ||
 //                baseUpdate instanceof TLRPC.TL_updateStickerSetsOrder ||
@@ -20493,12 +20502,6 @@ public class MessagesController extends BaseController implements NotificationCe
                     } else if (baseUpdate instanceof TL_update.TL_updateEditForumTopic) {
                         TL_update.TL_updateEditForumTopic update = (TL_update.TL_updateEditForumTopic) baseUpdate;
                         getTopicsController().onTopicEditedServerSide(DialogObject.getPeerDialogId(update.peer), update);
-                    } else if (baseUpdate instanceof TL_update.TL_updatePhoneCallSignalingData) {
-                        TL_update.TL_updatePhoneCallSignalingData data = (TL_update.TL_updatePhoneCallSignalingData) baseUpdate;
-                        VoIPService svc = VoIPService.getSharedInstance();
-                        if (svc != null) {
-                            svc.onSignalingData(data);
-                        }
                     } else if (baseUpdate instanceof TL_update.TL_updateGroupCallParticipants) {
                         TL_update.TL_updateGroupCallParticipants update = (TL_update.TL_updateGroupCallParticipants) baseUpdate;
                         ChatObject.Call call = groupCalls.get(update.call.id);

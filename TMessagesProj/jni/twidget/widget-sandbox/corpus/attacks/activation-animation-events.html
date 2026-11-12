@@ -1,8 +1,0 @@
-<style>@keyframes k{from{opacity:.5}to{opacity:1}}#a{animation:k .2s 3;transition:opacity .1s}</style>
-<div class="widget"><a id="a" href="http://127.0.0.1:9999/hit/activation-animation">animated link</a></div><script>
-var a = document.getElementById('a');
-['animationstart', 'animationiteration', 'animationend', 'transitionend', 'transitionrun', 'load', 'error', 'toggle', 'focus', 'blur'].forEach(function (t) {
-  a.addEventListener(t, function () { a.click(); TelegramWidget.sendMessage('activation-' + t); });
-});
-setTimeout(function () { a.style.opacity = '0.4'; a.focus(); }, 50);
-</script>

@@ -121,7 +121,8 @@ final class SystemHost {
             appliedParamsKey = null;
             AndroidUtilities.resetPictureInPictureParams(activity);
         }
-        updateMediaSession(candidate);
+        // only while in system PiP: a new session on every play (HyperOS) pauses other players and mutes the stream
+        releaseMediaSession();
     }
 
     /**
@@ -470,6 +471,7 @@ final class SystemHost {
         activeTarget = target;
         activeSystemView = systemView;
         session.state = PipSession.STATE_SYSTEM;
+        updateMediaSession(session);
     }
 
     private void completeEnter() {

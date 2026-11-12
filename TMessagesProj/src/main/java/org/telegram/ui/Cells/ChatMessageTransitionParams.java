@@ -499,6 +499,9 @@ public class ChatMessageTransitionParams {
                 if (cell.currentMessageObject.richLayout != null && lastDrawingRichLayout != null) {
                     cell.currentMessageObject.richLayout.layout(lastDrawingRichLayout);
                 }
+            } else if (cell.currentMessageObject.richLayout != null && cell.currentMessageObject.richLayout.isSameWidget(lastDrawingRichLayout)) {
+                // The same widget in a new copy of the message: the new block shows its frame at once, while a
+                // crossfade of two blocks drawing one picture dips through the bubble.
             } else {
                 animateRichLayout = true;
                 animateOutRichLayout = lastDrawingRichLayout;

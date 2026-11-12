@@ -80,6 +80,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 import org.telegram.utils.glass.GlassEngine;
 
 import java.util.ArrayList;
@@ -1080,6 +1081,74 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
     }
 
     protected final GlassEngine glassEngine = new GlassEngine();
+
+    /* Glass menus: a menu growing out of a button of the sheet, as the menus of the simple headers */
+
+    @Nullable
+    private SimpleActionBarMenuOverlay simpleMenuOverlay;
+    @Nullable
+    private BaseFragmentSimpleGlass simpleMenuGlass;
+    @Nullable
+    private SimpleButtonMenuHost simpleButtonMenuHost;
+
+    /**
+     * The layer where the glass menus of this sheet open, above the sheet. Its glass has its own engine (the sheets'
+     * {@link #glassEngine} has their own listeners) and blurs the sheet under the menu.
+     */
+    public SimpleActionBarMenuOverlay getSimpleMenuOverlay() {
+        if (simpleMenuOverlay == null) {
+            final GlassEngine engine = new GlassEngine();
+            engine.setRoot(container);
+            simpleMenuGlass = new BaseFragmentSimpleGlass(engine, () -> getThemedColor(Theme.key_dialogBackground));
+            simpleMenuGlass.setViews(container, null, resourcesProvider);
+            simpleMenuGlass.setCapture((canvas, position) -> {
+                final View sheet = containerView;
+                if (sheet == null || sheet.getVisibility() != View.VISIBLE || sheet.getParent() != container) {
+                    return;
+                }
+                canvas.save();
+                canvas.translate(sheet.getX(), sheet.getY());
+                sheet.draw(canvas);
+                canvas.restore();
+            });
+            simpleMenuOverlay = new SimpleActionBarMenuOverlay(getContext());
+            container.addView(simpleMenuOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        }
+        return simpleMenuOverlay;
+    }
+
+    /** The glass of {@link #getSimpleMenuOverlay()}, for hosts of its menus. */
+    public BaseFragmentSimpleGlass getSimpleMenuGlass() {
+        getSimpleMenuOverlay();
+        return simpleMenuGlass;
+    }
+
+    /**
+     * Shows the menu of {@code options} growing out of {@code button}, a button without glass of its own (an icon);
+     * the rows dismissing it pour it back into the button. Without the button laid out, as a popup.
+     */
+    public void showSimpleMenu(View button, ItemOptions options) {
+        if (!(options.getLayout() instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) || !button.isLaidOut() || !container.isAttachedToWindow()) {
+            options.show();
+            return;
+        }
+        final SimpleActionBarMenuOverlay overlay = getSimpleMenuOverlay();
+        if (overlay.isOpened()) {
+            return;
+        }
+        if (simpleButtonMenuHost == null) {
+            simpleButtonMenuHost = new SimpleButtonMenuHost(overlay, simpleMenuGlass, resourcesProvider);
+        }
+        simpleButtonMenuHost.setButton(button);
+        // without a popup window ItemOptions#dismiss only runs this
+        options.setOnDismiss(() -> overlay.close(true));
+        overlay.open(simpleButtonMenuHost, (ActionBarPopupWindow.ActionBarPopupWindowLayout) options.getLayout());
+    }
+
+    /** Whether a glass menu of this sheet is on screen (opening, open or closing). */
+    public boolean isSimpleMenuShown() {
+        return simpleMenuOverlay != null && simpleMenuOverlay.getVisibility() == View.VISIBLE;
+    }
 
     public static class BottomSheetDelegate implements BottomSheetDelegateInterface {
         @Override
@@ -2122,6 +2191,9 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
             return;
         }
         dismissed = true;
+        if (simpleMenuOverlay != null) {
+            simpleMenuOverlay.close(false);
+        }
         if (onHideListener != null) {
             onHideListener.onDismiss(this);
         }
@@ -2603,6 +2675,10 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
     @Override
     public void onBackPressed() {
+        if (simpleMenuOverlay != null && simpleMenuOverlay.isOpened()) {
+            simpleMenuOverlay.close(true);
+            return;
+        }
         if (attachedFragment == null) {
             super.onBackPressed();
         } else {

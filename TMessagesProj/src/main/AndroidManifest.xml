@@ -445,6 +445,13 @@
             </intent-filter>
         </receiver>
 
+        <!-- The widget engine (HTML widgets' code): no permissions, files or network; one process for every widget. -->
+        <service
+            android:name="org.telegram.utils.twidget.WidgetEngineService"
+            android:process=":widgets"
+            android:isolatedProcess="true"
+            android:exported="false" />
+
         <service
             android:name=".AuthenticatorService"
             android:exported="true"

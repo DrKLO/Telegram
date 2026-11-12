@@ -1,5 +1,0 @@
-<p>blob/filesystem URLs</p><script>
-try { var u = URL.createObjectURL(new Blob(['<img src="http://127.0.0.1:9999/hit/nav-blob-html">'], { type: 'text/html' })); var f = document.createElement('iframe'); f.src = u; document.body.appendChild(f); } catch (e) { console.log('blocked:', e.name); }
-try { var i = document.createElement('img'); i.src = 'blob:http://127.0.0.1:5173/00000000-0000-0000-0000-000000000000'; document.body.appendChild(i); } catch (e) {}
-try { var j = document.createElement('img'); j.src = 'filesystem:http://127.0.0.1:9999/hit/nav-filesystem'; document.body.appendChild(j); } catch (e) {}
-</script>

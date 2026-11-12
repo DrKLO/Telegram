@@ -1,6 +1,0 @@
-<a id="a" href="http://127.0.0.1:9999/hit/api-anchor-autoclick" target="_blank" rel="noopener">auto-clicked link</a><script>
-var a = document.getElementById('a');
-a.click();
-a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-var b = document.createElement('a'); b.href = 'http://127.0.0.1:9999/hit/api-anchor-dynamic'; b.target = '_top'; document.body.appendChild(b); b.click();
-</script>

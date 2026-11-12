@@ -22,6 +22,7 @@ import android.os.HandlerThread;
 import android.os.SystemClock;
 import android.util.Range;
 import android.util.Size;
+import android.view.Display;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -58,7 +59,6 @@ final class RoundVideoCameraController {
         final RoundVideoSession.CameraFacing facing;
         final RoundVideoSession.CameraResolution cameraResolution;
         final RoundVideoSession.FrameRate frameRate;
-        final Size previewSize;
         final Size recordingSize;
         final float maximumZoomRatio;
         final boolean torchAvailable;
@@ -67,7 +67,6 @@ final class RoundVideoCameraController {
                 RoundVideoSession.CameraFacing facing,
                 RoundVideoSession.CameraResolution cameraResolution,
                 RoundVideoSession.FrameRate frameRate,
-                Size previewSize,
                 Size recordingSize,
                 float maximumZoomRatio,
                 boolean torchAvailable
@@ -75,18 +74,27 @@ final class RoundVideoCameraController {
             this.facing = facing;
             this.cameraResolution = cameraResolution;
             this.frameRate = frameRate;
-            this.previewSize = previewSize;
             this.recordingSize = recordingSize;
             this.maximumZoomRatio = maximumZoomRatio;
             this.torchAvailable = torchAvailable;
         }
     }
 
+    /** What the controller does after the devices it is closing are gone. */
+    private enum AfterClose {
+        NONE,
+        /** Open the camera for {@link #requestedFacing} again (sequential switch, recovery). */
+        REOPEN,
+        /** Create the single-camera session on the still open active device. */
+        RETRY_SESSION,
+        /** Continue a camera switch sequentially after a dual-active fallback. */
+        CONTINUE_SWITCH
+    }
+
     private static final class CameraSelection {
         final String id;
         final RoundVideoSession.CameraFacing facing;
         final CameraCharacteristics characteristics;
-        final Size previewSize;
         final Size recordingSize;
         final int sourceCropSize;
         final RoundVideoSession.CameraResolution cameraResolution;
@@ -99,7 +107,6 @@ final class RoundVideoCameraController {
                 String id,
                 RoundVideoSession.CameraFacing facing,
                 CameraCharacteristics characteristics,
-                Size previewSize,
                 Size recordingSize,
                 int sourceCropSize,
                 RoundVideoSession.CameraResolution cameraResolution,
@@ -111,7 +118,6 @@ final class RoundVideoCameraController {
             this.id = id;
             this.facing = facing;
             this.characteristics = characteristics;
-            this.previewSize = previewSize;
             this.recordingSize = recordingSize;
             this.sourceCropSize = sourceCropSize;
             this.cameraResolution = cameraResolution;
@@ -151,7 +157,6 @@ final class RoundVideoCameraController {
     private Handler cameraHandler;
     private String cameraId;
     private CameraCharacteristics characteristics;
-    private Size previewSize;
     private volatile Size recordingSize;
     private volatile int sourceCropSize;
     private Surface previewSurface;
@@ -183,9 +188,7 @@ final class RoundVideoCameraController {
     private int requestGeneration;
     private int torchVerificationGeneration;
     private volatile boolean active;
-    private boolean opening;
     private boolean switchingCamera;
-    private boolean reopenAfterCameraClose;
     private boolean notifySwitchCompletion;
     private volatile boolean awaitingSwitchPreviewFrame;
     private volatile boolean stopping;
@@ -198,26 +201,41 @@ final class RoundVideoCameraController {
     private int encoderFrameRate;
     private CameraSelection frontSelection;
     private CameraSelection backSelection;
-    private boolean warmSwitchSupported;
-    private boolean warmSwitchDisabled;
+    /** Both cameras of the session form an advertised concurrent pair; kept across segments. */
+    private boolean dualPairSupported;
+    /** Dual-active was given up for this session after a failure; never retried. */
+    private boolean dualDisabled;
+    /** The current segment streams both cameras, so a switch only swaps roles. */
     private boolean dualActiveMode;
-    private boolean glPreviewEnabled;
     private boolean activeDualSessionConfigured;
     private boolean warmDualSessionConfigured;
     private boolean activeInputSecondary;
-    private boolean warmCameraOpening;
     private CameraDevice warmCameraDevice;
-    private CameraDevice closingStandbyDevice;
-    private CameraDevice warmRecoveryActiveDevice;
-    private CameraDevice warmRecoveryStandbyDevice;
     private CameraSelection warmCameraSelection;
     private RoundVideoSession.CameraFacing pendingWarmSwitchFacing;
-    private boolean retryCaptureSessionAfterStandbyClose;
-    private boolean warmSwitchRecoveryPending;
+    /**
+     * Every device handed to the controller by a current open request, until its onClosed.
+     * Closing goes through {@link #closeDevice}, so no role field can leak a device.
+     */
+    private final ArrayList<CameraDevice> ownedDevices = new ArrayList<>();
+    /** Owned devices whose close() was issued; their callbacks are ignored until onClosed. */
+    private final ArrayList<CameraDevice> closingDevices = new ArrayList<>();
+    /** Continuation run once every closing device has reported onClosed. */
+    private AfterClose afterClose = AfterClose.NONE;
+    /** Set on the main thread by {@link #release()}; the controller is not reusable after it. */
+    private volatile boolean released;
+    /** The main and warm open requests whose result may still be adopted; camera thread only. */
+    private OpenRequest mainOpenRequest;
+    private OpenRequest warmOpenRequest;
+    /** Open requests without a first result yet; camera thread only. */
+    private int unsettledOpenRequests;
+    /** Camera thread to quit once {@link #unsettledOpenRequests} drops to zero after release. */
+    private HandlerThread quitWhenOpensSettle;
     private long warmCameraOpenRequestedNs;
     private long cameraCloseRequestedNs;
     private long switchSelectionStartedNs;
-    private boolean lastSwitchUsedWarmDevice;
+    /** Display rotation the GL processor currently compensates; camera thread only. */
+    private int appliedDisplayRotation;
     private long segmentStartedNs;
     private long cameraOpenRequestedNs;
     private long captureSessionRequestedNs;
@@ -295,6 +313,10 @@ final class RoundVideoCameraController {
             long timelineOffsetUs,
             @NonNull RoundVideoSession.CameraFacing facing
     ) {
+        if (released) {
+            diagnostics.log("camera segment start ignored: controller released");
+            return;
+        }
         ensureThread();
         this.writer = writer;
         this.timelineOffsetUs = timelineOffsetUs;
@@ -375,6 +397,7 @@ final class RoundVideoCameraController {
     }
 
     void release() {
+        released = true;
         active = false;
         previewView.setSurfaceTextureListener(null);
         previewView.removeOnLayoutChangeListener(layoutChangeListener);
@@ -396,8 +419,130 @@ final class RoundVideoCameraController {
                 recorder.stop();
                 recorder = null;
             }
-            thread.quitSafely();
+            if (unsettledOpenRequests > 0) {
+                // A result posted to a quit looper is dropped and its device never closed, so
+                // the thread lives until every open request has answered.
+                diagnostics.log("release waits for camera open results: pending="
+                        + unsettledOpenRequests);
+                quitWhenOpensSettle = thread;
+            } else {
+                thread.quitSafely();
+            }
         });
+    }
+
+    /**
+     * Issues one camera open with its own callback. Only the request still current for its role
+     * when the device opens may hand it to the controller; a released, stopped or superseded
+     * request closes the device it receives.
+     */
+    @SuppressLint("MissingPermission")
+    private void openCameraTracked(@NonNull String id, boolean warm) throws CameraAccessException {
+        OpenRequest request = new OpenRequest(warm ? warmDeviceCallback : deviceCallback, warm);
+        if (warm) {
+            warmOpenRequest = request;
+        } else {
+            mainOpenRequest = request;
+        }
+        try {
+            cameraManager.openCamera(id, request, cameraHandler);
+        } catch (CameraAccessException | RuntimeException e) {
+            request.settle();
+            if (warm ? warmOpenRequest == request : mainOpenRequest == request) {
+                if (warm) warmOpenRequest = null; else mainOpenRequest = null;
+            }
+            throw e;
+        }
+    }
+
+    private final class OpenRequest extends CameraDevice.StateCallback {
+        private final CameraDevice.StateCallback delegate;
+        private final boolean warm;
+        private boolean settled;
+        /** The delegate received the opened device and owns it from then on. */
+        private boolean adopted;
+        /** Any callback reached the delegate, so it also expects the device's onClosed. */
+        private boolean delivered;
+
+        OpenRequest(@NonNull CameraDevice.StateCallback delegate, boolean warm) {
+            this.delegate = delegate;
+            this.warm = warm;
+            unsettledOpenRequests++;
+        }
+
+        void settle() {
+            if (settled) return;
+            settled = true;
+            unsettledOpenRequests--;
+            HandlerThread thread = quitWhenOpensSettle;
+            if (unsettledOpenRequests <= 0 && thread != null) {
+                quitWhenOpensSettle = null;
+                diagnostics.log("camera open results settled after release; quitting thread");
+                thread.quitSafely();
+            }
+        }
+
+        private boolean isCurrent() {
+            return !released && (warm ? warmOpenRequest : mainOpenRequest) == this;
+        }
+
+        private void detach() {
+            if (warm ? warmOpenRequest == this : mainOpenRequest == this) {
+                if (warm) warmOpenRequest = null; else mainOpenRequest = null;
+            }
+        }
+
+        @Override
+        public void onOpened(@NonNull CameraDevice device) {
+            boolean current = isCurrent();
+            detach();
+            settle();
+            if (!current) {
+                diagnostics.log("stale camera open closed: id=" + device.getId()
+                        + ", warm=" + warm + ", released=" + released);
+                device.close();
+                return;
+            }
+            adopted = true;
+            delivered = true;
+            ownedDevices.add(device);
+            delegate.onOpened(device);
+        }
+
+        @Override
+        public void onDisconnected(@NonNull CameraDevice device) {
+            boolean current = isCurrent();
+            settle();
+            if (released || !adopted && !current) {
+                device.close();
+                return;
+            }
+            detach();
+            delivered = true;
+            delegate.onDisconnected(device);
+        }
+
+        @Override
+        public void onError(@NonNull CameraDevice device, int error) {
+            boolean current = isCurrent();
+            settle();
+            if (released || !adopted && !current) {
+                diagnostics.log("stale camera error ignored: id=" + device.getId()
+                        + ", error=" + cameraErrorName(error) + ", warm=" + warm);
+                device.close();
+                return;
+            }
+            detach();
+            delivered = true;
+            delegate.onError(device, error);
+        }
+
+        @Override
+        public void onClosed(@NonNull CameraDevice device) {
+            // A device that failed before opening is still closed by the delegate and tracked in
+            // closingDevices until this callback, so it is forwarded after any delivery.
+            if (delivered && !released) delegate.onClosed(device);
+        }
     }
 
     private void ensureThread() {
@@ -445,8 +590,7 @@ final class RoundVideoCameraController {
                     if (awaitingSwitchPreviewFrame) {
                         awaitingSwitchPreviewFrame = false;
                         diagnostics.log("camera switch first preview frame: path="
-                                + (dualActiveMode ? "DUAL_ACTIVE"
-                                : lastSwitchUsedWarmDevice ? "WARM_DEVICE" : "SEQUENTIAL")
+                                + (dualActiveMode ? "DUAL_ACTIVE" : "SEQUENTIAL")
                                 + ", totalElapsedMs=" + elapsedMs(cameraSwitchStartedNs));
                         callback.onCameraSwitchFirstFrame();
                     }
@@ -457,7 +601,7 @@ final class RoundVideoCameraController {
                         diagnostics.log("preview frame delivery started: thread="
                                 + Thread.currentThread().getName()
                                 + ", view=" + previewView.getWidth() + "x" + previewView.getHeight()
-                                + ", buffer=" + previewSize
+                                + ", buffer=" + glPreviewBufferSize()
                                 + ", attached=" + previewView.isAttachedToWindow()
                                 + ", shown=" + previewView.isShown()
                                 + ", alpha=" + previewView.getAlpha()
@@ -493,7 +637,7 @@ final class RoundVideoCameraController {
 
     @SuppressLint("MissingPermission")
     private void openCameraIfReady() {
-        if (!active || opening || cameraDevice != null) return;
+        if (!active || isOpening() || cameraDevice != null) return;
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             reportError(new SecurityException("Camera permission is not granted"));
@@ -509,28 +653,14 @@ final class RoundVideoCameraController {
             selectCameraAndSizes(requestedFacing);
             long selectionElapsedMs = elapsedMs(switchSelectionStartedNs);
             if (cameraDevice == null && recorder == null) {
-                prepareWarmSwitchSupport();
+                prepareDualActiveSupport();
             }
             SurfaceTexture previewTexture = previewView.getSurfaceTexture();
             if (previewTexture == null) return;
-            if (dualActiveMode) {
-                int glPreviewSize = Math.max(
-                        1,
-                        Math.min(
-                                PREVIEW_SHORT_SIDE,
-                                Math.min(previewView.getWidth(), previewView.getHeight())
-                        )
-                );
-                previewTexture.setDefaultBufferSize(
-                        glPreviewSize,
-                        glPreviewSize
-                );
-            } else {
-                previewTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-            }
+            configurePreviewBuffer(previewTexture);
             if (previewSurface == null) previewSurface = new Surface(previewTexture);
             if (recorder == null) {
-                createRecordingPipelineWithFallback(previewTexture);
+                createRecordingPipelineWithFallback();
             } else if (glProcessor != null) {
                 glProcessor.updateInputConfiguration(
                         recordingSize,
@@ -546,24 +676,48 @@ final class RoundVideoCameraController {
                         ? glProcessor.getSecondaryCameraSurface()
                         : null;
             }
-            openInitialWarmCameraIfNeeded();
-            opening = true;
+            openStandbyCameraIfNeeded();
             cameraOpenRequestedNs = SystemClock.elapsedRealtimeNanos();
             diagnostics.log("camera open requested: id=" + cameraId
-                    + ", preview=" + previewSize
                     + ", recording=" + recordingSize
                     + ", crop=" + sourceCropSize
                     + ", selectionElapsedMs=" + selectionElapsedMs
                     + ", dualActive=" + dualActiveMode);
-            cameraManager.openCamera(cameraId, deviceCallback, cameraHandler);
+            openCameraTracked(cameraId, false);
         } catch (Exception e) {
-            opening = false;
             reportError(e);
         }
     }
 
+    private boolean isOpening() {
+        return mainOpenRequest != null;
+    }
+
+    private boolean isStandbyOpening() {
+        return warmOpenRequest != null;
+    }
+
+    /**
+     * The preview is always rendered by the GL processor from the single camera stream, so the
+     * camera has one output in every mode and the preview shows exactly the recorded crop.
+     */
+    private void configurePreviewBuffer(@NonNull SurfaceTexture previewTexture) {
+        int glPreviewSize = glPreviewBufferSize();
+        previewTexture.setDefaultBufferSize(glPreviewSize, glPreviewSize);
+    }
+
+    /** Side of the square buffer the GL processor renders the preview into. */
+    private int glPreviewBufferSize() {
+        return Math.max(
+                1,
+                Math.min(
+                        PREVIEW_SHORT_SIDE,
+                        Math.min(previewView.getWidth(), previewView.getHeight())
+                )
+        );
+    }
+
     private void createRecordingPipeline() throws IOException {
-        glPreviewEnabled = dualActiveMode;
         // Later segments keep the first segment's encoder configuration: a different frame rate
         // can change the SPS, which cannot be appended to the same MP4 track.
         recorder = new RoundVideoCodecRecorder(
@@ -580,7 +734,7 @@ final class RoundVideoCameraController {
         glProcessor = new RoundVideoGlProcessor(
                 recordingSize,
                 encoderSurface,
-                glPreviewEnabled ? previewSurface : null,
+                previewSurface,
                 dualActiveMode,
                 outputSize,
                 sourceCropSize,
@@ -595,6 +749,8 @@ final class RoundVideoCameraController {
             Handler handler = cameraHandler;
             if (handler != null) handler.post(this::startRecordingAfterFirstFrame);
         });
+        appliedDisplayRotation = displayRotationDegrees();
+        glProcessor.setDisplayRotation(appliedDisplayRotation);
         recordingSurface = glProcessor.start();
         if (dualActiveMode) {
             CameraSelection secondarySelection = selectionForFacing(
@@ -616,9 +772,7 @@ final class RoundVideoCameraController {
         }
     }
 
-    private void createRecordingPipelineWithFallback(
-            @NonNull SurfaceTexture previewTexture
-    ) throws IOException {
+    private void createRecordingPipelineWithFallback() throws IOException {
         try {
             createRecordingPipeline();
         } catch (IOException | RuntimeException e) {
@@ -636,10 +790,8 @@ final class RoundVideoCameraController {
             recordingSurface = null;
             secondaryRecordingSurface = null;
             dualActiveMode = false;
-            glPreviewEnabled = false;
-            warmSwitchSupported = false;
-            warmSwitchDisabled = true;
-            previewTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
+            dualPairSupported = false;
+            dualDisabled = true;
             createRecordingPipeline();
         }
     }
@@ -653,7 +805,6 @@ final class RoundVideoCameraController {
         zoomProgress = 0f;
         callback.onCameraSwitchStarted(facing);
         cameraSwitchStartedNs = SystemClock.elapsedRealtimeNanos();
-        lastSwitchUsedWarmDevice = false;
         diagnostics.log("camera device switch started: from=" + activeFacing + ", to=" + facing);
         if (switchDualActiveCamera(facing)) {
             return;
@@ -664,16 +815,6 @@ final class RoundVideoCameraController {
             return;
         }
         if (glProcessor != null) glProcessor.beginCameraSwitch(activeFacing, facing);
-        if (switchToWarmCamera(facing)) {
-            return;
-        }
-        if (warmCameraOpening
-                && warmCameraSelection != null
-                && warmCameraSelection.facing == facing) {
-            pendingWarmSwitchFacing = facing;
-            diagnostics.log("camera switch path: waiting for warm device open");
-            return;
-        }
         continueSequentialSwitch();
     }
 
@@ -757,7 +898,6 @@ final class RoundVideoCameraController {
 
         activeDualSessionConfigured = true;
         warmDualSessionConfigured = true;
-        lastSwitchUsedWarmDevice = true;
         notifySwitchCompletion = false;
         switchingCamera = false;
         awaitingSwitchPreviewFrame = false;
@@ -773,7 +913,6 @@ final class RoundVideoCameraController {
                         activeFacing,
                         activeCameraResolution,
                         activeFrameRate,
-                        previewSize,
                         recordingSize,
                         maximumZoomRatio,
                         isTorchAvailable()
@@ -800,38 +939,117 @@ final class RoundVideoCameraController {
 
     private void continueSequentialSwitch() {
         pendingWarmSwitchFacing = null;
-        lastSwitchUsedWarmDevice = false;
         diagnostics.log("camera switch path: sequential"
-                + (warmSwitchSupported
-                ? ", reason=warm device not ready"
+                + (dualPairSupported
+                ? ", reason=standby session not ready"
                 : ", reason=concurrent pair unavailable"));
         closeCaptureSession();
         if (cameraDevice != null) {
             CameraDevice device = cameraDevice;
             cameraDevice = null;
             cameraCloseRequestedNs = SystemClock.elapsedRealtimeNanos();
-            device.close();
-        } else if (!opening) {
+            closeDevice(device, AfterClose.REOPEN);
+        } else if (!isOpening()) {
             switchingCamera = false;
             openCameraIfReady();
+        }
+        // Otherwise an open for the previous facing is in flight: its result arrives while
+        // switchingCamera is set, is closed, and the target is opened after that.
+    }
+
+    /**
+     * Issues the only close() the controller ever calls on a device it owns. The device stays
+     * in {@link #closingDevices} until onClosed, so its late callbacks are ignored, and the
+     * continuation runs once nothing is closing any more.
+     */
+    private void closeDevice(@NonNull CameraDevice device, @NonNull AfterClose action) {
+        if (!closingDevices.contains(device)) closingDevices.add(device);
+        if (action != AfterClose.NONE) afterClose = action;
+        device.close();
+    }
+
+    private boolean isClosing(@NonNull CameraDevice device) {
+        return closingDevices.contains(device);
+    }
+
+    private void onOwnedDeviceClosed(@NonNull CameraDevice device) {
+        ownedDevices.remove(device);
+        closingDevices.remove(device);
+        if (device == cameraDevice) cameraDevice = null;
+        if (device == warmCameraDevice) warmCameraDevice = null;
+        diagnostics.log("camera device closed: id=" + device.getId()
+                + ", owned=" + ownedDevices.size()
+                + ", closing=" + closingDevices.size()
+                + ", afterClose=" + afterClose
+                + ", closeElapsedMs=" + elapsedMs(cameraCloseRequestedNs));
+        if (!closingDevices.isEmpty()) return;
+        AfterClose action = afterClose;
+        afterClose = AfterClose.NONE;
+        if (!active || stopping || action == AfterClose.NONE) return;
+        switch (action) {
+            case REOPEN:
+                switchingCamera = false;
+                openCameraIfReady();
+                break;
+            case RETRY_SESSION:
+                if (cameraDevice != null && captureSession == null) {
+                    diagnostics.log("retrying capture session after standby camera closed");
+                    createCaptureSession();
+                }
+                break;
+            case CONTINUE_SWITCH:
+                diagnostics.log("continuing pending switch after DUAL_ACTIVE fallback");
+                continueSequentialSwitch();
+                break;
+            default:
+                break;
+        }
+    }
+
+    /** Closes every owned device and opens the requested camera again once all are gone. */
+    private void closeAllAndReopen(@NonNull String reason, @Nullable Exception error) {
+        dualDisabled = true;
+        dualPairSupported = false;
+        dualActiveMode = false;
+        pendingWarmSwitchFacing = null;
+        closeCaptureSession();
+        closeWarmCaptureSession();
+        cameraDevice = null;
+        warmCameraDevice = null;
+        warmCameraSelection = null;
+        // Opens still in flight are superseded: their devices are closed when they arrive.
+        mainOpenRequest = null;
+        warmOpenRequest = null;
+        diagnostics.log("camera recovery: reason=" + reason
+                + ", target=" + requestedFacing
+                + ", devices=" + ownedDevices.size()
+                + ", switchElapsedMs=" + elapsedMs(cameraSwitchStartedNs)
+                + (error == null ? "" : ", error=" + error));
+        if (ownedDevices.isEmpty()) {
+            switchingCamera = false;
+            if (active && !stopping) openCameraIfReady();
+            return;
+        }
+        cameraCloseRequestedNs = SystemClock.elapsedRealtimeNanos();
+        for (CameraDevice device : new ArrayList<>(ownedDevices)) {
+            closeDevice(device, AfterClose.REOPEN);
         }
     }
 
     private final CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice device) {
-            opening = false;
             diagnostics.log("camera opened: id=" + device.getId()
                     + ", elapsedMs=" + elapsedMs(cameraOpenRequestedNs)
                     + (notifySwitchCompletion ? ", switchElapsedMs="
                     + elapsedMs(cameraSwitchStartedNs) : ""));
             if (!active || switchingCamera) {
-                device.close();
+                closeDevice(device, switchingCamera ? AfterClose.REOPEN : AfterClose.NONE);
                 return;
             }
             cameraDevice = device;
             if (dualActiveMode) {
-                if (warmCameraOpening || warmCameraDevice == null) {
+                if (isStandbyOpening() || warmCameraDevice == null) {
                     diagnostics.log("active camera opened; waiting for dual peer before sessions");
                 } else {
                     createDualCaptureSessions();
@@ -843,34 +1061,22 @@ final class RoundVideoCameraController {
 
         @Override
         public void onDisconnected(@NonNull CameraDevice device) {
-            opening = false;
-            diagnostics.log("camera disconnected: id=" + device.getId());
-            if (isWarmSwitchRecoveryDevice(device)) {
-                diagnostics.log("camera disconnected while warm-switch recovery is closing it: id="
-                        + device.getId());
+            diagnostics.log("camera disconnected: id=" + device.getId()
+                    + ", closing=" + isClosing(device));
+            if (isClosing(device)) {
                 device.close();
                 return;
             }
             if (device == warmCameraDevice) {
-                if (dualActiveMode) {
-                    handleWarmDeviceFailure(device, "disconnected", null);
-                    return;
-                }
-                warmCameraDevice = null;
-                closingStandbyDevice = device;
-                device.close();
-                disableWarmSwitch("standby device disconnected", null);
+                handleStandbyDeviceFailure(device, "disconnected", null);
                 return;
             }
-            boolean unexpected = active
-                    && !stopping
-                    && !switchingCamera
-                    && !reopenAfterCameraClose;
+            boolean unexpected = active && !stopping && !switchingCamera;
             if (cameraDevice == device) {
                 closeCaptureSession();
                 cameraDevice = null;
             }
-            device.close();
+            closeDevice(device, AfterClose.NONE);
             if (unexpected) {
                 reportCameraLoss(new IllegalStateException("Camera device disconnected"));
             }
@@ -878,117 +1084,79 @@ final class RoundVideoCameraController {
 
         @Override
         public void onError(@NonNull CameraDevice device, int error) {
-            opening = false;
-            if (isWarmSwitchRecoveryDevice(device)) {
-                diagnostics.log("camera error while warm-switch recovery is closing it: id="
-                        + device.getId() + ", error=" + cameraErrorName(error)
-                        + " (" + error + ")");
+            diagnostics.log("camera error: id=" + device.getId()
+                    + ", error=" + cameraErrorName(error) + " (" + error + ")"
+                    + ", closing=" + isClosing(device));
+            if (isClosing(device)) {
                 device.close();
                 return;
             }
             if (device == warmCameraDevice) {
-                if (dualActiveMode) {
-                    handleWarmDeviceFailure(
-                            device,
-                            "error=" + cameraErrorName(error) + " (" + error + ")",
-                            null
-                    );
-                    return;
-                }
-                warmCameraDevice = null;
-                closingStandbyDevice = device;
-                device.close();
-                disableWarmSwitch("standby device error=" + cameraErrorName(error)
-                        + " (" + error + ")", null);
+                handleStandbyDeviceFailure(
+                        device,
+                        "error=" + cameraErrorName(error) + " (" + error + ")",
+                        null
+                );
                 return;
             }
             if (cameraDevice == device) {
                 closeCaptureSession();
                 cameraDevice = null;
             }
-            device.close();
+            closeDevice(device, AfterClose.NONE);
             reportCameraLoss(new IllegalStateException("Camera device error: "
                     + cameraErrorName(error) + " (" + error + ")"));
         }
 
         @Override
         public void onClosed(@NonNull CameraDevice device) {
-            if (handleWarmSwitchRecoveryClosed(device)) return;
-            if (handleStandbyCameraClosed(device)) return;
-            if (device == warmCameraDevice) {
-                warmCameraDevice = null;
-                diagnostics.log("standby camera closed: id=" + device.getId());
-                return;
-            }
-            if (switchingCamera) {
-                diagnostics.log("camera closed for sequential switch: elapsedMs="
-                        + elapsedMs(cameraCloseRequestedNs)
-                        + ", switchElapsedMs=" + elapsedMs(cameraSwitchStartedNs));
-                switchingCamera = false;
-                if (active) openCameraIfReady();
-            } else if (reopenAfterCameraClose) {
-                reopenAfterCameraClose = false;
-                if (active) openCameraIfReady();
-            }
+            onOwnedDeviceClosed(device);
         }
     };
 
+    /** Callback of the standby camera opened for dual-active; roles may swap after a switch. */
     private final CameraDevice.StateCallback warmDeviceCallback =
             new CameraDevice.StateCallback() {
                 @Override
                 public void onOpened(@NonNull CameraDevice device) {
-                    warmCameraOpening = false;
-                    if (!active || stopping || warmSwitchDisabled
+                    if (!active || stopping || !dualActiveMode
                             || warmCameraSelection == null
                             || !device.getId().equals(warmCameraSelection.id)) {
                         diagnostics.log("stale warm camera open ignored: id=" + device.getId());
-                        device.close();
+                        closeDevice(device, AfterClose.NONE);
                         return;
                     }
                     warmCameraDevice = device;
                     diagnostics.log("warm camera opened: id=" + device.getId()
                             + ", facing=" + warmCameraSelection.facing
                             + ", elapsedMs=" + elapsedMs(warmCameraOpenRequestedNs));
-                    if (cameraDevice != null && captureSession == null
-                            && !switchingCamera) {
-                        if (dualActiveMode) {
-                            diagnostics.log("both camera devices opened; configuring dual sessions");
-                            createDualCaptureSessions();
-                        } else {
-                            diagnostics.log("both camera devices opened; configuring active session");
-                            createCaptureSession();
-                        }
-                    }
-                    RoundVideoSession.CameraFacing pending = pendingWarmSwitchFacing;
-                    if (pending != null && pending == warmCameraSelection.facing) {
-                        pendingWarmSwitchFacing = null;
-                        if (!switchToWarmCamera(pending)) {
-                            continueSequentialSwitch();
-                        }
+                    if (cameraDevice != null && captureSession == null && !switchingCamera) {
+                        diagnostics.log("both camera devices opened; configuring dual sessions");
+                        createDualCaptureSessions();
                     }
                 }
 
                 @Override
                 public void onDisconnected(@NonNull CameraDevice device) {
-                    if (isWarmSwitchRecoveryDevice(device)) {
-                        diagnostics.log("warm camera disconnected while recovery is closing it: id="
-                                + device.getId());
+                    diagnostics.log("warm camera disconnected: id=" + device.getId()
+                            + ", closing=" + isClosing(device));
+                    if (isClosing(device)) {
                         device.close();
                         return;
                     }
-                    handleWarmDeviceFailure(device, "disconnected", null);
+                    handleStandbyDeviceFailure(device, "disconnected", null);
                 }
 
                 @Override
                 public void onError(@NonNull CameraDevice device, int error) {
-                    if (isWarmSwitchRecoveryDevice(device)) {
-                        diagnostics.log("warm camera error while recovery is closing it: id="
-                                + device.getId() + ", error=" + cameraErrorName(error)
-                                + " (" + error + ")");
+                    diagnostics.log("warm camera error: id=" + device.getId()
+                            + ", error=" + cameraErrorName(error) + " (" + error + ")"
+                            + ", closing=" + isClosing(device));
+                    if (isClosing(device)) {
                         device.close();
                         return;
                     }
-                    handleWarmDeviceFailure(
+                    handleStandbyDeviceFailure(
                             device,
                             "error=" + cameraErrorName(error) + " (" + error + ")",
                             new IllegalStateException("Warm camera device error: "
@@ -998,18 +1166,13 @@ final class RoundVideoCameraController {
 
                 @Override
                 public void onClosed(@NonNull CameraDevice device) {
-                    if (handleWarmSwitchRecoveryClosed(device)) return;
-                    if (handleStandbyCameraClosed(device)) return;
-                    if (device == warmCameraDevice) {
-                        warmCameraDevice = null;
-                        diagnostics.log("standby camera closed: id=" + device.getId());
-                    }
+                    onOwnedDeviceClosed(device);
                 }
             };
 
-    private void openInitialWarmCameraIfNeeded() {
-        if (!warmSwitchSupported || warmSwitchDisabled
-                || warmCameraOpening || warmCameraDevice != null) {
+    private void openStandbyCameraIfNeeded() {
+        if (!dualActiveMode || dualDisabled
+                || isStandbyOpening() || warmCameraDevice != null) {
             return;
         }
         CameraSelection selection = selectionForFacing(
@@ -1017,231 +1180,75 @@ final class RoundVideoCameraController {
                         ? RoundVideoSession.CameraFacing.BACK
                         : RoundVideoSession.CameraFacing.FRONT
         );
-        requestWarmCameraOpen(selection);
-    }
-
-    @SuppressLint("MissingPermission")
-    private void requestWarmCameraOpen(@Nullable CameraSelection selection) {
-        if (selection == null || warmCameraOpening || warmCameraDevice != null) return;
+        if (selection == null) return;
         try {
             warmCameraSelection = selection;
-            warmCameraOpening = true;
             warmCameraOpenRequestedNs = SystemClock.elapsedRealtimeNanos();
             diagnostics.log("warm camera open requested: id=" + selection.id
                     + ", facing=" + selection.facing);
-            cameraManager.openCamera(selection.id, warmDeviceCallback, cameraHandler);
+            openCameraTracked(selection.id, true);
         } catch (Exception e) {
-            warmCameraOpening = false;
-            disableWarmSwitch("open request failed", e);
+            disableDualActive("standby open request failed", e);
         }
     }
 
-    private boolean switchToWarmCamera(@NonNull RoundVideoSession.CameraFacing facing) {
-        CameraDevice targetDevice = warmCameraDevice;
-        CameraSelection targetSelection = warmCameraSelection;
-        if (targetDevice == null || targetSelection == null
-                || targetSelection.facing != facing) {
-            return false;
-        }
-        SurfaceTexture previewTexture = previewView.getSurfaceTexture();
-        if (previewTexture == null) {
-            disableWarmSwitch("preview SurfaceTexture unavailable", null);
-            return false;
-        }
-
-        CameraDevice previousDevice = cameraDevice;
-        CameraSelection previousSelection = activeFacing == null
-                ? null
-                : selectionForFacing(activeFacing);
-        closeCaptureSession();
-        warmCameraDevice = previousDevice;
-        warmCameraSelection = previousSelection;
-        cameraDevice = targetDevice;
-        applySelection(targetSelection);
-        previewTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-        if (glProcessor != null) {
-            glProcessor.updateInputConfiguration(
-                    recordingSize,
-                    sourceCropSize,
-                    isCameraTimestampRealtime()
-            );
-            recordingSurface = glProcessor.getCameraSurface();
-        }
-        lastSwitchUsedWarmDevice = true;
-        diagnostics.log("camera switch path: warm device, targetId=" + cameraId
-                + ", standbyId=" + (previousDevice == null
-                ? "none" : previousDevice.getId())
-                + ", preparationMs=" + elapsedMs(cameraSwitchStartedNs));
-        createCaptureSession();
-        return true;
-    }
-
-    private void handleWarmDeviceFailure(
+    /**
+     * A device opened as the standby failed. If it has become the active device through a
+     * dual role switch the active segment is lost; otherwise dual-active ends and the session
+     * continues on the active device alone.
+     */
+    private void handleStandbyDeviceFailure(
             @NonNull CameraDevice device,
             @NonNull String reason,
-            @Nullable Exception activeError
+            @Nullable Exception error
     ) {
-        boolean promoted = device == cameraDevice;
-        if (!promoted && dualActiveMode) {
-            diagnostics.log("camera dual-active fallback: reason=standby device " + reason
-                    + (activeError == null ? "" : ", error=" + activeError));
-            dualActiveMode = false;
-            warmSwitchSupported = false;
-            warmSwitchDisabled = true;
-            warmCameraOpening = false;
-            warmCameraDevice = null;
-            warmCameraSelection = null;
-            closeWarmCaptureSession();
-            closingStandbyDevice = device;
-            retryCaptureSessionAfterStandbyClose = active
-                    && cameraDevice != null
-                    && captureSession == null
-                    && !switchingCamera;
-            device.close();
+        if (device == cameraDevice) {
+            closeCaptureSession();
+            cameraDevice = null;
+            closeDevice(device, AfterClose.NONE);
+            reportCameraLoss(error != null
+                    ? error
+                    : new IllegalStateException("Active camera " + reason));
             return;
         }
         if (device == warmCameraDevice) warmCameraDevice = null;
-        warmCameraOpening = false;
-        device.close();
-        if (promoted) {
-            closeCaptureSession();
-            cameraDevice = null;
-            if (activeError != null) reportError(activeError);
-            else reportError(new IllegalStateException("Active warm camera " + reason));
+        if (!dualActiveMode) {
+            closeDevice(device, AfterClose.NONE);
             return;
         }
-        disableWarmSwitch("standby device " + reason, activeError);
-        if (pendingWarmSwitchFacing != null) {
-            continueSequentialSwitch();
-        } else if (active && cameraDevice != null && captureSession == null
-                && !switchingCamera) {
-            diagnostics.log("warm camera failed during startup; configuring active camera only");
-            createCaptureSession();
-        }
+        diagnostics.log("camera dual-active fallback: reason=standby device " + reason
+                + (error == null ? "" : ", error=" + error));
+        dualActiveMode = false;
+        dualPairSupported = false;
+        dualDisabled = true;
+        warmCameraSelection = null;
+        closeWarmCaptureSession();
+        boolean retrySession = active
+                && cameraDevice != null
+                && captureSession == null
+                && !switchingCamera;
+        boolean continueSwitch = switchingCamera && pendingWarmSwitchFacing != null;
+        closeDevice(
+                device,
+                retrySession
+                        ? AfterClose.RETRY_SESSION
+                        : continueSwitch ? AfterClose.CONTINUE_SWITCH : AfterClose.NONE
+        );
     }
 
-    private void disableWarmSwitch(@NonNull String reason, @Nullable Exception error) {
-        warmSwitchDisabled = true;
-        warmSwitchSupported = false;
+    private void disableDualActive(@NonNull String reason, @Nullable Exception error) {
+        dualDisabled = true;
+        dualPairSupported = false;
         dualActiveMode = false;
-        diagnostics.log("camera warm-switch disabled: reason=" + reason
+        diagnostics.log("camera dual-active disabled: reason=" + reason
                 + (error == null ? "" : ", error=" + error));
         closeWarmCaptureSession();
         CameraDevice warm = warmCameraDevice;
         warmCameraDevice = null;
         warmCameraSelection = null;
-        if (warm != null && warm != cameraDevice) {
-            closingStandbyDevice = warm;
-            warm.close();
-        }
-    }
-
-    private void retryCaptureSessionWithoutWarmCamera(
-            @NonNull String reason,
-            @Nullable Exception error
-    ) {
-        retryCaptureSessionAfterStandbyClose = true;
-        disableWarmSwitch(reason, error);
-        if (closingStandbyDevice == null) {
-            retryCaptureSessionAfterStandbyClose = false;
-            createCaptureSession();
-        } else {
-            diagnostics.log("capture session retry waiting for standby camera close: id="
-                    + closingStandbyDevice.getId());
-        }
-    }
-
-    private boolean handleStandbyCameraClosed(@NonNull CameraDevice device) {
-        if (device != closingStandbyDevice) return false;
-        closingStandbyDevice = null;
-        diagnostics.log("standby camera closed: id=" + device.getId());
-        if (retryCaptureSessionAfterStandbyClose) {
-            retryCaptureSessionAfterStandbyClose = false;
-            if (active && !stopping && cameraDevice != null) {
-                diagnostics.log("retrying capture session after standby camera closed");
-                createCaptureSession();
-            }
-        } else if (switchingCamera && pendingWarmSwitchFacing != null) {
-            diagnostics.log("continuing pending switch after DUAL_ACTIVE fallback");
-            continueSequentialSwitch();
-        }
-        return true;
-    }
-
-    private void recoverWarmSwitchAsSequential(
-            @NonNull String reason,
-            @Nullable Exception error
-    ) {
-        if (warmSwitchRecoveryPending) return;
-        warmSwitchRecoveryPending = true;
-        warmSwitchDisabled = true;
-        warmSwitchSupported = false;
-        retryCaptureSessionAfterStandbyClose = false;
-        pendingWarmSwitchFacing = null;
-        lastSwitchUsedWarmDevice = false;
-        opening = false;
-        closeCaptureSession();
-        closeWarmCaptureSession();
-
-        warmRecoveryActiveDevice = cameraDevice;
-        warmRecoveryStandbyDevice = warmCameraDevice;
-        cameraDevice = null;
-        warmCameraDevice = null;
-        warmCameraSelection = null;
-        if (closingStandbyDevice == warmRecoveryActiveDevice
-                || closingStandbyDevice == warmRecoveryStandbyDevice) {
-            closingStandbyDevice = null;
-        }
-
-        diagnostics.log("camera warm-switch recovery started: reason=" + reason
-                + ", target=" + requestedFacing
-                + ", targetId=" + deviceId(warmRecoveryActiveDevice)
-                + ", standbyId=" + deviceId(warmRecoveryStandbyDevice)
-                + ", fps=" + (activeFrameRate == null
-                ? "unknown" : activeFrameRate.getValue())
-                + ", switchElapsedMs=" + elapsedMs(cameraSwitchStartedNs)
-                + (error == null ? "" : ", error=" + error));
-
-        if (warmRecoveryActiveDevice != null) warmRecoveryActiveDevice.close();
-        if (warmRecoveryStandbyDevice != null
-                && warmRecoveryStandbyDevice != warmRecoveryActiveDevice) {
-            warmRecoveryStandbyDevice.close();
-        }
-        maybeCompleteWarmSwitchRecovery();
-    }
-
-    private boolean isWarmSwitchRecoveryDevice(@NonNull CameraDevice device) {
-        return warmSwitchRecoveryPending
-                && (device == warmRecoveryActiveDevice || device == warmRecoveryStandbyDevice);
-    }
-
-    private boolean handleWarmSwitchRecoveryClosed(@NonNull CameraDevice device) {
-        if (!isWarmSwitchRecoveryDevice(device)) return false;
-        if (device == warmRecoveryActiveDevice) warmRecoveryActiveDevice = null;
-        if (device == warmRecoveryStandbyDevice) warmRecoveryStandbyDevice = null;
-        diagnostics.log("camera closed for warm-switch recovery: id=" + device.getId()
-                + ", targetRemaining=" + deviceId(warmRecoveryActiveDevice)
-                + ", standbyRemaining=" + deviceId(warmRecoveryStandbyDevice));
-        maybeCompleteWarmSwitchRecovery();
-        return true;
-    }
-
-    private void maybeCompleteWarmSwitchRecovery() {
-        if (!warmSwitchRecoveryPending
-                || warmRecoveryActiveDevice != null
-                || warmRecoveryStandbyDevice != null) {
-            return;
-        }
-        warmSwitchRecoveryPending = false;
-        switchingCamera = false;
-        diagnostics.log("camera warm-switch recovery reopening target sequentially: facing="
-                + requestedFacing + ", switchElapsedMs=" + elapsedMs(cameraSwitchStartedNs));
-        if (active && !stopping) openCameraIfReady();
-    }
-
-    @NonNull
-    private static String deviceId(@Nullable CameraDevice device) {
-        return device == null ? "none" : device.getId();
+        // A standby open still in flight is superseded and closed on arrival.
+        warmOpenRequest = null;
+        if (warm != null && warm != cameraDevice) closeDevice(warm, AfterClose.NONE);
     }
 
     private void createDualCaptureSessions() {
@@ -1345,25 +1352,25 @@ final class RoundVideoCameraController {
                 + ", keepActive=" + keepActiveSession
                 + (error == null ? "" : ", error=" + error));
         dualActiveMode = false;
-        warmSwitchSupported = false;
-        warmSwitchDisabled = true;
+        dualPairSupported = false;
+        dualDisabled = true;
         activeDualSessionConfigured = false;
         warmDualSessionConfigured = false;
         if (!keepActiveSession || captureSession == null) {
-            recoverWarmSwitchAsSequential("DUAL_ACTIVE " + reason, error);
+            closeAllAndReopen("DUAL_ACTIVE " + reason, error);
             return;
         }
         closeWarmCaptureSession();
         CameraDevice standby = warmCameraDevice;
         warmCameraDevice = null;
         warmCameraSelection = null;
+        boolean continueSwitch = switchingCamera && pendingWarmSwitchFacing != null;
         if (standby != null) {
-            closingStandbyDevice = standby;
-            standby.close();
-        }
-        if (closingStandbyDevice == null
-                && switchingCamera
-                && pendingWarmSwitchFacing != null) {
+            closeDevice(
+                    standby,
+                    continueSwitch ? AfterClose.CONTINUE_SWITCH : AfterClose.NONE
+            );
+        } else if (continueSwitch) {
             continueSequentialSwitch();
         }
     }
@@ -1373,26 +1380,15 @@ final class RoundVideoCameraController {
         if (device == null || previewSurface == null || recordingSurface == null) return;
         try {
             captureSessionRequestedNs = SystemClock.elapsedRealtimeNanos();
-            diagnostics.log("capture session requested: preview=" + previewSize
-                    + ", recording=" + recordingSize
-                    + ", fpsRange=" + activeFpsRange
-                    + ", glPreview=" + glPreviewEnabled);
+            diagnostics.log("capture session requested: recording=" + recordingSize
+                    + ", fpsRange=" + activeFpsRange);
             device.createCaptureSession(
-                    glPreviewEnabled
-                            ? Arrays.asList(recordingSurface)
-                            : Arrays.asList(previewSurface, recordingSurface),
+                    Arrays.asList(recordingSurface),
                     sessionCallback,
                     cameraHandler
             );
         } catch (CameraAccessException | IllegalArgumentException e) {
-            if (warmCameraDevice != null && !warmSwitchDisabled) {
-                if (switchingCamera && lastSwitchUsedWarmDevice) {
-                    recoverWarmSwitchAsSequential("session request failed", e);
-                } else {
-                    diagnostics.log("camera session request failed with warm device open: " + e);
-                    retryCaptureSessionWithoutWarmCamera("session request failed", e);
-                }
-            } else if (activeFrameRate == RoundVideoSession.FrameRate.FPS_60) {
+            if (activeFrameRate == RoundVideoSession.FrameRate.FPS_60) {
                 fallbackTo30Fps("60 fps session creation rejected", e);
             } else {
                 reportError(e);
@@ -1428,8 +1424,7 @@ final class RoundVideoCameraController {
                                 + ", fpsRange=" + activeFpsRange
                                 + ", elapsedMs=" + elapsedMs(captureSessionRequestedNs)
                                 + ", segmentElapsedMs=" + elapsedMs(segmentStartedNs)
-                                + (wasSwitch ? ", switchPath="
-                                + (lastSwitchUsedWarmDevice ? "WARM_DEVICE" : "SEQUENTIAL")
+                                + (wasSwitch ? ", switchPath=SEQUENTIAL"
                                 + ", switchElapsedMs=" + elapsedMs(cameraSwitchStartedNs) : ""));
                         previewView.post(RoundVideoCameraController.this::updatePreviewTransform);
                         callback.onConfigured(
@@ -1437,7 +1432,6 @@ final class RoundVideoCameraController {
                                         activeFacing,
                                         activeCameraResolution,
                                         activeFrameRate,
-                                        previewSize,
                                         recordingSize,
                                         maximumZoomRatio,
                                         isTorchAvailable()
@@ -1452,8 +1446,6 @@ final class RoundVideoCameraController {
                     } catch (Exception e) {
                         if (dualActiveMode) {
                             fallbackFromDualMode("active request submission failed", e, false);
-                        } else if (switchingCamera && lastSwitchUsedWarmDevice) {
-                            recoverWarmSwitchAsSequential("request submission failed", e);
                         } else if (activeFrameRate == RoundVideoSession.FrameRate.FPS_60) {
                             fallbackTo30Fps("60 fps request submission rejected", e);
                         } else {
@@ -1484,22 +1476,6 @@ final class RoundVideoCameraController {
                                 null,
                                 false
                         );
-                        return;
-                    }
-                    if (warmCameraDevice != null && !warmSwitchDisabled) {
-                        if (switchingCamera && lastSwitchUsedWarmDevice) {
-                            recoverWarmSwitchAsSequential(
-                                    "session configuration failed",
-                                    null
-                            );
-                        } else {
-                            diagnostics.log("camera session configuration failed with warm device "
-                                    + "open");
-                            retryCaptureSessionWithoutWarmCamera(
-                                    "session configuration failed",
-                                    null
-                            );
-                        }
                         return;
                     }
                     if (activeFrameRate == RoundVideoSession.FrameRate.FPS_60) {
@@ -1623,10 +1599,9 @@ final class RoundVideoCameraController {
         closeCaptureSession();
         CameraDevice device = cameraDevice;
         cameraDevice = null;
-        opening = false;
         if (device != null) {
-            reopenAfterCameraClose = true;
-            device.close();
+            cameraCloseRequestedNs = SystemClock.elapsedRealtimeNanos();
+            closeDevice(device, AfterClose.REOPEN);
         } else {
             openCameraIfReady();
         }
@@ -1658,9 +1633,6 @@ final class RoundVideoCameraController {
             boolean logConfiguration
     ) throws CameraAccessException {
         CaptureRequest.Builder builder = device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
-        if (activeControls && !glPreviewEnabled && previewSurface != null) {
-            builder.addTarget(previewSurface);
-        }
         builder.addTarget(cameraInputSurface);
         builder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO);
         builder.set(
@@ -1932,7 +1904,6 @@ final class RoundVideoCameraController {
             applySelection(cached);
             diagnostics.log("camera outputs restored from cache: id=" + cached.id
                     + ", facing=" + facing
-                    + ", preview=" + cached.previewSize
                     + ", recording=" + cached.recordingSize
                     + ", fps=" + cached.frameRate.getValue());
             return;
@@ -1963,6 +1934,7 @@ final class RoundVideoCameraController {
             try {
                 OutputPair regularPair = chooseOutputPair(
                         candidateSizes,
+                        sensorAspectRatio(candidate),
                         outputResolution,
                         requestedCameraResolution
                 );
@@ -1984,8 +1956,8 @@ final class RoundVideoCameraController {
                         + ", facing=" + facing
                         + ", flashAvailable=" + hasFlashUnit(candidate)
                         + ", fps=" + frameRatePlan.frameRate.getValue()
-                        + ", preview=" + frameRatePlan.outputPair.preview
-                        + ", recording=" + frameRatePlan.outputPair.recording);
+                        + ", recording=" + frameRatePlan.outputPair.recording
+                        + ", crop=" + frameRatePlan.outputPair.cropSize);
                 if (fallbackCandidate == null
                         || isPreferredCameraCandidate(
                                 cameraCandidate,
@@ -2028,27 +2000,22 @@ final class RoundVideoCameraController {
         frameRateFallbackAttempted = false;
         regularFallbackPair = regularPair;
         resetCaptureFpsMeasurement();
-        previewSize = pair.preview;
         recordingSize = pair.recording;
         sourceCropSize = pair.cropSize;
         activeCameraResolution = pair.cameraResolution;
         maximumZoomRatio = readMaximumZoomRatio(selectedCharacteristics);
-        long previewMinFrameDurationNs = getMinimumFrameDurationNs(
-                selectedCharacteristics,
-                previewSize
-        );
         long recordingMinFrameDurationNs = getMinimumFrameDurationNs(
                 selectedCharacteristics,
                 recordingSize
         );
         diagnostics.log("camera outputs selected: output=" + outputSize + "x" + outputSize
+                + ", displayRotation=" + displayRotationDegrees()
                 + ", cameraMode=" + activeCameraResolution
                 + (activeCameraResolution != requestedCameraResolution
                 ? " (fallback from " + requestedCameraResolution + ")" : "")
                 + ", crop=" + sourceCropSize
-                + ", preview=" + previewSize
                 + ", recording=" + recordingSize
-                + ", previewMinFrameDurationNs=" + previewMinFrameDurationNs
+                + ", sensorAspect=" + sensorAspectRatio(selectedCharacteristics)
                 + ", recordingMinFrameDurationNs=" + recordingMinFrameDurationNs
                 + ", fps=" + activeFrameRate.getValue()
                 + ", fpsRange=" + activeFpsRange
@@ -2081,7 +2048,6 @@ final class RoundVideoCameraController {
                 cameraId,
                 selectedFacing,
                 characteristics,
-                previewSize,
                 recordingSize,
                 sourceCropSize,
                 activeCameraResolution,
@@ -2096,7 +2062,6 @@ final class RoundVideoCameraController {
         cameraId = selection.id;
         selectedFacing = selection.facing;
         characteristics = selection.characteristics;
-        previewSize = selection.previewSize;
         recordingSize = selection.recordingSize;
         sourceCropSize = selection.sourceCropSize;
         activeCameraResolution = selection.cameraResolution;
@@ -2108,17 +2073,17 @@ final class RoundVideoCameraController {
         resetCaptureFpsMeasurement();
     }
 
-    private void prepareWarmSwitchSupport() {
-        if (warmSwitchDisabled) {
+    private void prepareDualActiveSupport() {
+        if (dualDisabled) {
             return;
         }
-        if (warmSwitchSupported) {
+        if (dualPairSupported) {
             dualActiveMode = true;
             return;
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            warmSwitchDisabled = true;
-            diagnostics.log("camera warm-switch capability: supported=false, reason=API<30");
+            dualDisabled = true;
+            diagnostics.log("camera dual-active capability: supported=false, reason=API<30");
             return;
         }
         CameraSelection initial = captureSelection();
@@ -2129,24 +2094,24 @@ final class RoundVideoCameraController {
         try {
             selectCameraAndSizes(otherFacing);
             CameraSelection other = captureSelection();
-            warmSwitchSupported = isConcurrentPair(initial.id, other.id);
-            if (warmSwitchSupported && !isDualConfigurationCompatible(initial, other)) {
-                warmSwitchSupported = false;
+            dualPairSupported = isConcurrentPair(initial.id, other.id);
+            if (dualPairSupported && !isDualConfigurationCompatible(initial, other)) {
+                dualPairSupported = false;
                 diagnostics.log("camera dual-active capability rejected: incompatible frame rate, "
                         + "first=" + initial.recordingSize + "/" + initial.sourceCropSize
                         + ", second=" + other.recordingSize + "/" + other.sourceCropSize
                         + ", firstFps=" + initial.frameRate.getValue()
                         + ", secondFps=" + other.frameRate.getValue());
             }
-            if (!warmSwitchSupported) warmSwitchDisabled = true;
-            dualActiveMode = warmSwitchSupported;
+            if (!dualPairSupported) dualDisabled = true;
+            dualActiveMode = dualPairSupported;
             diagnostics.log("camera dual-active capability: supported="
-                    + warmSwitchSupported
+                    + dualPairSupported
                     + ", pair=" + initial.id + "+" + other.id
-                    + (warmSwitchSupported ? "" : ", reason=pair not advertised"));
+                    + (dualPairSupported ? "" : ", reason=pair not advertised"));
         } catch (Exception e) {
-            warmSwitchDisabled = true;
-            diagnostics.log("camera warm-switch capability unavailable: " + e);
+            dualDisabled = true;
+            diagnostics.log("camera dual-active capability unavailable: " + e);
         } finally {
             applySelection(initial);
         }
@@ -2199,6 +2164,7 @@ final class RoundVideoCameraController {
             try {
                 OutputPair regularPair = chooseOutputPair(
                         sizes,
+                        sensorAspectRatio(candidate),
                         outputResolution,
                         requestedCameraResolution
                 );
@@ -2307,6 +2273,7 @@ final class RoundVideoCameraController {
             try {
                 OutputPair pair = chooseOutputPair(
                         fastSizes,
+                        sensorAspectRatio(cameraCharacteristics),
                         outputResolution,
                         requestedCameraResolution
                 );
@@ -2365,20 +2332,6 @@ final class RoundVideoCameraController {
         }
     }
 
-    private void setPreferredFps(
-            @NonNull CaptureRequest.Builder builder,
-            boolean logConfiguration
-    ) {
-        if (activeFpsRange != null) {
-            builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, activeFpsRange);
-            if (logConfiguration) {
-                diagnostics.log("capture FPS range selected: " + activeFpsRange);
-            }
-        } else if (logConfiguration) {
-            diagnostics.log("capture FPS range unavailable; HAL default will be used");
-        }
-    }
-
     private void fallbackTo30Fps(
             @NonNull String reason,
             @Nullable Exception error
@@ -2409,17 +2362,12 @@ final class RoundVideoCameraController {
                 ? null
                 : characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
         activeFpsRange = findBestFpsRange(ranges, 30);
-        previewSize = pair.preview;
         recordingSize = pair.recording;
         sourceCropSize = pair.cropSize;
         activeCameraResolution = pair.cameraResolution;
         frontSelection = null;
         backSelection = null;
-        disableWarmSwitch("frame-rate fallback changed stream configuration", error);
-        SurfaceTexture previewTexture = previewView.getSurfaceTexture();
-        if (previewTexture != null) {
-            previewTexture.setDefaultBufferSize(previewSize.getWidth(), previewSize.getHeight());
-        }
+        disableDualActive("frame-rate fallback changed stream configuration", error);
         if (glProcessor != null) {
             glProcessor.stop();
             glProcessor = null;
@@ -2438,7 +2386,6 @@ final class RoundVideoCameraController {
         resetCaptureFpsMeasurement();
         diagnostics.log("60 fps fallback: reason=" + reason
                 + (error == null ? "" : ", error=" + error)
-                + ", preview=" + previewSize
                 + ", recording=" + recordingSize
                 + ", crop=" + sourceCropSize
                 + ", fpsRange=" + activeFpsRange);
@@ -2527,69 +2474,61 @@ final class RoundVideoCameraController {
 
     private void updatePreviewTransform() {
         if (!previewTransformEnabled) return;
-        if (glPreviewEnabled) {
-            previewView.setTransform(new Matrix());
-            diagnostics.log("preview transform: GL output, identity matrix, view="
-                    + previewView.getWidth() + "x" + previewView.getHeight());
-            return;
-        }
-        Size size = recordingSize;
-        if (size == null || previewView.getWidth() == 0 || previewView.getHeight() == 0) return;
-        int cropSize = Math.min(sourceCropSize, Math.min(size.getWidth(), size.getHeight()));
-        boolean swapped = isOutputRotationSwapped();
-        float scaleX = (swapped ? size.getHeight() : size.getWidth()) / (float) cropSize;
-        float scaleY = (swapped ? size.getWidth() : size.getHeight()) / (float) cropSize;
-        float centerX = previewView.getWidth() * 0.5f;
-        float centerY = previewView.getHeight() * 0.5f;
-        Matrix matrix = new Matrix();
-        matrix.setScale(scaleX, scaleY, centerX, centerY);
-        previewView.setTransform(matrix);
-        diagnostics.log("preview transform: view=" + previewView.getWidth() + "x"
-                + previewView.getHeight()
-                + ", source=" + size
-                + ", crop=" + cropSize
-                + ", axesSwapped=" + swapped
-                + ", scale=" + scaleX + "x" + scaleY);
+        // The GL processor renders the preview already cropped and oriented.
+        previewView.setTransform(new Matrix());
+        int rotation = displayRotationDegrees();
+        if (rotation != appliedDisplayRotation) postToCameraThread(this::applyDisplayRotation);
     }
 
-    private boolean isOutputRotationSwapped() {
-        if (characteristics == null || previewView.getDisplay() == null) return false;
-        Integer sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-        if (sensorOrientation == null) return false;
-        int displayRotation = previewView.getDisplay().getRotation() * 90;
-        int relativeRotation = (sensorOrientation - displayRotation + 360) % 360;
-        return relativeRotation == 90 || relativeRotation == 270;
+    /** Rotation of the display from the device's natural orientation, in degrees. */
+    private int displayRotationDegrees() {
+        Display display = previewView.getDisplay();
+        if (display == null) return 0;
+        switch (display.getRotation()) {
+            case Surface.ROTATION_90:
+                return 90;
+            case Surface.ROTATION_180:
+                return 180;
+            case Surface.ROTATION_270:
+                return 270;
+            default:
+                return 0;
+        }
+    }
+
+    private void applyDisplayRotation() {
+        int rotation = displayRotationDegrees();
+        if (rotation == appliedDisplayRotation || glProcessor == null) return;
+        appliedDisplayRotation = rotation;
+        glProcessor.setDisplayRotation(rotation);
+        diagnostics.log("display rotation applied: degrees=" + rotation);
     }
 
     private void closeCameraAndSurfaces() {
         cancelCommonStartWait();
-        opening = false;
         switchingCamera = false;
-        reopenAfterCameraClose = false;
-        warmSwitchRecoveryPending = false;
-        retryCaptureSessionAfterStandbyClose = false;
-        warmRecoveryActiveDevice = null;
-        warmRecoveryStandbyDevice = null;
+        afterClose = AfterClose.NONE;
+        // Opens still in flight are superseded: their devices are closed when they arrive.
+        mainOpenRequest = null;
+        warmOpenRequest = null;
         previewTransformEnabled = false;
         notifySwitchCompletion = false;
         awaitingSwitchPreviewFrame = false;
         repeatingBuilder = null;
         torchVerificationPending = false;
         pendingWarmSwitchFacing = null;
-        warmCameraOpening = false;
         closeCaptureSession();
         closeWarmCaptureSession();
-        if (cameraDevice != null) {
-            cameraDevice.close();
-            cameraDevice = null;
-        }
-        CameraDevice warm = warmCameraDevice;
+        cameraDevice = null;
         warmCameraDevice = null;
         warmCameraSelection = null;
-        if (warm != null) warm.close();
-        CameraDevice closingStandby = closingStandbyDevice;
-        closingStandbyDevice = null;
-        if (closingStandby != null && closingStandby != warm) closingStandby.close();
+        if (!ownedDevices.isEmpty()) {
+            cameraCloseRequestedNs = SystemClock.elapsedRealtimeNanos();
+            diagnostics.log("closing camera devices: count=" + ownedDevices.size());
+            for (CameraDevice device : new ArrayList<>(ownedDevices)) {
+                closeDevice(device, AfterClose.NONE);
+            }
+        }
         if (glProcessor != null) {
             glProcessor.stop();
             glProcessor = null;
@@ -2601,7 +2540,6 @@ final class RoundVideoCameraController {
         recordingSurface = null;
         secondaryRecordingSurface = null;
         dualActiveMode = false;
-        glPreviewEnabled = false;
         activeDualSessionConfigured = false;
         warmDualSessionConfigured = false;
         activeInputSecondary = false;
@@ -2722,15 +2660,25 @@ final class RoundVideoCameraController {
                 : (SystemClock.elapsedRealtimeNanos() - startedNs) / 1_000_000L;
     }
 
+    /**
+     * Picks the single camera stream the GL processor crops the square from. Within a tier every
+     * size whose short side fits the crop is a candidate; the one whose centre square keeps the
+     * widest field of view wins. A stream wider than the sensor (16:9 off a 4:3 sensor) loses
+     * rows top and bottom, and a short side above the crop loses the oversize, so a 4:3 or square
+     * stream whose short side equals the crop keeps the whole sensor height, like the old
+     * recorder did. Ties go to the smaller stream.
+     */
     @NonNull
     private static OutputPair chooseOutputPair(
             @NonNull Size[] sizes,
+            float sensorAspectRatio,
             @NonNull RoundVideoSession.OutputResolution outputResolution,
             @NonNull RoundVideoSession.CameraResolution requestedResolution
     ) {
         int preferredCrop = getSourceCropSize(outputResolution, requestedResolution);
         OutputPair preferred = chooseTierPair(
                 sizes,
+                sensorAspectRatio,
                 preferredCrop,
                 requestedResolution
         );
@@ -2740,6 +2688,7 @@ final class RoundVideoCameraController {
                 && requestedResolution == RoundVideoSession.CameraResolution.MEDIUM) {
             OutputPair mediumFallback = chooseTierPair(
                     sizes,
+                    sensorAspectRatio,
                     480,
                     RoundVideoSession.CameraResolution.MEDIUM
             );
@@ -2750,6 +2699,7 @@ final class RoundVideoCameraController {
         if (requestedResolution != RoundVideoSession.CameraResolution.LOW) {
             OutputPair low = chooseTierPair(
                     sizes,
+                    sensorAspectRatio,
                     lowCrop,
                     RoundVideoSession.CameraResolution.LOW
             );
@@ -2759,7 +2709,6 @@ final class RoundVideoCameraController {
         Size recording = chooseFallbackRecordingSize(sizes, outputResolution.getSize());
         int cropSize = Math.min(shortSide(recording), MAXIMUM_SOURCE_SHORT_SIDE);
         return new OutputPair(
-                choosePreviewSize(sizes, recording),
                 recording,
                 RoundVideoSession.CameraResolution.LOW,
                 cropSize
@@ -2769,17 +2718,52 @@ final class RoundVideoCameraController {
     @Nullable
     private static OutputPair chooseTierPair(
             @NonNull Size[] sizes,
+            float sensorAspectRatio,
             int cropSize,
             @NonNull RoundVideoSession.CameraResolution resolution
     ) {
         OutputPair best = null;
+        float bestCoverage = 0f;
         for (Size recording : sizes) {
             if (!isValidTierSize(recording, cropSize)) continue;
-            Size preview = choosePreviewSize(sizes, recording);
-            OutputPair candidate = new OutputPair(preview, recording, resolution, cropSize);
-            if (best == null || compareOutputPairs(candidate, best) < 0) best = candidate;
+            float coverage = squareFieldCoverage(recording, cropSize, sensorAspectRatio);
+            if (best == null
+                    || coverage > bestCoverage
+                    || coverage == bestCoverage && area(recording) < area(best.recording)) {
+                best = new OutputPair(recording, resolution, cropSize);
+                bestCoverage = coverage;
+            }
         }
         return best;
+    }
+
+    /**
+     * Fraction of the sensor's short side that the centre {@code cropSize} square of
+     * {@code stream} covers. Camera2 crops a stream to its own aspect ratio inside the crop
+     * region, so a stream wider than the sensor keeps only {@code sensorAspect / streamAspect}
+     * of the sensor height; a narrower or square stream keeps all of it.
+     */
+    private static float squareFieldCoverage(
+            @NonNull Size stream,
+            int cropSize,
+            float sensorAspectRatio
+    ) {
+        float streamAspect = Math.max(stream.getWidth(), stream.getHeight())
+                / (float) shortSide(stream);
+        float heightFraction = Math.min(1f, sensorAspectRatio / streamAspect);
+        return heightFraction * cropSize / shortSide(stream);
+    }
+
+    /** Long side over short side of the active sensor area; 4:3 when unknown. */
+    private static float sensorAspectRatio(@Nullable CameraCharacteristics cameraCharacteristics) {
+        Rect activeArray = cameraCharacteristics == null
+                ? null
+                : cameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        if (activeArray == null || activeArray.width() <= 0 || activeArray.height() <= 0) {
+            return 4f / 3f;
+        }
+        return Math.max(activeArray.width(), activeArray.height())
+                / (float) Math.min(activeArray.width(), activeArray.height());
     }
 
     @NonNull
@@ -2813,39 +2797,6 @@ final class RoundVideoCameraController {
             return cameraResolution == RoundVideoSession.CameraResolution.HIGH ? 960 : 720;
         }
         return cameraResolution == RoundVideoSession.CameraResolution.HIGH ? 720 : 540;
-    }
-
-    @NonNull
-    private static Size choosePreviewSize(@NonNull Size[] sizes, @NonNull Size recording) {
-        Size best = recording;
-        for (Size size : sizes) {
-            if (hasSameAspectRatio(size, recording) && comparePreviewSizes(size, best) < 0) best = size;
-        }
-        return best;
-    }
-
-    private static int comparePreviewSizes(Size left, Size right) {
-        int leftError = Math.abs(shortSide(left) - PREVIEW_SHORT_SIDE);
-        int rightError = Math.abs(shortSide(right) - PREVIEW_SHORT_SIDE);
-        return leftError != rightError
-                ? Integer.compare(leftError, rightError)
-                : Long.compare(area(left), area(right));
-    }
-
-    private static int compareOutputPairs(OutputPair left, OutputPair right) {
-        int leftError = Math.abs(shortSide(left.preview) - PREVIEW_SHORT_SIDE);
-        int rightError = Math.abs(shortSide(right.preview) - PREVIEW_SHORT_SIDE);
-        if (leftError != rightError) return Integer.compare(leftError, rightError);
-        long leftArea = area(left.preview) + area(left.recording);
-        long rightArea = area(right.preview) + area(right.recording);
-        return leftArea != rightArea
-                ? Long.compare(leftArea, rightArea)
-                : Long.compare(area(left.recording), area(right.recording));
-    }
-
-    private static boolean hasSameAspectRatio(Size left, Size right) {
-        return (long) left.getWidth() * right.getHeight()
-                == (long) left.getHeight() * right.getWidth();
     }
 
     private static boolean isValidTierSize(@NonNull Size size, int cropSize) {
@@ -2921,18 +2872,15 @@ final class RoundVideoCameraController {
     }
 
     private static final class OutputPair {
-        final Size preview;
         final Size recording;
         final RoundVideoSession.CameraResolution cameraResolution;
         final int cropSize;
 
         OutputPair(
-                Size preview,
                 Size recording,
                 RoundVideoSession.CameraResolution cameraResolution,
                 int cropSize
         ) {
-            this.preview = preview;
             this.recording = recording;
             this.cameraResolution = cameraResolution;
             this.cropSize = cropSize;

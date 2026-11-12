@@ -95,6 +95,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -171,6 +172,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.SendMessageChatArguments;
@@ -1294,6 +1296,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_VIEW_STATISTICS = 115;
     public final static int OPTION_WELCOME_REVERT = 116;
     public final static int OPTION_SEND_MONEY = 117;
+    public final static int OPTION_STOP_LIVE_LOCATION = 118;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -3351,6 +3354,10 @@ public class ChatActivity extends BaseFragment implements
         if (chatAttachAlert != null) {
             chatAttachAlert.dismissInternal();
         }
+        if (instantCameraView != null) {
+            // Closing the chat mid-recording or before the send animation ends must not keep the camera.
+            instantCameraView.destroy(true);
+        }
         ContentPreviewViewer.getInstance().clearDelegate(contentPreviewViewerDelegate);
         getNotificationCenter().onAnimationFinish(transitionAnimationIndex);
         NotificationCenter.getGlobalInstance().onAnimationFinish(transitionAnimationGlobalIndex);
@@ -5123,10 +5130,7 @@ public class ChatActivity extends BaseFragment implements
                             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                             args.putBoolean("quote", true);
                             args.putBoolean("reply_to", true);
-                            final long author = DialogObject.getPeerDialogId(message.getFromPeer());
-                            if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                                args.putLong("reply_to_author", author);
-                            }
+                            putReplyToArgs(args, message);
                             args.putInt("messagesCount", 1);
                             args.putBoolean("canSelectTopics", true);
                             final DialogsActivity fragment = new DialogsActivity(args);
@@ -11441,6 +11445,20 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean keyboardWasVisible;
+
+    private void putReplyToArgs(Bundle args, MessageObject message) {
+        if (currentChat != null && ChatObject.isChannelAndNotMegaGroup(currentChat) && !ChatObject.isMonoForum(currentChat) && currentChat.broadcast_messages_allowed && currentChat.linked_monoforum_id != 0 &&
+            getMessagesController().getChat(currentChat.linked_monoforum_id) != null && !ChatObject.canManageMonoForum(currentAccount, -currentChat.linked_monoforum_id)) {
+            getMessagesController().putMonoForumLinkedChat(currentChat.id, currentChat.linked_monoforum_id);
+            args.putLong("reply_to_channel_direct", -currentChat.linked_monoforum_id);
+            return;
+        }
+        final long author = DialogObject.getPeerDialogId(message.getFromPeer());
+        if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
+            args.putLong("reply_to_author", author);
+        }
+    }
+
     private void openForwardingPreview(int startTab) {
         if (messagePreviewParams == null || forwardingPreviewView != null) {
             return;
@@ -11597,10 +11615,7 @@ public class ChatActivity extends BaseFragment implements
                     final boolean reply = !forward && messagePreviewParams.replyMessage != null && !messagePreviewParams.replyMessage.messages.isEmpty() && messagePreviewParams.quote == null;
                     args.putBoolean("reply_to", reply);
                     if (reply) {
-                        final long author = DialogObject.getPeerDialogId(messagePreviewParams.replyMessage.messages.get(0).getFromPeer());
-                        if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                            args.putLong("reply_to_author", author);
-                        }
+                        putReplyToArgs(args, messagePreviewParams.replyMessage.messages.get(0));
                     }
                     args.putInt("hasPoll", hasPoll);
                     args.putBoolean("hasInvoice", hasInvoice);
@@ -17995,7 +18010,8 @@ public class ChatActivity extends BaseFragment implements
         private void drawListImpl(Canvas blurCanvas, RectF position) {
             final long drawingTime = SystemClock.uptimeMillis();
 
-            if (chatListView.hasActiveEdgeEffects()) {
+            // with OVER_SCROLL_NEVER capture() only queues cells in drawReactionsAfter etc. and they get drawn again in the next frame
+            if (chatListView.hasActiveEdgeEffects() && chatListView.getOverScrollMode() != View.OVER_SCROLL_NEVER) {
                 chatListView.capture(blurCanvas, position);
             } else {
                 chatListView.drawChatBackgroundElements(blurCanvas, position);
@@ -31555,6 +31571,39 @@ public class ChatActivity extends BaseFragment implements
         return createMenu(v, single, listView, x, y, true, longpress);
     }
 
+    private void keepScrimPopupAboveKeyboard(ActionBarPopupWindow popupWindow) {
+        // the keyboard is usually drawn below the popup, but it's put on top of it when another window
+        // (e.g. an overlay of another app) is the ime layering target: then the popup gets the ime inset
+        if (Build.VERSION.SDK_INT < 30 || popupWindow == null || !popupWindow.isShowing()) {
+            return;
+        }
+        final View content = popupWindow.getContentView();
+        final View root = content.getRootView();
+        final boolean[] waitingInsets = new boolean[1];
+        final Runnable fit = () -> {
+            final WindowInsets insets = root.getRootWindowInsets();
+            final int imeBottom = insets == null ? 0 : insets.getInsets(WindowInsets.Type.ime()).bottom;
+            if (imeBottom <= 0 || waitingInsets[0] || popupWindow != scrimPopupWindow || !popupWindow.isShowing() || !content.isLaidOut()) {
+                return;
+            }
+            final int[] location = new int[2];
+            content.getLocationInWindow(location);
+            final int overlap = location[1] + content.getHeight() - (root.getHeight() - imeBottom);
+            final int popupY = Math.max(AndroidUtilities.statusBarHeight, scrimPopupY - (overlap > 0 ? overlap + dp(8) : 0));
+            if (popupY != scrimPopupY) {
+                waitingInsets[0] = true;
+                popupWindow.update(scrimPopupX, scrimPopupY = popupY, -1, -1);
+            }
+        };
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            waitingInsets[0] = false;
+            view.post(fit);
+            return view.onApplyWindowInsets(insets);
+        });
+        root.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> view.post(fit));
+        root.requestApplyInsets();
+    }
+
     private CharSequence getMessageCaption(MessageObject messageObject, MessageObject.GroupedMessages group) {
         return getMessageCaption(messageObject, group, null);
     }
@@ -33347,6 +33396,7 @@ public class ChatActivity extends BaseFragment implements
                     return;
                 }
                 scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, finalPopupX, finalPopupY);
+                keepScrimPopupAboveKeyboard(scrimPopupWindow);
                 if (isReactionsAvailableFinal && finalReactionsLayout != null) {
                     finalReactionsLayout.startEnterAnimation(true);
                 }
@@ -34558,10 +34608,7 @@ public class ChatActivity extends BaseFragment implements
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     args.putBoolean("quote", true);
                     args.putBoolean("reply_to", true);
-                    final long author = DialogObject.getPeerDialogId(selectedObject.getFromPeer());
-                    if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                        args.putLong("reply_to_author", author);
-                    }
+                    putReplyToArgs(args, selectedObject);
                     args.putInt("messagesCount", 1);
                     args.putBoolean("canSelectTopics", true);
                     DialogsActivity fragment = new DialogsActivity(args);
@@ -34838,6 +34885,26 @@ public class ChatActivity extends BaseFragment implements
                 });
                 builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                 showDialog(builder.create());
+                break;
+            }
+            case OPTION_STOP_LIVE_LOCATION: {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+                builder.setTitle(getString(R.string.StopLiveLocationAlertToTitle));
+                if (currentChat != null) {
+                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.StopLiveLocationAlertToGroupText, currentChat.title)));
+                } else if (currentUser != null) {
+                    builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.StopLiveLocationAlertToUserText, UserObject.getFirstName(currentUser))));
+                } else {
+                    builder.setMessage(getString(R.string.StopLiveLocationAlertAllText));
+                }
+                builder.setPositiveButton(getString(R.string.Stop), (dialogInterface, i) -> getLocationController().removeSharingLocation(dialog_id));
+                builder.setNegativeButton(getString(R.string.Cancel), null);
+                AlertDialog dialog = builder.create();
+                showDialog(dialog);
+                TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    ThemeBind.textColor(button, Theme.key_text_RedBold, themeDelegate);
+                }
                 break;
             }
             case OPTION_UNPIN: {
@@ -41470,6 +41537,7 @@ public class ChatActivity extends BaseFragment implements
                 scrimViewReactionOffset = 0;
             }
             scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, scrimPopupX = popupX, scrimPopupY = popupY);
+            keepScrimPopupAboveKeyboard(scrimPopupWindow);
 
             chatListView.stopScroll();
             chatLayoutManager.setCanScrollVertically(false);
@@ -46202,6 +46270,7 @@ public class ChatActivity extends BaseFragment implements
                 scrimViewReactionOffset = 0;
             }
             scrimPopupWindow.showAtLocation(chatListView, Gravity.LEFT | Gravity.TOP, scrimPopupX = popupX, scrimPopupY = popupY);
+            keepScrimPopupAboveKeyboard(scrimPopupWindow);
 
             chatListView.stopScroll();
             chatLayoutManager.setCanScrollVertically(false);
@@ -46875,6 +46944,14 @@ public class ChatActivity extends BaseFragment implements
                     options.add(OPTION_PIN);
                     icons.add(R.drawable.msg_pin);
                 }
+                if (chatMode == 0 && selectedObject.isLiveLocation() && selectedObject.isOut()) {
+                    LocationController.SharingLocationInfo sharingInfo = getLocationController().getSharingLocationInfo(dialog_id);
+                    if (sharingInfo != null && sharingInfo.mid == selectedObject.getId()) {
+                        items.add(LocaleController.getString(R.string.StopLiveLocation));
+                        options.add(OPTION_STOP_LIVE_LOCATION);
+                        icons.add(R.drawable.msg_cancel);
+                    }
+                }
                 if (selectedObject != null && !selectedObject.isEphemeral() && selectedObject.contentType == 0 && ((!TextUtils.isEmpty(selectedObject.getMessageTextToTranslate(selectedObjectGroup, null)) && !selectedObject.isAnimatedEmoji() && !selectedObject.isDice()) || (selectedObject.type == MessageObject.TYPE_ARTICLE && selectedObject.messageOwner != null && selectedObject.messageOwner.rich_message != null && !selectedObject.translated))) {
                     items.add(LocaleController.getString(R.string.TranslateMessage));
                     options.add(OPTION_TRANSLATE);
@@ -47163,8 +47240,11 @@ public class ChatActivity extends BaseFragment implements
             parentChatActivity.checkUi_topFade();
         }
 
-        float fadeHeight = actionBar.getMeasuredHeight();
-        fadeHeight += dp(7 - 6);
+        float fadeHeight = 0;
+        if (!isInsideContainer) {
+            fadeHeight += actionBar.getMeasuredHeight();
+            fadeHeight += dp(7 - 6);
+        }
         fadeHeight += getTopPanelHeightWithPadding(dp(7));
         if (topicsTabs != null) {
             fadeHeight += getTopicTabsSideSize(TopicsTabsView.Position.TOP);

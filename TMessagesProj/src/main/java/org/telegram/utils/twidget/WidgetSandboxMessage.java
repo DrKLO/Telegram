@@ -31,6 +31,14 @@ public final class WidgetSandboxMessage implements WidgetSandboxSession.Listener
 
         void onFailure(WidgetSandboxMessage message, String error);
 
+        /**
+         * UI: the engine's process died under the session, which is unloaded now (its last frame stays). `restart`: start
+         * the widget again, as a shown widget starts (WidgetMedia: through the block that shows it).
+         */
+        default void onEngineDied(WidgetSandboxMessage message, boolean restart) {
+            if (restart) message.activate();
+        }
+
         /** The widget's height or its resize anchor changed, whether or not a view shows it. */
         default void onResized(WidgetSandboxMessage message) {}
 
@@ -427,6 +435,29 @@ public final class WidgetSandboxMessage implements WidgetSandboxSession.Listener
         // The frame shown may already be the loaded widget's (no new one comes): its height counts now.
         else if (loadedFrameNow() && player != null)
             player.onMessageFrame(true);
+    }
+
+    // Engine processes that died under this message's sessions in the minute since `engineDeathsSince`.
+    private int engineDeaths;
+    private long engineDeathsSince;
+
+    /**
+     * The engine's process died (WidgetRemoteEngine): a widget there (this bot's, or any in the shared one) may have
+     * crashed it, or the system reclaimed it. A shown widget starts again from its last frame, twice a minute at
+     * most; then it stays as it was.
+     */
+    @Override
+    public void onEngineDied() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now - engineDeathsSince > 60_000) {
+            engineDeathsSince = now;
+            engineDeaths = 0;
+        }
+        boolean restart = active && engineDeaths++ < 2;
+        unload();
+        if (events != null) events.onEngineDied(this, restart);
+        else if (restart) activate();
+        if (!restart) onFailure("Widget engine stopped");
     }
 
     @Override

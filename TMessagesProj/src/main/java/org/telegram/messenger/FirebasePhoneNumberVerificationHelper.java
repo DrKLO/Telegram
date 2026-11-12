@@ -41,7 +41,6 @@ import org.telegram.ui.web.BotWebViewContainer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CancellationException;
 
 public class FirebasePhoneNumberVerificationHelper {
@@ -63,8 +62,6 @@ public class FirebasePhoneNumberVerificationHelper {
     public static class SimInfo {
         public int slot;
         public String carrierName;
-        public String countryName;
-        public String mccMnc;
         public String phoneNumber;
     }
 
@@ -94,17 +91,6 @@ public class FirebasePhoneNumberVerificationHelper {
             }
             if (!TextUtils.isEmpty(carrierName)) {
                 info.carrierName = carrierName;
-            }
-
-            final String countryIso = tm.getSimCountryIso();
-            if (!TextUtils.isEmpty(countryIso)) {
-                final Locale locale = LocaleController.getInstance().getCurrentLocale();
-                info.countryName = emptyToNull(new Locale("", countryIso.toUpperCase(Locale.US)).getDisplayCountry(locale != null ? locale : Locale.getDefault()));
-            }
-
-            final String operator = tm.getSimOperator();
-            if (operator != null && operator.length() >= 5) {
-                info.mccMnc = operator.substring(0, 3) + " " + operator.substring(3);
             }
 
             info.phoneNumber = emptyToNull(readPhoneNumber(context, tm, subId));

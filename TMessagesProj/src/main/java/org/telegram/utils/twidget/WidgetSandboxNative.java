@@ -1,9 +1,9 @@
 package org.telegram.utils.twidget;
 
-/** Android binding to the upstream C++ WidgetHost; inputs only enqueue worker commands. */
+/** Android binding to the upstream C++ WidgetHost (libtwidget.so); inputs only enqueue worker commands. */
 final class WidgetSandboxNative {
-    // Loaded by the client's NativeLoader. Registered by its existing JNI_OnLoad.
 
+    // `backend`: the WidgetSandboxBackend in-process, a WidgetEngineBackend in the isolated one (JNI looks its methods up by name).
     static native long create(
             byte[] directory,
             byte[] html,
@@ -16,7 +16,11 @@ final class WidgetSandboxNative {
             byte[] sdk,
             byte[] stoppedLabel,
             boolean visible,
-            WidgetSandboxBackend backend);
+            Object backend);
+
+    // The bundles under `key`, which create then takes as its directory (the isolated process has no files).
+    static native void registerResources(
+            byte[] key, byte[] sandbox, byte[] validator, byte[] renderer, byte[] sandboxBytecode, byte[] validatorBytecode);
 
     static native void destroy(long session);
 
@@ -55,9 +59,6 @@ final class WidgetSandboxNative {
     // A mouse over the widget with no button down (0) or leaving it (1): :hover, the over/out events, the cursor.
     static native void hover(long session, int action, float x, float y, int modifiers);
 
-    // CSS filters ("fl" of a FilterPush, as JSON) over an ARGB_8888 bitmap, in place; `scale` px per CSS px.
-    static native void filterPixels(android.graphics.Bitmap bitmap, byte[] filters, float scale);
-
     // Debug: every session reports its widget's `data-conformance` attribute (signal 9) while on.
     static native void conformance(boolean enabled);
 
@@ -67,23 +68,23 @@ final class WidgetSandboxNative {
     // Debug: every session made while on reports a URL that could reach the network (signal 10).
     static native void attackScan(boolean enabled);
 
-    // widget-sandbox's GestureArbiter (twidget/gesture_policy.h), one per WidgetGestureArbiter; UI thread.
-    static native long arbiterCreate();
+    // libtwidget.so, whose JNI_OnLoad registers these: in the isolated engine process (WidgetEngineService), and in the
+    // client only for the private builds' in-process engine (WidgetEngine#LOCAL), which checks #available first. The
+    // client's own share of the native code (filters, the gesture arbiter) is WidgetClientNative, in the client library.
+    private static final boolean LOADED = load();
 
-    static native void arbiterDestroy(long arbiter);
+    private static boolean load() {
+        try {
+            System.loadLibrary("twidget");
+            return true;
+        } catch (Throwable error) {
+            return false;
+        }
+    }
 
-    static native int arbiterDown(
-            long arbiter, double t, double x, double y, boolean claimX, boolean claimY, boolean hold, boolean mouse, int button);
-
-    static native int arbiterMove(long arbiter, double t, double x, double y);
-
-    static native int arbiterTick(long arbiter, double t);
-
-    static native int arbiterUp(long arbiter, double t, double x, double y);
-
-    static native void arbiterCancel(long arbiter);
-
-    static native double arbiterHoldDeadline(long arbiter);
+    static boolean available() {
+        return LOADED;
+    }
 
     private WidgetSandboxNative() {}
 }

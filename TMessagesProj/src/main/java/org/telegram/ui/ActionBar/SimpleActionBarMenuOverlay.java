@@ -148,6 +148,8 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
     private final java.util.WeakHashMap<MenuOverlayHost, BlurredBackgroundDrawable> glasses = new java.util.WeakHashMap<>();
     /** See {@link MenuOverlayHost#isMenuFromPillBelow()}. */
     private boolean pillBelow;
+    /** See {@link MenuOverlayHost#isMenuCentered()}. */
+    private boolean centered;
     private final Paint fallbackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dimPaint = new Paint();
 
@@ -208,6 +210,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         this.bar = bar;
         this.item = item;
         pillBelow = bar.isMenuFromPillBelow();
+        centered = bar.isMenuCentered();
         if (this.content != content) {
             if (this.content != null) {
                 AndroidUtilities.removeFromParent(this.content);
@@ -516,7 +519,8 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = MeasureSpec.getSize(widthMeasureSpec), height = MeasureSpec.getSize(heightMeasureSpec);
         setMeasuredDimension(width, height);
-        if (content != null && content.getParent() == this) {
+        // a closed menu keeps its content here; a parent measuring gone children too (a sheet's) measures it without a host
+        if (bar != null && content != null && content.getParent() == this) {
             computeStartRect();
             final int maxHeight = pillBelow
                 ? (int) (startRect.bottom - AndroidUtilities.statusBarHeight - dp(16))
@@ -527,7 +531,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        if (content != null && content.getParent() == this) {
+        if (bar != null && content != null && content.getParent() == this) {
             computeStartRect();
             final int w = content.getMeasuredWidth(), h = content.getMeasuredHeight();
             if (pillBelow) {
@@ -535,6 +539,11 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
                 final int l = (int) Math.max(dp(8), Math.min(getWidth() - dp(8) - w, startRect.centerX() - w / 2f));
                 final int b = (int) startRect.bottom;
                 content.layout(l, b - h, l + w, b);
+            } else if (centered) {
+                // centred on the button, moved in at the edges of the screen
+                final int t = getContentTop();
+                final int l = (int) Math.max(dp(8), Math.min(getWidth() - dp(8) - w, startRect.centerX() - w / 2f));
+                content.layout(l, t, l + w, t + h);
             } else {
                 final int r = (int) startRect.right, t = getContentTop();
                 final int l = Math.max(dp(8), r - w);
@@ -610,8 +619,8 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
 
         // the one glass shape: the button's pill stretched into the menu
         final int p = dp(6);
-        // an action mode button has no glass of its own: the menu's glass appears over its pill
-        final float glassAlpha = startFromPill ? 1f : Utilities.clamp01(m / 0.25f);
+        // an action mode button (or a bare icon) has no glass of its own: the menu's glass appears over its pill
+        final float glassAlpha = startFromPill && bar.hasButtonGlass() ? 1f : Utilities.clamp01(m / 0.25f);
         if (glass != null) {
             // from the color of the button's glass (a tinted header) to the menu's
             glassColorsFactor = startFromPill ? Utilities.clamp01(m) : 1f;
@@ -679,8 +688,13 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
             // the width leads: a content scaled with it never sticks out of the sides of the shape
             final float cs = Math.max(0.3f, shapeRect.width() / Math.max(1f, endRect.width()));
             saveFaded(canvas, shapeRect.left, shapeRect.top, shapeRect.right, shapeRect.bottom, ca);
-            canvas.translate(shapeRect.right - endRect.right, shapeRect.top - endRect.top);
-            canvas.scale(cs, cs, endRect.right, endRect.top);
+            if (centered) {
+                canvas.translate(shapeRect.centerX() - endRect.centerX(), shapeRect.top - endRect.top);
+                canvas.scale(cs, cs, endRect.centerX(), endRect.top);
+            } else {
+                canvas.translate(shapeRect.right - endRect.right, shapeRect.top - endRect.top);
+                canvas.scale(cs, cs, endRect.right, endRect.top);
+            }
             super.dispatchDraw(canvas);
             canvas.restore();
         }

@@ -1,9 +1,0 @@
-<img id="i" alt="late"><div id="d"></div><script>
-setTimeout(function () { document.getElementById('i').src = 'http://127.0.0.1:9999/hit/api-late-src'; }, 100);
-setTimeout(function () { document.getElementById('d').style.background = 'url(http://127.0.0.1:9999/hit/api-late-style)'; }, 150);
-requestAnimationFrame(function () { document.getElementById('d').innerHTML = '<img src="http://127.0.0.1:9999/hit/api-raf-img">'; });
-Promise.resolve().then(function () { document.getElementById('d').insertAdjacentHTML('beforeend', '<iframe src="http://127.0.0.1:9999/hit/api-microtask-iframe"></iframe>'); });
-window.addEventListener('load', function () { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'http://127.0.0.1:9999/hit/api-onload-link'; document.head.appendChild(l); });
-document.addEventListener('click', function () { document.getElementById('d').innerHTML += '<img src="http://127.0.0.1:9999/hit/api-click-img">'; });
-document.addEventListener('keydown', function () { document.getElementById('i').setAttribute('src', 'http://127.0.0.1:9999/hit/api-keydown-src'); });
-</script>

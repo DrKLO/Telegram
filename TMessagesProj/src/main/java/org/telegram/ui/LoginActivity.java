@@ -3279,7 +3279,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 if (!isRequestingFirebaseSms) {
                     needHideProgress(false);
                 }
-            }), ConnectionsManager.RequestFlagFailOnServerErrors | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
+            }), ConnectionsManager.RequestFlagDoNotWaitFloodWait | ConnectionsManager.RequestFlagWithoutLogin | ConnectionsManager.RequestFlagTryDifferentDc | ConnectionsManager.RequestFlagEnableUnauthorized);
             needShowProgress(reqId);
         }
 
@@ -3514,12 +3514,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             }
             if (sim.phoneNumber != null) {
                 tableView.addRow(getString(R.string.FpnvConsentPhoneNumber), sim.phoneNumber.startsWith("+") ? PhoneFormat.getInstance().format(sim.phoneNumber) : sim.phoneNumber);
-            }
-            if (sim.countryName != null) {
-                tableView.addRow(getString(R.string.FpnvConsentCountry), sim.countryName);
-            }
-            if (sim.mccMnc != null) {
-                tableView.addRow(getString(R.string.FpnvConsentMccMnc), sim.mccMnc);
             }
             final FrameLayout tableContainer = new FrameLayout(context);
             tableContainer.addView(tableView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 24, 4, 24, 4));

@@ -1918,13 +1918,15 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 ellipsizeSpanAnimator.addView(titleTextView[1]);
             }
             overlayTitleAnimationInProgress = true;
+            // the new title keeps the alpha the title had, e.g. hidden under the topics opened in the side panel
+            final float titleAlpha = adaptiveBackgroundHideTitle ? 1.0f - onTopAnimated : titleTextView[0].getAlpha();
             SimpleTextView tmp = titleTextView[1];
             titleTextView[1] = titleTextView[0];
             titleTextView[0] = tmp;
             titleTextView[0].setAlpha(0);
             titleTextView[0].setTranslationY(-dp(20));
             titleTextView[0].animate()
-                    .alpha(adaptiveBackgroundHideTitle ? 1.0f - onTopAnimated : 1f)
+                    .alpha(titleAlpha)
                     .translationY(0)
                     .setDuration(220).start();
             ViewPropertyAnimator animator = titleTextView[1].animate()

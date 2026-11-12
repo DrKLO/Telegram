@@ -1,5 +1,0 @@
-.conf-stages{position:relative}
-.conf-stages>[data-stage]{position:absolute;width:80px;height:60px;left:8px;top:8px}
-.conf-head{height:18px;margin:6px 8px 2px;font-weight:600;white-space:nowrap;overflow:hidden}
-#conf-list{margin:2px 8px 8px;white-space:pre-wrap;font:11px/1.35 monospace;overflow-wrap:anywhere}
-.conf-probes{margin:0 8px}

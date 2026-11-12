@@ -66,6 +66,19 @@ public interface MenuOverlayHost {
         return false;
     }
 
+    /**
+     * The menu growing down out of a button is centred on it, as far as the screen lets it (a filter pill in a row);
+     * otherwise its right edge stays on the button's, as from the header's buttons at the right.
+     */
+    default boolean isMenuCentered() {
+        return false;
+    }
+
+    /** Whether the button the menu grows out of is on glass; without it the menu's glass appears as it grows (a bare icon). */
+    default boolean hasButtonGlass() {
+        return true;
+    }
+
     /** How far above the top of the button's glass a menu growing down out of it starts. */
     default int getMenuRise() {
         return 0;

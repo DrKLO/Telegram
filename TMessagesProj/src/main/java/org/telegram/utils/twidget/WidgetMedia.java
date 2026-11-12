@@ -871,6 +871,14 @@ public final class WidgetMedia {
         return url;
     }
 
+    /**
+     * A widget inline result shown as a message before it is sent (a bot's prepared message in the share sheet): the
+     * embed of its preview ({@link #previewUrl}), no input, no requests.
+     */
+    public static TL_iv.RichMessage previewRichMessage(int account, TLRPC.BotInlineResult result) {
+        return layout(null, previewUrl(account, result));
+    }
+
     /** A widget in a list of inline results: no input reaches it (docs/sdk-v1.md §2.16). */
     public static boolean isPreview(String url) {
         Entry entry = isWidgetUrl(url) ? entries.get(url) : null;
@@ -1197,6 +1205,15 @@ public final class WidgetMedia {
         @Override
         public void onFailure(WidgetSandboxMessage message, String error) {
             FileLog.e("widget " + message.file + ": " + error);
+        }
+
+        @Override
+        public void onEngineDied(WidgetSandboxMessage message, boolean restart) {
+            Entry entry = entryOf(message);
+            FileLog.d("widget " + message.file + ": engine process died" + (restart ? ", restarting" : ""));
+            // The block that shows it starts it as it starts a widget it shows (its height waits for the load); one
+            // not shown starts the next time it is.
+            if (restart && entry != null && entry.owner != null) entry.owner.restartWidget();
         }
 
         @Override

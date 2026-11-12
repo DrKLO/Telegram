@@ -397,6 +397,7 @@
     <string name="NoSuchChannels">No such channels</string>
     <string name="NoSuchChannelsInfo">You don\'t have channels that meet the requirements for this bot</string>
     <string name="CreateGroupForThis">Create a New Group For This</string>
+    <string name="CreateGroupWith">Create Group with %1$s</string>
     <string name="NoSuchGroups">No such groups</string>
     <string name="NoSuchGroupsInfo">You don\'t have groups that meet the requirements for this bot</string>
     <string name="NoSuchUsers">No such users</string>
@@ -9753,6 +9754,8 @@
     <string name="ReplyDialogMessageAuthor">Message Author</string>
     <string name="ForwardDialogYourChannel">Your Channel</string>
     <string name="ReplyDialogYourChats">Your Chats</string>
+    <string name="ReplyDialogChannelDirect">Message the Channel</string>
+    <string name="ReplyDialogChannelDirectHint">Send a direct message to the channel</string>
     <string name="SearchAdsAboutTitle">About These Ads</string>
     <string name="SearchAdsAboutSubtitle">Telegram Ads are very different from ads on other platforms. Ads such as this one:</string>
     <string name="SearchAdsAbout1Title">Respect Your Privacy</string>
@@ -11675,7 +11678,5 @@
     <string name="FpnvConsentCarrier">Carrier</string>
     <string name="FpnvConsentSimSlot">SIM Slot</string>
     <string name="FpnvConsentSimSlotValue">SIM %1$d</string>
-    <string name="FpnvConsentCountry">Country</string>
-    <string name="FpnvConsentMccMnc">MCC / MNC</string>
     <string name="FpnvConsentPhoneNumber">Phone Number</string>
 </resources>

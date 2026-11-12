@@ -544,6 +544,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     public boolean isReplyTo, isQuote;
     public long replyMessageAuthor;
+    public long replyChannelDirect;
     public long forwardOriginalChannel;
     private int initialDialogsType;
 
@@ -2758,6 +2759,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             isQuote = arguments.getBoolean("quote", false);
             isReplyTo = arguments.getBoolean("reply_to", false);
             replyMessageAuthor = arguments.getLong("reply_to_author", 0L);
+            replyChannelDirect = arguments.getLong("reply_to_channel_direct", 0L);
             forwardOriginalChannel = arguments.getLong("forward_into_channel", 0L);
             selectAlertString = arguments.getString("selectAlertString");
             selectAlertStringGroup = arguments.getString("selectAlertStringGroup");
