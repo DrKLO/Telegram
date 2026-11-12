@@ -21,6 +21,8 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
@@ -407,6 +409,11 @@ public class AvatarPreviewer {
             iBlur3Factory.setSourceRootView(new ViewPositionWatcher(this), this);
 
             blurView = new View(context);
+            // a sheet of glass over the whole screen that closes the preview when pressed. It
+            // has no words, and being added first it is the first thing a screen reader comes
+            // to: it found nothing to say there, named the window by the app it belongs to, and
+            // stayed. It does close the preview, so it is told what it does rather than hidden
+            blurView.setContentDescription(LocaleController.getString(R.string.Close));
             blurView.setOnClickListener(v -> setShowing(false));
             addView(blurView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -591,6 +598,34 @@ public class AvatarPreviewer {
             }
 
             setShowing(true);
+            focusFirstMenuItem();
+        }
+
+        /**
+         * Put a screen reader on the first option once the preview has finished appearing, the
+         * way the menu that opens on a message does. Taking the input focus is what brings a
+         * reader out of the state a new window leaves it in, asking for the reading focus is what
+         * moves it onto the option, and saying so is what gets the option read. Waiting is what
+         * makes it hold: a reader announcing the window of its own accord would otherwise take
+         * the focus back afterwards.
+         */
+        private void focusFirstMenuItem() {
+            if (menu == null || menu.getItemsCount() <= 0) {
+                return;
+            }
+            final View first = menu.getItemAt(0);
+            if (first == null) {
+                return;
+            }
+            first.setFocusableInTouchMode(true);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!showing) {
+                    return;
+                }
+                first.requestFocus();
+                first.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+                first.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED);
+            }, 420);
         }
 
         private void setShowing(boolean showing) {
