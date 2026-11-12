@@ -794,6 +794,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return false;
         }
 
+        // whether this message is among the ones chosen, and choosing or letting go of it. Both
+        // are the chat's to answer: the cell draws a tick but is never told what it stands for
+        default boolean isMessageSelected(MessageObject message) {
+            return false;
+        }
+
+        default void didPressSelect(ChatMessageCell cell) {
+        }
+
         default void videoTimerReached() {
         }
 
@@ -1154,7 +1163,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     boolean drawSelectionBackground;
     private CheckBoxBase mediaCheckBox;
     private CheckBoxBase checkBox;
-    private boolean checkBoxVisible;
+    boolean checkBoxVisible;
     private boolean checkBoxAnimationInProgress;
     private float checkBoxAnimationProgress;
     private long lastCheckBoxAnimationTime;
@@ -5467,6 +5476,87 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (delegate != null) {
             delegate.didPressPollMedia(cell, imageReceiver, answer, media, x, y, unshuffledIndex);
         }
+    }
+
+    /**
+     * What a press does to the media a message carries, named for the state that media is in:
+     * fetch it, stop fetching it, fetch it again where fetching was stopped, play it, pause it,
+     * or open it. Null where the message carries nothing a press would do anything to.
+     */
+    CharSequence mediaAccessibilityActionLabel() {
+        if (currentMessageObject == null) {
+            return null;
+        }
+        // a message that could not be sent opens its menu when pressed, whatever its media
+        if (currentMessageObject.isSendError()) {
+            return getString(R.string.AccActionMessageOptions);
+        }
+        switch (getIconForCurrentState()) {
+            case MediaActionDrawable.ICON_PLAY:
+                return getString(R.string.AccActionPlay);
+            case MediaActionDrawable.ICON_PAUSE:
+                return getString(R.string.AccActionPause);
+            case MediaActionDrawable.ICON_FILE:
+                return getString(R.string.AccActionOpenFile);
+            case MediaActionDrawable.ICON_DOWNLOAD:
+                return getString(R.string.AccActionDownload);
+            case MediaActionDrawable.ICON_CANCEL:
+                return getString(R.string.AccActionCancelDownload);
+        }
+        if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
+            return getString(R.string.CallAgain);
+        }
+        // a picture or a video already here opens rather than plays, and by then the button
+        // drawn over it is gone, so there is no icon left to go by
+        return hasMediaToOpen() ? getString(R.string.Open) : null;
+    }
+
+    boolean hasMediaToOpen() {
+        final MessageObject message = currentMessageObject;
+        if (message == null) {
+            return false;
+        }
+        return message.type == MessageObject.TYPE_PHOTO
+            || message.type == MessageObject.TYPE_VIDEO
+            || message.type == MessageObject.TYPE_GIF
+            || message.type == MessageObject.TYPE_ROUND_VIDEO
+            || message.type == MessageObject.TYPE_EXTENDED_MEDIA_PREVIEW;
+    }
+
+    // the very path a press takes, so that asking for it by name reaches the same place
+    void performMediaAccessibilityClick() {
+        if (currentMessageObject == null) {
+            return;
+        }
+        final int icon = getIconForCurrentState();
+        if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
+            didPressButton(true, false);
+        } else if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
+            if (delegate != null) {
+                delegate.didPressOther(this, otherX, otherY);
+            }
+        } else {
+            didClickedImage();
+        }
+    }
+
+    /**
+     * Choosing a message, or letting go of one. A tick is drawn beside every message that can be
+     * chosen while the chat is choosing them, and that is what says the chat is in that state and
+     * that this message is one of the ones it will take.
+     */
+    boolean performSelectionAccessibilityAction(int action) {
+        if (delegate == null || currentMessageObject == null) {
+            return false;
+        }
+        // while messages are being chosen, a tap chooses, the way a tap on the screen does. Out
+        // of that, only a press held down starts choosing, again as it does by hand
+        if (!checkBoxVisible && action != AccessibilityNodeInfo.ACTION_LONG_CLICK) {
+            return false;
+        }
+        delegate.didPressSelect(this);
+        sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_CLICKED);
+        return true;
     }
 
     void didClickedImage() {
@@ -23130,18 +23220,18 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public boolean performAccessibilityAction(int action, Bundle arguments) {
+        if ((action == AccessibilityNodeInfo.ACTION_CLICK || action == AccessibilityNodeInfo.ACTION_LONG_CLICK)
+                && performSelectionAccessibilityAction(action)) {
+            return true;
+        }
         if (delegate != null && delegate.onAccessibilityAction(action, arguments)) {
             return false;
         }
         if (action == AccessibilityNodeInfo.ACTION_CLICK) {
-            int icon = getIconForCurrentState();
-            if (icon != MediaActionDrawable.ICON_NONE && icon != MediaActionDrawable.ICON_FILE) {
-                didPressButton(true, false);
-            } else if (currentMessageObject.type == MessageObject.TYPE_PHONE_CALL) {
-                delegate.didPressOther(this, otherX, otherY);
-            } else {
-                didClickedImage();
-            }
+            performMediaAccessibilityClick();
+            return true;
+        } else if (action == R.id.acc_action_media) {
+            performMediaAccessibilityClick();
             return true;
         } else if (action == R.id.acc_action_small_button) {
             didPressMiniButton(true);
