@@ -606,10 +606,70 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
         if (opening && tagsView != null) animateTagsPop();
         panel.setTranslationX(getPanelWidth() * (1f - progress));
         setVisibility(progress > 0 || touching ? VISIBLE : GONE);
+        if (progress >= 1f) {
+            onOpenedForAccessibility();
+        } else if (progress <= 0f) {
+            onClosedForAccessibility();
+        }
         invalidate();
         if (delegate != null) {
             delegate.onProgressChanged(progress);
         }
+    }
+
+    private final ArrayList<View> hiddenFromAccessibility = new ArrayList<>();
+    private final ArrayList<Integer> hiddenImportance = new ArrayList<>();
+    private boolean openForAccessibility;
+
+    // the panel is drawn over the chat, so hide the chat under it and move the focus to the open topic
+    private void onOpenedForAccessibility() {
+        if (openForAccessibility || !AndroidUtilities.isAccessibilityTouchExplorationEnabled()) {
+            return;
+        }
+        openForAccessibility = true;
+        if (getParent() instanceof ViewGroup) {
+            final ViewGroup parent = (ViewGroup) getParent();
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                final View child = parent.getChildAt(i);
+                if (child == this) {
+                    continue;
+                }
+                hiddenFromAccessibility.add(child);
+                hiddenImportance.add(child.getImportantForAccessibility());
+                child.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+            }
+        }
+        int position = 0;
+        for (int i = 0; i < adapter.items.size(); i++) {
+            if (adapter.items.get(i).getId() == currentTopicId) {
+                position = i;
+                break;
+            }
+        }
+        final int target = position;
+        if (target < adapter.items.size()) {
+            ((LinearLayoutManager) listView.getLayoutManager()).scrollToPositionWithOffset(target, dp(48));
+        }
+        listView.postDelayed(() -> {
+            if (!openForAccessibility) {
+                return;
+            }
+            final RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(target);
+            final View view = holder != null ? holder.itemView : searchField;
+            view.performAccessibilityAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null);
+        }, 150);
+    }
+
+    private void onClosedForAccessibility() {
+        if (!openForAccessibility) {
+            return;
+        }
+        openForAccessibility = false;
+        for (int i = 0; i < hiddenFromAccessibility.size(); i++) {
+            hiddenFromAccessibility.get(i).setImportantForAccessibility(hiddenImportance.get(i));
+        }
+        hiddenFromAccessibility.clear();
+        hiddenImportance.clear();
     }
 
     public void open() {
@@ -1408,8 +1468,23 @@ public class TopicsSidePanel extends FrameLayout implements NotificationCenter.N
             previewLayout = StaticLayoutEx.createStaticLayout(preview, previewPaint, Math.max(1, previewWidth), Layout.Alignment.ALIGN_NORMAL, 1f, dp(1), false, TextUtils.TruncateAt.END, Math.max(1, previewWidth), 2);
             if (muted && muteDrawable == null) muteDrawable = ContextCompat.getDrawable(getContext(), R.drawable.list_mute).mutate();
             if (pinned && pinDrawable == null) pinDrawable = ContextCompat.getDrawable(getContext(), R.drawable.list_pin).mutate();
+            // the row draws its texts itself, so describe it by what it shows
+            final StringBuilder description = new StringBuilder();
+            if (title != null) description.append(title.toString().replace('\n', ' ')).append(". ");
+            if (pinned) description.append(LocaleController.getString(R.string.AccDescrStoryPinned)).append(". ");
+            if (muted) description.append(LocaleController.getString(R.string.AccDescrNotificationsMuted)).append(". ");
+            if (unread > 0) description.append(LocaleController.formatPluralString("NewMessages", unread)).append(". ");
+            if (top != null && top.date != 0) description.append(LocaleController.formatDateAudio(top.date, true)).append(". ");
+            if (!TextUtils.isEmpty(preview)) description.append(preview);
+            setContentDescription(description);
             requestLayout();
             invalidate();
+        }
+
+        @Override
+        public void onInitializeAccessibilityNodeInfo(android.view.accessibility.AccessibilityNodeInfo info) {
+            super.onInitializeAccessibilityNodeInfo(info);
+            info.setSelected(selected);
         }
 
         @Override
