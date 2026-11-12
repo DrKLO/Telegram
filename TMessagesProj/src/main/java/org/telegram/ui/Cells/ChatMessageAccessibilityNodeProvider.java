@@ -130,9 +130,11 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             final long fileSize = cell.currentMessageObject != null ? cell.currentMessageObject.loadedFileSize : 0;
             if (cell.accessibilityText == null || cell.accessibilityTextUnread != unread || cell.accessibilityTextContentUnread != contentUnread || cell.accessibilityTextFileSize != fileSize) {
                 SpannableStringBuilder sb = new SpannableStringBuilder();
-                if (cell.isChat && cell.currentUser != null && !cell.currentMessageObject.isOut()) {
-                    sb.append(UserObject.getUserName(cell.currentUser));
-                    sb.setSpan(new ProfileSpan(cell.currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (cell.isNeedAccessibilityAuthorName()) {
+                    sb.append(cell.getAuthorName());
+                    if (cell.currentUser != null) {
+                        sb.setSpan(new ProfileSpan(cell.currentUser), 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
                     final CharSequence adminText = cell.getAdminAccessibilityText();
                     if (!TextUtils.isEmpty(adminText)) {
                         if (cell.adminLayoutIsTag) {
