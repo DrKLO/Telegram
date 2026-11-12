@@ -7248,9 +7248,22 @@ public class RichEditorListView extends UniversalRecyclerView {
         ClipboardManager cm = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
         if (cm == null || !cm.hasPrimaryClip()) return false;
         ClipData clip = cm.getPrimaryClip();
-        if (clip == null || clip.getItemCount() == 0 || clip.getDescription() == null
-            || !clip.getDescription().hasMimeType("text/html")) {
+        if (clip == null || clip.getItemCount() == 0 || clip.getDescription() == null) {
             return false;
+        }
+        if (!clip.getDescription().hasMimeType("text/html")) {
+            if (clip.getItemCount() != 1 || !isPlainParagraphRow(row)) return false;
+            CharSequence text = clip.getItemAt(0).getText();
+            if (text == null || TextUtils.indexOf(text, '\n') < 0) return false;
+            if (text instanceof Spanned && ((Spanned) text).getSpans(0, text.length(), Object.class).length != 0) {
+                return false;
+            }
+            int cell = itemRows.indexOf(row);
+            int start = et.getSelectionStart();
+            int end = et.getSelectionEnd();
+            if (cell < 0 || start < 0 || end < 0) return false;
+            String[] lines = text.toString().replace("\r\n", "\n").split("\n", -1);
+            return applyEditRange(cell, Math.min(start, end), cell, Math.max(start, end), lines);
         }
         String html;
         try { html = clip.getItemAt(0).getHtmlText(); } catch (Exception e) { return false; }
