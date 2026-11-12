@@ -419,6 +419,9 @@ class ChatMessageAccessibilityNodeProvider extends AccessibilityNodeProvider {
             if (cell.drawSummarizeButton || cell.drawSummaryReply) {
                 info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_summarize, getString("SummaryTitle", R.string.SummaryTitle)));
             }
+            if (cell.hasSignedPostAuthorAction()) {
+                info.addAction(new AccessibilityNodeInfo.AccessibilityAction(R.id.acc_action_sender_profile, cell.getSignedPostAuthorActionLabel()));
+            }
             if (cell.currentMessageObject.textLayoutBlocks != null) {
                 for (MessageObject.TextLayoutBlock block : cell.currentMessageObject.textLayoutBlocks) {
                     if (block.hasCodeCopyButton) {
