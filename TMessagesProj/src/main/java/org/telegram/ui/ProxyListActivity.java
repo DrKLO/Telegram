@@ -47,6 +47,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ProxyRotationController;
+import org.telegram.messenger.SmartProxyController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.utils.proxy.ProxySettings;
@@ -101,6 +102,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
     private int proxyAddRow;
     private int proxyShadowRow;
     private int rotationRow;
+    private int disableOnVpnRow;
+    private int smartDirectFallbackRow;
     private int rotationTimeoutRow;
     private int rotationTimeoutInfoRow;
     private int deleteAllRow;
@@ -461,6 +464,18 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 SharedConfig.saveConfig();
 
                 updateRows(true);
+            } else if (position == disableOnVpnRow) {
+                SharedConfig.disableProxyOnVpn = !SharedConfig.disableProxyOnVpn;
+                TextCheckCell textCheckCell = (TextCheckCell) view;
+                textCheckCell.setChecked(SharedConfig.disableProxyOnVpn);
+                SharedConfig.saveConfig();
+                SmartProxyController.getInstance().evaluateAndApply(false);
+            } else if (position == smartDirectFallbackRow) {
+                SharedConfig.smartDirectFallback = !SharedConfig.smartDirectFallback;
+                TextCheckCell textCheckCell = (TextCheckCell) view;
+                textCheckCell.setChecked(SharedConfig.smartDirectFallback);
+                SharedConfig.saveConfig();
+                SmartProxyController.getInstance().evaluateAndApply(false);
             } else if (position >= proxyStartRow && position < proxyEndRow) {
                 if (!selectedItems.isEmpty()) {
                     listAdapter.toggleSelected(position);
@@ -612,6 +627,13 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
     private void updateRows(boolean notify) {
         rowCount = 0;
         useProxyRow = rowCount++;
+        if (useProxySettings) {
+            disableOnVpnRow = rowCount++;
+            smartDirectFallbackRow = rowCount++;
+        } else {
+            disableOnVpnRow = -1;
+            smartDirectFallbackRow = -1;
+        }
         if (useProxySettings && SharedConfig.currentProxy != null && SharedConfig.proxyList.size() > 1 && IS_PROXY_ROTATION_AVAILABLE) {
             rotationRow = rowCount++;
             if (SharedConfig.proxyRotationEnabled) {
@@ -874,9 +896,13 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 case VIEW_TYPE_TEXT_CHECK: {
                     TextCheckCell checkCell = (TextCheckCell) holder.itemView;
                     if (position == useProxyRow) {
-                        checkCell.setTextAndCheck(getString(R.string.UseProxySettings), useProxySettings, rotationRow != -1);
+                        checkCell.setTextAndCheck(getString(R.string.UseProxySettings), useProxySettings, disableOnVpnRow != -1 || rotationRow != -1);
+                    } else if (position == disableOnVpnRow) {
+                        checkCell.setTextAndCheck(getString(R.string.DisableProxyOnVpn), SharedConfig.disableProxyOnVpn, true);
+                    } else if (position == smartDirectFallbackRow) {
+                        checkCell.setTextAndCheck(getString(R.string.SmartDirectFallback), SharedConfig.smartDirectFallback, rotationRow != -1);
                     } else if (position == rotationRow) {
-                        checkCell.setTextAndCheck(getString(R.string.UseProxyRotation), SharedConfig.proxyRotationEnabled, true);
+                        checkCell.setTextAndCheck(getString(R.string.UseProxyRotation), SharedConfig.proxyRotationEnabled, rotationTimeoutRow != -1);
                     }
                     break;
                 }
@@ -930,6 +956,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 TextCheckCell checkCell = (TextCheckCell) holder.itemView;
                 if (position == useProxyRow) {
                     checkCell.setChecked(useProxySettings);
+                } else if (position == disableOnVpnRow) {
+                    checkCell.setChecked(SharedConfig.disableProxyOnVpn);
+                } else if (position == smartDirectFallbackRow) {
+                    checkCell.setChecked(SharedConfig.smartDirectFallback);
                 } else if (position == rotationRow) {
                     checkCell.setChecked(SharedConfig.proxyRotationEnabled);
                 }
@@ -946,6 +976,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 int position = holder.getAdapterPosition();
                 if (position == useProxyRow) {
                     checkCell.setChecked(useProxySettings);
+                } else if (position == disableOnVpnRow) {
+                    checkCell.setChecked(SharedConfig.disableProxyOnVpn);
+                } else if (position == smartDirectFallbackRow) {
+                    checkCell.setChecked(SharedConfig.smartDirectFallback);
                 } else if (position == rotationRow) {
                     checkCell.setChecked(SharedConfig.proxyRotationEnabled);
                 }
@@ -955,7 +989,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int position = holder.getAdapterPosition();
-            return position == useProxyRow || position == rotationRow || position == proxyAddRow || position == deleteAllRow || position >= proxyStartRow && position < proxyEndRow;
+            return position == useProxyRow || position == rotationRow || position == disableOnVpnRow || position == smartDirectFallbackRow || position == proxyAddRow || position == deleteAllRow || position >= proxyStartRow && position < proxyEndRow;
         }
 
         @Override
@@ -1011,6 +1045,10 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 return -8;
             } else if (position == rotationRow) {
                 return -9;
+            } else if (position == disableOnVpnRow) {
+                return -12;
+            } else if (position == smartDirectFallbackRow) {
+                return -13;
             } else if (position == rotationTimeoutRow) {
                 return -10;
             } else if (position == rotationTimeoutInfoRow) {
@@ -1028,7 +1066,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 return VIEW_TYPE_SHADOW;
             } else if (position == proxyAddRow || position == deleteAllRow) {
                 return VIEW_TYPE_TEXT_SETTING;
-            } else if (position == useProxyRow || position == rotationRow) {
+            } else if (position == useProxyRow || position == rotationRow || position == disableOnVpnRow || position == smartDirectFallbackRow) {
                 return VIEW_TYPE_TEXT_CHECK;
             } else if (position == connectionsHeaderRow) {
                 return VIEW_TYPE_HEADER;
