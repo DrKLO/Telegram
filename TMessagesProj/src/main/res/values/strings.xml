@@ -6211,6 +6211,8 @@
     <string name="SendMediaPolls">Polls</string>
     <string name="UseEmoji">Use an emoji</string>
     <string name="UseProxyRotation">Auto-switch proxies</string>
+    <string name="DisableProxyOnVpn">Disable when VPN is active</string>
+    <string name="SmartDirectFallback">Disable when direct connection works</string>
     <string name="ProxyRotationTimeoutInfo">You can configure the timeout for connecting to the nearest active proxy if the current one stops working.</string>
     <string name="ProxyRotationTimeoutSeconds">%1$d sec.</string>
     <string name="PeerRequirements">Requirements</string>
