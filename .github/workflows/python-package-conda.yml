@@ -1,15 +1,16 @@
 name: Auto-Patch & Build Telegram Mod
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       api_id:
         description: 'APP_ID с my.telegram.org'
-        required: true
+        required: false
         default: '6'
       api_hash:
         description: 'APP_HASH с my.telegram.org'
-        required: true
+        required: false
         default: 'eb06d4abfb49dc3eeb1aeb98ae0f581e'
 
 jobs:
@@ -24,8 +25,10 @@ jobs:
 
       - name: Подстановка APP_ID и APP_HASH
         run: |
-          sed -i 's/APP_ID = .*/APP_ID = ${{ github.event.inputs.api_id }};/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
-          sed -i 's/APP_HASH = .*/APP_HASH = "${{ github.event.inputs.api_hash }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          API_ID="${{ github.event.inputs.api_id || '6' }}"
+          API_HASH="${{ github.event.inputs.api_hash || 'eb06d4abfb49dc3eeb1aeb98ae0f581e' }}"
+          sed -i "s/APP_ID = .*/APP_ID = ${API_ID};/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i "s/APP_HASH = .*/APP_HASH = \"${API_HASH}\";/" TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
 
       - name: Применение патча (Ghost Mode + 120 Гц)
         run: python3 apply_mod.py
@@ -55,4 +58,5 @@ jobs:
         with:
           name: Telegram-GhostMod-APK
           path: TMessagesProj/build/outputs/apk/afat/debug/*.apk
+
 
