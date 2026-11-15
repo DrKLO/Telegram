@@ -10302,6 +10302,11 @@
     <string name="GiftValueOnSaleTelegram">for sale on Telegram ></string>
     <string name="GiftValueOnSaleFragment">for sale on Fragment ></string>
     <string name="GiftSkipAnimation">Skip</string>
+    <string name="GiftUpgradeAnim">Upgrade Anim</string>
+    <string name="GiftComposeButton">Preview NFT</string>
+    <string name="GiftComposeShow">Show NFT</string>
+    <string name="GiftComposeCollection">Collection</string>
+    <string name="GiftComposeOwner">Preview only, not a real NFT</string>
     <string name="GiftThemesSetIn">Set as Theme in...</string>
     <string name="GiftThemesSetInReuseInfo">This gift is already your theme in the chat with **%s**. Remove it there and use it here instead?</string>
     <string name="GiftThemesSetInReuseConfirm">Yes</string>
