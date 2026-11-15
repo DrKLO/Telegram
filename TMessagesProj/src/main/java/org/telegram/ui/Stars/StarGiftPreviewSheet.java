@@ -122,6 +122,18 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
     private @Nullable Attributes selectedAttributes;
     private final boolean crafting;
 
+    private TextView showGiftButton;
+    private Utilities.Callback<Attributes> onShowGift;
+
+    /** Adds a "Show NFT" button that reports the currently picked model / backdrop / symbol. */
+    public StarGiftPreviewSheet setOnShowGift(Utilities.Callback<Attributes> onShowGift) {
+        this.onShowGift = onShowGift;
+        if (showGiftButton != null) {
+            showGiftButton.setVisibility(onShowGift != null ? View.VISIBLE : View.GONE);
+        }
+        return this;
+    }
+
     private static double getRarityIndex(TL_stars.StarGiftAttribute attr) {
         if (attr.rarity instanceof TL_stars.TL_starGiftAttributeRarity) {
             return ((TL_stars.TL_starGiftAttributeRarity) attr.rarity).permille;
@@ -354,6 +366,36 @@ public class StarGiftPreviewSheet extends BottomSheetWithRecyclerListView {
         });
         ScaleStateListAnimator.apply(headerPlay);
         headerView.addView(headerPlay, LayoutHelper.createFrame(32, 32, Gravity.TOP | Gravity.RIGHT, 0, 14, 12, 0));
+
+        showGiftButton = new TextView(context);
+        showGiftButton.setTypeface(AndroidUtilities.bold());
+        showGiftButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        showGiftButton.setTextColor(Color.WHITE);
+        showGiftButton.setGravity(Gravity.CENTER);
+        showGiftButton.setText(getString(R.string.GiftComposeShow));
+        showGiftButton.setPadding(dp(14), 0, dp(14), 0);
+        final GradientDrawable showGiftBackground = new GradientDrawable();
+        showGiftBackground.setColor(0x33FFFFFF);
+        showGiftBackground.setCornerRadius(dp(16));
+        showGiftButton.setBackground(showGiftBackground);
+        showGiftButton.setVisibility(View.GONE);
+        ScaleStateListAnimator.apply(showGiftButton);
+        showGiftButton.setOnClickListener(v -> {
+            final Attributes picked;
+            if (mode == Mode.RANDOM) {
+                picked = new Attributes(
+                    topView.getUpgradeBackdropAttribute(),
+                    topView.getUpgradePatternAttribute(),
+                    topView.getUpgradeImageViewAttribute()
+                );
+            } else {
+                picked = selectedAttributes;
+            }
+            if (onShowGift != null && picked != null) {
+                onShowGift.run(picked);
+            }
+        });
+        headerView.addView(showGiftButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 32, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
 
         giftNameTextView = new TextView(context);
         giftNameTextView.setTypeface(AndroidUtilities.bold());
