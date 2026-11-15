@@ -1,34 +1,58 @@
-name: Python Package using Conda
+name: Auto-Patch & Build Telegram Mod
 
-on: [push]
+on:
+  workflow_dispatch:
+    inputs:
+      api_id:
+        description: 'APP_ID с my.telegram.org'
+        required: true
+        default: '6'
+      api_hash:
+        description: 'APP_HASH с my.telegram.org'
+        required: true
+        default: 'eb06d4abfb49dc3eeb1aeb98ae0f581e'
 
 jobs:
-  build-linux:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 5
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v3
-      with:
-        python-version: '3.10'
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda env update --file environment.yml --name base
-    - name: Lint with flake8
-      run: |
-        conda install flake8
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        conda install pytest
-        pytest
+      - name: Скачивание исходников Telegram
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Подстановка APP_ID и APP_HASH
+        run: |
+          sed -i 's/APP_ID = .*/APP_ID = ${{ github.event.inputs.api_id }};/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          sed -i 's/APP_HASH = .*/APP_HASH = "${{ github.event.inputs.api_hash }}";/' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+
+      - name: Применение патча (Ghost Mode + 120 Гц)
+        run: python3 apply_mod.py
+
+      - name: Генерация тестового google-services.json
+        run: |
+          if [ ! -f TMessagesProj/google-services.json ]; then
+            echo '{"project_info":{"project_number":"0","project_id":"tg-mod"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0","android_client_info":{"package_name":"org.telegram.messenger.beta"}},"api_key":[{"current_key":"AIzaSyDummyKeyForCompileOnly0000000"}]}]}' > TMessagesProj/google-services.json
+          fi
+
+      - name: Установка JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Настройка Android SDK и NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Сборка APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleAfatDebug --no-daemon --max-workers=2
+
+      - name: Выгрузка готового APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Telegram-GhostMod-APK
+          path: TMessagesProj/build/outputs/apk/afat/debug/*.apk
+
