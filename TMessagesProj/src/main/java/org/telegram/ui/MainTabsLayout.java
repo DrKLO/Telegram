@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedLinearLayout;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.glass.GlassPressEffects;
 import org.telegram.ui.Components.glass.GlassTabView;
 
 import java.util.HashSet;
@@ -280,13 +282,36 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         return null;
     }
 
-    private final Runnable restoreDrawSelector = () -> setSkipDrawSelector(false);
+    private final Runnable restoreDrawSelector = () -> {
+        setSkipDrawSelector(false);
+        updateLens(0f, 0f);
+    };
+
+    private final GlassPressEffects pressEffects = new GlassPressEffects();
+    private final RectF selectorRect = new RectF();
+    private float pressEffectsStrength = 0.8f;
+
+    public void setPressEffectsStrength(float strength) {
+        pressEffectsStrength = strength;
+        invalidate();
+    }
+
+    private void updateLens(float x, float factor) {
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View child = getChildAt(a);
+            if (child instanceof GlassTabView) {
+                final float cx = child.getX() + child.getWidth() / 2f;
+                final float near = Math.max(0f, 1f - Math.abs(cx - x) / (child.getWidth() * 0.9f));
+                ((GlassTabView) child).setLensFactor(near * factor);
+            }
+        }
+    }
 
     private boolean drawCustomSelector;
     private void setSkipDrawSelector(boolean skipDrawSelector) {
         drawCustomSelector = skipDrawSelector;
         if (drawCustomSelector) {
-            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.09f));
+            selectorPaint.setColor(Theme.multAlpha(GlassPressEffects.BLUE, 0.22f));
         }
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
@@ -314,10 +339,19 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             final float sWidth = getInterpolatedWidthByX(x, this);
             final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
 
-            canvas.drawRoundRect(
-                    x - sWidth / 2f, (getHeight() - sHeight) / 2f,
-                    x + sWidth / 2f, (getHeight() + sHeight) / 2f,
-                    sHeight / 2f, sHeight / 2f, selectorPaint);
+            final float pressFactor = animatorIsScaled.getFloatValue();
+            final float grow = lerp(1f, 1.28f, pressFactor);
+            final float w = sWidth * grow;
+            final float h = sHeight * grow;
+            selectorRect.set(x - w / 2f, (getHeight() - h) / 2f, x + w / 2f, (getHeight() + h) / 2f);
+
+            canvas.drawRoundRect(selectorRect, h / 2f, h / 2f, selectorPaint);
+            pressEffects.draw(canvas, selectorRect, pressFactor, pressEffectsStrength);
+            updateLens(x, pressFactor);
+
+            if (pressFactor > 0.01f || isInLongPress) {
+                postInvalidateOnAnimation();
+            }
         }
 
         super.dispatchDraw(canvas);
