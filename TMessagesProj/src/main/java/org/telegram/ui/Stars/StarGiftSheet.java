@@ -1108,6 +1108,7 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             .addIf(canCraft(), R.drawable.outline_craft, getString(R.string.GiftCraft), () -> {
                 openCrafting(true);
             })
+            .addIf(giftUnique != null && !upgradeAnimPlaying, R.drawable.menu_feature_unique, getString(R.string.GiftUpgradeAnim), this::playUpgradeAnim)
             .addIf(getUniqueGift() != null && isMineWithActions(currentAccount, DialogObject.getPeerDialogId(getUniqueGift().owner_id)) && getUniqueGift().resell_amount != null, R.drawable.menu_edit_price, getString(R.string.Gift2ChangePrice), () -> {
                 onUpdatePriceClick(null);
             })
@@ -1133,6 +1134,147 @@ public class StarGiftSheet extends BottomSheetWithRecyclerListView implements No
             .setDimAlpha(0)
             .translate(containerLocation[0] + backgroundPaddingLeft, -dp(2))
             .show();
+    }
+
+    private boolean upgradeAnimPlaying;
+    private Runnable upgradeAnimStartRunnable;
+
+    /**
+     * Preview only: shows the raw (non-upgraded) gift and then replays the upgrade animation
+     * that ends on the unique gift currently opened. No request is sent and nothing is bought.
+     */
+    private void playUpgradeAnim() {
+        final TL_stars.TL_starGiftUnique unique = getUniqueGift();
+        if (unique == null || upgradeAnimPlaying || switchingPagesAnimator != null || rolling) {
+            return;
+        }
+        if (roller != null && roller.isRolling()) {
+            return;
+        }
+        if (unique.crafted) {
+            playCraftAnim(unique);
+            return;
+        }
+        upgradeAnimPlaying = true;
+        StarsController.getInstance(currentAccount).getStarGiftPreview(unique.gift_id, preview -> AndroidUtilities.runOnUIThread(() -> {
+            if (preview == null || preview.sample_attributes == null || !isShowing()) {
+                upgradeAnimPlaying = false;
+                return;
+            }
+            if (roller != null) {
+                roller.detach();
+            }
+            roller = new Roller(topView);
+            roller.preload(preview.sample_attributes);
+            topView.setPreviewingAttributes(preview.sample_attributes);
+            topView.setText(PAGE_UPGRADE, getString(R.string.Gift2UpgradeTitle), getString(R.string.Gift2UpgradeText), null, null);
+
+            // the upgrade page button must never send a real upgrade in preview mode
+            button.setFilled(true);
+            button.setLoading(false);
+            button.setSubText(null, true);
+            button.setText(getString(R.string.GiftUpgradeAnim), true);
+            button.setOnClickListener(v -> {});
+
+            switchPage(PAGE_UPGRADE, true);
+
+            AndroidUtilities.cancelRunOnUIThread(upgradeAnimStartRunnable);
+            AndroidUtilities.runOnUIThread(upgradeAnimStartRunnable = () -> startUpgradeAnimRoll(unique), 2200);
+        }));
+    }
+
+    /**
+     * Preview only: opens the crafting page for the crafted gift that is currently opened.
+     * The opened gift is the first slot, the other slots are picked from the market
+     * (preview mode: nothing is bought). Pressing craft only plays the animation and the
+     * result is the opened gift. No craft request is sent.
+     */
+    private void playCraftAnim(TL_stars.TL_starGiftUnique unique) {
+        final CraftTopView craftView = topView.craftTopView;
+        if (craftView == null || craftView.crafting) {
+            return;
+        }
+        if (giftsToCraft != null) {
+            giftsToCraft.detach();
+            giftsToCraft = null;
+        }
+        giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, unique.gift_id);
+        giftsToCraft.attach();
+
+        craftView.crafted = false;
+        craftView.setup(currentAccount, unique.gift_id, unique.getDocument(), unique.title);
+        craftView.selectGift(unique);
+
+        craftView.setOnAddGift((onGift, first) -> {
+            if (giftsToCraft == null) {
+                giftsToCraft = new ResaleGiftsFragment.SelectGiftSheet.State(currentAccount, unique.gift_id);
+                giftsToCraft.attach();
+            }
+            final HashSet<Long> ids = new HashSet<>();
+            for (int i = 0; i < craftView.gifts.length; ++i) {
+                final CraftTopView.SelectGiftView giftView = craftView.gifts[i];
+                if (giftView.getGift() != null) {
+                    ids.add(giftView.getGift().id);
+                }
+            }
+            new ResaleGiftsFragment.SelectGiftSheet(getContext(), unique.title, giftsToCraft)
+                .setPreviewOnly(true)
+                .without(ids)
+                .setWillBeFirst(false)
+                .setActionText(AndroidUtilities.replaceTags(formatPluralString("GiftCraftSelect", 4 - ids.size())))
+                .setOnSelect(gift -> onGift.run(gift))
+                .show();
+        });
+        craftView.setOnCraft((gifts, whenDone, onError) -> {
+            if (giftsToCraft != null) {
+                giftsToCraft.detach();
+                giftsToCraft = null;
+            }
+            AndroidUtilities.runOnUIThread(() -> whenDone.run(unique, () -> {
+                craftView.crafted = false;
+                reapplyCurrentGift();
+                switchPage(PAGE_INFO, true);
+                if (fireworksOverlay != null) {
+                    fireworksOverlay.start(true);
+                }
+            }), 1800);
+        });
+        craftView.setOnClose(this::onBackPressed);
+        switchPage(PAGE_CRAFTING, true);
+    }
+
+    private void reapplyCurrentGift() {
+        if (savedStarGift != null) {
+            set(savedStarGift, giftsList);
+        } else if (messageObject != null) {
+            set(messageObject, giftsList);
+        } else if (slugStarGift != null) {
+            set(slug, slugStarGift, giftsList);
+        }
+    }
+
+    private void startUpgradeAnimRoll(TL_stars.TL_starGiftUnique unique) {
+        upgradeAnimStartRunnable = null;
+        if (!isShowing() || roller == null) {
+            upgradeAnimPlaying = false;
+            return;
+        }
+        rolling = true;
+        try {
+            if (savedStarGift != null) {
+                set(savedStarGift, giftsList);
+            } else if (messageObject != null) {
+                set(messageObject, giftsList);
+            } else if (slugStarGift != null) {
+                set(slug, slugStarGift, giftsList);
+            } else {
+                set(unique, false);
+            }
+        } finally {
+            rolling = false;
+            upgradeAnimPlaying = false;
+        }
+        switchPage(PAGE_INFO, true);
     }
 
     private void showGiftOfferSheet() {
