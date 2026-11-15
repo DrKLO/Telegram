@@ -91,6 +91,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Stars.StarGiftPreviewSheet;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
@@ -180,6 +182,11 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
     private int TAB_COLLECTIBLES = -1;
     private final ArrayList<CharSequence> tabs = new ArrayList<>();
     private int selectedTab;
+
+    // "Collection" button of the Collectibles tab: pick a collection, then model / backdrop / symbol
+    private FrameLayout collectionButtonLayout;
+    private ArrayList<TL_stars.StarGift> composeGifts = new ArrayList<>();
+    private boolean composeLoading;
 
     private boolean birthday;
 
@@ -1014,6 +1021,10 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
 
             items.add(Tabs.Factory.asTabs(1, tabs, selectedTab, this::selectTab));
             setShowCollectiblesInfo(selectedTab == TAB_COLLECTIBLES && !self && dialogId >= 0);
+            if (selectedTab == TAB_COLLECTIBLES) {
+                composeGifts = new ArrayList<>(gifts);
+                items.add(UItem.asCustom(getCollectionButton()));
+            }
 
             final ArrayList<TL_stars.StarGift> finalGifts;
             if (myGifts != null && selectedTab == TAB_MY_GIFTS) {
@@ -1075,6 +1086,70 @@ public class GiftSheet extends BottomSheetWithRecyclerListView implements Notifi
             subtitleStarsView2.setVisibility(View.GONE);
         }
         adapter.update(false);
+    }
+
+    private View getCollectionButton() {
+        if (collectionButtonLayout == null) {
+            final TextView button = new TextView(getContext());
+            button.setGravity(Gravity.CENTER);
+            button.setTypeface(AndroidUtilities.bold());
+            button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+            button.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            button.setText(getString(R.string.GiftComposeCollection));
+            button.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)));
+            button.setOnClickListener(v -> openCollectionPicker());
+            collectionButtonLayout = new FrameLayout(getContext());
+            collectionButtonLayout.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.CENTER, 0, 6, 0, 10));
+        }
+        return collectionButtonLayout;
+    }
+
+    private void openCollectionPicker() {
+        final ArrayList<TL_stars.StarGift> options = new ArrayList<>();
+        for (TL_stars.StarGift gift : composeGifts) {
+            if (gift == null || TextUtils.isEmpty(gift.title)) continue;
+            if (gift.can_upgrade || gift.availability_resale > 0 || gift.upgrade_variants > 0) {
+                options.add(gift);
+            }
+        }
+        if (options.isEmpty()) return;
+        options.sort((a, b) -> a.title.compareToIgnoreCase(b.title));
+        final CharSequence[] titles = new CharSequence[options.size()];
+        for (int i = 0; i < titles.length; ++i) {
+            titles[i] = options.get(i).title;
+        }
+        new AlertDialog.Builder(getContext(), resourcesProvider)
+            .setTitle(getString(R.string.GiftComposeCollection))
+            .setItems(titles, (dialog, which) -> openComposer(options.get(which)))
+            .setNegativeButton(getString(R.string.Cancel), null)
+            .show();
+    }
+
+    private void openComposer(TL_stars.StarGift gift) {
+        if (composeLoading) return;
+        composeLoading = true;
+        GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(gift.id, attrs -> {
+            composeLoading = false;
+            if (attrs == null) return;
+            new StarGiftPreviewSheet(getContext(), resourcesProvider, currentAccount, gift.title, attrs, false)
+                .setOnShowGift(picked -> showComposedGift(gift, picked))
+                .show();
+        });
+    }
+
+    /** Shows the picked model / backdrop / symbol as an NFT, whether or not it exists on the market. */
+    private void showComposedGift(TL_stars.StarGift collection, StarGiftPreviewSheet.Attributes picked) {
+        if (picked == null || picked.model == null || picked.pattern == null || picked.backdrop == null) return;
+        final TL_stars.TL_starGiftUnique unique = new TL_stars.TL_starGiftUnique();
+        unique.gift_id = collection.id;
+        unique.title = collection.title;
+        unique.owner_name = getString(R.string.GiftComposeOwner);
+        unique.attributes.add(picked.model);
+        unique.attributes.add(picked.pattern);
+        unique.attributes.add(picked.backdrop);
+        final StarGiftSheet sheet = new StarGiftSheet(getContext(), currentAccount, dialogId, resourcesProvider);
+        sheet.set((String) null, unique, null);
+        sheet.show();
     }
 
     private void selectTab(int tab) {
