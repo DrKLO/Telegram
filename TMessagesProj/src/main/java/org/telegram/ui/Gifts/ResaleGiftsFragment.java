@@ -85,6 +85,8 @@ import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundPro
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stars.StarGiftSheet;
+import org.telegram.ui.Stars.StarGiftPreviewSheet;
+import org.telegram.messenger.GiftAuctionController;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 
@@ -139,6 +141,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
     private Filter modelButton;
     private Filter backdropButton;
     private Filter patternButton;
+    private Filter previewButton;
 
     private FireworksOverlay fireworksOverlay;
 
@@ -708,12 +711,49 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
             ie.show();
         });
 
+        previewButton = new Filter(context, resourceProvider);
+        previewButton.setValue(getString(R.string.GiftComposeButton));
+        filtersContainer.addView(previewButton, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 6, 0, 0, 0));
+        previewButton.setOnClickListener(v -> openGiftComposer());
+
         fireworksOverlay = new FireworksOverlay(getContext());
         fragmentView.addView(fireworksOverlay, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         setFiltersShown(false, false);
 
         return fragmentView;
+    }
+
+    private boolean composerLoading;
+
+    /**
+     * Opens the attribute picker (model / backdrop / symbol) of this collection.
+     * The picked combination is shown as an NFT whether or not it exists on the market.
+     */
+    private void openGiftComposer() {
+        if (composerLoading) return;
+        composerLoading = true;
+        GiftAuctionController.getInstance(currentAccount).requestAuctionUpgrades(gift_id, attrs -> {
+            composerLoading = false;
+            if (attrs == null || getContext() == null) return;
+            new StarGiftPreviewSheet(getContext(), resourceProvider, currentAccount, gift_name, attrs, false)
+                .setOnShowGift(this::showComposedGift)
+                .show();
+        });
+    }
+
+    private void showComposedGift(StarGiftPreviewSheet.Attributes picked) {
+        if (picked == null || picked.model == null || picked.pattern == null || picked.backdrop == null) return;
+        final TL_stars.TL_starGiftUnique gift = new TL_stars.TL_starGiftUnique();
+        gift.gift_id = gift_id;
+        gift.title = gift_name;
+        gift.owner_name = getString(R.string.GiftComposeOwner);
+        gift.attributes.add(picked.model);
+        gift.attributes.add(picked.pattern);
+        gift.attributes.add(picked.backdrop);
+        final StarGiftSheet sheet = new StarGiftSheet(getContext(), currentAccount, dialogId, resourceProvider);
+        sheet.set((String) null, gift, null);
+        sheet.show();
     }
 
     private boolean filtersShown = true;
@@ -2056,7 +2096,7 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
                         return;
                     }
 
-                    if (resale && gift instanceof TL_stars.TL_starGiftUnique) {
+                    if (resale && !previewOnly && gift instanceof TL_stars.TL_starGiftUnique) {
                         buyGift((TL_stars.TL_starGiftUnique) item.object);
                         return;
                     } else if (!resale) {
@@ -2190,6 +2230,13 @@ public class ResaleGiftsFragment extends BaseFragment implements FactorAnimator.
         public SelectGiftSheet without(HashSet<Long> ids) {
             without.addAll(ids);
             updateList(false);
+            return this;
+        }
+
+        // preview only: tapping a listing from the market just selects it, nothing is bought
+        private boolean previewOnly;
+        public SelectGiftSheet setPreviewOnly(boolean previewOnly) {
+            this.previewOnly = previewOnly;
             return this;
         }
 
