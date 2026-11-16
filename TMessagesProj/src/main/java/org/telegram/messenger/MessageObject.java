@@ -357,6 +357,7 @@ public class MessageObject {
     private int generatedWithMinSize;
     private float generatedWithDensity;
     private boolean generatedWithCompactMode;
+    private int generatedWithCodeCopyMinLength;
     private float generatedWithFontSize;
     public boolean wasJustSent;
     public boolean isBotPendingDraft;
@@ -1014,6 +1015,7 @@ public class MessageObject {
         public int languageHeight; // included in padTop
 
         public boolean hasCodeCopyButton;
+        private int codeCopyMinWidth;
         public int copyIconColor;
         public Drawable copyIcon;
         public Text copyText;
@@ -1138,7 +1140,7 @@ public class MessageObject {
         }
 
         public void layoutCode(String lng, int codeLength, boolean noforwards) {
-            hasCodeCopyButton = codeLength >= 75 && !noforwards;
+            hasCodeCopyButton = CodeCopySettings.shouldShow(codeLength, SharedConfig.getCodeCopyMinLength(), noforwards);
             if (hasCodeCopyButton) {
                 copyText = new Text(getString(R.string.CopyCode).toUpperCase(), SharedConfig.fontSize - 3, AndroidUtilities.bold());
                 copyIcon = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_copy).mutate();
@@ -1146,6 +1148,10 @@ public class MessageObject {
                 copySelector = Theme.createRadSelectorDrawable(copySelectorColor, 0, 0, Math.min(5, SharedConfig.bubbleRadius), 0);
                 copySeparator = new Paint(Paint.ANTI_ALIAS_FLAG);
             }
+            // Newly eligible short blocks may be narrower than the button. Keep the
+            // original geometry for blocks that already qualified at the default.
+            codeCopyMinWidth = hasCodeCopyButton && codeLength < CodeCopySettings.DEFAULT_MIN_LENGTH
+                    ? (int) Math.ceil(dp(12 + 5) + copyIcon.getIntrinsicWidth() * .8f + copyText.getCurrentWidth()) : 0;
             if (TextUtils.isEmpty(lng)) {
                 language = null;
                 languageLayout = null;
@@ -1158,6 +1164,12 @@ public class MessageObject {
                 AndroidUtilities.bold()
             );
             languageHeight = (int) (languageLayout.getTextSize() * 1.714f) + dp(4);
+        }
+
+        public boolean isCodeCopyHit(float x, float y, float width) {
+            return !quote && code && hasCodeCopyButton && x > 0 && x <= width
+                    && y >= padTop + height + padBottom - dp(38)
+                    && y <= padTop + height + padBottom;
         }
 
         public void drawCopyCodeButton(Canvas canvas, RectF bounds, int textColor, int backgroundColor, float alpha) {
@@ -7053,7 +7065,7 @@ public class MessageObject {
             // A rich message fills its max width, so any change of it must regenerate the layout
             // (e.g. a Fold's inner tablet chat pane is only ~18dp wider than its cover screen).
             final int tolerance = type == TYPE_ARTICLE ? 0 : dp(52);
-            if (Math.abs(generatedWithMinSize - newMinSize) > tolerance || generatedWithDensity != AndroidUtilities.density || generatedWithFontSize != newFontSize || generatedWithCompactMode != isCompactMode()) {
+            if (Math.abs(generatedWithMinSize - newMinSize) > tolerance || generatedWithDensity != AndroidUtilities.density || generatedWithFontSize != newFontSize || generatedWithCompactMode != isCompactMode() || generatedWithCodeCopyMinLength != SharedConfig.getCodeCopyMinLength()) {
                 layoutCreated = false;
             }
         }
@@ -8743,6 +8755,7 @@ public class MessageObject {
         generatedWithDensity = AndroidUtilities.density;
         generatedWithFontSize = Theme.chat_msgTextPaint != null ? Theme.chat_msgTextPaint.getTextSize() : 0;
         generatedWithCompactMode = isCompactMode();
+        generatedWithCodeCopyMinLength = SharedConfig.getCodeCopyMinLength();
         // compact mode: incoming messages span the whole chat with 16dp on each side
         final boolean compactIn = generatedWithCompactMode && !isOutOwner();
         final int compactSideMenuWidth = sideMenuEnabled ? dp(ChatActivity.SIDE_MENU_WIDTH) : 0;
@@ -8986,6 +8999,9 @@ public class MessageObject {
             noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(dialogId);
         }
 
+        // Both heights depend on the blocks being regenerated (including code-copy padding).
+        cachedTextHeight = null;
+        cachedApproximateHeight = null;
         textLayoutBlocks = new ArrayList<>();
         textWidth = 0;
 
@@ -9397,6 +9413,7 @@ public class MessageObject {
             } else if (block.languageLayout != null) {
                 textWidth = (int) Math.max(textWidth, Math.min(block.languageLayout.getCurrentWidth() + dp(15), block.textLayout == null ? 0 : block.textLayout.getWidth()));
             }
+            textWidth = Math.max(textWidth, Math.min(maxWidth, block.codeCopyMinWidth));
 
             linesOffset += currentBlockLinesCount;
 
@@ -9856,6 +9873,7 @@ public class MessageObject {
                 } else if (block.languageLayout != null) {
                     textWidth = (int) Math.max(textWidth, Math.min(block.languageLayout.getCurrentWidth() + dp(15), block.textLayout == null ? 0 : block.textLayout.getWidth()));
                 }
+                textWidth = Math.max(textWidth, Math.min(width, block.codeCopyMinWidth));
 
                 linesOffset += currentBlockLinesCount;
                 if (messageObject != null && !messageObject.isSpoilersRevealed && !messageObject.spoiledLoginCode) {

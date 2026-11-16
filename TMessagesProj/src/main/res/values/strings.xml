@@ -7561,6 +7561,9 @@
     <string name="UserProfileColorEmojiApplied">Your profile emoji has been put!</string>
     <string name="ChannelProfileColorEmojiApplied">Your channel profile emoji has been put!</string>
     <string name="CopyCode">Copy Code</string>
+    <string name="CodeCopyMinLength">Copy code minimum length</string>
+    <string name="CodeCopyMinLengthInfo">Show the Copy Code button on regular code blocks with at least this many characters (some symbols, including emoji, count as two). Default: 75. Set to 1 for every nonempty block. Compact code cards keep their copy icon. Protected content cannot be copied.</string>
+    <string name="CodeCopyMinLengthInvalid">Enter a whole number from 1 to 2147483647.</string>
     <string name="SimilarChannels">Similar Channels</string>
     <string name="SimilarBots">Similar Bots</string>
     <string name="ApplyWallpaperForMe">Apply for Me</string>

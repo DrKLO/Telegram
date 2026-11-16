@@ -32,6 +32,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -53,6 +54,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.CodeCopySettings;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLoader;
@@ -94,6 +96,7 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Cells.ThemePreviewMessagesCell;
 import org.telegram.ui.Cells.ThemeTypeCell;
 import org.telegram.ui.Cells.ThemesHorizontalListCell;
+import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -205,6 +208,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
     @Keep
     private int bubbleRadiusRow;
     private int bubbleRadiusInfoRow;
+    private int codeCopyMinLengthRow;
+    private int codeCopyMinLengthInfoRow;
     private int chatListHeaderRow;
     private int chatListRow;
     private int chatListInfoRow;
@@ -602,6 +607,51 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         return false;
     }
 
+    private void showCodeCopyMinLengthDialog(Context context) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(24), dp(8), dp(24), 0);
+        EditTextBoldCursor input = new EditTextBoldCursor(context);
+        input.setTextSize(18);
+        input.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        input.setCursorColor(Theme.getColor(Theme.key_dialogTextBlack));
+        input.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+        input.setBackgroundDrawable(Theme.createEditTextDrawable(context, true));
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setSingleLine(true);
+        input.setHint(getString(R.string.CodeCopyMinLength));
+        input.setText(String.valueOf(SharedConfig.getCodeCopyMinLength()));
+        input.selectAll();
+        layout.addView(input, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle(getString(R.string.CodeCopyMinLength))
+                .setMessage(getString(R.string.CodeCopyMinLengthInfo))
+                .setView(layout)
+                .setPositiveButton(getString(R.string.Save), null)
+                .setNeutralButton(getString(R.string.Reset), (d, which) -> {
+                    SharedConfig.setCodeCopyMinLength(CodeCopySettings.DEFAULT_MIN_LENGTH);
+                    listAdapter.notifyItemChanged(codeCopyMinLengthRow);
+                })
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .create();
+        showDialog(dialog);
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
+            Integer value = CodeCopySettings.parse(input.getText().toString());
+            if (value == null) {
+                input.setError(getString(R.string.CodeCopyMinLengthInvalid));
+                return;
+            }
+            SharedConfig.setCodeCopyMinLength(value);
+            listAdapter.notifyItemChanged(codeCopyMinLengthRow);
+            dialog.dismiss();
+        });
+        input.requestFocus();
+        AndroidUtilities.showKeyboard(input);
+    }
+
     private boolean setFontSize(int size) {
         if (size != SharedConfig.fontSize) {
             SharedConfig.fontSize = size;
@@ -669,6 +719,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
         bubbleRadiusHeaderRow = -1;
         bubbleRadiusRow = -1;
         bubbleRadiusInfoRow = -1;
+        codeCopyMinLengthRow = -1;
+        codeCopyMinLengthInfoRow = -1;
         chatListHeaderRow = -1;
         chatListRow = -1;
         chatListInfoRow = -1;
@@ -769,6 +821,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
             themeListRow2 = rowCount++;
             themeInfoRow = rowCount++;
+
+            codeCopyMinLengthRow = rowCount++;
+            codeCopyMinLengthInfoRow = rowCount++;
 
             bubbleRadiusHeaderRow = rowCount++;
             bubbleRadiusRow = rowCount++;
@@ -1271,6 +1326,8 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 if (view instanceof TextCheckCell) {
                     ((TextCheckCell) view).setChecked(SharedConfig.pauseMusicOnMedia);
                 }
+            } else if (position == codeCopyMinLengthRow) {
+                showCodeCopyMinLengthDialog(context);
             } else if (position == distanceRow) {
                 if (getParentActivity() == null) {
                     return;
@@ -2582,7 +2639,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
             switch (holder.getItemViewType()) {
                 case TYPE_TEXT_SETTING: {
                     TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                    if (position == nightThemeRow) {
+                    if (position == codeCopyMinLengthRow) {
+                        cell.setTextAndValue(getString(R.string.CodeCopyMinLength), String.valueOf(SharedConfig.getCodeCopyMinLength()), false);
+                    } else if (position == nightThemeRow) {
                         if (Theme.selectedAutoNightType == Theme.AUTO_NIGHT_TYPE_NONE || Theme.getCurrentNightTheme() == null) {
                             cell.setTextAndValue(getString(R.string.AutoNightTheme), getString(R.string.AutoNightThemeOff), false);
                         } else {
@@ -2634,7 +2693,9 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
                 case TYPE_TEXT_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     cell.setFixedSize(0);
-                    if (position == automaticBrightnessInfoRow) {
+                    if (position == codeCopyMinLengthInfoRow) {
+                        cell.setText(getString(R.string.CodeCopyMinLengthInfo));
+                    } else if (position == automaticBrightnessInfoRow) {
                         cell.setText(LocaleController.formatString("AutoNightBrightnessInfo", R.string.AutoNightBrightnessInfo, (int) (100 * Theme.autoNightBrighnessThreshold)));
                     } else if (position == scheduleLocationInfoRow) {
                         cell.setText(getLocationSunString());
@@ -2839,12 +2900,12 @@ public class ThemeActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public int getItemViewType(int position) {
-            if (position == scheduleFromRow || position == distanceRow ||
+            if (position == codeCopyMinLengthRow || position == scheduleFromRow || position == distanceRow ||
                     position == scheduleToRow || position == scheduleUpdateLocationRow ||
                     position == contactsReimportRow || position == contactsSortRow ||
                     position == bluetoothScoRow || position == searchEngineRow) {
                 return TYPE_TEXT_SETTING;
-            } else if (position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow || position == swipeGestureInfoRow || position == stickersInfoRow || position == liteModeInfoRow) {
+            } else if (position == codeCopyMinLengthInfoRow || position == automaticBrightnessInfoRow || position == scheduleLocationInfoRow || position == swipeGestureInfoRow || position == stickersInfoRow || position == liteModeInfoRow) {
                 return TYPE_TEXT_INFO_PRIVACY;
             } else if (position == themeInfoRow || position == nightTypeInfoRow || position == scheduleFromToInfoRow ||
                     position == settings2Row || position == newThemeInfoRow || position == chatListInfoRow || position == bubbleRadiusInfoRow ||
