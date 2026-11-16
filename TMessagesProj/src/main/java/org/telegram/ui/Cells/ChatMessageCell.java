@@ -9692,10 +9692,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
 
                         final String filter = currentMessageObject.isLivePhoto() ? ImageLoader.AUTOPLAY_FILTER_NONLOOP : ImageLoader.AUTOPLAY_FILTER;
+                        // the same message rebound while its video plays from the document: a new key would restart it
+                        final ImageLocation playingLocation = photoImage.getMediaLocation();
+                        final AnimatedFileDrawable playingAnimation = photoImage.getAnimation();
+                        final boolean keepPlaying = !messageIdChanged && document != null && playingLocation != null && playingLocation.document != null && playingLocation.document.id == document.id &&
+                                playingAnimation != null && !playingAnimation.decoderFailed() && !playingAnimation.isRecycled();
                         if (currentMessageObject.videoEditedInfo != null && currentMessageObject.videoEditedInfo.canAutoPlaySourceVideo() && document != null) {
                             photoImage.setImage(ImageLocation.getForPath(currentMessageObject.videoEditedInfo.originalPath), filter, ImageLocation.getForObject(currentPhotoObject, photoParentObject), currentPhotoFilter, ImageLocation.getForDocument(currentPhotoObjectThumb, document), currentPhotoFilterThumb, currentPhotoObjectThumbStripped, document.size, null, messageObject, 0);
                             photoImage.setMediaStartEndTime(currentMessageObject.videoEditedInfo.startTime / 1000, currentMessageObject.videoEditedInfo.endTime / 1000);
-                        } else if (messageObject.cachedQuality != null) {
+                        } else if (messageObject.cachedQuality != null && !keepPlaying) {
                             if (!messageIdChanged && !dataChanged) {
                                 photoImage.setCrossfadeWithOldImage(true);
                             }
