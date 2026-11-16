@@ -12590,6 +12590,10 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (onEmptyCallback != null && dialogsRes.dialogs.isEmpty()) {
                         AndroidUtilities.runOnUIThread(onEmptyCallback);
                     }
+                } else {
+                    // Without this the folder stays "loading" and is never requested again until restart.
+                    // Not posting dialogsNeedReload: it would retry at once, the next scroll or update retries.
+                    AndroidUtilities.runOnUIThread(() -> loadingDialogs.put(folderId, false));
                 }
             });
         }
