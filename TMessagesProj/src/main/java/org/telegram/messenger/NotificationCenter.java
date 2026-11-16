@@ -296,6 +296,7 @@ public class NotificationCenter {
     public static final int didReceiveSmsCode = totalEvents++;
     public static final int didReceiveCall = totalEvents++;
     public static final int emojiLoaded = totalEvents++;
+    public static final int codeCopySettingsChanged = totalEvents++;
     public static final int invalidateMotionBackground = totalEvents++;
     public static final int closeOtherAppActivities = totalEvents++;
     public static final int cameraInitied = totalEvents++;

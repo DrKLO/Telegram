@@ -319,7 +319,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.startSpoilers) {
+        if (id == NotificationCenter.codeCopySettingsChanged) {
+            resetCodeSelectors();
+            pressedCopyCode = null;
+            requestLayout();
+            invalidate();
+        } else if (id == NotificationCenter.startSpoilers) {
             setSpoilersSuppressed(false);
         } else if (id == NotificationCenter.stopSpoilers) {
             setSpoilersSuppressed(true);
@@ -2413,7 +2418,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             invalidate();
                             return true;
                         }
-                    } else if (!block.quote && block.code && x > 0 && x <= currentMessageObject.textWidth && y >= block.padTop + block.height + block.padBottom - dp(38) && y <= block.padTop + block.height + block.padBottom) {
+                    } else if (block.isCodeCopyHit(x, y, currentMessageObject.textWidth)) {
                         if (event.getAction() == MotionEvent.ACTION_UP) {
                             if (block == pressedCopyCode && delegate != null) {
                                 delegate.didPressCodeCopy(this, block);
@@ -2650,7 +2655,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         touchedByCaption = true;
                             return true;
                         }
-                    } else if (!block.quote && block.code && x > 0 && x <= captionLayout.textWidth && y >= block.padTop + block.height + block.padBottom - dp(38) && y <= block.padTop + block.height + block.padBottom) {
+                    } else if (block.isCodeCopyHit(x, y, captionLayout.textWidth)) {
                         if (event.getAction() == MotionEvent.ACTION_UP) {
                             if (block == pressedCopyCode && delegate != null) {
                                 delegate.didPressCodeCopy(this, block);
@@ -5950,7 +5955,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             .addGlobal(NotificationCenter.startSpoilers)
             .addGlobal(NotificationCenter.stopSpoilers)
             .addGlobal(NotificationCenter.emojiLoaded)
-            .addGlobal(NotificationCenter.didUpdatePremiumGiftStickers);
+            .addGlobal(NotificationCenter.didUpdatePremiumGiftStickers)
+            .addGlobal(NotificationCenter.codeCopySettingsChanged);
 
         if (currentMessageObject != null) {
             currentMessageObject.animateComments = false;
@@ -6244,10 +6250,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     public MultiLayoutTypingAnimator botDraftTypingAnimator;
 
+    private int codeCopyMinLength = SharedConfig.getCodeCopyMinLength();
+
     private void setMessageContent(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
-        if (messageObject.checkLayout() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
+        if (messageObject.checkLayout() || codeCopyMinLength != SharedConfig.getCodeCopyMinLength() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
             currentMessageObject = null;
         }
+        codeCopyMinLength = SharedConfig.getCodeCopyMinLength();
         messageObject.isOutOwnerCached = null;
         boolean widthChanged = lastWidth != getParentWidth();
         lastHeight = AndroidUtilities.displaySize.y;
@@ -12163,7 +12172,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        if (currentMessageObject != null && (currentMessageObject.checkLayout() || lastHeight != AndroidUtilities.displaySize.y)) {
+        if (currentMessageObject != null && (currentMessageObject.checkLayout() || codeCopyMinLength != SharedConfig.getCodeCopyMinLength() || lastHeight != AndroidUtilities.displaySize.y)) {
             inLayout = true;
             MessageObject messageObject = currentMessageObject;
             currentMessageObject = null;

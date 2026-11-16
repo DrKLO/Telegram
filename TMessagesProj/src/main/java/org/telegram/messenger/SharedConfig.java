@@ -321,6 +321,7 @@ public class SharedConfig {
     public static int fontSize = 16;
     public static boolean fontSizeIsDefault;
     public static int bubbleRadius = 17;
+    private static volatile int codeCopyMinLength = CodeCopySettings.DEFAULT_MIN_LENGTH;
     public static int ivFontSize = 16;
     public static boolean proxyRotationEnabled;
     public static int proxyRotationTimeout;
@@ -615,6 +616,7 @@ public class SharedConfig {
             fontSize = preferences.getInt("fons_size", AndroidUtilities.isTablet() && !AndroidUtilities.isFold() ? 18 : 16);
             fontSizeIsDefault = !preferences.contains("fons_size");
             bubbleRadius = preferences.getInt("bubbleRadius", 17);
+            codeCopyMinLength = readCodeCopyMinLength(preferences);
             ivFontSize = preferences.getInt("iv_font_size", fontSize);
             allowBigEmoji = preferences.getBoolean("allowBigEmoji", true);
             useSystemEmoji = preferences.getBoolean("useSystemEmoji", false);
@@ -706,6 +708,31 @@ public class SharedConfig {
             FileLog.e(e);
             return 0;
         }
+    }
+
+    static int readCodeCopyMinLength(SharedPreferences preferences) {
+        try {
+            return CodeCopySettings.normalize(preferences.getInt(CodeCopySettings.KEY, CodeCopySettings.DEFAULT_MIN_LENGTH));
+        } catch (ClassCastException e) {
+            return CodeCopySettings.DEFAULT_MIN_LENGTH;
+        }
+    }
+
+    public static int getCodeCopyMinLength() {
+        return codeCopyMinLength;
+    }
+
+    public static void setCodeCopyMinLength(int value) {
+        if (value < 1) {
+            throw new IllegalArgumentException("Minimum code length must be positive");
+        }
+        if (codeCopyMinLength == value) {
+            return;
+        }
+        codeCopyMinLength = value;
+        ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE)
+                .edit().putInt(CodeCopySettings.KEY, value).apply();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.codeCopySettingsChanged);
     }
 
     public static void updateTabletConfig() {
