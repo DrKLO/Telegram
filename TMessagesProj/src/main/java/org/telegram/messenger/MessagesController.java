@@ -366,6 +366,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean registeringForPush;
     private long lastPushRegisterSendTime;
     private boolean resetingDialogs;
+    private boolean differenceWaitsForReset;
     private TLRPC.TL_messages_peerDialogs resetDialogsPinned;
     private TLRPC.messages_Dialogs resetDialogsAll;
     private SparseIntArray loadingPinnedDialogs = new SparseIntArray();
@@ -6590,6 +6591,7 @@ public class MessagesController extends BaseController implements NotificationCe
             createdDialogIds.clear();
             createdScheduledDialogIds.clear();
             gettingDifference = false;
+            differenceWaitsForReset = false;
             resetDialogsPinned = null;
             resetDialogsAll = null;
         });
@@ -12885,8 +12887,13 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             getUserConfig().setPinnedDialogsLoaded(1, false);
             resetingDialogs = true;
+            // Both answers arrive on stageQueue. Once one request fails, the other answer is ignored.
+            final boolean[] failed = new boolean[1];
             TLRPC.TL_messages_getPinnedDialogs req = new TLRPC.TL_messages_getPinnedDialogs();
             getConnectionsManager().sendRequest(req, (response, error) -> {
+                if (failed[0]) {
+                    return;
+                }
                 if (response != null) {
                     resetDialogsPinned = (TLRPC.TL_messages_peerDialogs) response;
                     for (int a = 0; a < resetDialogsPinned.dialogs.size(); a++) {
@@ -12894,6 +12901,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         d.pinned = true;
                     }
                     resetDialogs(false, seq, newPts, date, qts);
+                } else {
+                    failed[0] = true;
+                    failDialogsReset();
                 }
             });
             TLRPC.TL_messages_getDialogs req2 = new TLRPC.TL_messages_getDialogs();
@@ -12901,9 +12911,15 @@ public class MessagesController extends BaseController implements NotificationCe
             req2.exclude_pinned = true;
             req2.offset_peer = new TLRPC.TL_inputPeerEmpty();
             getConnectionsManager().sendRequest(req2, (response, error) -> {
+                if (failed[0]) {
+                    return;
+                }
                 if (error == null) {
                     resetDialogsAll = (TLRPC.messages_Dialogs) response;
                     resetDialogs(false, seq, newPts, date, qts);
+                } else {
+                    failed[0] = true;
+                    failDialogsReset();
                 }
             });
         } else if (resetDialogsPinned != null && resetDialogsAll != null) {
@@ -13037,9 +13053,24 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    // Without this a failed request leaves resetingDialogs set until restart and the chat list stops
+    // loading. A getDifference that got differenceTooLong waits for this reset with gettingDifference
+    // set, so it is released too; the next getDifference gets differenceTooLong again and retries.
+    private void failDialogsReset() {
+        resetDialogsPinned = null;
+        resetDialogsAll = null;
+        if (differenceWaitsForReset) {
+            differenceWaitsForReset = false;
+            gettingDifference = false;
+            getConnectionsManager().setIsUpdating(false);
+        }
+        AndroidUtilities.runOnUIThread(() -> resetingDialogs = false);
+    }
+
     protected void completeDialogsReset(final TLRPC.messages_Dialogs dialogsRes, int messagesCount, int seq, int newPts, int date, int qts, LongSparseArray<TLRPC.Dialog> new_dialogs_dict, LongSparseArray<ArrayList<MessageObject>> new_dialogMessage, TLRPC.Message lastMessage) {
         Utilities.stageQueue.postRunnable(() -> {
             gettingDifference = false;
+            differenceWaitsForReset = false;
             getMessagesStorage().setLastPtsValue(newPts);
             getMessagesStorage().setLastDateValue(date);
             getMessagesStorage().setLastQtsValue(qts);
@@ -16943,6 +16974,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (error == null) {
                 TLRPC.updates_Difference res = (TLRPC.updates_Difference) response;
                 if (res instanceof TLRPC.TL_updates_differenceTooLong) {
+                    differenceWaitsForReset = true;
                     AndroidUtilities.runOnUIThread(() -> {
                         loadedFullUsers.clear();
                         loadedFullChats.clear();
