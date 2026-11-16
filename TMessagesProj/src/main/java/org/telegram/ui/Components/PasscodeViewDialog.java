@@ -91,10 +91,17 @@ public class PasscodeViewDialog extends Dialog {
                 WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION;
         params.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
         params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // A floating dialog otherwise stops above the gesture navigation area.
+            params.setFitInsetsTypes(0);
+        }
 
         window.setAttributes(params);
 
-        windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
+        // Keep the passcode background behind the transparent navigation bar.
+        windowView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
 
         AndroidUtilities.setLightNavigationBar(this, false);
     }
