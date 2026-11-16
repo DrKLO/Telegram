@@ -186,7 +186,8 @@ public class FileUploadOperation {
     }
 
     public void cancel() {
-        if (state == 3) {
+        // Already cancelled, finished or failed: the end of the upload has been reported.
+        if (state == 2 || state == 3 || state == 4) {
             return;
         }
         state = 2;
@@ -699,6 +700,9 @@ public class FileUploadOperation {
                     startUploadRequests();
                 }
             } else {
+                if (state != 1) {
+                    return;
+                }
                 state = 4;
                 delegate.didFailedUploadingFile(FileUploadOperation.this);
                 cleanup();
