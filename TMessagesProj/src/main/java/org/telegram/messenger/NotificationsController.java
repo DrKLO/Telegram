@@ -109,6 +109,7 @@ public class NotificationsController extends BaseController implements Notificat
     private final ArrayList<MessageObject> pushMessages = new ArrayList<>();
     private final ArrayList<MessageObject> delayedPushMessages = new ArrayList<>();
     private final LongSparseArray<SparseArray<MessageObject>> pushMessagesDict = new LongSparseArray<>();
+    private final ArrayList<Pair<Long, ArrayList<Integer>>> pendingReadReactions = new ArrayList<>();
     private final LongSparseArray<MessageObject> fcmRandomMessagesDict = new LongSparseArray<>();
     private final LongSparseArray<Point> smartNotificationsDialogs = new LongSparseArray<>();
     private static NotificationManagerCompat notificationManager = null;
@@ -751,6 +752,29 @@ public class NotificationsController extends BaseController implements Notificat
                 setBadge(getTotalAllUnreadCount());
             }
         });
+    }
+
+    public void removeReadReactionNotifications(long dialogId, long channelId, ArrayList<Integer> ids) {
+        // The stored copy would restore the notification on the next start. Delete it after a pending insert of the
+        // same push, and skip it in a snapshot that was read before the delete (loadUnreadMessages uses the same hops).
+        Pair<Long, ArrayList<Integer>> readReaction = new Pair<>(dialogId, ids);
+        notificationsQueue.postRunnable(() -> {
+            pendingReadReactions.add(readReaction);
+            getMessagesStorage().deleteReadReactionPushMessages(dialogId, ids, () -> notificationsQueue.postRunnable(() -> pendingReadReactions.remove(readReaction)));
+        });
+        LongSparseArray<ArrayList<Integer>> readMessages = new LongSparseArray<>();
+        readMessages.put(-channelId, ids);
+        removeDeletedMessagesFromNotifications(readMessages, true);
+    }
+
+    private boolean isPendingReadReaction(MessageObject messageObject) {
+        for (int a = 0; a < pendingReadReactions.size(); a++) {
+            Pair<Long, ArrayList<Integer>> readReaction = pendingReadReactions.get(a);
+            if (readReaction.first == messageObject.getDialogId() && readReaction.second.contains(messageObject.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void processSeenStoryReactions(long dialogId, int storyId) {
@@ -1679,6 +1703,9 @@ public class NotificationsController extends BaseController implements Notificat
             if (push != null) {
                 for (int a = 0; a < push.size(); a++) {
                     MessageObject messageObject = push.get(a);
+                    if (messageObject.isReactionPush && isPendingReadReaction(messageObject)) {
+                        continue;
+                    }
                     int mid = messageObject.getId();
                     if (pushMessagesDict.indexOfKey(mid) >= 0) {
                         continue;
