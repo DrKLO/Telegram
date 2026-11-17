@@ -28,7 +28,7 @@ You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android 
 
 1. Clone the Telegram source code with its submodules:
    ```bash
-   git clone --recursive --shallow-submodules https://github.com/DrKLO/Telegram.git Telegram
+   git clone --recursive --shallow-submodules https://github.com/TelegramMessenger/Telegram-Android Telegram-Android
    ```
    In case you forgot the `--recursive` flag, change to the `Telegram` directory and run:
    ```bash
