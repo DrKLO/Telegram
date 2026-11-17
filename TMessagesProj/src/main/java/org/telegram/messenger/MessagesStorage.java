@@ -14661,6 +14661,17 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    protected void deleteReadReactionPushMessages(long dialogId, ArrayList<Integer> messages, Runnable onDeleted) {
+        storageQueue.postRunnable(() -> {
+            try {
+                database.executeFast(String.format(Locale.US, "DELETE FROM unread_push_messages WHERE uid = %d AND mid IN(%s) AND is_reaction = 1", dialogId, TextUtils.join(",", messages))).stepThis().dispose();
+            } catch (Exception e) {
+                checkSQLException(e);
+            }
+            AndroidUtilities.runOnUIThread(onDeleted);
+        });
+    }
+
     protected void deletePushMessages(long dialogId, ArrayList<Integer> messages) {
         try {
             database.executeFast(String.format(Locale.US, "DELETE FROM unread_push_messages WHERE uid = %d AND mid IN(%s)", dialogId, TextUtils.join(",", messages))).stepThis().dispose();

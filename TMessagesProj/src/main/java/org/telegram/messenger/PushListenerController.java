@@ -431,7 +431,6 @@ public class PushListenerController {
                         } else if ("READ_REACTION".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
-                            LongSparseArray<ArrayList<Integer>> deletedMessages = new LongSparseArray<>();
                             ArrayList<Integer> ids = new ArrayList<>();
                             SparseBooleanArray sparseBooleanArray = new SparseBooleanArray();
                             for (int a = 0; a < messagesArgs.length; a++) {
@@ -439,8 +438,7 @@ public class PushListenerController {
                                 ids.add(messageId);
                                 sparseBooleanArray.put(messageId, false);
                             }
-                            deletedMessages.put(-channel_id, ids);
-                            NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, true);
+                            NotificationsController.getInstance(currentAccount).removeReadReactionNotifications(dialogId, channel_id, ids);
 
                             MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
                             if (BuildVars.LOGS_ENABLED) {
