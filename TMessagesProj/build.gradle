@@ -140,6 +140,9 @@ android {
     }
 
     defaultConfig {
+        // Keep API credentials in the ignored local.properties file, not in Git.
+        buildConfigField "int", "RISEGRAM_API_ID", (getProps("RISEGRAM_API_ID") ?: "0")
+        buildConfigField "String", "RISEGRAM_API_HASH", "\"\u0024{getProps("RISEGRAM_API_HASH") ?: ""}\""
         minSdkVersion 23
         targetSdkVersion 36
 
