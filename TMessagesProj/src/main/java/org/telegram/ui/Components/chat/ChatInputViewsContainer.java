@@ -189,7 +189,10 @@ public class ChatInputViewsContainer extends FrameLayout implements Theme.Colora
     }
 
     private void checkViewsPositions() {
-        inputIslandBubbleContainer.setTranslationY(-maxBottomInset - dp(INPUT_BUBBLE_BOTTOM));
+        // requestRectangleOnScreen() ignores translation, so the input is moved with a layout offset:
+        // screen magnification needs the real position of the text cursor to follow typing
+        final int bottom = getHeight() - Math.round(maxBottomInset) - dp(INPUT_BUBBLE_BOTTOM);
+        inputIslandBubbleContainer.offsetTopAndBottom(bottom - inputIslandBubbleContainer.getBottom());
         inAppKeyboardBubbleContainer.setTranslationY(inAppKeyboardBubbleContainer.getMeasuredHeight() - imeBottomInset);
     }
 
