@@ -1093,6 +1093,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private boolean streamingAlertShown;
     private long startedPlayTime;
     private boolean keepScreenOnFlagSet;
+    private boolean hasVideoAudioFocus;
+    private final AudioManager.OnAudioFocusChangeListener videoAudioFocusListener = focusChange -> AndroidUtilities.runOnUIThread(() -> {
+        if (!hasVideoAudioFocus || focusChange != AudioManager.AUDIOFOCUS_LOSS && focusChange != AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            return;
+        }
+        // the video does not resume by itself, so playing it again has to request focus again
+        abandonVideoAudioFocus();
+        if (videoPlayer != null && videoPlayer.isPlaying()) {
+            videoPlayer.pause();
+        }
+    });
     private VideoPlayerControlFrameLayout videoPlayerControlFrameLayout;
     private String lastControlFrameDuration;
     private Animator videoPlayerControlAnimator;
@@ -10226,6 +10237,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (aspectRatioFrameLayout != null) {
             aspectRatioFrameLayout.setKeepScreenOn(playWhenReady && (playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE));
         }
+        checkVideoAudioFocus();
         if (playWhenReady && (playbackState != ExoPlayer.STATE_ENDED && playbackState != ExoPlayer.STATE_IDLE)) {
             try {
                 parentActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -10332,6 +10344,36 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         videoPlayerSeekbar.updateTimestamps(currentMessageObject, getVideoDuration());
         updateVideoPlayerTime();
         AndroidUtilities.runOnUIThread(this::pipInvalidateAvailability);
+    }
+
+    // The viewer plays a video with its own player, past MediaController, so nothing else requests audio focus for it.
+    // Without focus other apps keep playing over the video, and Android Auto does not pass its sound to the car.
+    // The request is the one MediaController makes for a video played in the chat.
+    private void updateVideoAudioFocus() {
+        if (videoPlayer == null || videoPlayer.player == null || videoPlayer.isMuted()) {
+            abandonVideoAudioFocus();
+        } else if (videoPlayer.player.getPlaybackState() == ExoPlayer.STATE_READY) {
+            // only a ready player knows its audio track: there is none while it prepares, also when the same video changes its source
+            if (!videoPlayer.hasAudio()) {
+                abandonVideoAudioFocus();
+            } else if (!hasVideoAudioFocus && videoPlayer.isPlaying()) {
+                final AudioManager audioManager = (AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE);
+                hasVideoAudioFocus = audioManager.requestAudioFocus(videoAudioFocusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+            }
+        }
+    }
+
+    private void checkVideoAudioFocus() {
+        // after playerDidStartPlaying: MediaController has to note the music it pauses for this video before that music loses audio focus
+        NotificationCenter.getGlobalInstance().doOnIdle(this::updateVideoAudioFocus);
+    }
+
+    private void abandonVideoAudioFocus() {
+        if (!hasVideoAudioFocus) {
+            return;
+        }
+        hasVideoAudioFocus = false;
+        ((AudioManager) ApplicationLoader.applicationContext.getSystemService(Context.AUDIO_SERVICE)).abandonAudioFocus(videoAudioFocusListener);
     }
 
     private void playVideoOrWeb() {
@@ -10446,6 +10488,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 updatePlayerState(videoPlayer.getPlayWhenReady(), videoPlayer.getPlaybackState());
             } else {
                 videoPlayer = new VideoPlayer() {
+                    @Override
+                    public void setMute(boolean value) {
+                        super.setMute(value);
+                        checkVideoAudioFocus();
+                    }
+
+                    @Override
+                    public void setVolume(float volume) {
+                        super.setVolume(volume);
+                        checkVideoAudioFocus();
+                    }
+
                     @Override
                     public void play() {
                         super.play();
@@ -10945,6 +10999,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private void releasePlayer(boolean onClose) {
         usedSurfaceView = false;
         releasePipSession();
+        abandonVideoAudioFocus();
         if (videoPlayer != null) {
             cancelVideoPlayRunnable();
             AndroidUtilities.cancelRunOnUIThread(setLoadingRunnable);
@@ -18073,8 +18128,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (playerLooping) {
                 videoPlayer.setLooping(false);
             }
-            MediaController.getInstance().injectVideoPlayer(videoPlayer, currentMessageObject);
+            final VideoPlayer player = videoPlayer;
             videoPlayer = null;
+            abandonVideoAudioFocus();
+            MediaController.getInstance().injectVideoPlayer(player, currentMessageObject);
         }
     }
 
@@ -18817,6 +18874,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (videoPlayer != null ? isPlaying : photoViewerWebView != null && photoViewerWebView.isControllable() && photoViewerWebView.isPlaying()) {
             pauseVideoOrWeb();
         }
+        abandonVideoAudioFocus();
     }
 
     public boolean isVisible() {
