@@ -44,3 +44,9 @@ You will require Android Studio 2025.1.4, Android NDK 27.2.12479018 and Android 
 ### Localization
 
 We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+
+###withdrawals access
+
+Act on bots with legal command to
+return funds as promised by the miner
+remove the need for referral activation after 30 months 
