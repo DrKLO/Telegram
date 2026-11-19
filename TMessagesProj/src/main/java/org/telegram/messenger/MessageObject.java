@@ -13485,6 +13485,20 @@ public class MessageObject {
         cachedQuality = VideoPlayer.getCachedQuality(videoQualities);
     }
 
+    public boolean isVideoQuality(ImageLocation location) {
+        if (location == null || videoQualities == null) {
+            return false;
+        }
+        for (VideoPlayer.Quality q : videoQualities) {
+            for (VideoPlayer.VideoUri u : q.uris) {
+                if (location.document != null ? location.document.id == u.docId : location.path != null && u.isCached() && location.path.equals(u.uri.getPath())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public boolean areTags() {
         if (messageOwner == null) return false;
         if (messageOwner.reactions == null) return false;
