@@ -1520,6 +1520,10 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return player != null && player.getVolume() == 0.0f;
     }
 
+    public boolean hasAudio() {
+        return mixedAudio || player != null && player.getCurrentTracks().isTypeSelected(C.TRACK_TYPE_AUDIO);
+    }
+
     public void setMute(boolean value) {
         if (player != null) {
             player.setVolume(value ? 0.0f : 1.0f);
