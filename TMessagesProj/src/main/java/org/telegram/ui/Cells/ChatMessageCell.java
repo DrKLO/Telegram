@@ -1419,6 +1419,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private TLRPC.TL_messageReactions lastReactions;
 
     private boolean autoPlayingMedia;
+    private ImageLocation resumeMediaLocation;
+    private long resumeMediaPosition;
 
     ArrayList<BotButton> botButtons = new ArrayList<>();
     private ChatMessageBotButtons botKeyboard;
@@ -9692,14 +9694,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
 
                         final String filter = currentMessageObject.isLivePhoto() ? ImageLoader.AUTOPLAY_FILTER_NONLOOP : ImageLoader.AUTOPLAY_FILTER;
+                        // the same message rebound while its video plays from the document: a new key would restart it
+                        final ImageLocation playingLocation = photoImage.getMediaLocation();
+                        final AnimatedFileDrawable playingAnimation = photoImage.getAnimation();
+                        final boolean playing = !messageIdChanged && playingLocation != null && playingAnimation != null && !playingAnimation.decoderFailed() && !playingAnimation.isRecycled();
+                        final boolean keepPlaying = playing && document != null && playingLocation.document != null && playingLocation.document.id == document.id;
                         if (currentMessageObject.videoEditedInfo != null && currentMessageObject.videoEditedInfo.canAutoPlaySourceVideo() && document != null) {
                             photoImage.setImage(ImageLocation.getForPath(currentMessageObject.videoEditedInfo.originalPath), filter, ImageLocation.getForObject(currentPhotoObject, photoParentObject), currentPhotoFilter, ImageLocation.getForDocument(currentPhotoObjectThumb, document), currentPhotoFilterThumb, currentPhotoObjectThumbStripped, document.size, null, messageObject, 0);
                             photoImage.setMediaStartEndTime(currentMessageObject.videoEditedInfo.startTime / 1000, currentMessageObject.videoEditedInfo.endTime / 1000);
-                        } else if (messageObject.cachedQuality != null) {
+                        } else if (messageObject.cachedQuality != null && !keepPlaying) {
                             if (!messageIdChanged && !dataChanged) {
                                 photoImage.setCrossfadeWithOldImage(true);
                             }
-                            photoImage.setImage(ImageLocation.getForVideoPath(messageObject.cachedQuality.uri.getPath()), filter, ImageLocation.getForObject(currentPhotoObject, photoParentObject), currentPhotoFilter, ImageLocation.getForDocument(currentPhotoObjectThumb, document), currentPhotoFilterThumb, currentPhotoObjectThumbStripped, messageObject.getDocument().size, null, messageObject, 0);
+                            final ImageLocation cachedLocation = ImageLocation.getForVideoPath(messageObject.cachedQuality.uri.getPath());
+                            if (playing && !currentMessageObject.isLivePhoto() && messageObject.isVideoQuality(playingLocation)) {
+                                // another quality of the video that plays: go on from its position
+                                resumeMediaLocation = cachedLocation;
+                                resumeMediaPosition = playingAnimation.getCurrentProgressMs();
+                            }
+                            photoImage.setImage(cachedLocation, filter, ImageLocation.getForObject(currentPhotoObject, photoParentObject), currentPhotoFilter, ImageLocation.getForDocument(currentPhotoObjectThumb, document), currentPhotoFilterThumb, currentPhotoObjectThumbStripped, messageObject.getDocument().size, null, messageObject, 0);
                         } else if (document != null) {
                             if (!messageIdChanged && !dataChanged) {
                                 photoImage.setCrossfadeWithOldImage(true);
@@ -15319,6 +15332,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             ) {
                 currentMessageObject.mediaExists = true;
                 updateButtonState(false, true, false);
+            }
+        }
+        if (set && imageReceiver == photoImage && resumeMediaLocation != null && photoImage.getMediaLocation() == resumeMediaLocation) {
+            final AnimatedFileDrawable animation = photoImage.getAnimation();
+            if (animation != null) {
+                animation.seekTo(resumeMediaPosition, false);
+                resumeMediaLocation = null;
             }
         }
         if (set && currentMessageObject != null) {
