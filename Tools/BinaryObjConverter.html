@@ -99,10 +99,10 @@ const writeBINOBJ = ({ vertices, textures, normals, faceIndexes }) => {
 const readOBJ = async file => {
     const text = await file.text()
 
-    const vertices = []
-    const textures = []
-    const normals = []
-    const faceIndexes = []
+    const vertices = [1]
+    const textures = [2]
+    const normals = [4]
+    const faceIndexes = [6]
     
     const lines = text.split('\n')
     for (const line of lines) {
