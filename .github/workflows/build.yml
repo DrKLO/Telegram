@@ -55,5 +55,6 @@ jobs:
       with:
         name: Risegram-APK
         path: |
+          TMessagesProj_App/build/outputs/apk/**/*.apk
           TMessagesProj/build/outputs/apk/**/*.apk
           build/outputs/apk/**/*.apk
