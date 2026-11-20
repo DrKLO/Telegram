@@ -30,7 +30,7 @@ jobs:
       run: |
         test -n "$APP_ID" || (echo "APP_ID secret is missing" && exit 1)
         test -n "$APP_HASH" || (echo "APP_HASH secret is missing" && exit 1)
-        printf 'RISEGRAM_API_ID=%s\\nRISEGRAM_API_HASH=%s\\n' "$APP_ID" "$APP_HASH" > local.properties
+        printf 'RISEGRAM_API_ID=%s\nRISEGRAM_API_HASH=%s\n' "$APP_ID" "$APP_HASH" > local.properties
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
