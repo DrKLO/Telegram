@@ -1234,7 +1234,7 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         if (channel.megagroup) {
                             builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, "t.me/" + ChatObject.getPublicUsername(channel), channel.title)));
                         } else {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance(currentAccount).linkPrefix  + "/" + ChatObject.getPublicUsername(channel), channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, "t.me/" + ChatObject.getPublicUsername(channel), channel.title)));
                         }
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                         builder.setPositiveButton(LocaleController.getString(R.string.RevokeButton), (dialogInterface, i) -> {
