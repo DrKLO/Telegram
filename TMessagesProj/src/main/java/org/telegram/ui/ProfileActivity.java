@@ -2835,7 +2835,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new PeerColorActivity(0).startOnProfile().setOnApplied(ProfileActivity.this));
                 } else if (id == copy_link_profile) {
                     TLRPC.User user = getMessagesController().getUser(userId);
-                    if (AndroidUtilities.addToClipboard(getMessagesController().linkPrefix + "/" + UserObject.getPublicUsername(user))) {
+                    if (AndroidUtilities.addToClipboard("t.me/" + UserObject.getPublicUsername(user))) {
                         BulletinFactory.of(ProfileActivity.this).createCopyLinkBulletin().show();
                     }
                 } else if (id == set_username) {
@@ -6337,9 +6337,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 if (botInfo != null && userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
-                    text = String.format("%s https://" + getMessagesController().linkPrefix + "/%s", userInfo.about, UserObject.getPublicUsername(user));
+                    text = String.format("%s https://t.me/%s", userInfo.about, UserObject.getPublicUsername(user));
                 } else {
-                    text = String.format("https://" + getMessagesController().linkPrefix + "/%s", UserObject.getPublicUsername(user));
+                    text = String.format("https://t.me/%s", UserObject.getPublicUsername(user));
                 }
             } else if (chatId != 0) {
                 TLRPC.Chat chat = getMessagesController().getChat(chatId);
@@ -6347,9 +6347,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     return;
                 }
                 if (chatInfo != null && !TextUtils.isEmpty(chatInfo.about)) {
-                    text = String.format("%s\nhttps://" + getMessagesController().linkPrefix + "/%s", chatInfo.about, ChatObject.getPublicUsername(chat));
+                    text = String.format("%s\nhttps://t.me/%s", chatInfo.about, ChatObject.getPublicUsername(chat));
                 } else {
-                    text = String.format("https://" + getMessagesController().linkPrefix + "/%s", ChatObject.getPublicUsername(chat));
+                    text = String.format("https://t.me/%s", ChatObject.getPublicUsername(chat));
                 }
             }
             if (TextUtils.isEmpty(text)) {
@@ -7454,9 +7454,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 TLRPC.Chat chat = getMessagesController().getChat(chatId);
                 String link;
                 if (ChatObject.isPublic(chat)) {
-                    link = "https://" + getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(chat) + (topicId != 0 ? "/" + topicId : "");
+                    link = "https://t.me/" + ChatObject.getPublicUsername(chat) + (topicId != 0 ? "/" + topicId : "");
                 } else {
-                    link = "https://" + getMessagesController().linkPrefix + "/c/" + chat.id + (topicId != 0 ? "/" + topicId : "");
+                    link = "https://" + "t.me/c/" + chat.id + (topicId != 0 ? "/" + topicId : "");
                 }
                 ShareAlert shareAlert = new ShareAlert(getParentActivity(), null, link, false, link, false) {
                     @Override
@@ -13621,10 +13621,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                             if (ChatObject.isPublic(chat)) {
                                 containsQr = !myProfile;
-                                text = getMessagesController().linkPrefix + "/" + username + (topicId != 0 ? "/" + topicId : "");
+                                text = "t.me/" + username + (topicId != 0 ? "/" + topicId : "");
                                 value = LocaleController.getString(R.string.InviteLink);
                             } else {
-                                text = getMessagesController().linkPrefix + "/c/" + chatId + (topicId != 0 ? "/" + topicId : "");
+                                text = "t.me/c/" + chatId + (topicId != 0 ? "/" + topicId : "");
                                 value = LocaleController.getString(R.string.InviteLinkPrivate);
                             }
                         } else {
@@ -14309,7 +14309,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         getConnectionsManager().bindRequestToGuid(reqId, getClassGuid());
                     } else {
                         setLoadingSpan(null);
-                        String urlFinal = getMessagesController().linkPrefix + "/" + usernameRaw;
+                        String urlFinal = "t.me/" + usernameRaw;
                         if (currentChat == null || !currentChat.noforwards) {
                             AndroidUtilities.addToClipboard(urlFinal);
                             undoView.showWithAction(0, UndoView.ACTION_USERNAME_COPIED, null);
@@ -15774,7 +15774,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     public String getLink(String username, int topicId) {
-        String link = getMessagesController().linkPrefix + "/" + username;
+        String link = "t.me/" + username;
         if (topicId != 0) {
             link += "/" + topicId;
         }
