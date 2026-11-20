@@ -7,6 +7,12 @@ on:
     branches: [ master, main, "risegram/brand-and-api" ]
   workflow_dispatch:
 
+# Avoid compiling the full native NDK client for every small sequential commit.
+# Keep only the newest APK build for the same branch.
+concurrency:
+  group: telegram-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
