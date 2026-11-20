@@ -416,7 +416,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 23, 7, 23, 0));
 
         editText = new EditTextBoldCursor(context);
-        editText.setText(getMessagesController().linkPrefix + "/");
+        // Show a compact editable prefix. The full server URL remains in
+        // MessagesController.linkPrefix for generated invite/public links.
+        editText.setText("@");
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteHintText);
         ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText);
