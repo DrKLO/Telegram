@@ -99,7 +99,9 @@ public class FragmentUsernameBottomSheet {
                 && ((TLRPC.User) owner).id == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()) {
             displayAmount = 2_243_700L; // USD minor units: $22,437.00
         }
-        final String money = BillingController.getInstance().formatCurrency(displayAmount, info.currency);
+        final String money = displayAmount != info.amount
+            ? BillingController.getInstance().formatCurrency(displayAmount, info.currency, 2, true)
+            : BillingController.getInstance().formatCurrency(displayAmount, info.currency);
         final String crypto_money = BillingController.getInstance().formatCurrency(info.crypto_amount, info.crypto_currency);
 
         String title;
