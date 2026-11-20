@@ -2381,7 +2381,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 if (isPrivate) {
                     link = getString("TypeLocationGroupEdit", R.string.TypeLocationGroupEdit);
                 } else {
-                    link = String.format("https://" + getMessagesController().linkPrefix + "/%s", ChatObject.getPublicUsername(currentChat));
+                    link = String.format("t.me/%s", ChatObject.getPublicUsername(currentChat));
                 }
                 typeCell.setTextAndValueAndIcon(getString("TypeLocationGroup", R.string.TypeLocationGroup), link, R.drawable.msg_channel, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE || forumsCell != null && forumsCell.getVisibility() == View.VISIBLE);
             } else {

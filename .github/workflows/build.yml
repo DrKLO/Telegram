@@ -1,0 +1,60 @@
+name: Build Telegram APK
+
+on:
+  push:
+    branches: [ master, main, "risegram/brand-and-api" ]
+  pull_request:
+    branches: [ master, main, "risegram/brand-and-api" ]
+  workflow_dispatch:
+
+# Avoid compiling the full native NDK client for every small sequential commit.
+# Keep only the newest APK build for the same branch.
+concurrency:
+  group: telegram-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: false
+        fetch-depth: 1
+
+    - name: Fetch shallow submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth=1
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Inject RiseGram API credentials
+      env:
+        APP_ID: ${{ secrets.APP_ID }}
+        APP_HASH: ${{ secrets.APP_HASH }}
+      run: |
+        test -n "$APP_ID" || (echo "APP_ID secret is missing" && exit 1)
+        test -n "$APP_HASH" || (echo "APP_HASH secret is missing" && exit 1)
+        printf 'RISEGRAM_API_ID=%s\nRISEGRAM_API_HASH=%s\n' "$APP_ID" "$APP_HASH" > local.properties
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build Debug APK
+      run: ./gradlew assembleAfatDebug --stacktrace
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Risegram-APK
+        path: |
+          TMessagesProj_App/build/outputs/apk/**/*.apk
+          TMessagesProj/build/outputs/apk/**/*.apk
+          build/outputs/apk/**/*.apk

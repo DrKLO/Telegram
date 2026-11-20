@@ -130,8 +130,10 @@ android {
             buildConfigField "boolean", "BUNDLE", "true"
         }
         afat {
+            // RiseGram's production APK targets the arm64-v8a Android devices
+            // used by the owner; avoid compiling unused x86/32-bit native trees.
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters "arm64-v8a"
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'

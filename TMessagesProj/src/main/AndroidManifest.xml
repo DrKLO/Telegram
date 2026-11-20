@@ -115,6 +115,8 @@
             android:enabled="true"
             android:name="org.telegram.messenger.DefaultIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
+            android:icon="@drawable/risegram_launcher_icon"
+            android:roundIcon="@drawable/risegram_launcher_icon"
             android:exported="true">
 
             <intent-filter>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">RiseGram</string>
+    <string name="AppNameBeta">RiseGram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -2484,9 +2484,9 @@
     <string name="LanguageUnknownCustomAlert">Unfortunately, this custom language pack (**%1$s**) doesn\'t contain data for Telegram Android.</string>
     <string name="AskAQuestionInfo">Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the <![CDATA[<a href=\"https://telegram.org/faq#general-questions\">Telegram FAQ</a>]]>: it has answers to most questions and important tips for <![CDATA[<a href=\"https://telegram.org/faq#troubleshooting\">troubleshooting</a>]]>.</string>
     <string name="AskButton">Ask a volunteer</string>
-    <string name="TelegramFAQ">Telegram FAQ</string>
+    <string name="TelegramFAQ">RiseGram FAQ</string>
     <string name="TelegramFaq">Telegram FAQ</string>
-    <string name="TelegramFeatures">Telegram Features</string>
+    <string name="TelegramFeatures">RiseGram Features</string>
     <string name="TelegramFeaturesUrl">https://t.me/TelegramTips</string>
     <string name="AddAccount">Add Account</string>
     <string name="SwitchAccountHint">"Long tap to switch accounts"</string>
@@ -5741,7 +5741,7 @@
     <string name="GiftTelegramPremiumTitle">Gift Telegram Premium</string>
     <string name="GiftTelegramPremiumOrStarsTitle">Gift Premium or Stars</string>
     <string name="GiftTelegramPremiumDescription">Let **%1$s** enjoy exclusive features of Telegram with **Telegram Premium**.</string>
-    <string name="TelegramPremium">Telegram Premium</string>
+    <string name="TelegramPremium">RiseGram Premium</string>
     <string name="TelegramPremiumSubtitle">Go **beyond the limits**, get exclusive features and support us by subscribing to **Telegram Premium**.</string>
     <string name="TelegramPremiumSubscribedTitle">You are all set!</string>
     <string name="TelegramPremiumSubscribedSubtitle">Thank you for subscribing to **Telegram Premium**.\nHere’s what is now unlocked.</string>
@@ -6939,8 +6939,8 @@
     <string name="SortByReactions">Reactions First</string>
     <string name="SortByReposts">Reposts First</string>
     <string name="SortByTime">Newest First</string>
-    <string name="StoryViewsSortDescription">Choose the order for the  list of viewers.</string>
-    <string name="StoryReactionsSortDescription">Choose the order for the  list of reactions.</string>
+    <string name="StoryViewsSortDescription">Choose the order for the list of viewers.</string>
+    <string name="StoryReactionsSortDescription">Choose the order for the list of reactions.</string>
     <string name="NoContactsViewed">None of your contacts viewed this story.</string>
     <string name="Viewers">Viewers</string>
     <string name="StealthModeConfirmTitle">You are in Stealth Mode now</string>
@@ -7808,7 +7808,7 @@
     <string name="PremiumPreviewLastSeenDescription">View the last seen and read times of others even if you hide yours.</string>
     <string name="PremiumPreviewMessagePrivacy">Message Privacy</string>
     <string name="PremiumPreviewMessagePrivacyDescription">Restrict people you don\'t know from sending you messages.</string>
-    <string name="TelegramBusiness">Telegram Business</string>
+    <string name="TelegramBusiness">RiseGram Business</string>
     <string name="TelegramBusinessSubtitle">Subscribe to **Telegram Premium** to unlock these additional business features.</string>
     <string name="TelegramBusinessSubtitleTemp">Turn your account into a **business page** with these additional features.\nThe benefits of Telegram Business are **temporarily included** with Telegram Premium.</string>
     <string name="TelegramBusinessSubscribedSubtitle">You have now unlocked these additional business features.</string>
@@ -8376,7 +8376,7 @@
     <string name="MessageShowSensitiveContentButton">View Anyway</string>
     <string name="SensitiveContentSettingsToast">You can update the visibility of sensitive media in **Chat Settings > Show 18+ Content**</string>
     <string name="MenuTelegramStars">Your Stars</string>
-    <string name="TelegramStars">Telegram Stars</string>
+    <string name="TelegramStars">RiseStars</string>
     <string name="TelegramStarsInfo2">Buy Stars to unlock content and services\nin miniapps on Telegram. **More about Stars >**</string>
     <string name="TelegramStarsChoose">Choose package</string>
     <string name="TelegramStarsGift">Gift Stars to Friends</string>
@@ -10106,7 +10106,7 @@
     <string name="EditToDo">Edit</string>
     <string name="AddTasks">Add Tasks</string>
     <string name="MyTON">My TON</string>
-    <string name="GramEarnings">Gram Earnings</string>
+    <string name="GramEarnings">Gram Earrings</string>
     <string name="GramEarningsTitle">Gram Earnings</string>
     <string name="GramEarningsText">Your Gram from gifts,\nads and Fragment.</string>
     <string name="GramEarningsHint">You can withdraw your Grams using Fragment.</string>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">RiseGram</string>
+    <string name="AppNameBeta">RiseGram Beta</string>
     <string name="LanguageName">Русский</string>
     <string name="English">Английский</string>
     <string name="LanguageNameInEnglish">Russian</string>
@@ -263,4 +263,10 @@
     <string name="RemindTodayAt">\'Отправить сегодня в\' HH:mm</string>
     <string name="RemindDayAt">\'Отправить\' d MMM \'в\' HH:mm</string>
     <string name="RemindDayYearAt">\'Напомнить\' d MMM yyyy \'в\' HH:mm</string>
+    <string name="TelegramPremium">RiseGram Premium</string>
+    <string name="TelegramStars">Звёзды RiseGram</string>
+    <string name="GramEarnings">Gram Earrings</string>
+    <string name="TelegramBusiness">RiseGram для бизнеса</string>
+    <string name="TelegramFAQ">Вопросы о RiseGram</string>
+    <string name="TelegramFeatures">Возможности RiseGram</string>
 </resources>

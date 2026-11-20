@@ -803,7 +803,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
             linkContainer.addView(publicContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36, 21, 7, 21, 0));
 
             editText = new EditTextBoldCursor(context);
-            editText.setText(MessagesController.getInstance(currentAccount).linkPrefix + "/");
+            // Keep the public username field compact and editable on every network.
+            // linkPrefix is a transport/server setting and may be a long Railway hostname.
+            editText.setText("t.me/");
             editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteHintText);
             ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText);
@@ -1230,9 +1232,9 @@ public class ChannelCreateActivity extends BaseFragment implements NotificationC
                         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                         builder.setTitle(LocaleController.getString(R.string.AppName));
                         if (channel.megagroup) {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, MessagesController.getInstance(currentAccount).linkPrefix + "/" + ChatObject.getPublicUsername(channel), channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlert", R.string.RevokeLinkAlert, "t.me/" + ChatObject.getPublicUsername(channel), channel.title)));
                         } else {
-                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, MessagesController.getInstance(currentAccount).linkPrefix  + "/" + ChatObject.getPublicUsername(channel), channel.title)));
+                            builder.setMessage(AndroidUtilities.replaceTags(LocaleController.formatString("RevokeLinkAlertChannel", R.string.RevokeLinkAlertChannel, "t.me/" + ChatObject.getPublicUsername(channel), channel.title)));
                         }
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                         builder.setPositiveButton(LocaleController.getString(R.string.RevokeButton), (dialogInterface, i) -> {
