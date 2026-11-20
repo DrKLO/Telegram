@@ -12,10 +12,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository with submodules
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive
+        submodules: false
+        fetch-depth: 1
+
+    - name: Fetch shallow submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth=1
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
