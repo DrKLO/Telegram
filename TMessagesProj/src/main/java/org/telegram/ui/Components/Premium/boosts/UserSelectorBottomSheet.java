@@ -611,10 +611,19 @@ public class UserSelectorBottomSheet extends BottomSheetWithRecyclerListView imp
     }
 
     private void initContacts(boolean needUpdate) {
-        if (contacts.isEmpty()) {
-            contacts.addAll(ContactsController.getInstance(currentAccount).contacts);
-            contactsMap.putAll(ContactsController.getInstance(currentAccount).usersSectionsDict);
-            contactsLetters.addAll(ContactsController.getInstance(currentAccount).sortedUsersSectionsArray);
+        final ContactsController contactsController = ContactsController.getInstance(currentAccount);
+        // The sheet can open before the in-memory phonebook has been hydrated.
+        // Load Telegram's server contacts instead of rendering only the self row.
+        if (!contactsController.contactsLoaded) {
+            contactsController.loadContacts(false, 0);
+        }
+        if (contacts.isEmpty() || needUpdate) {
+            contacts.clear();
+            contactsMap.clear();
+            contactsLetters.clear();
+            contacts.addAll(contactsController.contacts);
+            contactsMap.putAll(contactsController.usersSectionsDict);
+            contactsLetters.addAll(contactsController.sortedUsersSectionsArray);
             if (needUpdate) {
                 updateItems(true, true);
             }
