@@ -16473,7 +16473,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             TLRPC.Chat channel = getMessagesController().getChat(userFull.personal_channel_id);
             if (channel != null && ChatObject.getPublicUsername(channel) != null) {
                 itemOptions.add(R.drawable.msg_copy, getString(R.string.ProfileChannelCopy), () -> {
-                    AndroidUtilities.addToClipboard("https://" + getMessagesController().linkPrefix + "/" + ChatObject.getPublicUsername(channel));
+                    AndroidUtilities.addToClipboard("https://t.me/" + ChatObject.getPublicUsername(channel));
                 });
             }
             itemOptions.add(R.drawable.msg_edit, getString(R.string.ProfileChannelChange), () -> {
