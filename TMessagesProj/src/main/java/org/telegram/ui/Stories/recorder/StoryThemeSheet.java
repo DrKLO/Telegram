@@ -18,6 +18,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChannelColorActivity;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -39,7 +40,7 @@ public class StoryThemeSheet extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
         this.whenDie = whenDie;
 
-        setBackground(Theme.createRoundRectDrawable(dp(14),0, Theme.getColor(Theme.key_dialogBackground, resourcesProvider)));
+        ThemeBind.fillBackground(this, Theme.createRoundRectDrawable(dp(14),0, Theme.getColor(Theme.key_dialogBackground, resourcesProvider)), ThemeBind.of(Theme.key_dialogBackground), resourcesProvider);
 
         backButtonView = new ImageView(getContext());
         int padding = dp(10);
@@ -53,7 +54,7 @@ public class StoryThemeSheet extends FrameLayout {
         addView(backButtonView, LayoutHelper.createFrame(44, 44, Gravity.TOP | Gravity.LEFT, 7, 8, 0, 0));
 
         titleView = new TextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setText(LocaleController.getString(R.string.StorySetWallpaper));

@@ -10,12 +10,6 @@ import org.telegram.tgnet.Vector;
 import java.util.ArrayList;
 
 public class TL_communities {
-    private TL_communities() {
-
-    }
-
-
-
     public static class ParticipantJoinedChats extends TLObject {
         public static final int constructor = 0x8D78512A;
 

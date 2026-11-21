@@ -373,7 +373,27 @@ public class CodeHighlighting {
                                 }));
     }
 
-    public static void prepare() {
+    /**
+     * Highlights text by tokens of the same-length masked source (e.g. without diff markers).
+     * Spans are applied on the UI thread, then whenDone runs.
+     */
+    public static void highlightMasked(
+            Spannable text, String masked, String language, Runnable whenDone) {
+        if (text == null || masked == null || masked.length() != text.length()) return;
+        String normalized = PrismaHighlightingService.normalizeLanguage(language);
+        if (normalized.isEmpty() || masked.isEmpty()) return;
+        SERVICE.request(
+                masked,
+                normalized,
+                answer ->
+                        AndroidUtilities.runOnUIThread(
+                                () -> {
+                                    apply(text, 0, text.length(), answer.tokens);
+                                    if (whenDone != null) whenDone.run();
+                                }));
+    }
+
+        public static void prepare() {
         SERVICE.prepare();
     }
 

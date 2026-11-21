@@ -35,6 +35,7 @@ import org.telegram.messenger.utils.tlutils.AmountUtils;
 import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -145,7 +146,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             balanceCloud = null;
         }
 
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        fixNavigationBarKey(Theme.key_dialogBackground);
 
         LinearLayout layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -158,7 +159,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         layout.addView(headerLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
 
         TextView titleView = new TextView(context);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         titleView.setText(getString(mode == MODE_INPUT ?
@@ -172,7 +173,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         ImageView closeView = new ImageView(context);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setImageResource(R.drawable.ic_close_white);
-        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(closeView, Theme.key_dialogEmptyImage, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(closeView);
         closeView.setOnClickListener(v -> dismiss());
         headerLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 6, 0));
@@ -216,7 +217,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             starsCountEditField.setMaxLines(1);
             starsCountEditField.setBackground(null);
             starsCountEditField.setPadding(dp(42), dp(16), dp(16), dp(16));
-            starsCountEditField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(starsCountEditField, Theme.key_windowBackgroundWhiteBlackText);
             starsCountEditField.requestFocus();
 
             starsCountEditOutline.setLeftPadding(dp(28));
@@ -239,13 +240,13 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             starsCountEditOutline.addView(iconTon, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
 
             dollarsEqView = new AnimatedTextView(context);
-            dollarsEqView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(dollarsEqView, Theme.key_windowBackgroundWhiteGrayText);
             dollarsEqView.setTextSize(dp(13));
             dollarsEqView.setGravity(Gravity.RIGHT);
             starsCountEditOutline.addView(dollarsEqView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
             starsCountEditHint = new TextView(context);
-            starsCountEditHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(starsCountEditHint, Theme.key_windowBackgroundWhiteGrayText);
             starsCountEditHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             bodyLayout.addView(starsCountEditHint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 33, 4, 33, 0));
         }
@@ -262,7 +263,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             publishingTimeField.setMaxLines(1);
             publishingTimeField.setBackground(null);
             publishingTimeField.setPadding(dp(16), dp(16), dp(16), dp(16));
-            publishingTimeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(publishingTimeField, Theme.key_windowBackgroundWhiteBlackText);
             publishingTimeField.setFocusable(false);
             publishingTimeField.setClickable(false);
             publishingTimeField.setEnabled(false);
@@ -281,11 +282,11 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
 
             ImageView iconArrow = new ImageView(context);
             iconArrow.setImageResource(R.drawable.arrow_more);
-            iconArrow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(iconArrow, Theme.key_dialogEmptyImage, resourcesProvider, PorterDuff.Mode.SRC_IN);
             publishingTimeOutline.addView(iconArrow, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
             TextView publishingTimeHint = new TextView(context);
-            publishingTimeHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(publishingTimeHint, Theme.key_windowBackgroundWhiteGrayText);
             publishingTimeHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
             SpannableStringBuilder ssb = new SpannableStringBuilder();
@@ -526,11 +527,11 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         if (mode == MODE_INPUT) {
             if (!inputAmount.isZero()) {
                 final boolean isTon = inputAmount.currency == AmountUtils.Currency.TON;
-                buttonView.setText(StarsIntroActivity.replaceStars(isTon,
+                buttonView.setText(StarsIntroActivity.whiteGram(isTon, StarsIntroActivity.replaceStars(isTon,
                     LocaleController.formatString(R.string.PostSuggestionsOfferStars, isTon ? inputAmount.asDecimalString() :
                         LocaleController.formatNumber(inputAmount.asDecimal(), ',')),
                     isTon ? spanRefTon: spanRefStars
-                ), animated);
+                )), animated);
             } else {
                 buttonView.setText(LocaleController.getString(R.string.PostSuggestionsOfferForFree), animated);
             }

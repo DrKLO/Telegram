@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.Build;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Layout;
@@ -30,7 +31,7 @@ import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.URLSpanReplacement;
 
-public class RichEditText extends EditTextCaption {
+public class RichEditText extends EditTextCaption implements Theme.Colorable {
 
     public interface Listener {
         default void onEnterPressed(RichEditText editText) {}
@@ -86,6 +87,7 @@ public class RichEditText extends EditTextCaption {
     public void setAccentHint(boolean enable) {
         if (accentHint == enable) return;
         accentHint = enable;
+        forceHintColor = true;
         updateColors();
     }
 
@@ -187,6 +189,7 @@ public class RichEditText extends EditTextCaption {
                 listener.onTextWillChange(RichEditText.this, count, after);
             }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (before > 0 && count == 0) lastDeleteTime = SystemClock.uptimeMillis();
                 markPathDirty = true;
                 refreshEmptyHintGravity();
                 updateLongClickForEmpty();
@@ -217,6 +220,8 @@ public class RichEditText extends EditTextCaption {
             }
         });
 
+        customTextColor = false;
+        forceHintColor = true;
         updateColors();
     }
 
@@ -276,11 +281,40 @@ public class RichEditText extends EditTextCaption {
         this.softEnterNewline = enable;
     }
 
+    private static final long DELETE_HOLD_MS = 500;
+    private long lastDeleteTime;
+    private int pendingInputType = -1;
+    private final Runnable applyPendingInputType = new Runnable() {
+        @Override
+        public void run() {
+            if (pendingInputType < 0) return;
+            final long left = lastDeleteTime + DELETE_HOLD_MS - SystemClock.uptimeMillis();
+            if (left > 0 && isFocused()) {
+                postDelayed(this, left);
+                return;
+            }
+            final int type = pendingInputType;
+            pendingInputType = -1;
+            setInputType(type);
+        }
+    };
+
     @Override
     public void setInputType(int type) {
-        final boolean changed = getInputType() != type;
+        // TextView restarts the IME input on every call, and a restart cancels a held backspace:
+        // skip no-op calls and defer real changes until deletions stop.
+        if (getInputType() == type) {
+            pendingInputType = -1;
+            return;
+        }
+        if (isFocused() && SystemClock.uptimeMillis() - lastDeleteTime < DELETE_HOLD_MS) {
+            if (pendingInputType < 0) postDelayed(applyPendingInputType, DELETE_HOLD_MS);
+            pendingInputType = type;
+            return;
+        }
+        pendingInputType = -1;
         super.setInputType(type);
-        if (changed && isFocused()) {
+        if (isFocused()) {
             final InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) imm.restartInput(this);
         }
@@ -330,20 +364,81 @@ public class RichEditText extends EditTextCaption {
         ignoreTextChange = false;
     }
 
+    public void prependSilently(CharSequence text) {
+        final Editable e = getText();
+        if (e == null || text == null || text.length() == 0) return;
+        ignoreTextChange = true;
+        e.insert(0, text);
+        ignoreTextChange = false;
+    }
+
     private int textColorKey = Theme.key_windowBackgroundWhiteBlackText;
     public void setTextColorKey(int textColorKey) {
         this.textColorKey = textColorKey;
+        customTextColor = false;
         updateColors();
     }
 
+    // text color set by callers (setTextColor from outside updateColors) is kept on theme updates;
+    // TextView.setHintTextColor(int) is final: the hint is refreshed only while it still is the last color applied here
+    private boolean customTextColor, forceHintColor, applyingColors;
+    private int lastAppliedHintColor;
+
+    @Override
+    public void setTextColor(int color) {
+        super.setTextColor(color);
+        if (!applyingColors) {
+            customTextColor = true;
+        }
+    }
+
+    @Override
     public void updateColors() {
-        setTextColor(Theme.getColor(textColorKey, resourcesProvider));
-        setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        setHintTextColor(accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+        applyingColors = true;
+        try {
+            if (!customTextColor) {
+                final int textColor = Theme.getColor(textColorKey, resourcesProvider);
+                if (getCurrentTextColor() != textColor) {
+                    setTextColor(textColor);
+                }
+            }
+            if (forceHintColor || getCurrentHintTextColor() == lastAppliedHintColor) {
+                forceHintColor = false;
+                lastAppliedHintColor = accentHint ? Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .50f) : Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
+                if (getCurrentHintTextColor() != lastAppliedHintColor) {
+                    setHintTextColor(lastAppliedHintColor);
+                }
+            }
+        } finally {
+            applyingColors = false;
+        }
+        final int linkColor = Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider);
+        if (getLinkTextColors() == null || getLinkTextColors().getDefaultColor() != linkColor) {
+            setLinkTextColor(linkColor);
+        }
         setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         setHandlesColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider));
-        bindInlineButtons();
+        // re-creating the inline button renderers is heavy: not on every frame of an animated theme switch,
+        // the update after the animation re-binds them
+        if (!Theme.isAnimatingColor()) {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            bindInlineButtons();
+        } else {
+            removeCallbacks(rebindInlineButtonsWhenIdle);
+            postDelayed(rebindInlineButtonsWhenIdle, 100);
+        }
     }
+
+    private final Runnable rebindInlineButtonsWhenIdle = new Runnable() {
+        @Override
+        public void run() {
+            if (Theme.isAnimatingColor()) {
+                postDelayed(this, 100);
+            } else {
+                bindInlineButtons();
+            }
+        }
+    };
 
     public void setLocked(boolean locked) {
         if (this.locked == locked) return;
@@ -558,6 +653,7 @@ public class RichEditText extends EditTextCaption {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_DEL && listener != null) {
+            lastDeleteTime = SystemClock.uptimeMillis();
             if (length() == 0) {
                 listener.onBackspaceOnEmpty(this);
                 return true;

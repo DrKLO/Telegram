@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class PickerBottomLayout extends FrameLayout {
 
@@ -42,13 +43,13 @@ public class PickerBottomLayout extends FrameLayout {
         super(context);
         this.resourcesProvider = resourcesProvider;
 
-        setBackgroundColor(Theme.getColor(darkTheme ? Theme.key_dialogBackground : Theme.key_windowBackgroundWhite, resourcesProvider));
+        ThemeBind.backgroundColor(this, darkTheme ? Theme.key_dialogBackground : Theme.key_windowBackgroundWhite, resourcesProvider);
 
         cancelButton = new TextView(context);
         cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        cancelButton.setTextColor(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider));
+        ThemeBind.textColor(cancelButton, Theme.key_picker_enabledButton, resourcesProvider);
         cancelButton.setGravity(Gravity.CENTER);
-        cancelButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider) & 0x0fffffff, 0));
+        ThemeBind.selectorBackground(cancelButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider) & 0x0fffffff, 0), null, ThemeBind.alpha(Theme.key_picker_enabledButton, 0x0f), resourcesProvider);
         cancelButton.setPadding(AndroidUtilities.dp(33), 0, AndroidUtilities.dp(33), 0);
         cancelButton.setText(LocaleController.getString(R.string.Cancel).toUpperCase());
         cancelButton.setTypeface(AndroidUtilities.bold());
@@ -56,24 +57,24 @@ public class PickerBottomLayout extends FrameLayout {
 
         doneButton = new LinearLayout(context);
         doneButton.setOrientation(LinearLayout.HORIZONTAL);
-        doneButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider) & 0x0fffffff, 0));
+        ThemeBind.selectorBackground(doneButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider) & 0x0fffffff, 0), null, ThemeBind.alpha(Theme.key_picker_enabledButton, 0x0f), resourcesProvider);
         doneButton.setPadding(AndroidUtilities.dp(33), 0, AndroidUtilities.dp(33), 0);
         addView(doneButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.RIGHT));
 
         doneButtonBadgeTextView = new TextView(context);
         doneButtonBadgeTextView.setTypeface(AndroidUtilities.bold());
         doneButtonBadgeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        doneButtonBadgeTextView.setTextColor(Theme.getColor(Theme.key_picker_badgeText, resourcesProvider));
+        ThemeBind.textColor(doneButtonBadgeTextView, Theme.key_picker_badgeText, resourcesProvider);
         doneButtonBadgeTextView.setGravity(Gravity.CENTER);
         Drawable drawable = Theme.createRoundRectDrawable(AndroidUtilities.dp(11), Theme.getColor(Theme.key_picker_badge, resourcesProvider));
-        doneButtonBadgeTextView.setBackgroundDrawable(drawable);
+        ThemeBind.fillBackground(doneButtonBadgeTextView, drawable, ThemeBind.of(Theme.key_picker_badge), resourcesProvider);
         doneButtonBadgeTextView.setMinWidth(AndroidUtilities.dp(23));
         doneButtonBadgeTextView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(1));
         doneButton.addView(doneButtonBadgeTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 23, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
         doneButtonTextView = new TextView(context);
         doneButtonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        doneButtonTextView.setTextColor(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider));
+        ThemeBind.textColor(doneButtonTextView, Theme.key_picker_enabledButton, resourcesProvider);
         doneButtonTextView.setGravity(Gravity.CENTER);
         doneButtonTextView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
         doneButtonTextView.setText(LocaleController.getString(R.string.Send).toUpperCase());
@@ -87,18 +88,18 @@ public class PickerBottomLayout extends FrameLayout {
 
             if (disable) {
                 doneButtonTextView.setTag(Theme.key_picker_disabledButton);
-                doneButtonTextView.setTextColor(Theme.getColor(Theme.key_picker_disabledButton, resourcesProvider));
+                ThemeBind.textColor(doneButtonTextView, Theme.key_picker_disabledButton, resourcesProvider);
                 doneButton.setEnabled(false);
             } else {
                 doneButtonTextView.setTag(Theme.key_picker_enabledButton);
-                doneButtonTextView.setTextColor(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider));
+                ThemeBind.textColor(doneButtonTextView, Theme.key_picker_enabledButton, resourcesProvider);
             }
         } else {
             doneButtonBadgeTextView.setVisibility(View.VISIBLE);
             doneButtonBadgeTextView.setText(String.format("%d", count));
 
             doneButtonTextView.setTag(Theme.key_picker_enabledButton);
-            doneButtonTextView.setTextColor(Theme.getColor(Theme.key_picker_enabledButton, resourcesProvider));
+            ThemeBind.textColor(doneButtonTextView, Theme.key_picker_enabledButton, resourcesProvider);
             if (disable) {
                 doneButton.setEnabled(true);
             }

@@ -12,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -46,10 +47,12 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -68,6 +71,8 @@ import org.telegram.ui.Components.SeekBarAccessibilityDelegate;
 import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.Switch;
 import org.telegram.ui.Components.ThanosEffect;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
+import org.telegram.utils.glass.GlassEngine;
 
 import java.util.ArrayList;
 
@@ -84,11 +89,16 @@ public class LiteModeSettingsActivity extends BaseFragment {
     private int FLAGS_CHAT;
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString(R.string.PowerUsage));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(LocaleController.getString(R.string.PowerUsage));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -97,17 +107,16 @@ public class LiteModeSettingsActivity extends BaseFragment {
             }
         });
         if (parentLayout != null && parentLayout.isRightLayout()) {
-            actionBar.setBackButtonImage(R.drawable.ic_ab_close);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_close);
         }
 
         contentView = new FrameLayout(context);
-        contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
         listView.setSections();
-        actionBar.setAdaptiveBackground(listView);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context));
         listView.setAdapter(adapter = new Adapter());
+        listView.setSectionsDrawBackground(true);
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setDurations(350);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -149,6 +158,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
                     ((TextCell) view).setChecked(!animations);
                 }
             }
+            GlassEngine.getCurrentGlassSettings();
         });
 
         fragmentView = contentView;
@@ -157,6 +167,11 @@ public class LiteModeSettingsActivity extends BaseFragment {
         updateItems();
 
         return fragmentView;
+    }
+
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
     }
 
     @Override
@@ -452,7 +467,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
 
             imageView = new ImageView(context);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, PorterDuff.Mode.MULTIPLY);
             imageView.setVisibility(View.GONE);
             addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 20, 0, 20, 0));
 
@@ -469,7 +484,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             textView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
 
@@ -477,12 +492,12 @@ public class LiteModeSettingsActivity extends BaseFragment {
             countTextView.setAnimationProperties(.35f, 0, 200, CubicBezierInterpolator.EASE_OUT_QUINT);
             countTextView.setTypeface(AndroidUtilities.bold());
             countTextView.setTextSize(dp(14));
-            countTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(countTextView, Theme.key_windowBackgroundWhiteBlackText);
             countTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
 
             arrowView = new ImageView(context);
             arrowView.setVisibility(GONE);
-            arrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(arrowView, Theme.key_windowBackgroundWhiteBlackText, PorterDuff.Mode.MULTIPLY);
             arrowView.setImageResource(R.drawable.arrow_more);
 
             textViewLayout = new LinearLayout(context);
@@ -679,7 +694,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
         }
     }
 
-    private class PowerSaverSlider extends FrameLayout {
+    private class PowerSaverSlider extends FrameLayout implements Theme.Colorable {
 
         BatteryDrawable batteryIcon;
         SpannableStringBuilder batteryText;
@@ -705,7 +720,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             headerTextView = new TextView(context);
             headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             headerTextView.setTypeface(AndroidUtilities.bold());
-            headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            ThemeBind.textColor(headerTextView, Theme.key_windowBackgroundWhiteBlueHeader);
             headerTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             headerTextView.setText(LocaleController.getString("LiteBatteryTitle"));
             headerLayout.addView(headerTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
@@ -715,6 +730,12 @@ public class LiteModeSettingsActivity extends BaseFragment {
 
                 @Override
                 protected void onDraw(Canvas canvas) {
+                    if (backgroundDrawable instanceof ShapeDrawable) {
+                        final int color = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader), 0.15f);
+                        if (((ShapeDrawable) backgroundDrawable).getPaint().getColor() != color) {
+                            ((ShapeDrawable) backgroundDrawable).getPaint().setColor(color);
+                        }
+                    }
                     backgroundDrawable.setBounds(0, 0, (int) (getPaddingLeft() + getDrawable().getCurrentWidth() + getPaddingRight()), getMeasuredHeight());
                     backgroundDrawable.draw(canvas);
 
@@ -724,7 +745,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             headerOnView.setTypeface(AndroidUtilities.bold());
             headerOnView.setPadding(AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2), AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2));
             headerOnView.setTextSize(AndroidUtilities.dp(12));
-            headerOnView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            ThemeBind.textColor(headerOnView, Theme.key_windowBackgroundWhiteBlueHeader);
             headerLayout.addView(headerOnView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 17, Gravity.CENTER_VERTICAL, 6, 1, 0, 0));
 
             addView(headerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 17, 21, 0));
@@ -783,7 +804,7 @@ public class LiteModeSettingsActivity extends BaseFragment {
             middleTextView.setAnimationProperties(.45f, 0, 240, CubicBezierInterpolator.EASE_OUT_QUINT);
             middleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
             middleTextView.setTextSize(dp(13));
-            middleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+            ThemeBind.textColor(middleTextView, Theme.key_windowBackgroundWhiteBlueText);
             valuesView.addView(middleTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             batteryText = new SpannableStringBuilder("b");
@@ -937,6 +958,36 @@ public class LiteModeSettingsActivity extends BaseFragment {
             }
         }
 
+        @Override
+        public void updateColors() {
+            try {
+                if (rightTextView != null && (onActiveAnimator == null || !onActiveAnimator.isRunning())) {
+                    rightTextView.setTextColor(ColorUtils.blendARGB(
+                        Theme.getColor(Theme.key_windowBackgroundWhiteGrayText),
+                        Theme.getColor(Theme.key_windowBackgroundWhiteBlueText),
+                        onActiveT
+                    ));
+                }
+                if (leftTextView != null && (offActiveAnimator == null || !offActiveAnimator.isRunning())) {
+                    leftTextView.setTextColor(ColorUtils.blendARGB(
+                        Theme.getColor(Theme.key_windowBackgroundWhiteGrayText),
+                        Theme.getColor(Theme.key_windowBackgroundWhiteBlueText),
+                        offActiveT
+                    ));
+                }
+                if (headerOnView != null) {
+                    headerOnView.invalidate();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhiteGrayText);
+        }
+
         private float offActiveT;
         private ValueAnimator offActiveAnimator;
         private void updateOffActive(boolean active) {
@@ -1066,10 +1117,5 @@ public class LiteModeSettingsActivity extends BaseFragment {
     @Override
     public boolean isSupportEdgeToEdge() {
         return true;
-    }
-    @Override
-    public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
-        listView.setClipToPadding(false);
     }
 }

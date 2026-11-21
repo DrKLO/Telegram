@@ -27,6 +27,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -34,6 +35,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -44,7 +46,26 @@ import org.telegram.ui.Components.TypefaceSpan;
 
 import java.util.ArrayList;
 
-public class EditTextCell extends FrameLayout {
+public class EditTextCell extends FrameLayout implements Theme.Colorable {
+
+    private Theme.ResourcesProvider cursorResourcesProvider;
+    private int themedCursorColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (editText == null) {
+                return;
+            }
+            final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, cursorResourcesProvider);
+            if (color != themedCursorColor) {
+                themedCursorColor = color;
+                editText.setCursorColor(color);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private boolean ignoreEditText;
     public final EditTextCaption editText;
@@ -179,8 +200,8 @@ public class EditTextCell extends FrameLayout {
         };
         limit.setCallback(editText);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourceProvider));
-        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.hintTextColor(editText, Theme.key_windowBackgroundWhiteHintText, resourceProvider);
+        ThemeBind.textColor(editText, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         editText.setBackground(null);
         if (multiline) {
             editText.setMaxLines(5);
@@ -194,7 +215,8 @@ public class EditTextCell extends FrameLayout {
         editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         editText.setHint(hint);
-        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        cursorResourcesProvider = resourceProvider;
+        editText.setCursorColor(themedCursorColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
         editText.setCursorSize(dp(19));
         editText.setCursorWidth(1.5f);
         editText.addTextChangedListener(new TextWatcher() {

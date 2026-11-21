@@ -31,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.HashtagSearchController;
 import org.telegram.messenger.LocaleController;
@@ -44,6 +45,8 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -310,7 +313,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
     }
 
     public void attach() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.storiesListUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.storiesListUpdated);
     }
 
     public void detach() {
@@ -340,14 +343,14 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
 
             for (int i = 0; i < 2; ++i) {
                 titleTextView[i] = new TextView(context);
-                titleTextView[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                ThemeBind.textColor(titleTextView[i], Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 titleTextView[i].setTypeface(AndroidUtilities.bold());
                 titleTextView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 titleTextView[i].setVisibility(i == 0 ? View.VISIBLE : View.GONE);
                 addView(titleTextView[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 76, 7, 40, 0));
 
                 subtitleTextView[i] = new TextView(context);
-                subtitleTextView[i].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+                ThemeBind.textColor(subtitleTextView[i], Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
                 subtitleTextView[i].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 subtitleTextView[i].setVisibility(i == 0 ? View.VISIBLE : View.GONE);
                 addView(subtitleTextView[i], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 76, 26.33f, 40, 0));
@@ -355,7 +358,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
 
             arrowView = new ImageView(context);
             arrowView.setImageResource(R.drawable.msg_arrowright);
-            arrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogSearchHint, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(arrowView, Theme.key_dialogSearchHint, resourcesProvider, PorterDuff.Mode.SRC_IN);
             addView(arrowView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 8.66f, 0));
         }
 
@@ -390,7 +393,7 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
             avatarsDrawable.commitTransition(false);
 
             if (!TextUtils.isEmpty(list.username)) {
-                titleTextView[0].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatPluralStringSpaced("HashtagStoriesFoundChannel", list.getCount(), "@" + list.username), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), null));
+                titleTextView[0].setText(themedSingleLink(LocaleController.formatPluralStringSpaced("HashtagStoriesFoundChannel", list.getCount(), "@" + list.username)));
             } else {
                 titleTextView[0].setText(LocaleController.formatPluralStringSpaced("HashtagStoriesFound", list.getCount()));
             }
@@ -399,9 +402,25 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
             return actualCount > 0;
         }
 
+        // AndroidUtilities.replaceSingleLink(str, color, null) with a span that follows theme changes
+        private CharSequence themedSingleLink(String str) {
+            final android.text.SpannableStringBuilder ssb = AndroidUtilities.replaceSingleLinkKey(str, Theme.key_featuredStickers_addButton, resourcesProvider, null);
+            try {
+                final android.text.style.CharacterStyle[] spans = ssb.getSpans(0, ssb.length(), android.text.style.CharacterStyle.class);
+                for (int i = 0; i < spans.length; ++i) {
+                    final int start = ssb.getSpanStart(spans[i]), end = ssb.getSpanEnd(spans[i]);
+                    ssb.removeSpan(spans[i]);
+                    ssb.setSpan(new ForegroundColorSpanThemable(Theme.key_featuredStickers_addButton, resourcesProvider), start, end, 0);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            return ssb;
+        }
+
         public void setMessages(int messagesCount, String hashtag, String username) {
             if (!TextUtils.isEmpty(username)) {
-                titleTextView[1].setText(AndroidUtilities.replaceSingleLink(LocaleController.formatPluralStringSpaced("HashtagMessagesFoundChannel", messagesCount, "@" + username), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), null));
+                titleTextView[1].setText(themedSingleLink(LocaleController.formatPluralStringSpaced("HashtagMessagesFoundChannel", messagesCount, "@" + username)));
             } else {
                 titleTextView[1].setText(LocaleController.formatPluralStringSpaced("HashtagMessagesFound", messagesCount));
             }

@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.graphics.PorterDuff;
 import android.content.Context;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -18,6 +19,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLObject;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
@@ -57,7 +59,7 @@ public class GuardBotReplaceSheet extends BottomSheetWithRecyclerListView {
 
         ImageView arrowView = new ImageView(context);
         arrowView.setImageResource(R.drawable.msg_arrow_avatar);
-        arrowView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.colorFilter(arrowView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         arrowView.setScaleType(ImageView.ScaleType.CENTER);
 
         LinearLayout avatarLine = new LinearLayout(context);
@@ -75,7 +77,7 @@ public class GuardBotReplaceSheet extends BottomSheetWithRecyclerListView {
         titleView.setGravity(Gravity.CENTER);
         titleView.setText(getString(R.string.GuardBotReplaceTitle));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         contentLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 20, 0, 20, 6));
 
         final String currentName = DialogObject.getShortName(currentBot);
@@ -85,7 +87,7 @@ public class GuardBotReplaceSheet extends BottomSheetWithRecyclerListView {
         subtitleView.setGravity(Gravity.CENTER);
         subtitleView.setText(buildSubtitle(currentName, newName));
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         subtitleView.setLineSpacing(dp(2.66f), 1);
         contentLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 24, 0, 24, 29));
 

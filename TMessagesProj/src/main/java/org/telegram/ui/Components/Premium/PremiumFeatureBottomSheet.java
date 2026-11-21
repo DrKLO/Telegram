@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.BottomPagesView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -117,7 +118,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         this.baseFragment = fragment;
         selectedTier = subscriptionTier;
 
-        fixNavigationBar(getThemedColor(Theme.key_dialogBackground));
+        fixNavigationBarKey(Theme.key_dialogBackground);
         this.startType = startType;
         this.onlySelectedType = onlySelectedType;
 
@@ -446,7 +447,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
         buttonContainer = new FrameLayout(getContext());
 
         buttonContainer.addView(premiumButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 16, 0, 16, 0));
-        buttonContainer.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        ThemeBind.backgroundColor(buttonContainer, Theme.key_dialogBackground, resourcesProvider);
         linearLayout.addView(buttonContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 68, Gravity.BOTTOM));
 
         if (startType == PremiumPreviewFragment.FEATURE_GIFTS) {
@@ -591,9 +592,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.billingProductDetailsUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.premiumPromoUpdated);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.premiumPromoUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
 
         actionBar = new ActionBar(getContext()) {
             @Override
@@ -610,11 +611,11 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 updateStatusBar();
             }
         };
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
-        actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        actionBar.setItemsBackgroundColor(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
-        actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), true);
+        ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, resourcesProvider, false);
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarActionModeDefaultIcon, resourcesProvider, true);
 
         actionBar.setCastShadows(true);
         actionBar.setExtraHeight(dp(2));
@@ -690,7 +691,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
 
             title = new TextView(context);
             title.setGravity(Gravity.CENTER_HORIZONTAL);
-            title.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(title, Theme.key_dialogTextBlack, PremiumFeatureBottomSheet.this.resourcesProvider);
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             title.setTypeface(AndroidUtilities.bold());
 
@@ -699,7 +700,7 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
             description = new LinkSpanDrawable.LinksTextView(context);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            description.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(description, Theme.key_dialogTextBlack, PremiumFeatureBottomSheet.this.resourcesProvider);
             if (!onlySelectedType) {
                 description.setLines(2);
             }

@@ -20,6 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class ManageChatTextCell extends FrameLayout {
 
@@ -28,25 +29,26 @@ public class ManageChatTextCell extends FrameLayout {
     private ImageView imageView;
     private boolean divider;
     private int dividerColor = 0;
+    private int textLeft = 71;
 
     public ManageChatTextCell(Context context) {
         super(context);
 
         textView = new SimpleTextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
         textView.setTextSize(16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(textView);
 
         valueTextView = new SimpleTextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
+        ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteValueText);
         valueTextView.setTextSize(16);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         addView(valueTextView);
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, PorterDuff.Mode.MULTIPLY);
         addView(imageView);
     }
 
@@ -56,6 +58,11 @@ public class ManageChatTextCell extends FrameLayout {
 
     public SimpleTextView getValueTextView() {
         return valueTextView;
+    }
+
+    public void setTextLeft(int left) {
+        textLeft = left;
+        requestLayout();
     }
 
     public void setDividerColor(int key) {
@@ -68,7 +75,7 @@ public class ManageChatTextCell extends FrameLayout {
         int height = AndroidUtilities.dp(48);
 
         valueTextView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(24), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
-        textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(71 + 24), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
+        textView.measure(MeasureSpec.makeMeasureSpec(width - AndroidUtilities.dp(textLeft + 24), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(20), MeasureSpec.EXACTLY));
         imageView.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
 
         setMeasuredDimension(width, getFullHeight() + (divider ? 1 : 0));
@@ -88,7 +95,7 @@ public class ManageChatTextCell extends FrameLayout {
         valueTextView.layout(viewLeft, viewTop, viewLeft + valueTextView.getMeasuredWidth(), viewTop + valueTextView.getMeasuredHeight());
 
         viewTop = (height - textView.getTextHeight()) / 2;
-        viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(71) : AndroidUtilities.dp(24);
+        viewLeft = !LocaleController.isRTL ? AndroidUtilities.dp(textLeft) : AndroidUtilities.dp(24);
         textView.layout(viewLeft, viewTop, viewLeft + textView.getMeasuredWidth(), viewTop + textView.getMeasuredHeight());
 
         viewTop = AndroidUtilities.dp(9);
@@ -101,9 +108,9 @@ public class ManageChatTextCell extends FrameLayout {
     }
 
     public void setColors(int iconColorKey, int text) {
-        textView.setTextColor(Theme.getColor(text));
+        ThemeBind.textColor(textView, text);
         textView.setTag(text);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(iconColorKey), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, iconColorKey, PorterDuff.Mode.MULTIPLY);
         imageView.setTag(iconColorKey);
     }
 
@@ -131,7 +138,7 @@ public class ManageChatTextCell extends FrameLayout {
             if (dividerColor != 0) {
                 Theme.dividerExtraPaint.setColor(Theme.getColor(dividerColor));
             }
-            canvas.drawLine(AndroidUtilities.dp(71), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerColor != 0 ? Theme.dividerExtraPaint : Theme.dividerPaint);
+            canvas.drawLine(AndroidUtilities.dp(textLeft), getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerColor != 0 ? Theme.dividerExtraPaint : Theme.dividerPaint);
         }
     }
 }

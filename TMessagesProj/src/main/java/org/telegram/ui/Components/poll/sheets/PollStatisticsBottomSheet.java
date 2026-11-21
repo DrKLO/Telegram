@@ -27,6 +27,24 @@ public class PollStatisticsBottomSheet extends BottomSheetWithRecyclerListView {
     private UniversalAdapter adapter;
     private final StatisticActivity.ChartViewData chartViewData;
 
+    private boolean themeBackgroundApplied;
+    private int lastThemeBackgroundColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int color = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
+            if (!themeBackgroundApplied || color != lastThemeBackgroundColor) {
+                themeBackgroundApplied = true;
+                lastThemeBackgroundColor = color;
+                setBackgroundColor(color);
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
+
     public PollStatisticsBottomSheet(Context context, Theme.ResourcesProvider resourcesProvider, TL_stats.TL_statsPollStats stats) {
         super(context, null, true, false, false, false, ActionBarType.SLIDING, resourcesProvider);
         setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));

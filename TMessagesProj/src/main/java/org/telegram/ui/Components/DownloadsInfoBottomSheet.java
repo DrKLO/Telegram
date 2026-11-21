@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import android.graphics.PorterDuff;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
@@ -22,6 +23,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.CacheControlActivity;
 
 public class DownloadsInfoBottomSheet extends BottomSheet {
@@ -37,7 +39,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         super(context, needFocus);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
-        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundWhite));
+        fixNavigationBarKey(Theme.key_windowBackgroundWhite);
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -47,7 +49,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
 
         ImageView closeView = new ImageView(context);
         closeView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        closeView.setColorFilter(getThemedColor(Theme.key_sheet_other));
+        ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = AndroidUtilities.dp(8);
@@ -61,7 +63,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
 
         TextView title = new TextView(context);
         title.setGravity(Gravity.CENTER_HORIZONTAL);
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(title, Theme.key_dialogTextBlack);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setText(LocaleController.getString(R.string.DownloadedFiles));
         linearLayout.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 20, 21, 0));
@@ -69,7 +71,7 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         TextView description = new TextView(context);
         description.setGravity(Gravity.CENTER_HORIZONTAL);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(description, Theme.key_dialogTextBlack);
         description.setLineSpacing(description.getLineSpacingExtra(), description.getLineSpacingMultiplier() * 1.1f);
         description.setText(LocaleController.formatString("DownloadedFilesMessage", R.string.DownloadedFilesMessage));
         linearLayout.addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 28, 7, 28, 0));
@@ -81,8 +83,8 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         storageBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         storageBtn.setTypeface(AndroidUtilities.bold());
         storageBtn.setText(LocaleController.getString(R.string.ManageDeviceStorage));
-        storageBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        storageBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
+        ThemeBind.textColor(storageBtn, Theme.key_featuredStickers_buttonText);
+        ThemeBind.selectorBackground(storageBtn, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120));
         linearLayout.addView(storageBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 14, 28, 14, 6));
 
         TextView clearBtn = new TextView(context);
@@ -92,8 +94,8 @@ public class DownloadsInfoBottomSheet extends BottomSheet {
         clearBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         clearBtn.setTypeface(AndroidUtilities.bold());
         clearBtn.setText(LocaleController.getString(R.string.ClearDownloadsList));
-        clearBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        clearBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));
+        ThemeBind.textColor(clearBtn, Theme.key_featuredStickers_addButton);
+        ThemeBind.selectorBackground(clearBtn, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)), null, ThemeBind.alpha(Theme.key_featuredStickers_addButton, 120));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             clearBtn.setLetterSpacing(0.025f);
         }

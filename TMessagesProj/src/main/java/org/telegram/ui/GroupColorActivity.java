@@ -292,6 +292,22 @@ public class GroupColorActivity extends ChannelColorActivity {
     }
 
     @Override
+    protected void applyThemeColors() {
+        applyActionBarThemeColors();
+        if (listView != null) {
+            listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        }
+        // buttonContainer: recolor the fill of the combined background set by updateColors in place
+        if (buttonContainer != null && buttonContainer.getBackground() instanceof CombinedDrawable) {
+            final Drawable background = ((CombinedDrawable) buttonContainer.getBackground()).getBackgroundDrawable();
+            if (background instanceof ColorDrawable) {
+                ((ColorDrawable) background).setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+                buttonContainer.invalidate();
+            }
+        }
+    }
+
+    @Override
     public void updateColors(boolean onlyActionBar) {
         super.updateColors(onlyActionBar);
         actionBar.setBackgroundColor(Color.TRANSPARENT);
@@ -300,6 +316,7 @@ public class GroupColorActivity extends ChannelColorActivity {
         CombinedDrawable combinedDrawable = new CombinedDrawable(background, shadowDrawable, 0, 0);
         combinedDrawable.setFullsize(true);
         buttonContainer.setBackground(combinedDrawable);
+        listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         if (profilePreview != null && !onlyActionBar) {
             profilePreview.backgroundView.setColor(currentAccount, selectedProfileColor, false);
             profilePreview.profileView.setColor(selectedProfileColor, false);
@@ -328,7 +345,7 @@ public class GroupColorActivity extends ChannelColorActivity {
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.chatInfoDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.chatInfoDidLoad);
         return super.onFragmentCreate();
     }
 

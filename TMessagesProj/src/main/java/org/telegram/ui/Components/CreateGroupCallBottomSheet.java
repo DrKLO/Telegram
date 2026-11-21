@@ -29,6 +29,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -103,8 +104,8 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                 ? LocaleController.formatString(R.string.VoipChannelStartVoiceChat)
                 : LocaleController.formatString(R.string.VoipGroupStartVoiceChat)
         );
-        startBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        startBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
+        ThemeBind.textColor(startBtn, Theme.key_featuredStickers_buttonText);
+        ThemeBind.selectorBackground(startBtn, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120));
         containerView.addView(startBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 6 + 48 + 6));
 
         TextView scheduleBtn = new TextView(context);
@@ -120,8 +121,8 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             scheduleBtn.setLetterSpacing(0.025f);
         }
-        scheduleBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        scheduleBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));
+        ThemeBind.textColor(scheduleBtn, Theme.key_featuredStickers_addButton);
+        ThemeBind.selectorBackground(scheduleBtn, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)), null, ThemeBind.alpha(Theme.key_featuredStickers_addButton, 120));
         containerView.addView(scheduleBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, 6));
 
         startBtn.setOnClickListener(view -> {
@@ -200,7 +201,7 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                         break;
                     case HOLDER_TYPE_SHADOW_TEXT:
                         TextInfoPrivacyCell cell = new TextInfoPrivacyCell(context);
-                        cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                        ThemeBind.backgroundColor(cell, Theme.key_windowBackgroundGray, resourcesProvider);
                         cell.setTopPadding(17);
                         cell.setBottomPadding(17);
                         view = cell;
@@ -281,13 +282,13 @@ public class CreateGroupCallBottomSheet extends BottomSheetWithRecyclerListView 
                     : LocaleController.formatString(R.string.StartVoipChatTitle)
             );
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText);
             addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 14, 0, 7));
 
             TextView description = new TextView(context);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
-            description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(description, Theme.key_dialogTextBlack);
             description.setText(isChannelOrGiga
                     ? LocaleController.formatString(R.string.VoipChannelStart2)
                     : LocaleController.formatString(R.string.VoipGroupStart2)

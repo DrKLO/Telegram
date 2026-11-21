@@ -68,9 +68,6 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.messenger.pip.PipSource;
-import org.telegram.messenger.pip.source.IPipSourceDelegate;
-import org.telegram.messenger.pip.utils.PipUtils;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.messenger.video.VideoPlayerHolderBase;
 import org.telegram.tgnet.TLRPC;
@@ -92,7 +89,7 @@ import org.telegram.ui.Stories.recorder.LivePlayerView;
 
 import java.util.ArrayList;
 
-public class StoryViewer implements NotificationCenter.NotificationCenterDelegate, BaseFragment.AttachedSheet, IPipSourceDelegate {
+public class StoryViewer implements NotificationCenter.NotificationCenterDelegate, BaseFragment.AttachedSheet {
 
     public static boolean animationInProgress;
 
@@ -184,11 +181,9 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     AspectRatioFrameLayout aspectRatioFrameLayout;
     VideoPlayerHolder playerHolder;
     LivePlayer livePlayer;
-    private PipSource pipSource;
     private TextureView textureView;
     private SurfaceView surfaceView;
     public LivePlayerView liveView;
-    public LivePlayerView pipLiveView;
     Uri lastUri;
     PeerStoriesView.VideoPlayerSharedScope currentPlayerScope;
     private boolean isClosed = true;
@@ -1144,11 +1139,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             return (int) (getMeasuredHeight() - (position[1] + child.storyContainer.getMeasuredHeight()));
                         }
                     });
-                    NotificationCenter.getInstance(currentAccount).addObserver(StoryViewer.this, NotificationCenter.storiesListUpdated);
-                    NotificationCenter.getInstance(currentAccount).addObserver(StoryViewer.this, NotificationCenter.storiesUpdated);
-                    NotificationCenter.getInstance(currentAccount).addObserver(StoryViewer.this, NotificationCenter.articleClosed);
-                    NotificationCenter.getInstance(currentAccount).addObserver(StoryViewer.this, NotificationCenter.openArticle);
-                    NotificationCenter.getInstance(currentAccount).addObserver(StoryViewer.this, NotificationCenter.storyDeleted);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(StoryViewer.this, NotificationCenter.storiesListUpdated);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(StoryViewer.this, NotificationCenter.storiesUpdated);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(StoryViewer.this, NotificationCenter.articleClosed);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(StoryViewer.this, NotificationCenter.openArticle);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(StoryViewer.this, NotificationCenter.storyDeleted);
                 }
 
                 @Override
@@ -1396,12 +1391,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             liveView.setScope(dialogId, null);
                             liveView.reset();
                         }
-                        if (LiveStoryPipOverlay.isVisible() && LiveStoryPipOverlay.getLivePlayer() != null && LiveStoryPipOverlay.getLivePlayer().equals(call)) {
-                            livePlayer = LiveStoryPipOverlay.takeLivePlayer();
-                            LiveStoryPipOverlay.dismiss(false);
-                        } else if (livePlayer != null) {
-                            if (livePlayer.outgoing || LiveStoryPipOverlay.isVisible(livePlayer)) {
-                                if (livePlayer.getDisplaySink() == liveView.getSink())
+                        // the same live story in the PiP window: its player comes back to the viewer
+                        final LivePlayer fromPip = LiveStoryPipContent.takePlayer(call);
+                        if (livePlayer != null && livePlayer != fromPip) {
+                            if (livePlayer.outgoing || LiveStoryPipContent.keepsPlayer(livePlayer)) {
+                                if (fromPip == null && livePlayer.getDisplaySink() == liveView.getSink())
                                     return;
                                 livePlayer.setDisplaySink(null);
                             } else {
@@ -1409,9 +1403,11 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                             }
                             livePlayer = null;
                         }
-                        if (LiveStoryPipOverlay.isVisible()) {
-                            LiveStoryPipOverlay.dismiss();
+                        if (fromPip != null) {
+                            livePlayer = fromPip;
                         }
+                        // another live story in the PiP window closes
+                        LiveStoryPipContent.closeFloating();
                         if (playerHolder != null) {
                             playerHolder.release(null);
                             playerHolder = null;
@@ -1434,11 +1430,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 livePlayer = new LivePlayer(context, currentAccount, storyItem, dialogId, storyId, rtmp_stream, call);
                             }
                         }
-                        if (pipLiveView != null) {
-                            livePlayer.setDisplaySink(pipLiveView.getSink());
-                        } else {
-                            livePlayer.setDisplaySink(liveView.getSink());
-                        }
+                        livePlayer.setDisplaySink(liveView.getSink());
+                        LiveStoryPipContent.onPrimary(StoryViewer.this, livePlayer);
                         currentPlayerScope = scope;
                         currentPlayerScope.firstFrameRendered = false;
                         currentPlayerScope.renderView = aspectRatioFrameLayout;
@@ -2263,7 +2256,6 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void updatePlayingMode() {
-        updatePipSource();
         if (storiesViewPager == null) {
             return;
         }
@@ -2515,6 +2507,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             windowManager.removeView(windowView);
         }
         windowView = null;
+        destroyPages();
         isShowing = false;
         foundViewToClose = false;
         checkNavBarColor();
@@ -2608,6 +2601,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                     windowManager.removeView(windowView);
                                 }
                                 windowView = null;
+                                destroyPages();
                             } catch (Exception e2) {
 
                             }
@@ -2629,6 +2623,13 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }, 16);
     }
 
+    // the next open() builds a new window and pager, so the old pages are never used again
+    private void destroyPages() {
+        if (storiesViewPager != null) {
+            storiesViewPager.onDestroy();
+        }
+    }
+
     @Override
     public void release() {
         lastUri = null;
@@ -2641,7 +2642,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         if (liveView != null) {
             liveView.setScope(0, null);
         }
-        if (livePlayer != null && !LiveStoryPipOverlay.isVisible(livePlayer)) {
+        if (livePlayer != null && !LiveStoryPipContent.keepsPlayer(livePlayer)) {
             if (livePlayer.outgoing) {
                 livePlayer.setDisplaySink(null);
             } else {
@@ -2649,6 +2650,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
         livePlayer = null;
+        LiveStoryPipContent.onPrimaryGone(this);
         for (int i = 0; i < preparedPlayers.size(); i++) {
             preparedPlayers.get(i).release(null);
         }
@@ -3038,9 +3040,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         if (storiesIntro != null) {
             storiesIntro.startAnimation(false);
         }
-        if (LiveStoryPipOverlay.isVisible()) {
-            LiveStoryPipOverlay.dismiss();
-        }
+        // a live story in the PiP window stays: the viewer takes it back when it shows the same
+        // story, and another live story replaces it (requestPlayer)
     }
 
     public void onPause() {
@@ -3049,7 +3050,8 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             playerHolder.release(null);
             playerHolder = null;
         }
-        if (pipLiveView == null) {
+        // a live story going to system PiP keeps its player (the activity is paused in PiP)
+        if (!LiveStoryPipContent.keepsPlayer(livePlayer)) {
             if (liveView != null) {
                 liveView.setScope(0, null);
             }
@@ -3190,106 +3192,20 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
-    private void updatePipSource() {
-//        if (pipIsAvailable() != (pipSource != null)) {
-//            if (pipIsAvailable()) {
-//                final PeerStoriesView peerView = getCurrentPeerView();
-//                final Activity activity = AndroidUtilities.findActivity(fragment.getContext());
-//                if (PipUtils.checkPermissions(activity) == PipPermissions.PIP_GRANTED_PIP && peerView != null && peerView.storyContainer != null) {
-//                    pipSource = new PipSource.Builder(activity, this)
-//                        .setTagPrefix("live-story-pip")
-//                        .setPriority(1)
-//                        .setCornerRadius(dp(10))
-//                        .setContentView(peerView.storyContainer)
-//                        .build();
-//                } else if (pipSource != null) {
-//                    pipSource.destroy();
-//                    pipSource = null;
-//                }
-//            } else {
-//                if (pipSource != null) {
-//                    pipSource.destroy();
-//                    pipSource = null;
-//                }
-//            }
-//        }
-    }
-
     public void switchToPip() {
         if (livePlayer == null || fragment == null || liveView == null) {
             return;
         }
         final Activity activity = AndroidUtilities.findActivity(fragment.getContext());
-        if (PipUtils.checkAnyPipPermissions(activity)) {
-            LiveStoryPipOverlay.show(activity, livePlayer);
+        // the floating window: an overlay with the permission, an in-app window without it
+        if (activity != null && LiveStoryPipContent.openFloating(activity, this, livePlayer, liveView.getBitmap())) {
+            // the player belongs to the window now: the closing viewer never touches it again
+            livePlayer = null;
+            if (currentPlayerScope != null) {
+                currentPlayerScope.livePlayer = null;
+            }
+            liveView.setScope(0, null);
             dismiss();
         }
-    }
-
-    @Override
-    public boolean pipIsAvailable() {
-        if (fragment == null) return false;
-        return fragment != null && getCurrentPeerView() != null && AndroidUtilities.findActivity(fragment.getContext()) != null && livePlayer != null && liveView != null && !isClosed;
-    }
-
-    @Override
-    public Bitmap pipCreatePrimaryWindowViewBitmap() {
-        if (liveView == null || !liveView.isAvailable()) {
-            return null;
-        }
-        return liveView.getBitmap();
-    }
-
-    @Override
-    public Bitmap pipCreatePictureInPictureViewBitmap() {
-        if (pipLiveView == null || !pipLiveView.isAvailable()) {
-            return null;
-        }
-        return pipLiveView.getBitmap();
-    }
-
-    @Override
-    public View pipCreatePictureInPictureView() {
-        pipLiveView = new LivePlayerView(liveView.getContext(), currentAccount, false);
-        return pipLiveView;
-    }
-
-    @Override
-    public void pipHidePrimaryWindowView(Runnable firstFrameCallback) {
-        if (pipLiveView != null) {
-            pipLiveView.setOnFirstFrameCallback(firstFrameCallback);
-
-            livePlayer.setDisplaySink(pipLiveView.getSink());
-        }
-
-        if (ATTACH_TO_FRAGMENT) {
-            AndroidUtilities.removeFromParent(windowView);
-        } else {
-            windowManager.removeView(windowView);
-        }
-        windowView.invalidate();
-    }
-
-    @Override
-    public void pipShowPrimaryWindowView(Runnable firstFrameCallback) {
-        if (pipLiveView != null) {
-            pipLiveView.setOnFirstFrameCallback(firstFrameCallback);
-        }
-        if (ATTACH_TO_FRAGMENT) {
-            AndroidUtilities.removeFromParent(windowView);
-            fragment.getLayoutContainer().addView(windowView);
-        } else {
-            windowManager.addView(windowView, windowLayoutParams);
-        }
-
-        if (pipLiveView != null) {
-            pipLiveView.release();
-            pipLiveView = null;
-        }
-
-//        windowViewSkipRender = false;
-        windowView.invalidate();
-
-        livePlayer.setDisplaySink(liveView.getSink());
     }
 }

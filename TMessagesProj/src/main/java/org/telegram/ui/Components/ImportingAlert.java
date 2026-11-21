@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.FileLog;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
@@ -30,6 +31,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 
 public class ImportingAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
@@ -59,7 +61,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             this.resourcesProvider = resourcesProvider;
 
             background = new View(context);
-            background.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+            ThemeBind.selectorBackground(background, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(4), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed), resourcesProvider);
             addView(background, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 16, 16, 16));
 
             linearLayout = new LinearLayout(context);
@@ -67,9 +69,9 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             imageView = new RLottieImageView(context);
-            imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(20), getThemedColor(Theme.key_featuredStickers_buttonText)));
+            ThemeBind.fillBackground(imageView, Theme.createCircleDrawable(AndroidUtilities.dp(20), getThemedColor(Theme.key_featuredStickers_buttonText)), ThemeBind.of(Theme.key_featuredStickers_buttonText), resourcesProvider);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             imageView.setAnimation(R.raw.import_check, 26, 26);
             imageView.setScaleX(0.8f);
             imageView.setScaleY(0.8f);
@@ -81,7 +83,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(textView, Theme.key_featuredStickers_buttonText, resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 10, 0, 0, 0));
@@ -93,6 +95,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         }
 
         public void setTextColor(int color) {
+            ThemeBind.clear(textView); // custom color from the caller: no longer follows the theme key
             textView.setTextColor(color);
         }
 
@@ -131,7 +134,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         TextView textView = new TextView(context);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
         frameLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.LEFT, 17, 20, 17, 0));
@@ -149,7 +152,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
         percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        percentTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(percentTextView, Theme.key_dialogTextBlack, resourcesProvider);
         frameLayout.addView(percentTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 262, 17, 0));
 
         lineProgressView = new LineProgressView(getContext());
@@ -170,12 +173,12 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             importCountTextView[a] = new TextView(context);
             importCountTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             importCountTextView[a].setTypeface(AndroidUtilities.bold());
-            importCountTextView[a].setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(importCountTextView[a], Theme.key_dialogTextBlack, resourcesProvider);
             frameLayout.addView(importCountTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 340, 17, 0));
 
             infoTextView[a] = new TextView(context);
             infoTextView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            infoTextView[a].setTextColor(getThemedColor(Theme.key_dialogTextGray3));
+            ThemeBind.textColor(infoTextView[a], Theme.key_dialogTextGray3, resourcesProvider);
             infoTextView[a].setGravity(Gravity.CENTER_HORIZONTAL);
             frameLayout.addView(infoTextView[a], LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 30, 368, 30, 44));
 
@@ -198,7 +201,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             infoTextView[1].setText(LocaleController.getString(R.string.ImportDoneInfo));
             importCountTextView[1].setText(LocaleController.getString(R.string.ImportDoneTitle));
 
-            parentFragment.getNotificationCenter().addObserver(this, NotificationCenter.historyImportProgressChanged);
+            parentFragment.getNotificationCenter().addWeakObserver(this, NotificationCenter.historyImportProgressChanged);
         } else {
             textView.setText(LocaleController.getString(R.string.ImportStickersImportingTitle));
             SendMessagesHelper.ImportingStickers importingStickers = SendMessagesHelper.getInstance(currentAccount).getImportingStickers(shortName);
@@ -208,7 +211,7 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             infoTextView[1].setText(LocaleController.getString(R.string.ImportStickersDoneInfo));
             importCountTextView[1].setText(LocaleController.getString(R.string.ImportStickersDoneTitle));
 
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersImportProgressChanged);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.stickersImportProgressChanged);
         }
     }
 
@@ -295,6 +298,19 @@ public class ImportingAlert extends BottomSheet implements NotificationCenter.No
             parentFragment.getNotificationCenter().removeObserver(this, NotificationCenter.historyImportProgressChanged);
         } else {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.stickersImportProgressChanged);
+        }
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (lineProgressView != null) {
+                lineProgressView.setProgressColor(getThemedColor(Theme.key_featuredStickers_addButton));
+                lineProgressView.setBackColor(getThemedColor(Theme.key_dialogLineProgressBackground));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

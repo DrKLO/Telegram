@@ -84,6 +84,8 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
     private int currentAccount = UserConfig.selectedAccount;
     private Object parentObject;
     private Theme.ResourcesProvider resourcesProvider;
+    // A widget result (botInlineMessageWidget), shown as a preview of the widget it sends.
+    private org.telegram.ui.Components.WidgetInlinePreview widgetPreview;
 
     private boolean needDivider;
     private boolean buttonPressed;
@@ -185,6 +187,13 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
         if (inlineResult == null && documentAttach == null) {
             setMeasuredDimension(AndroidUtilities.dp(100), AndroidUtilities.dp(100));
+            return;
+        }
+        if (widgetPreview != null) {
+            int viewWidth = MeasureSpec.getSize(widthMeasureSpec);
+            int width = viewWidth - AndroidUtilities.dp(mediaWebpage ? 4 : 16);
+            setMeasuredDimension(viewWidth, widgetPreview.heightPx(width) + AndroidUtilities.dp(mediaWebpage ? 4 : 12) + (needDivider ? 1 : 0));
+            if (isAttachedToWindow()) widgetPreview.show(width);
             return;
         }
 
@@ -535,6 +544,9 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
         }
         mediaWebpage = media;
         isForceGif = forceGif;
+        if (widgetPreview != null) widgetPreview.hide();
+        widgetPreview = org.telegram.ui.Components.WidgetInlinePreview.supports(contextResult)
+                ? new org.telegram.ui.Components.WidgetInlinePreview(this, currentAccount, contextResult, resourcesProvider) : null;
         setAttachType();
         if (forceGif) {
             documentAttachType = DOCUMENT_ATTACH_TYPE_GIF;
@@ -633,6 +645,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
         radialProgress.onDetachedFromWindow();
         DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
+        if (widgetPreview != null) widgetPreview.hide();
     }
 
     @Override
@@ -642,6 +655,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
             updateButtonState(false, false);
         }
         radialProgress.onAttachedToWindow();
+        if (widgetPreview != null && getMeasuredWidth() > 0) widgetPreview.show(getMeasuredWidth() - AndroidUtilities.dp(mediaWebpage ? 4 : 16));
     }
 
     public MessageObject getMessageObject() {
@@ -755,6 +769,13 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (widgetPreview != null) {
+            widgetPreview.draw(canvas, AndroidUtilities.dp(mediaWebpage ? 2 : 8), AndroidUtilities.dp(mediaWebpage ? 2 : 6));
+            if (needDivider && !mediaWebpage) {
+                canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
+            return;
+        }
         if (checkBox != null) {
             if (checkBox.isChecked() || !linkImageView.hasBitmapImage() || linkImageView.getCurrentAlpha() != 1.0f || PhotoViewer.isShowingImage((MessageObject) parentObject)) {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);

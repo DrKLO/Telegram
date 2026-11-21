@@ -58,6 +58,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.AvatarPreviewPagerIndicator;
 import org.telegram.ui.Cells.MemberRequestCell;
 import org.telegram.ui.ChatActivity;
@@ -129,7 +130,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
     public FrameLayout getRootLayout() {
         if (rootLayout == null) {
             rootLayout = new FrameLayout(fragment.getParentActivity());
-            rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, fragment.getResourceProvider()));
+            ThemeBind.backgroundColor(rootLayout, Theme.key_windowBackgroundGray, fragment.getResourceProvider());
 
             loadingView = getLoadingView();
             rootLayout.addView(loadingView, MATCH_PARENT, MATCH_PARENT);
@@ -147,7 +148,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             recyclerView.setLayoutManager(layoutManager);
             recyclerView.setOnItemClickListener(this::onItemClick);
             recyclerView.setOnScrollListener(listScrollListener);
-            recyclerView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector, fragment.getResourceProvider()));
+            ThemeBind.listSelectorColor(recyclerView, Theme.key_listSelector, fragment.getResourceProvider());
             rootLayout.addView(recyclerView, MATCH_PARENT, MATCH_PARENT);
 
             DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
@@ -177,7 +178,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             loadingView = new FlickerLoadingView(fragment.getParentActivity(), fragment.getResourceProvider());
             loadingView.setAlpha(0f);
             if (isShowLastItemDivider) {
-                loadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, fragment.getResourceProvider()));
+                ThemeBind.backgroundColor(loadingView, Theme.key_windowBackgroundWhite, fragment.getResourceProvider());
             }
             loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, -1);
             loadingView.setViewType(FlickerLoadingView.MEMBER_REQUESTS_TYPE);
@@ -201,7 +202,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
         if (searchEmptyView == null) {
             searchEmptyView = new StickerEmptyView(fragment.getParentActivity(), null, StickerEmptyView.STICKER_TYPE_SEARCH, fragment.getResourceProvider());
             if (isShowLastItemDivider) {
-                searchEmptyView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, fragment.getResourceProvider()));
+                ThemeBind.backgroundColor(searchEmptyView, Theme.key_windowBackgroundWhite, fragment.getResourceProvider());
             }
             searchEmptyView.title.setText(LocaleController.getString(R.string.NoResult));
             searchEmptyView.subtitle.setText(LocaleController.getString(R.string.SearchEmptyViewFilteredSubtitle2));
@@ -610,7 +611,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                         }
                     };
                     if (isShowLastItemDivider) {
-                        loadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, fragment.getResourceProvider()));
+                        ThemeBind.backgroundColor(loadingView, Theme.key_windowBackgroundWhite, fragment.getResourceProvider());
                     }
                     loadingView.setColors(Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundGray, -1);
                     loadingView.setViewType(FlickerLoadingView.MEMBER_REQUESTS_TYPE);
@@ -747,7 +748,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             contentView.setVisibility(INVISIBLE);
 
             int backgroundColor = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, fragment.getResourceProvider());
-            pagerShadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor, PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(contentView, pagerShadowDrawable, Theme.key_actionBarDefaultSubmenuBackground, fragment.getResourceProvider(), PorterDuff.Mode.MULTIPLY);
             pagerShadowDrawable.setCallback(contentView);
             android.graphics.Rect paddingRect = new android.graphics.Rect();
             pagerShadowDrawable.getPadding(paddingRect);
@@ -755,7 +756,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             shadowPaddingLeft = paddingRect.left;
 
             popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(context, resourcesProvider);
-            popupLayout.setBackgroundColor(backgroundColor);
+            ThemeBind.backgroundColor(popupLayout, Theme.key_actionBarDefaultSubmenuBackground, fragment.getResourceProvider());
             contentView.addView(popupLayout);
 
             pagerIndicator = new AvatarPreviewPagerIndicator(getContext()) {
@@ -775,18 +776,18 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             contentView.addView(pagerIndicator);
 
             nameText.setMaxLines(1);
-            nameText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, fragment.getResourceProvider()));
+            ThemeBind.textColor(nameText, Theme.key_windowBackgroundWhiteBlackText, fragment.getResourceProvider());
             nameText.setTextSize(16);
             nameText.setTypeface(AndroidUtilities.bold());
             contentView.addView(nameText);
 
-            bioText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, fragment.getResourceProvider()));
+            ThemeBind.textColor(bioText, Theme.key_windowBackgroundWhiteGrayText, fragment.getResourceProvider());
             bioText.setTextSize(14);
             contentView.addView(bioText);
 
-            ActionBarMenuSubItem addCell = new ActionBarMenuSubItem(context, true, false);
-            addCell.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
-            addCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
+            ActionBarMenuSubItem addCell = new ActionBarMenuSubItem(context, true, false, resourcesProvider);
+            addCell.setColorKeys(Theme.key_actionBarDefaultSubmenuItem, Theme.key_actionBarDefaultSubmenuItemIcon);
+            addCell.setSelectorColorKey(Theme.key_dialogButtonSelector, 1f);
             addCell.setTextAndIcon(isChannel ? LocaleController.getString(R.string.AddToChannel) : LocaleController.getString(R.string.AddToGroup), R.drawable.msg_requests);
             addCell.setOnClickListener((v) -> {
                 if (importer != null) {
@@ -796,9 +797,9 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             });
             popupLayout.addView(addCell);
 
-            ActionBarMenuSubItem sendMsgCell = new ActionBarMenuSubItem(context, false, false);
-            sendMsgCell.setColors(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider));
-            sendMsgCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
+            ActionBarMenuSubItem sendMsgCell = new ActionBarMenuSubItem(context, false, false, resourcesProvider);
+            sendMsgCell.setColorKeys(Theme.key_actionBarDefaultSubmenuItem, Theme.key_actionBarDefaultSubmenuItemIcon);
+            sendMsgCell.setSelectorColorKey(Theme.key_dialogButtonSelector, 1f);
             sendMsgCell.setTextAndIcon(LocaleController.getString(R.string.SendMessage), R.drawable.msg_msgbubble3);
             sendMsgCell.setOnClickListener((v) -> {
                 if (importer != null) {
@@ -813,9 +814,9 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
             });
             popupLayout.addView(sendMsgCell);
 
-            ActionBarMenuSubItem dismissCell = new ActionBarMenuSubItem(context, false, true);
-            dismissCell.setColors(Theme.getColor(Theme.key_text_RedBold, resourcesProvider), Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
-            dismissCell.setSelectorColor(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider));
+            ActionBarMenuSubItem dismissCell = new ActionBarMenuSubItem(context, false, true, resourcesProvider);
+            dismissCell.setColorKeys(Theme.key_text_RedBold, Theme.key_text_RedRegular);
+            dismissCell.setSelectorColorKey(Theme.key_dialogButtonSelector, 1f);
             dismissCell.setTextAndIcon(LocaleController.getString(R.string.DismissRequest), R.drawable.msg_remove);
             dismissCell.setOnClickListener((v) -> {
                 if (importer != null) {

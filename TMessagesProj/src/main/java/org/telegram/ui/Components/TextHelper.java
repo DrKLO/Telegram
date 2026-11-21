@@ -6,6 +6,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class TextHelper {
 
@@ -15,7 +16,7 @@ public class TextHelper {
     public static TextView makeTextView(Context context, float textSizeDp, int colorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
         final TextView textView = new TextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
-        textView.setTextColor(Theme.getColor(colorKey, resourcesProvider));
+        ThemeBind.textColor(textView, colorKey, resourcesProvider);
         if (bold) {
             textView.setTypeface(AndroidUtilities.bold());
         }
@@ -34,8 +35,8 @@ public class TextHelper {
     public static LinkSpanDrawable.LinksTextView makeLinkTextView(Context context, float textSizeDp, int colorKey, int linkColorKey, boolean bold, Theme.ResourcesProvider resourcesProvider) {
         final LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(context);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSizeDp);
-        textView.setTextColor(Theme.getColor(colorKey, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(linkColorKey, resourcesProvider));
+        ThemeBind.textColor(textView, colorKey, resourcesProvider);
+        ThemeBind.linkTextColor(textView, linkColorKey, resourcesProvider);
         if (bold) {
             textView.setTypeface(AndroidUtilities.bold());
         }

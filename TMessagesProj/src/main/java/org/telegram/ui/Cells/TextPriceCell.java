@@ -19,6 +19,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class TextPriceCell extends FrameLayout {
@@ -82,14 +83,14 @@ public class TextPriceCell extends FrameLayout {
         }
         if (bold) {
             setTag(Theme.key_windowBackgroundWhiteBlackText);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteBlackText);
             textView.setTypeface(AndroidUtilities.bold());
             valueTextView.setTypeface(AndroidUtilities.bold());
         } else {
             setTag(Theme.key_windowBackgroundWhiteGrayText2);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText2);
+            ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteGrayText2);
             textView.setTypeface(Typeface.DEFAULT);
             valueTextView.setTypeface(Typeface.DEFAULT);
         }

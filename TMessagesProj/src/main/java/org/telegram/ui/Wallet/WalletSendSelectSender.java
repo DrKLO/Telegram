@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -23,6 +24,8 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+
+import androidx.annotation.Nullable;
 import android.view.inputmethod.EditorInfo;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -46,9 +49,10 @@ import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
 import org.telegram.ui.Adapters.SearchAdapterHelper;
-import org.telegram.ui.CameraScanActivity;
+import org.telegram.ui.QrShare.QrScanOverlay;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Components.ChatAttachAlertAudioLayout;
 import org.telegram.ui.Gifts.ResaleGiftsFragment;
@@ -88,6 +92,7 @@ public class WalletSendSelectSender extends UniversalFragment {
     @Override
     public void onFragmentDestroy() {
         destroyed = true;
+        destroyScanOverlay();
         if (clipboardManager != null) clipboardManager.removePrimaryClipChangedListener(clipboardListener);
         if (pasteButton != null) pasteButton.animate().cancel();
         if (scanButton != null) scanButton.animate().cancel();
@@ -192,6 +197,35 @@ public class WalletSendSelectSender extends UniversalFragment {
     private ClipboardManager clipboardManager;
     private final ClipboardManager.OnPrimaryClipChangedListener clipboardListener = () -> refreshClipboard(true);
     private FrameLayout buttonContainer;
+    private ImageView addressResultAvatar;
+    private Drawable addressResultCircle;
+    private int lastButtonContainerColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (buttonContainer != null && buttonContainer.getBackground() instanceof GradientDrawable) {
+                final int background = getThemedColor(Theme.key_windowBackgroundGray);
+                if (background != lastButtonContainerColor) {
+                    lastButtonContainerColor = background;
+                    ((GradientDrawable) buttonContainer.getBackground()).setColors(new int[]{
+                            Theme.multAlpha(background, 0.0f),
+                            background,
+                            background
+                    });
+                }
+            }
+            if (addressResultCircle != null) {
+                Theme.setDrawableColor(addressResultCircle, getThemedColor(Theme.key_featuredStickers_addButton));
+                if (addressResultAvatar != null) {
+                    addressResultAvatar.invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private ButtonWithCounterView continueButton;
 
     private int bottomInset;
@@ -242,7 +276,7 @@ public class WalletSendSelectSender extends UniversalFragment {
                 rebuildSearchUsers(recipientEdit.getText().toString().trim());
             }
         });
-        getNotificationCenter().addObserver(hintsObserver, NotificationCenter.reloadHints);
+        getNotificationCenter().addWeakObserver(hintsObserver, NotificationCenter.reloadHints);
         MediaDataController.getInstance(currentAccount).loadHints(true);
         loadRecentUsers();
 
@@ -319,8 +353,8 @@ public class WalletSendSelectSender extends UniversalFragment {
                 canvas.restore();
             }
         };
-        recipientEdit.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        recipientEdit.setHintTextColor(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteHintText), 0.72f));
+        ThemeBind.textColor(recipientEdit, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
+        ThemeBind.hintTextColor(recipientEdit, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteHintText, 0.72f), getResourceProvider());
         recipientEdit.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         recipientEdit.setHint(LocaleController.getString(R.string.WalletAddressOrName));
         recipientEdit.setSingleLine(true);
@@ -340,16 +374,16 @@ public class WalletSendSelectSender extends UniversalFragment {
 
         pasteButton = new TextView(context);
         pasteButton.setText(LocaleController.getString(R.string.WalletPaste));
-        pasteButton.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+        ThemeBind.textColor(pasteButton, Theme.key_windowBackgroundWhiteBlueText, getResourceProvider());
         pasteButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         pasteButton.setTypeface(AndroidUtilities.bold());
         pasteButton.setGravity(Gravity.CENTER);
         final int pasteColor = Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), 0.10f);
-        pasteButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(
+        ThemeBind.selectorBackground(pasteButton, Theme.createSimpleSelectorRoundRectDrawable(
                 dp(16),
                 pasteColor,
                 Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), 0.18f)
-        ));
+        ), ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueText, 0.10f), ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueText, 0.18f), getResourceProvider());
         pasteButton.setOnClickListener(v -> pasteRecipient());
         ScaleStateListAnimator.apply(pasteButton, 0.04f, 1.2f);
         row.addView(pasteButton, LayoutHelper.createFrame(
@@ -379,13 +413,10 @@ public class WalletSendSelectSender extends UniversalFragment {
         scanButton = new ImageView(context);
         scanButton.setScaleType(ImageView.ScaleType.CENTER);
         scanButton.setImageResource(R.drawable.scan_qr);
-        scanButton.setColorFilter(new PorterDuffColorFilter(
-                getThemedColor(Theme.key_windowBackgroundWhiteBlueText),
-                PorterDuff.Mode.SRC_IN
-        ));
-        scanButton.setBackground(Theme.createSelectorDrawable(
+        ThemeBind.colorFilter(scanButton, Theme.key_windowBackgroundWhiteBlueText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(scanButton, Theme.createSelectorDrawable(
                 Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), 0.12f)
-        ));
+        ), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueText, 0.12f), getResourceProvider());
         scanButton.setContentDescription(LocaleController.getString(R.string.WalletScanQRCode));
         scanButton.setOnClickListener(v -> openWalletQrScanner());
         row.addView(scanButton, LayoutHelper.createFrame(
@@ -412,6 +443,7 @@ public class WalletSendSelectSender extends UniversalFragment {
     @Override
     public void onPause() {
         if (clipboardManager != null) clipboardManager.removePrimaryClipChangedListener(clipboardListener);
+        destroyScanOverlay();
         super.onPause();
     }
 
@@ -463,8 +495,10 @@ public class WalletSendSelectSender extends UniversalFragment {
                 .withEndAction(() -> button.setVisibility(visible ? View.VISIBLE : View.GONE)).start();
     }
 
+    private @Nullable QrScanOverlay scanOverlay;
+
     private void openWalletQrScanner() {
-        if (getParentActivity() == null) {
+        if (getParentActivity() == null || scanOverlay != null || scanButton == null) {
             return;
         }
         AndroidUtilities.hideKeyboard(recipientEdit);
@@ -476,37 +510,67 @@ public class WalletSendSelectSender extends UniversalFragment {
             );
             return;
         }
-        CameraScanActivity.showAsSheet(this, true, CameraScanActivity.TYPE_QR, new CameraScanActivity.CameraScanActivityDelegate() {
-            @Override
-            public void didFindQr(String text) {
-                if (isFinished || recipientEdit == null) {
-                    return;
-                }
-                final String address;
-                try {
-                    final Uri uri = Uri.parse(text == null ? "" : text.trim());
-                    if (!"ton".equalsIgnoreCase(uri.getScheme())
-                            || !"transfer".equalsIgnoreCase(uri.getAuthority())
-                            || uri.getPathSegments().size() != 1) {
-                        showInvalidWalletQr();
-                        return;
-                    }
-                    address = uri.getPathSegments().get(0);
-                    if (!isValidAddress(address)) {
-                        showInvalidWalletQr();
-                        return;
-                    }
-                } catch (Throwable e) {
-                    showInvalidWalletQr();
-                    return;
-                }
-
-                recipientEdit.setText(address);
-                recipientEdit.setSelection(recipientEdit.length());
-                AndroidUtilities.hideKeyboard(recipientEdit);
-                selectRecipient(null, address);
+        scanOverlay = QrScanOverlay.open(this, scanButton, text -> scannedRecipient(text) != null, text -> {
+            final String recipient = scannedRecipient(text);
+            if (isFinished || recipientEdit == null || recipient == null) {
+                return;
             }
-        });
+            if (recipient.startsWith("@")) {
+                WalletActivity.resolveWalletQrUser(currentAccount, recipient.substring(1), user -> {
+                    if (isFinished || recipientEdit == null) return;
+                    if (user == null) {
+                        showInvalidWalletQr();
+                        return;
+                    }
+                    AndroidUtilities.hideKeyboard(recipientEdit);
+                    selectRecipient(user, null);
+                });
+                return;
+            }
+            recipientEdit.setText(recipient);
+            recipientEdit.setSelection(recipientEdit.length());
+            AndroidUtilities.hideKeyboard(recipientEdit);
+            selectRecipient(null, recipient);
+        }, () -> scanOverlay = null);
+    }
+
+    /** The recipient of a scanned wallet link: an address, or "@username"; null when there is none. */
+    @Nullable
+    private static String scannedRecipient(String text) {
+        final Uri uri = WalletActivity.walletQrUri(text);
+        if ("ton".equalsIgnoreCase(uri.getScheme())) {
+            if (!"transfer".equalsIgnoreCase(uri.getAuthority()) || uri.getPathSegments().size() != 1) return null;
+            final String address = uri.getPathSegments().get(0);
+            return WalletEngine2.isValidRecipientAddress(address) ? address : null;
+        }
+        if (!WalletActivity.isWalletQrLink(uri)) return null;
+        final String username = WalletActivity.walletQrUsername(uri);
+        if (username != null) return "@" + username;
+        // t.me/sendgrams?to=<address or username>
+        final String to = uri.getQueryParameter("to");
+        if (TextUtils.isEmpty(to)) return null;
+        if (to.startsWith("@") || to.matches("[a-zA-Z0-9_]{1,32}")) {
+            final String name = to.startsWith("@") ? to.substring(1) : to;
+            return TextUtils.isEmpty(name) ? null : "@" + name;
+        }
+        return WalletEngine2.isValidRecipientAddress(to) ? to : null;
+    }
+
+    private void destroyScanOverlay() {
+        if (scanOverlay != null) {
+            scanOverlay.destroy();
+            AndroidUtilities.removeFromParent(scanOverlay);
+            scanOverlay = null;
+        }
+    }
+
+    @Override
+    public boolean onBackPressed(boolean invoked) {
+        if (scanOverlay != null) {
+            if (invoked) scanOverlay.close();
+            return false;
+        }
+        return super.onBackPressed(invoked);
     }
 
     @Override
@@ -531,7 +595,7 @@ public class WalletSendSelectSender extends UniversalFragment {
                     }
                 })
                 .setNegativeButton(getString(R.string.ContactsPermissionAlertNotNow), null)
-                .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
                 .show();
     }
 
@@ -769,22 +833,23 @@ public class WalletSendSelectSender extends UniversalFragment {
         final boolean rtl = LocaleController.isRTL;
         final int start = rtl ? Gravity.RIGHT : Gravity.LEFT;
         final ImageView avatar = new ImageView(getContext());
+        addressResultAvatar = avatar;
         avatar.setImageDrawable(new CombinedDrawable(
-                Theme.createCircleDrawable(dp(46), getThemedColor(Theme.key_featuredStickers_addButton)),
+                addressResultCircle = Theme.createCircleDrawable(dp(46), getThemedColor(Theme.key_featuredStickers_addButton)),
                 getContext().getResources().getDrawable(R.drawable.menu_gram_24).mutate()
         ));
         row.addView(avatar, LayoutHelper.createFrame(46, 46, start | Gravity.CENTER_VERTICAL, rtl ? 0 : 11, 0, rtl ? 11 : 0, 0));
         final TextView title = addressResultTitle = new TextView(getContext());
         title.setText(getString(R.string.WalletGramWalletAddress));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider());
         title.setTypeface(AndroidUtilities.bold());
         title.setSingleLine();
         title.setGravity(start);
         row.addView(title, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24, Gravity.TOP, rtl ? 16 : 72, 8, rtl ? 72 : 16, 0));
         addressResultSubtitle = new TextView(getContext());
         addressResultSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addressResultSubtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(addressResultSubtitle, Theme.key_windowBackgroundWhiteGrayText, getResourceProvider());
         addressResultSubtitle.setSingleLine();
         addressResultSubtitle.setEllipsize(TextUtils.TruncateAt.MIDDLE);
         addressResultSubtitle.setGravity(start);

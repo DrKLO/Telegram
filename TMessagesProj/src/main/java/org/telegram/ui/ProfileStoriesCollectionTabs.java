@@ -12,25 +12,24 @@ import android.text.Spanned;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.BlurredFrameLayout;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SharedMediaLayout;
-import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Stories.StoriesController;
 
 import java.util.ArrayList;
 
 @SuppressLint("ViewConstructor")
-public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class ProfileStoriesCollectionTabs extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final ViewPagerFixed viewPager;
     public final ViewPagerFixed.TabsView tabsView;
@@ -46,8 +45,8 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
         void onTabAlbumLongClick(View view, int albumId);
     }
 
-    public ProfileStoriesCollectionTabs(Context context, SizeNotifierFrameLayout sizeNotifierFrameLayout, StoriesController.StoriesCollections collections, Delegate delegate) {
-        super(context, sizeNotifierFrameLayout);
+    public ProfileStoriesCollectionTabs(Context context, StoriesController.StoriesCollections collections, Delegate delegate) {
+        super(context);
 
         this.collections = collections;
         this.sendCollectionsOrder = collections::sendOrder;
@@ -151,7 +150,11 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         NotificationCenter.getInstance(collections.currentAccount)
-            .addObserver(this, NotificationCenter.storyAlbumsCollectionsUpdate);
+            .addWeakObserver(this, NotificationCenter.storyAlbumsCollectionsUpdate);
+        // collections might have been updated while we were detached and missed the notification
+        if (visibilityValue == collections.collections.isEmpty() || adapter.canCreateNewAlbum != collections.canCreateNewAlbum()) {
+            onCollectionsUpdate();
+        }
     }
 
     @Override
@@ -165,28 +168,30 @@ public class ProfileStoriesCollectionTabs extends BlurredFrameLayout implements 
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.storyAlbumsCollectionsUpdate) {
             if ((Long) args[0] != collections.dialogId) return;
-
-            final int tabId = tabsView != null ? tabsView.getCurrentTabId() : 0;
-
-            adapter.canCreateNewAlbum = collections.canCreateNewAlbum();
-            viewPager.fillTabs(true);
-            setVisibility(!collections.collections.isEmpty(), true, false);
-
-            if (initialAlbumId > 0) {
-                final int position = adapter.getItemPosition(initialAlbumId);
-                if (position != -1) {
-                    final int finalAlbumId = initialAlbumId;
-                    AndroidUtilities.runOnUIThread(() -> scrollToAlbumId(finalAlbumId), 500);
-                    initialAlbumId = 0;
-                }
-            } else {
-                if (tabsView != null && tabId > 0 && collections.findById(tabId) == null) {
-                    tabsView.scrollToTab(0, 0);
-                }
-            }
+            onCollectionsUpdate();
         }
     }
 
+    private void onCollectionsUpdate() {
+        final int tabId = tabsView != null ? tabsView.getCurrentTabId() : 0;
+
+        adapter.canCreateNewAlbum = collections.canCreateNewAlbum();
+        viewPager.fillTabs(true);
+        setVisibility(!collections.collections.isEmpty(), true, false);
+
+        if (initialAlbumId > 0) {
+            final int position = adapter.getItemPosition(initialAlbumId);
+            if (position != -1) {
+                final int finalAlbumId = initialAlbumId;
+                AndroidUtilities.runOnUIThread(() -> scrollToAlbumId(finalAlbumId), 500);
+                initialAlbumId = 0;
+            }
+        } else {
+            if (tabsView != null && tabId > 0 && collections.findById(tabId) == null) {
+                tabsView.scrollToTab(0, 0);
+            }
+        }
+    }
 
     public void selectTabWithId(int albumId, float progress) {
         tabsView.selectTabWithId(albumId, progress);

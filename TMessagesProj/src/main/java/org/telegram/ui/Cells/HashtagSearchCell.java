@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class HashtagSearchCell extends TextView {
 
@@ -26,7 +27,7 @@ public class HashtagSearchCell extends TextView {
         setGravity(Gravity.CENTER_VERTICAL);
         setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
         setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(this, Theme.key_windowBackgroundWhiteBlackText);
     }
 
     public void setNeedDivider(boolean value) {

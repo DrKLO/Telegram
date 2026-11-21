@@ -31,6 +31,7 @@ import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 
 
@@ -88,7 +89,7 @@ public class HintView extends FrameLayout {
         isTopArrow = topArrow;
 
         textView = new CorrectlyMeasuringTextView(context);
-        textView.setTextColor(getThemedColor(Theme.key_chat_gifSaveHintText));
+        ThemeBind.textColor(textView, Theme.key_chat_gifSaveHintText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setMaxLines(2);
         if (type == 7 || type == 8 || type == 9) {
@@ -100,12 +101,12 @@ public class HintView extends FrameLayout {
         }
         if (currentType == TYPE_SEARCH_AS_LIST) {
             textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
+            ThemeBind.fillBackground(textView, Theme.createRoundRectDrawable(AndroidUtilities.dp(5), getThemedColor(Theme.key_chat_gifSaveHintBackground)), ThemeBind.of(Theme.key_chat_gifSaveHintBackground), resourcesProvider);
             textView.setPadding(AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10), 0);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         } else {
             textView.setGravity(Gravity.LEFT | Gravity.TOP);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), getThemedColor(Theme.key_chat_gifSaveHintBackground)));
+            ThemeBind.fillBackground(textView, Theme.createRoundRectDrawable(AndroidUtilities.dp(10), getThemedColor(Theme.key_chat_gifSaveHintBackground)), ThemeBind.of(Theme.key_chat_gifSaveHintBackground), resourcesProvider);
             textView.setPadding(AndroidUtilities.dp(currentType == TYPE_NOSOUND ? 54 : 12), AndroidUtilities.dp(9), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, topArrow ? 6 : 0, 0, topArrow ? 0 : 6));
         }
@@ -116,13 +117,13 @@ public class HintView extends FrameLayout {
             imageView = new ImageView(context);
             imageView.setImageResource(R.drawable.tooltip_sound);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintText), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_chat_gifSaveHintText, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             addView(imageView, LayoutHelper.createFrame(38, 34, Gravity.LEFT | Gravity.TOP, 7, 7, 0, 0));
         }
 
         arrowImageView = new ImageView(context);
         arrowImageView.setImageResource(topArrow ? R.drawable.tooltip_arrow_up : R.drawable.tooltip_arrow);
-        arrowImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_gifSaveHintBackground), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(arrowImageView, Theme.key_chat_gifSaveHintBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         addView(arrowImageView, LayoutHelper.createFrame(14, 6, Gravity.LEFT | (topArrow ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 0, 0));
     }
 
@@ -133,13 +134,16 @@ public class HintView extends FrameLayout {
         imageView = new ImageView(getContext());
         imageView.setImageResource(R.drawable.msg_mini_close_tooltip);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_gifSaveHintText), 125), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, ThemeBind.alpha(Theme.key_chat_gifSaveHintText, 125), resourcesProvider, PorterDuff.Mode.MULTIPLY);
         addView(imageView, LayoutHelper.createFrame(34, 34, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, isTopArrow ? 3 : 0, 0, isTopArrow ? 0 : 3));
 
         setOnClickListener(v -> hide(true));
     }
 
     public void setBackgroundColor(int background, int text) {
+        // custom colors from the caller replace the default key bindings
+        ThemeBind.clear(textView);
+        ThemeBind.clear(arrowImageView);
         textView.setTextColor(text);
         arrowImageView.setColorFilter(new PorterDuffColorFilter(background, PorterDuff.Mode.MULTIPLY));
         textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(currentType == 7 || currentType == 8 ? 6 : 3), background));

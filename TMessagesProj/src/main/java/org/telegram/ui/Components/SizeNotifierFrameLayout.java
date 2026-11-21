@@ -1231,4 +1231,9 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
     public void updateColors() {
 
     }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_BlurAlphaSlow);
+        colors.add(Theme.key_chat_BlurAlpha);
+    }
 }

@@ -47,6 +47,7 @@ import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.AlertsCreator;
@@ -431,7 +432,7 @@ public class VoIPHelper {
 						if (onFinish != null)
 							onFinish.run();
 					})
-					.setTopAnimation(mergedRequest ? R.raw.permission_request_camera : R.raw.permission_request_microphone, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground));
+					.setTopAnimation(mergedRequest ? R.raw.permission_request_camera : R.raw.permission_request_microphone, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null);
 
 			dlg.show();
 		}
@@ -508,7 +509,7 @@ public class VoIPHelper {
 
 		TextView text = new TextView(context);
 		text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-		text.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+		ThemeBind.textColor(text, Theme.key_dialogTextBlack);
 		text.setGravity(Gravity.CENTER);
 		text.setText(LocaleController.getString(R.string.VoipRateCallAlert));
 		alertView.addView(text);
@@ -573,10 +574,10 @@ public class VoIPHelper {
 		final EditTextBoldCursor commentBox = new EditTextBoldCursor(context);
 		commentBox.setHint(LocaleController.getString(R.string.VoipFeedbackCommentHint));
 		commentBox.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-		commentBox.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-		commentBox.setHintTextColor(Theme.getColor(Theme.key_dialogTextHint));
+		ThemeBind.textColor(commentBox, Theme.key_dialogTextBlack);
+		ThemeBind.hintTextColor(commentBox, Theme.key_dialogTextHint);
 		commentBox.setBackground(null);
-		commentBox.setLineColors(Theme.getColor(Theme.key_dialogInputField), Theme.getColor(Theme.key_dialogInputFieldActivated), Theme.getColor(Theme.key_text_RedBold));
+		ThemeBind.lineColors(commentBox, Theme.key_dialogInputField, Theme.key_dialogInputFieldActivated, Theme.key_text_RedBold);
 		commentBox.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
 		commentBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
 		commentBox.setVisibility(View.GONE);
@@ -595,7 +596,7 @@ public class VoIPHelper {
 
 		final TextView logsText = new TextView(context);
 		logsText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-		logsText.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+		ThemeBind.textColor(logsText, Theme.key_dialogTextGray3);
 		logsText.setText(LocaleController.getString(R.string.CallReportLogsExplain));
 		logsText.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
 		logsText.setOnClickListener(checkClickListener);
@@ -719,7 +720,7 @@ public class VoIPHelper {
 		TextView warning = new TextView(context);
 		warning.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
 		warning.setText("Please only change these settings if you know exactly what they do.");
-		warning.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+		ThemeBind.textColor(warning, Theme.key_dialogTextBlack);
 		ll.addView(warning, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 8, 16, 8));
 
 		final TextCheckCell tcpCell = new TextCheckCell(context);

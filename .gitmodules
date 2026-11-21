@@ -55,3 +55,9 @@
 [submodule "TMessagesProj/jni/third_party/libprisma"]
 	path = TMessagesProj/jni/third_party/libprisma
 	url = https://github.com/TelegramMessenger/libprisma.git
+[submodule "TMessagesProj/jni/twidget/twidget"]
+	path = TMessagesProj/jni/twidget/twidget
+	url = https://github.com/TelegramMessenger/twidget.git
+[submodule "TMessagesProj/jni/twidget/widget-sandbox"]
+	path = TMessagesProj/jni/twidget/widget-sandbox
+	url = https://github.com/TelegramMessenger/widget-sandbox.git

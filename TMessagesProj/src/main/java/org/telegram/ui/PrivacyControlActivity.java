@@ -38,6 +38,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -51,6 +52,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -63,10 +65,12 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -82,11 +86,9 @@ import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CircularProgressDrawable;
 import org.telegram.ui.Components.ColoredImageSpan;
-import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.HintView;
+import org.telegram.ui.Stories.recorder.HintView2;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
@@ -97,6 +99,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -104,10 +107,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PrivacyControlActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
     private ListAdapter listAdapter;
-    private CrossfadeDrawable doneButtonDrawable;
-    private View doneButton;
+    private SimpleActionBarDoneButton doneButton;
     private RecyclerListView listView;
     private MessageCell messageCell;
+    // the hint of the preview is over the list, not in it: the glass of the screen captures the list
+    private HintView2 previewHint;
+    private final int[] previewHintLocation = new int[2];
 
     private int initialRulesType;
     private int initialRulesSubType;
@@ -332,7 +337,6 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         private ChatMessageCell cell;
         private Drawable backgroundDrawable;
         private Drawable shadowDrawable;
-        private HintView hintView;
         private MessageObject messageObject;
 
         public MessageCell(Context context) {
@@ -373,16 +377,20 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             cell.setFullyDraw(true);
             cell.setMessageObject(messageObject, null, false, false, false);
             addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            hintView = new HintView(context, 1, true);
-            addView(hintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
         }
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
             super.dispatchDraw(canvas);
-            hintView.showForMessageCell(cell, false);
+            updatePreviewHint();
         }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            updatePreviewHint();
+        }
+
 
         @Override
         protected void onDraw(Canvas canvas) {
@@ -427,13 +435,16 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                 super.onDraw(canvas);
             }
 
-            shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-            shadowDrawable.draw(canvas);
+            if (!(getParent() instanceof RecyclerListView && ((RecyclerListView) getParent()).hasSections())) {
+                shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                shadowDrawable.draw(canvas);
+            }
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
+            updatePreviewHint();
             if (backgroundGradientDisposable != null) {
                 backgroundGradientDisposable.dispose();
                 backgroundGradientDisposable = null;
@@ -498,9 +509,9 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         super.onFragmentCreate();
         checkPrivacy();
         updateRows(false);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.privacyRulesUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewWallpapper);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.didSetNewWallpapper);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         return true;
     }
 
@@ -515,41 +526,46 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     private int shakeDp = 4;
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
+        setHasOwnBackground(true);
         if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
             messageCell = new MessageCell(context);
         }
 
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (rulesType == PRIVACY_RULES_TYPE_PHONE) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyPhone));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyPhone));
         } else if (rulesType == PRIVACY_RULES_TYPE_FORWARDS) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyForwards));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyForwards));
         } else if (rulesType == PRIVACY_RULES_TYPE_PHOTO) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyProfilePhoto));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyProfilePhoto));
         } else if (rulesType == PRIVACY_RULES_TYPE_BIO) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyBio));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyBio));
         } else if (rulesType == PRIVACY_RULES_TYPE_MUSIC) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyMusic));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyMusic));
         } else if (rulesType == PRIVACY_RULES_TYPE_P2P) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyP2P));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyP2P));
         } else if (rulesType == PRIVACY_RULES_TYPE_CALLS) {
-            actionBar.setTitle(LocaleController.getString(R.string.Calls));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.Calls));
         } else if (rulesType == PRIVACY_RULES_TYPE_INVITE) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyInvites));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyInvites));
         } else if (rulesType == PRIVACY_RULES_TYPE_VOICE_MESSAGES) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyVoiceMessages));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyVoiceMessages));
         } else if (rulesType == PRIVACY_RULES_TYPE_LASTSEEN) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyLastSeen));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyLastSeen));
         } else if (rulesType == PRIVACY_RULES_TYPE_MESSAGES) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyMessages));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyMessages));
         } else if (rulesType == PRIVACY_RULES_TYPE_BIRTHDAY) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyBirthday));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyBirthday));
         } else if (rulesType == PRIVACY_RULES_TYPE_GIFTS) {
-            actionBar.setTitle(LocaleController.getString(R.string.PrivacyGifts));
+            simpleActionBar.setTitle(LocaleController.getString(R.string.PrivacyGifts));
         }
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -562,31 +578,40 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
 
-        final Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
-        checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
-        doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
-        doneButton = menu.addItemWithWidth(done_button, doneButtonDrawable, dp(56), LocaleController.getString(R.string.Done));
-        boolean hasChanges = hasChanges();
-        doneButton.setAlpha(hasChanges ? 1.0f : 0.0f);
-        doneButton.setScaleX(hasChanges ? 1.0f : 0.0f);
-        doneButton.setScaleY(hasChanges ? 1.0f : 0.0f);
-        doneButton.setEnabled(hasChanges);
+        doneButton = simpleActionBar.createDoneButton(done_button, LocaleController.getString(R.string.Save));
+        doneButton.setActive(hasChanges(), false);
 
         listAdapter = new ListAdapter(context);
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
         listView.setSections();
-        actionBar.setAdaptiveBackground(listView);
         listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+        listView.setSectionsDrawBackground(true);
         listView.setVerticalScrollBarEnabled(false);
         ((DefaultItemAnimator) listView.getItemAnimator()).setDelayAnimations(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        if (messageCell != null) {
+            previewHint = new HintView2(context, HintView2.DIRECTION_TOP)
+                .setMultilineText(true)
+                .setMaxWidth(250)
+                .setDuration(-1)
+                .setInnerPadding(11, 6, 11, 7)
+                .setHideByTouch(false);
+            previewHint.setPadding(dp(19), 0, dp(19), 0);
+            previewHint.setGlass(getBaseSimpleGlass().factory);
+            frameLayout.addView(previewHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 150, Gravity.TOP | Gravity.FILL_HORIZONTAL));
+            listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    updatePreviewHint();
+                }
+            });
+        }
         listView.setAdapter(listAdapter);
         listView.setOnItemClickListener((view, position) -> {
             if (position == currentPhotoForRestRow) {
@@ -866,6 +891,12 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         return fragmentView;
     }
 
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
     private void showPremiumBulletin() {
         BulletinFactory.of(this).createSimpleBulletin(
             R.raw.star_premium_2,
@@ -890,13 +921,11 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     private void updateDoneButton() {
-        boolean hasChanges = hasChanges();
-        doneButton.setEnabled(hasChanges);
-        doneButton.animate().alpha(hasChanges ? 1.0f : 0.0f).scaleX(hasChanges ? 1.0f : 0.0f).scaleY(hasChanges ? 1.0f : 0.0f).setDuration(180).start();
+        doneButton.setActive(hasChanges(), true);
     }
 
     private void finished() {
-        doneButtonDrawable.animateToProgress(0.0f);
+        doneButton.setLoading(false, true);
         if ((rulesType == PRIVACY_RULES_TYPE_MESSAGES || rulesType == PRIVACY_RULES_TYPE_INVITE || rulesType == PRIVACY_RULES_TYPE_CALLS) && currentType != TYPE_EVERYBODY) {
             final TLRPC.GlobalPrivacySettings globalSettings = ContactsController.getInstance(currentAccount).getGlobalPrivacySettings();
             if (globalSettings != null && (globalSettings.new_noncontact_peers_require_premium || globalSettings.noncontact_peers_paid_stars > 0)) {
@@ -1209,7 +1238,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
 
         if (pendingRequests.get() > 0) {
-            doneButtonDrawable.animateToProgress(1.0f);
+            doneButton.setLoading(true, true);
         }
     }
 
@@ -1335,10 +1364,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             currentPlusMiniapps[currentType] = initialPlusMiniapps[currentType] = miniapps != null;
             currentPlusChannels[currentType] = initialPlusChannels[currentType] = channels != null;
             if (doneButton != null) {
-                doneButton.setAlpha(0.0f);
-                doneButton.setScaleX(0.0f);
-                doneButton.setScaleY(0.0f);
-                doneButton.setEnabled(false);
+                doneButton.setActive(false, false);
             }
         }
         initialPlus.clear();
@@ -1634,17 +1660,41 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
         }
     }
 
+    /** Under the name of the forward in the preview, as the old hint was; hidden with the preview. */
+    private void updatePreviewHint() {
+        if (previewHint == null || messageCell == null || fragmentView == null) {
+            return;
+        }
+        if (messageCell.getParent() != listView || !messageCell.isAttachedToWindow()) {
+            previewHint.hide(false);
+            return;
+        }
+        messageCell.getLocationInWindow(previewHintLocation);
+        final int cellX = previewHintLocation[0], cellY = previewHintLocation[1];
+        fragmentView.getLocationInWindow(previewHintLocation);
+        previewHint.showAt(
+            cellX - previewHintLocation[0] + messageCell.cell.getLeft() + messageCell.cell.getForwardNameCenterX(),
+            cellY - previewHintLocation[1] + messageCell.getPaddingTop() + dp(44),
+            false);
+    }
+
+    private void setPreviewHintText(CharSequence text) {
+        if (previewHint != null) {
+            previewHint.setText(text);
+        }
+    }
+
     private void setMessageText() {
         if (messageCell != null) {
             messageCell.messageObject.messageOwner.fwd_from.from_id = new TLRPC.TL_peerUser();
             if (currentType == TYPE_EVERYBODY) {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsEverybody));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsEverybody));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             } else if (currentType == TYPE_NOBODY) {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsNobody));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsNobody));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 0;
             } else {
-                messageCell.hintView.setOverrideText(LocaleController.getString(R.string.PrivacyForwardsContacts));
+                setPreviewHintText(LocaleController.getString(R.string.PrivacyForwardsContacts));
                 messageCell.messageObject.messageOwner.fwd_from.from_id.user_id = 1;
             }
             messageCell.cell.forceResetMessageObject();
@@ -1707,7 +1757,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     private boolean checkDiscard(boolean invoked) {
-        if (doneButton.getAlpha() == 1.0f) {
+        if (doneButton.isActive()) {
             if (invoked) {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                 builder.setTitle(LocaleController.getString(R.string.UserRestrictionsApplyChanges));
@@ -1865,7 +1915,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
             switch (holder.getItemViewType()) {
                 case 0:
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
-                    textCell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                    ThemeBind.textColor(textCell.getTextView(), Theme.key_windowBackgroundWhiteBlackText, PrivacyControlActivity.this.getResourceProvider());
                     if (position == alwaysShareRow) {
                         String value;
                         if (currentPlus.size() != 0) {
@@ -1932,7 +1982,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         textCell.setTextAndValue(LocaleController.getString(R.string.PrivacyP2P2), value, false);
                     } else if (position == readPremiumRow) {
                         textCell.setText(LocaleController.getString(getUserConfig().isPremium() ? R.string.PrivacyLastSeenPremiumForPremium : R.string.PrivacyLastSeenPremium), false);
-                        textCell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlueText));
+                        ThemeBind.textColor(textCell.getTextView(), Theme.key_windowBackgroundWhiteBlueText, PrivacyControlActivity.this.getResourceProvider());
                     }
                     break;
                 case 1:
@@ -2098,7 +2148,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                     } else if (position == giftTypesInfoRow) {
                         privacyCell.setText(LocaleController.getString(R.string.PrivacyGiftsTypeInfo));
                     }
-                    privacyCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    ThemeBind.backgroundColor(privacyCell, Theme.key_windowBackgroundGray);
                     break;
                 case 2:
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
@@ -2360,54 +2410,32 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     }
 
     @Override
+    public void onThemeColorsChanged() {
+        try {
+            if (messageCell != null) {
+                messageCell.invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, HeaderCell.class, RadioCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
 //        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{RadioCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOX, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackground));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKBOXCHECK, new Class[]{RadioCell.class}, new String[]{"radioButton"}, null, null, null, Theme.key_radioBackgroundChecked));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInDrawable, Theme.chat_msgInMediaDrawable}, null, Theme.key_chat_inBubble));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgInSelectedDrawable, Theme.chat_msgInMediaSelectedDrawable}, null, Theme.key_chat_inBubbleSelected));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, Theme.chat_msgInDrawable.getShadowDrawables(), null, Theme.key_chat_inBubbleShadow));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, Theme.chat_msgInMediaDrawable.getShadowDrawables(), null, Theme.key_chat_inBubbleShadow));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubble));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient1));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient2));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutDrawable, Theme.chat_msgOutMediaDrawable}, null, Theme.key_chat_outBubbleGradient3));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutSelectedDrawable, Theme.chat_msgOutMediaSelectedDrawable}, null, Theme.key_chat_outBubbleSelected));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, Theme.chat_msgOutDrawable.getShadowDrawables(), null, Theme.key_chat_outBubbleShadow));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, Theme.chat_msgOutMediaDrawable.getShadowDrawables(), null, Theme.key_chat_outBubbleShadow));
         themeDescriptions.add(new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_messageTextIn));
         themeDescriptions.add(new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_messageTextOut));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutCheckDrawable}, null, Theme.key_chat_outSentCheck));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutCheckSelectedDrawable}, null, Theme.key_chat_outSentCheckSelected));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutCheckReadDrawable, Theme.chat_msgOutHalfCheckDrawable}, null, Theme.key_chat_outSentCheckRead));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgOutCheckReadSelectedDrawable, Theme.chat_msgOutHalfCheckSelectedDrawable}, null, Theme.key_chat_outSentCheckReadSelected));
-        themeDescriptions.add(new ThemeDescription(listView, 0, null, null, new Drawable[]{Theme.chat_msgMediaCheckDrawable, Theme.chat_msgMediaHalfCheckDrawable}, null, Theme.key_chat_mediaSentCheck));
         themeDescriptions.add(new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_inReplyLine));
         themeDescriptions.add(new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_outReplyLine));
         themeDescriptions.add(new ThemeDescription(listView, 0, null, null, null, null, Theme.key_chat_inReplyNameText));
@@ -2428,9 +2456,37 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
     public boolean isSupportEdgeToEdge() {
         return true;
     }
+
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
     @Override
-    public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
-        listView.setClipToPadding(false);
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_chat_mediaSentCheck);
+        keys.add(Theme.key_chat_outSentCheckReadSelected);
+        keys.add(Theme.key_chat_outSentCheckRead);
+        keys.add(Theme.key_chat_outSentCheckSelected);
+        keys.add(Theme.key_chat_outSentCheck);
+        keys.add(Theme.key_chat_outBubbleShadow);
+        keys.add(Theme.key_chat_outBubbleSelected);
+        keys.add(Theme.key_chat_outBubbleGradient3);
+        keys.add(Theme.key_chat_outBubbleGradient2);
+        keys.add(Theme.key_chat_outBubbleGradient1);
+        keys.add(Theme.key_chat_outBubble);
+        keys.add(Theme.key_chat_inBubbleShadow);
+        keys.add(Theme.key_chat_inBubbleSelected);
+        keys.add(Theme.key_chat_inBubble);
+        keys.add(Theme.key_radioBackgroundChecked);
+        keys.add(Theme.key_radioBackground);
+        keys.add(Theme.key_windowBackgroundWhiteBlackText);
+        keys.add(Theme.key_windowBackgroundWhiteBlueHeader);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_windowBackgroundWhiteValueText);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefault);
+        keys.add(Theme.key_windowBackgroundWhite);
     }
 }

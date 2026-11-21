@@ -51,6 +51,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -440,13 +441,13 @@ public static VideoAds make(
 
                 if (ad.url != null && !TextUtils.equals(AndroidUtilities.getHostAuthority(ad.url), MessagesController.getInstance(currentAccount).linkPrefix)) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     Uri uri = Uri.parse(ad.url);
                     textView.setText(Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null));
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider1);
                     textView.setOnClickListener(e -> {
                         o.dismiss();
                         logSponsoredClicked(ad);
@@ -461,12 +462,12 @@ public static VideoAds make(
 
                 if (ad.sponsor_info != null) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     textView.setText(ad.sponsor_info);
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider1), 0, ad.additional_info == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider1);
                     textView.setOnClickListener(e -> {
                         if (AndroidUtilities.addToClipboard(ad.sponsor_info)) {
 //                            BulletinFactory.of(Bulletin.BulletinWindow.make(context), resourcesProvider1).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -477,12 +478,12 @@ public static VideoAds make(
 
                 if (ad.additional_info != null) {
                     TextView textView = new TextView(context);
-                    textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1));
+                    ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider1);
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                     textView.setMaxWidth(AndroidUtilities.dp(300));
                     textView.setText(ad.additional_info);
-                    textView.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6));
+                    ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 0, 6), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
                     textView.setOnClickListener(e -> {
                         if (AndroidUtilities.addToClipboard(ad.additional_info)) {
 //                            BulletinFactory.of(Bulletin.BulletinWindow.make(activityContext), resourcesProvider1).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -495,7 +496,7 @@ public static VideoAds make(
                     View section = sections.get(i);
                     if (i > 0) {
                         FrameLayout separator = new FrameLayout(context);
-                        separator.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider1));
+                        ThemeBind.backgroundColor(separator, Theme.key_divider, resourcesProvider1);
                         LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1);
                         params.height = 1;
                         info.addView(separator, params);
@@ -833,22 +834,22 @@ public static VideoAds make(
 
             titleTextView = new SimpleTextView(context);
             titleTextView.setPadding(dp(4), 0, dp(4), 0);
-            titleTextView.setTextColor(undoInfoColor);
+            ThemeBind.textColor(titleTextView, Theme.key_undo_infoColor, resourcesProvider);
             titleTextView.setTextSize(14);
             titleTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
             subtitleTextView.setPadding(dp(4), 0, dp(4), 0);
-            subtitleTextView.setTextColor(undoInfoColor);
-            subtitleTextView.setLinkTextColor(undoLinkColor);
+            ThemeBind.textColor(subtitleTextView, Theme.key_undo_infoColor, resourcesProvider);
+            ThemeBind.linkTextColor(subtitleTextView, Theme.key_undo_cancelColor, resourcesProvider);
             subtitleTextView.setTypeface(Typeface.SANS_SERIF);
             subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             linearLayout.addView(subtitleTextView);
 
             buttonView = new ImageView(context);
             buttonView.setScaleType(ImageView.ScaleType.CENTER);
-            buttonView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+            ThemeBind.selectorBackground(buttonView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_featuredStickers_addButton), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.multAlpha(Theme.key_featuredStickers_addButton, .15f), resourcesProvider);
             addView(buttonView, LayoutHelper.createFrameRelatively(32, 32, Gravity.END | Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
         }
 

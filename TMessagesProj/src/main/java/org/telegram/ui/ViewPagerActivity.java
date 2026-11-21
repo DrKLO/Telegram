@@ -18,12 +18,16 @@ import androidx.core.view.WindowInsetsCompat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 
 import java.util.ArrayList;
+import org.telegram.messenger.FileLog;
+import java.util.HashSet;
 
 public abstract class ViewPagerActivity extends BaseFragment {
     protected final SparseArray<FragmentState> fragmentsArr = new SparseArray<>();
@@ -93,6 +97,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
                 }
 
                 fragment.setParentLayout(getParentLayout());
+                fragment.setSimpleMenuOverlayHost(ViewPagerActivity.this);
                 if (fragment.getFragmentView() == null) {
                     fragment.performCreateView(context);
                     fragment.setTitleOverlayText(titleOverlay, titleOverlayId, titleOverlayAction);
@@ -104,7 +109,7 @@ public abstract class ViewPagerActivity extends BaseFragment {
                 final View fragmentView = fragment.getFragmentView();
                 AndroidUtilities.removeFromParent(fragmentView);
                 if (!fragment.hasOwnBackground() && fragmentView.getBackground() == null) {
-                    fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
                 }
 
                 container.addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -232,9 +237,43 @@ public abstract class ViewPagerActivity extends BaseFragment {
             return false;
         }
         final BaseFragment fragment = getCurrentVisibleFragment();
+        // the layout only sees this fragment: the back closes a menu or the search of the page's simple header first
+        final SimpleActionBar simpleActionBar = fragment != null ? fragment.getSimpleActionBar() : null;
+        if (simpleActionBar != null && simpleActionBar.hasBackAction()) {
+            if (invoked) simpleActionBar.onBackPressed();
+            return false;
+        }
         if (fragment != null && !fragment.onBackPressed(invoked))
             return false;
         return super.onBackPressed(invoked);
+    }
+
+
+    /** child fragments live inside this page, not in the navigation stack: forward the theme hooks to them */
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        for (int a = 0, N = fragmentsArr.size(); a < N; a++) {
+            final FragmentState state = fragmentsArr.valueAt(a);
+            if (state != null && state.fragment.fragmentView != null) {
+                try {
+                    state.fragment.onThemeColorsChanged();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        for (int a = 0, N = fragmentsArr.size(); a < N; a++) {
+            final FragmentState state = fragmentsArr.valueAt(a);
+            if (state != null && state.fragment.fragmentView != null) {
+                state.fragment.addThemeColorKeys(keys);
+            }
+        }
     }
 
     @Override

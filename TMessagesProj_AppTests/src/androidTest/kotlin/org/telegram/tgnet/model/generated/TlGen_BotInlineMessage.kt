@@ -1,6 +1,7 @@
 package org.telegram.tgnet.model.generated
 
 import kotlin.Boolean
+import kotlin.Byte
 import kotlin.Int
 import kotlin.Long
 import kotlin.String
@@ -257,6 +258,55 @@ public sealed class TlGen_BotInlineMessage : TlGen_Object {
 
     public companion object {
       public const val MAGIC: UInt = 0x0A617E7BU
+    }
+  }
+
+  public data class TL_botInlineMessageWidget(
+    public val invert_media: Boolean,
+    public val width: Int,
+    public val height: Int,
+    public val payload: List<Byte>,
+    public val chat_data: String?,
+    public val reply_markup: TlGen_ReplyMarkup?,
+    public val widget_id: Long?,
+    public val message: String,
+    public val entities: List<TlGen_MessageEntity>?,
+    public val multiflags_0: Multiflags_0?,
+  ) : TlGen_BotInlineMessage() {
+    internal val flags: UInt
+      get() {
+        var result = 0U
+        if (multiflags_0 != null) result = result or 1U
+        if (chat_data != null) result = result or 2U
+        if (reply_markup != null) result = result or 4U
+        if (widget_id != null) result = result or 8U
+        if (entities != null) result = result or 16U
+        if (invert_media) result = result or 32U
+        return result
+      }
+
+    public override fun serializeToStream(stream: OutputSerializedData) {
+      stream.writeInt32(MAGIC.toInt())
+      stream.writeInt32(flags.toInt())
+      stream.writeInt32(width)
+      stream.writeInt32(height)
+      stream.writeByteArray(payload.toByteArray())
+      multiflags_0?.let { stream.writeString(it.public_data) }
+      multiflags_0?.let { stream.writeInt64(it.public_data_hash) }
+      chat_data?.let { stream.writeString(it) }
+      reply_markup?.serializeToStream(stream)
+      widget_id?.let { stream.writeInt64(it) }
+      stream.writeString(message)
+      entities?.let { TlGen_Vector.serialize(stream, it) }
+    }
+
+    public data class Multiflags_0(
+      public val public_data: String,
+      public val public_data_hash: Long,
+    )
+
+    public companion object {
+      public const val MAGIC: UInt = 0xBAA17834U
     }
   }
 }

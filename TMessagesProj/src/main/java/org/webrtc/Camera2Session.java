@@ -129,7 +129,7 @@ class Camera2Session implements CameraSession {
       try {
         camera.createCaptureSession(
             Arrays.asList(surface), new CaptureSessionCallback(), cameraThreadHandler);
-      } catch (CameraAccessException e) {
+      } catch (CameraAccessException | IllegalStateException | SecurityException e) {
         reportError("Failed to create capture session. " + e);
         return;
       }
@@ -180,7 +180,7 @@ class Camera2Session implements CameraSession {
         captureRequestBuilder.addTarget(surface);
         session.setRepeatingRequest(
             captureRequestBuilder.build(), new CameraCaptureCallback(), cameraThreadHandler);
-      } catch (CameraAccessException e) {
+      } catch (CameraAccessException | IllegalStateException | SecurityException e) {
         reportError("Failed to start capture request. " + e);
         return;
       }

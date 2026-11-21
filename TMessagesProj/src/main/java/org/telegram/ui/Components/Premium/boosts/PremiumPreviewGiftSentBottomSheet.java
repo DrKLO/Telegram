@@ -23,12 +23,14 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -122,7 +124,21 @@ public class PremiumPreviewGiftSentBottomSheet extends PremiumPreviewBottomSheet
     }
 
     @SuppressLint("ViewConstructor")
-    static class AvatarHolderView extends FrameLayout {
+    static class AvatarHolderView extends FrameLayout implements Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    bgPaint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                } else {
+                    bgPaint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         public static View createAvatarsContainer(Context context, List<TLRPC.User> selectedUsers) {
             FrameLayout avatarsContainer = new FrameLayout(context);
@@ -196,7 +212,21 @@ public class PremiumPreviewGiftSentBottomSheet extends PremiumPreviewBottomSheet
         }
     }
 
-    static class AdditionalCounterView extends View {
+    static class AdditionalCounterView extends View implements Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    paint.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                } else {
+                    paint.setColor(Theme.getColor(Theme.key_dialogBackground));
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         TextPaint paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         int count;
@@ -251,7 +281,7 @@ public class PremiumPreviewGiftSentBottomSheet extends PremiumPreviewBottomSheet
                     }
                 });
                 view.setClipToOutline(true);
-                view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                ThemeBind.backgroundColor(view, Theme.key_windowBackgroundGray, resourcesProvider);
             }
             ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).topMargin = -dp(6);
         }

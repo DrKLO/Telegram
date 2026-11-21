@@ -49,9 +49,11 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.IdenticonDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.URLSpanReplacement;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class IdenticonActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -90,7 +92,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
     @Override
     public boolean onFragmentCreate() {
         chat_id = getArguments().getInt("chat_id");
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         return super.onFragmentCreate();
     }
 
@@ -117,7 +119,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
 
         fragmentView = new FrameLayout(context);
         FrameLayout parentFrameLayout = (FrameLayout) fragmentView;
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundGray);
         fragmentView.setOnTouchListener((v, event) -> true);
 
         linearLayout = new LinearLayout(context);
@@ -144,7 +146,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
                 }
             }
         };
-        container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
         linearLayout.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 50.0f));
 
         linearLayout1 = new LinearLayout(context);
@@ -153,7 +155,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
         container.addView(linearLayout1, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         codeTextView = new TextView(context);
-        codeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        ThemeBind.textColor(codeTextView, Theme.key_windowBackgroundWhiteGrayText4);
         codeTextView.setGravity(Gravity.CENTER);
         codeTextView.setTypeface(Typeface.MONOSPACE);
         codeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -168,8 +170,8 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
         linearLayout1.addView(codeTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText4);
+        ThemeBind.linkTextColor(textView, Theme.key_windowBackgroundWhiteLinkText);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLinksClickable(true);
         textView.setClickable(true);
@@ -178,7 +180,7 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
         linearLayout1.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         emojiTextView = new TextView(context);
-        emojiTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        ThemeBind.textColor(emojiTextView, Theme.key_windowBackgroundWhiteGrayText4);
         emojiTextView.setGravity(Gravity.CENTER);
         emojiTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 32);
         container.addView(emojiTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -321,18 +323,19 @@ public class IdenticonActivity extends BaseFragment implements NotificationCente
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(container, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(textView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(codeTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(textView, ThemeDescription.FLAG_LINKCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteLinkText));
 
         return themeDescriptions;
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
     }
 }

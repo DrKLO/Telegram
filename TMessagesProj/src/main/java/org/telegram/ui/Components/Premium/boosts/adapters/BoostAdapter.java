@@ -17,6 +17,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Components.ListView.AdapterWithDiffUtils;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
@@ -244,6 +245,7 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 break;
             case HOLDER_TYPE_SIMPLE_DIVIDER:
                 view = new ShadowSectionCell(context, 12, Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                ThemeBind.backgroundColor(view, Theme.key_windowBackgroundGray, resourcesProvider);
                 break;
             case HOLDER_TYPE_TEXT_DIVIDER:
                 view = new TextInfoCell(context, resourcesProvider);
@@ -261,11 +263,11 @@ public class BoostAdapter extends AdapterWithDiffUtils {
                 break;
             case HOLDER_TYPE_SUBTITLE:
                 view = new org.telegram.ui.Cells.HeaderCell(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, 3, false, resourcesProvider);
-                view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+                ThemeBind.backgroundColor(view, Theme.key_dialogBackground, resourcesProvider);
                 break;
             case HOLDER_TYPE_SUBTITLE_WITH_COUNTER:
                 view = new SubtitleWithCounterCell(context, resourcesProvider);
-                view.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+                ThemeBind.backgroundColor(view, Theme.key_dialogBackground, resourcesProvider);
                 break;
             case HOLDER_TYPE_CHAT:
                 view = new ChatCell(context, resourcesProvider);

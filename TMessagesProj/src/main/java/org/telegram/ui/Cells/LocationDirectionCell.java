@@ -1,5 +1,6 @@
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.view.Gravity;
 import android.widget.FrameLayout;
@@ -9,12 +10,13 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BadWayToMakeButtonRound;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 
 @SuppressWarnings("FieldCanBeLocal")
-public class LocationDirectionCell extends FrameLayout {
+public class LocationDirectionCell extends FrameLayout implements Theme.Colorable {
 
     private final Theme.ResourcesProvider resourcesProvider;
     private SimpleTextView buttonTextView;
@@ -32,7 +34,7 @@ public class LocationDirectionCell extends FrameLayout {
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setDrawablePadding(AndroidUtilities.dp(8));
-        buttonTextView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
         buttonTextView.setTextSize(14);
         buttonTextView.setText(LocaleController.getString(R.string.Directions));
         buttonTextView.setLeftDrawable(R.drawable.filled_directions);
@@ -54,5 +56,26 @@ public class LocationDirectionCell extends FrameLayout {
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    private int lastButtonColor;
+    private boolean lastButtonColorDark;
+
+    @Override
+    public void updateColors() {
+        try {
+            final int color = getThemedColor(Theme.key_featuredStickers_addButton);
+            if (frameLayout != null && (color != lastButtonColor || lastButtonColorDark != Theme.isCurrentThemeDark())) {
+                lastButtonColorDark = Theme.isCurrentThemeDark(); // the ripple shade depends on dark / light
+                lastButtonColor = color;
+                // recolor in place (content + adaptive ripple) instead of a new drawable per frame
+                Theme.setSelectorDrawableColor(frameLayout.getBackground(), color, false);
+                Theme.setSelectorDrawableColor(frameLayout.getBackground(), Theme.AdaptiveRipple.calcRippleColor(color), true);
+                frameLayout.invalidate();
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

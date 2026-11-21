@@ -34,7 +34,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
-public class ChatActivityChannelButtonsLayout extends FrameLayout implements FactorAnimator.Target {
+public class ChatActivityChannelButtonsLayout extends FrameLayout implements FactorAnimator.Target, Theme.Colorable {
     public static final int BUTTON_SEARCH = 0;
     public static final int BUTTON_GIFT = 1;
     public static final int BUTTON_DIRECT = 2;
@@ -86,9 +86,11 @@ public class ChatActivityChannelButtonsLayout extends FrameLayout implements Fac
         addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.CENTER_VERTICAL));
     }
 
+    /** also called on every theme update (Theme.Colorable) */
+    @Override
     public void updateColors() {
         for (ButtonHolder holder : buttonHolders) {
-            if (holder != null) {
+            if (holder != null && holder.button != null) {
                 holder.button.updateColors();
             }
         }

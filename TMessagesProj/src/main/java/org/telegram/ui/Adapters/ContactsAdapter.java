@@ -84,6 +84,28 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
         this.fragment = fragment;
     }
 
+    private float sectionLettersProgress = 1f;
+    private float sectionLetterTextSize;
+
+    /** Appearance of the section letters, animated by the screen when the sorting changes. */
+    public void setSectionLettersProgress(float progress) {
+        sectionLettersProgress = progress;
+        // header views are cached by the list and drawn without rebinding
+        for (int i = 0; i < letterCells.size(); i++) {
+            letterCells.get(i).setLetterProgress(progress);
+        }
+    }
+
+    private final ArrayList<LetterSectionCell> letterCells = new ArrayList<>();
+
+    public void setSectionLetterTextSize(float sizeDp) {
+        sectionLetterTextSize = sizeDp;
+    }
+
+    public int getSortType() {
+        return sortType;
+    }
+
     public void setDisableSections(boolean value) {
         disableSections = value;
     }
@@ -383,8 +405,13 @@ public class ContactsAdapter extends RecyclerListView.SectionsAdapter {
 
         if (view == null) {
             view = new LetterSectionCell(mContext);
+            letterCells.add((LetterSectionCell) view);
         }
         LetterSectionCell cell = (LetterSectionCell) view;
+        if (sectionLetterTextSize > 0) {
+            cell.setLetterTextSize(sectionLetterTextSize);
+        }
+        cell.setLetterProgress(sectionLettersProgress);
         if (sortType == SORT_TYPE_BY_TIME || disableSections || isEmpty) {
             cell.setLetter("");
         } else {

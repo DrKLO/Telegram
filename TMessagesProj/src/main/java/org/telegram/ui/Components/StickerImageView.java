@@ -37,7 +37,7 @@ public class StickerImageView extends BackupImageView implements NotificationCen
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         setSticker();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.diceStickersDidLoad);
     }
 
     @Override

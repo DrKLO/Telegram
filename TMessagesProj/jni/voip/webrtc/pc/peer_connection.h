@@ -55,6 +55,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/port.h"
+#include "p2p/base/dtls_transport_factory.h"
 #include "p2p/base/port_allocator.h"
 #include "p2p/base/transport_description.h"
 #include "pc/channel_interface.h"
@@ -399,6 +400,7 @@ class PeerConnection : public PeerConnectionInternal,
 
   bool CreateDataChannelTransport(absl::string_view mid) override;
   void DestroyDataChannelTransport(RTCError error) override;
+  void ResetSctpDataMidAfterRollback() override;
 
   // Asynchronously calls SctpTransport::Start() on the network thread for
   // `sctp_mid()` if set. Called as part of setting the local description.
@@ -595,7 +597,7 @@ class PeerConnection : public PeerConnectionInternal,
   InitializeRtcpCallback();
 
   std::function<void(const RtpPacketReceived& parsed_packet)>
-  InitializeUnDemuxablePacketHandler();
+  InitializeUnDemuxablePacketHandler(PeerConnectionObserver* observer);
 
   const Environment env_;
   const rtc::scoped_refptr<ConnectionContext> context_;
@@ -628,6 +630,8 @@ class PeerConnection : public PeerConnectionInternal,
                                // pointer is given to
                                // `jsep_transport_controller_` and used on the
                                // network thread.
+  // TGCALLS SEAM: see PeerConnectionDependencies::dtls_transport_factory.
+  const std::unique_ptr<cricket::DtlsTransportFactory> dtls_transport_factory_;
   const std::unique_ptr<rtc::SSLCertificateVerifier> tls_cert_verifier_
       RTC_GUARDED_BY(network_thread());
 

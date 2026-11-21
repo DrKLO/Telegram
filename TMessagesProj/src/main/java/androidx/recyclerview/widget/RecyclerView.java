@@ -601,6 +601,10 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         glowColor = color;
     }
 
+    public int getGlowColor() {
+        return glowColor != null ? glowColor : 0;
+    }
+
     public int getAttachedScrapChildCount() {
         return mRecycler.getScrapCount();
     }
@@ -640,6 +644,36 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         }
         for (int i = 0; i < getAttachedScrapChildCount(); i++) {
             callback.accept(getAttachedScrapChildAt(i));
+        }
+    }
+
+    /**
+     * Every item view this RecyclerView holds, each once: attached children (including hidden ones animating out), attached
+     * scrap, cached views and, with {@code withPool}, views waiting in the RecycledViewPool (a pool can be shared between
+     * RecyclerViews: callers that walk several lists should de-duplicate).
+     */
+    public void forEveryChild(boolean withPool, Consumer<View> callback) {
+        for (int i = 0; i < getChildCount(); i++) {
+            callback.accept(getChildAt(i));
+        }
+        for (int i = 0; i < getHiddenChildCount(); i++) {
+            callback.accept(getHiddenChildAt(i));
+        }
+        for (int i = 0; i < getAttachedScrapChildCount(); i++) {
+            callback.accept(getAttachedScrapChildAt(i));
+        }
+        for (int i = 0; i < getCachedChildCount(); i++) {
+            callback.accept(getCachedChildAt(i));
+        }
+        if (withPool) {
+            final RecycledViewPool pool = getRecycledViewPool();
+            if (pool != null) {
+                final ArrayList<View> pooled = new ArrayList<>();
+                pool.collectRecycledViews(pooled);
+                for (int i = 0; i < pooled.size(); i++) {
+                    callback.accept(pooled.get(i));
+                }
+            }
         }
     }
 
@@ -2530,7 +2564,15 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     /**
      * Apply a pull to relevant overscroll glow effects
      */
+    /** A glow of the transparent color is not drawn, so it would never finish: there is none then. */
+    private boolean isGlowDisabled() {
+        return glowColor != null && glowColor == 0;
+    }
+
     private void pullGlows(float x, float overscrollX, float y, float overscrollY) {
+        if (isGlowDisabled()) {
+            return;
+        }
         boolean invalidate = false;
         if (overscrollX < 0) {
             ensureLeftGlow();
@@ -2604,6 +2646,9 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
     }
 
     void absorbGlows(int velocityX, int velocityY) {
+        if (isGlowDisabled()) {
+            return;
+        }
         if (velocityX < 0) {
             ensureLeftGlow();
             if (mLeftGlow.isFinished()) {
@@ -4445,7 +4490,7 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         // TODO If padding is not 0 and clipChildrenToPadding is false, to draw glows properly, we
         // need find children closest to edges. Not sure if it is worth the effort.
         boolean needsInvalidate = false;
-        if (glowColor == null || glowColor != 0) {
+        if (!isGlowDisabled()) {
             if (mLeftGlow != null && !mLeftGlow.isFinished()) {
                 final int restore = c.save();
                 final int padding = mClipToPadding ? getPaddingBottom() : 0;
@@ -5677,6 +5722,18 @@ public class RecyclerView extends ViewGroup implements ScrollingView,
         SparseArray<ScrapData> mScrap = new SparseArray<>();
 
         private int mAttachCount = 0;
+
+        /**
+         * Item views currently waiting in the pool (not attached to any RecyclerView).
+         */
+        public void collectRecycledViews(ArrayList<View> out) {
+            for (int i = 0; i < mScrap.size(); i++) {
+                final ArrayList<ViewHolder> heap = mScrap.valueAt(i).mScrapHeap;
+                for (int j = 0; j < heap.size(); j++) {
+                    out.add(heap.get(j).itemView);
+                }
+            }
+        }
 
         /**
          * Discard all ViewHolders.

@@ -25,6 +25,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 public class ArchiveHelp extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -45,14 +46,14 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
         addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         ImageView archiveIcon = new ImageView(context);
-        archiveIcon.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_avatar_backgroundSaved, resourcesProvider)));
+        ThemeBind.fillBackground(archiveIcon, Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_avatar_backgroundSaved, resourcesProvider)), ThemeBind.of(Theme.key_avatar_backgroundSaved), resourcesProvider);
         archiveIcon.setImageResource(R.drawable.large_archive);
         archiveIcon.setScaleType(ImageView.ScaleType.CENTER);
         layout.addView(archiveIcon, LayoutHelper.createLinear(80, 80, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, (buttonCallback != null ? 14 : 0), 0, 14));
 
         TextView titleTextView = new TextView(context);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(titleTextView, Theme.key_dialogTextBlack, resourcesProvider);
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setText(LocaleController.getString(R.string.ArchiveHintHeader1));
@@ -60,7 +61,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
 
         subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         updateText();
         layout.addView(subtitleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 25));
@@ -115,21 +116,21 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
         FrameLayout hint = new FrameLayout(getContext());
 
         ImageView imageView = new ImageView(getContext());
-        imageView.setColorFilter(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.colorFilter(imageView, Theme.key_dialogTextBlack, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         imageView.setImageResource(resId);
         hint.addView(imageView, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.TOP, 0, 8, 0, 0));
 
         LinearLayout textLayout = new LinearLayout(getContext());
         textLayout.setOrientation(LinearLayout.VERTICAL);
         TextView textView1 = new TextView(getContext());
-        textView1.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView1, Theme.key_dialogTextBlack, resourcesProvider);
         textView1.setTypeface(AndroidUtilities.bold());
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp(14));
         textView1.setText(title);
         textLayout.addView(textView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2.6f, 0, 0));
 
         TextView textView2 = new TextView(getContext());
-        textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(textView2, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_PX, dp(14));
         textView2.setText(subtitle);
         textLayout.addView(textView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2.6f, 0, 0));
@@ -141,7 +142,7 @@ public class ArchiveHelp extends FrameLayout implements NotificationCenter.Notif
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.privacyRulesUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.privacyRulesUpdated);
         updateText();
     }
 

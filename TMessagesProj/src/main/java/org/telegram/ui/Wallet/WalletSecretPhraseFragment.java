@@ -24,6 +24,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
@@ -66,7 +67,7 @@ public class WalletSecretPhraseFragment extends BaseFragment {
         actionBar.setOccupyStatusBar(false);
 
         FrameLayout container = new FrameLayout(context);
-        container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite, resourceProvider);
         fragmentView = container;
 
         scrollView = new ScrollView(context);
@@ -84,9 +85,9 @@ public class WalletSecretPhraseFragment extends BaseFragment {
 
         closeButton = new ImageView(context);
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
-        closeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(closeButton, Theme.key_windowBackgroundWhiteBlackText, resourceProvider, PorterDuff.Mode.SRC_IN);
         closeButton.setImageResource(R.drawable.ic_ab_close);
-        closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3));
+        ThemeBind.selectorBackground(closeButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3), null, ThemeBind.of(Theme.key_listSelector), resourceProvider);
         closeButton.setOnClickListener(v -> finishFragment());
         container.addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 12, 0, 0));
 
@@ -101,14 +102,14 @@ public class WalletSecretPhraseFragment extends BaseFragment {
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setGravity(Gravity.CENTER_HORIZONTAL);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         titleView.setText(current ? LocaleController.getString(R.string.WalletCurrentSecretPhrase) : LocaleController.getString(R.string.WalletNewSecretPhrase));
         root.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 10));
 
         TextView subtitleView = new TextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourceProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText2, resourceProvider);
         subtitleView.setText(current ? LocaleController.getString(R.string.WalletCurrentSecretPhraseInfo) : LocaleController.getString(R.string.WalletNewSecretPhraseInfo));
         root.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 8));
 

@@ -12,6 +12,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -31,6 +32,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -51,10 +53,11 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Cells.TextCell;
@@ -67,6 +70,7 @@ import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RadialProgressView;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -74,10 +78,11 @@ import org.telegram.ui.LNavigation.NavigationExt;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ContactAddActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate {
 
-    private View doneButton;
+    private SimpleActionBarDoneButton doneButton;
     private EditTextCell firstNameField;
     private EditTextCell lastNameField;
     private EditTextCell noteField;
@@ -109,7 +114,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     private ContactAddActivityDelegate delegate;
 
     private final static int done_button = 1;
-    private ImageUpdater imageUpdater;
+    private final ImageUpdater imageUpdater;
     private TLRPC.FileLocation avatar;
 
     private final static int TYPE_SUGGEST = 1;
@@ -145,8 +150,8 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
     @Override
     public boolean onFragmentCreate() {
-        getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
-        getNotificationCenter().addObserver(this, NotificationCenter.dialogPhotosUpdate);
+        getNotificationCenter().addWeakObserver(this, NotificationCenter.updateInterfaces);
+        getNotificationCenter().addWeakObserver(this, NotificationCenter.dialogPhotosUpdate);
         user_id = getArguments().getLong("user_id", 0);
         phone = getArguments().getString("phone");
         firstNameFromCard = getArguments().getString("first_name_card");
@@ -178,17 +183,20 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_avatar_actionBarSelectorBlue, resourcesProvider), false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon, resourcesProvider), false);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (addContact) {
-            actionBar.setTitle(getString(R.string.NewContact));
+            simpleActionBar.setTitle(getString(R.string.NewContact));
         } else {
-            actionBar.setTitle(getString(R.string.EditContact));
+            simpleActionBar.setTitle(getString(R.string.EditContact));
         }
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -227,11 +235,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
-        doneButton = menu.addItem(done_button, getString(R.string.Done).toUpperCase());
+        doneButton = simpleActionBar.createDoneButton(done_button, getString(addContact ? R.string.Create : R.string.Save));
 
         final FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
 
 //        linearLayout = new LinearLayout(context);
 //        linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -239,7 +245,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 //        linearLayout.setOnTouchListener((v, event) -> true);
 
         infoLayout = new FrameLayout(context);
-        infoLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(infoLayout, Theme.key_windowBackgroundWhite, getResourceProvider());
 
         avatarImage = new BackupImageView(context);
         avatarImage.setRoundRadius(dp(32));
@@ -268,7 +274,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         showAvatarProgress(false, false);
 
         nameTextView = new TextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         nameTextView.setLines(1);
         nameTextView.setMaxLines(1);
@@ -279,7 +285,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         infoLayout.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 0 : 94, 25.66f, LocaleController.isRTL ? 94 : 0, 0));
 
         onlineTextView = new TextView(context);
-        onlineTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider));
+        ThemeBind.textColor(onlineTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         onlineTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         onlineTextView.setLines(1);
         onlineTextView.setMaxLines(1);
@@ -290,7 +296,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
         firstNameField = new EditTextCell(context, getString(R.string.FirstName), false, false, -1, resourcesProvider);
         firstNameField.editText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        firstNameField.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(firstNameField, Theme.key_windowBackgroundWhite, getResourceProvider());
         firstNameField.setDivider(true);
         firstNameField.editText.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_NEXT) {
@@ -311,7 +317,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
         lastNameField = new EditTextCell(context, getString(R.string.LastName), false, false, -1, resourcesProvider);
         lastNameField.editText.setImeOptions(EditorInfo.IME_ACTION_NEXT);
-        lastNameField.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(lastNameField, Theme.key_windowBackgroundWhite, getResourceProvider());
         lastNameField.editText.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_DONE) {
                 doneButton.performClick();
@@ -326,9 +332,9 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
         lastNameField.setText(lastNameFromCard);
 
         noteField = new EditTextCell(context, getString(R.string.AddNotes), true, true, getMessagesController().config.contactNoteLengthLimit.get(), resourcesProvider);
-        noteField.editText.setLinkTextColor(getThemedColor(Theme.key_chat_messageLinkIn));
+        ThemeBind.linkTextColor(noteField.editText, Theme.key_chat_messageLinkIn, getResourceProvider());
         noteField.editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        noteField.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(noteField, Theme.key_windowBackgroundWhite, getResourceProvider());
         noteField.editText.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_DONE) {
                 doneButton.performClick();
@@ -500,6 +506,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onItemClick, null);
         listView.setSections();
+        listView.setSectionsDrawBackground(true);
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -508,9 +515,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 }
             }
         });
-        listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
-        actionBar.setAdaptiveBackground(listView);
 
         if (addContact && needAddException) {
             checkShare = true;
@@ -983,48 +988,28 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
     }
 
     @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
-        ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
-            if (avatarImage != null) {
-                TLRPC.User user = getMessagesController().getUser(user_id);
-                if (user == null) {
-                    return;
-                }
-                avatarDrawable.setInfo(currentAccount, user);
-                avatarImage.invalidate();
-            }
-        };
+        ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::cellDelegateThemeColors;
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
 //        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(nameTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(onlineTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
-        themeDescriptions.add(new ThemeDescription(firstNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
-        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
-        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
-        themeDescriptions.add(new ThemeDescription(lastNameField, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
 //        themeDescriptions.add(new ThemeDescription(infoTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, Theme.avatarDrawables, cellDelegate, Theme.key_avatar_text));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundRed));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundOrange));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundViolet));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundGreen));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundCyan));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundBlue));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_avatar_backgroundPink));
 
         return themeDescriptions;
     }
@@ -1038,5 +1023,46 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
             this.smallLocation = smallLocation;
             this.bigLocation = bigLocation;
         }
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            cellDelegateThemeColors();
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void cellDelegateThemeColors() {
+        if (avatarImage != null) {
+            TLRPC.User user = getMessagesController().getUser(user_id);
+            if (user == null) {
+                return;
+            }
+            avatarDrawable.setInfo(currentAccount, user);
+            avatarImage.invalidate();
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_avatar_backgroundPink);
+        keys.add(Theme.key_avatar_backgroundBlue);
+        keys.add(Theme.key_avatar_backgroundCyan);
+        keys.add(Theme.key_avatar_backgroundGreen);
+        keys.add(Theme.key_avatar_backgroundViolet);
+        keys.add(Theme.key_avatar_backgroundOrange);
+        keys.add(Theme.key_avatar_backgroundRed);
+        keys.add(Theme.key_avatar_text);
+        keys.add(Theme.key_windowBackgroundWhiteInputFieldActivated);
+        keys.add(Theme.key_windowBackgroundWhiteInputField);
+        keys.add(Theme.key_windowBackgroundWhiteHintText);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
     }
 }

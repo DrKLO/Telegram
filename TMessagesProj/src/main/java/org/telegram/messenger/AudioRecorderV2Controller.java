@@ -63,6 +63,7 @@ final class AudioRecorderV2Controller {
                 .setMinimumDurationMs(700L)
                 .setMaximumDurationMs(0L)
                 .setNoiseSuppression(SharedSettings.audioRecorderNoiseSuppression.get())
+                .setPreviewPlaybackEnabled(false)
                 .setListener(new AudioRecordingSession.Listener() {
                     @Override
                     public void onStateChanged(@NonNull AudioRecordingSession.StateInfo stateInfo) {

@@ -230,7 +230,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             PendingIntent.getActivity(
                 context,
                 0,
-                new Intent(context, LaunchActivity.class).setAction("voip_answer"),
+                new Intent(context, LaunchActivity.class).setAction("voip_answer").putExtra(LaunchActivity.EXTRA_VOIP_ANSWER_TOKEN, LaunchActivity.VOIP_ANSWER_TOKEN),
                 PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_CANCEL_CURRENT
             );
 

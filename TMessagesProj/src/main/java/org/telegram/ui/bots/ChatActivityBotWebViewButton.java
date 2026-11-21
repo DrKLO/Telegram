@@ -14,19 +14,24 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.SimpleFloatPropertyCompat;
 import org.telegram.ui.web.BotWebViewContainer;
 
-public class ChatActivityBotWebViewButton extends FrameLayout {
+import java.util.HashSet;
+
+public class ChatActivityBotWebViewButton extends FrameLayout implements Theme.Colorable {
     public final static SimpleFloatPropertyCompat<ChatActivityBotWebViewButton> PROGRESS_PROPERTY = new SimpleFloatPropertyCompat<>("progress", obj -> obj.progress, ChatActivityBotWebViewButton::setProgress)
             .setMultiplier(100f);
 
     private Path path = new Path();
     private float progress;
     private int buttonColor = Theme.getColor(Theme.key_featuredStickers_addButton);
+    private boolean buttonColorThemed = true;
     private int backgroundColor;
     private int menuButtonWidth;
 
@@ -56,10 +61,31 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         addView(progressView, LayoutHelper.createFrame(28, 28, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         rippleView = new View(context);
-        rippleView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_addButtonPressed), 2));
+        ThemeBind.selectorBackground(rippleView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_featuredStickers_addButtonPressed), 2), null, ThemeBind.of(Theme.key_featuredStickers_addButtonPressed));
         addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT, 0, 0, 0, 0));
 
         setWillNotDraw(false);
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            if (buttonColorThemed) {
+                buttonColor = Theme.getColor(Theme.key_featuredStickers_addButton);
+            }
+            if (backgroundColor != 0) {
+                backgroundColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), buttonColor, progress);
+                invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_messagePanelVoiceBackground);
+        colors.add(Theme.key_featuredStickers_addButton);
     }
 
     public void setBotMenuButton(BotCommandsMenuView menuButton) {
@@ -73,6 +99,7 @@ public class ChatActivityBotWebViewButton extends FrameLayout {
         textView.setText(text);
         textView.setTextColor(textColor);
         buttonColor = color;
+        buttonColorThemed = false;
         backgroundColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground), buttonColor, progress);
         rippleView.setBackground(Theme.createSelectorDrawable(BotWebViewContainer.getMainButtonRippleColor(buttonColor), 2));
         invalidate();

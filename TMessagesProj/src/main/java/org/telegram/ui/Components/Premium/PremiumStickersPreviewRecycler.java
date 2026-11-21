@@ -271,7 +271,7 @@ public class PremiumStickersPreviewRecycler extends RecyclerListView implements 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.premiumStickersPreviewLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.premiumStickersPreviewLoaded);
         scheduleAutoScroll();
     }
 

@@ -19,6 +19,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.StickerImageView;
 
@@ -50,7 +51,7 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
 
         TextView title = new TextView(context);
         title.setGravity(Gravity.START);
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(title, Theme.key_dialogTextBlack);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setTypeface(AndroidUtilities.bold());
         title.setText(LocaleController.getString(R.string.SuggestClearDatabaseTitle));
@@ -59,7 +60,7 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
         TextView description = new TextView(context);
         description.setGravity(Gravity.START);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(description, Theme.key_dialogTextBlack);
         description.setText(AndroidUtilities.replaceTags(LocaleController.formatString("SuggestClearDatabaseMessage", R.string.SuggestClearDatabaseMessage, AndroidUtilities.formatFileSize(fragment.getMessagesStorage().getDatabaseSize()))));
         linearLayout.addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 15, 21, 16));
 
@@ -71,8 +72,8 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setText(LocaleController.getString(R.string.ClearLocalDatabase));
 
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText);
+        ThemeBind.selectorBackground(buttonTextView, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120));
 
         linearLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, 0, 16, 15, 16, 16));
 
@@ -92,7 +93,7 @@ public class SuggestClearDatabaseBottomSheet extends BottomSheet {
             fragment.showDialog(alertDialog);
             TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
             if (button != null) {
-                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                ThemeBind.textColor(button, Theme.key_text_RedBold);
             }
         });
 

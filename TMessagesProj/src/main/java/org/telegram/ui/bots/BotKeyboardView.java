@@ -11,6 +11,7 @@ package org.telegram.ui.bots;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.lerp;
 
+import android.graphics.PorterDuff;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -39,6 +40,7 @@ import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -209,7 +211,7 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             ssb.append(Emoji.replaceEmoji(button.text, textView.getPaint().getFontMetricsInt(), false));
 
             icon = new ImageView(getContext());
-            icon.setColorFilter(getThemedColor(Theme.key_chat_botKeyboardButtonText));
+            ThemeBind.colorFilter(icon, Theme.key_chat_botKeyboardButtonText, BotKeyboardView.this.resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             if (TLKeyboardHelper.isButtonWebView(button)) {
                 icon.setImageResource(R.drawable.bot_webview);
                 icon.setVisibility(VISIBLE);

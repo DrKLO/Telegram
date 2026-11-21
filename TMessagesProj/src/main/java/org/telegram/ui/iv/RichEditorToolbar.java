@@ -7,7 +7,10 @@ import android.content.Context;
 import android.graphics.Outline;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.content.res.ColorStateList;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,9 +20,11 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AiButtonDrawable;
 import org.telegram.ui.Components.ChatActivityEnterView;
 import org.telegram.ui.Components.ChatActivityEnterViewAnimatedIconView;
@@ -31,7 +36,7 @@ import org.telegram.ui.Components.ScaleStateListAnimator;
 
 import java.util.ArrayList;
 
-public class RichEditorToolbar extends FrameLayout {
+public class RichEditorToolbar extends FrameLayout implements Theme.Colorable {
 
     public static final int BLOCK_TEXT = 1;
     public static final int BLOCK_LIST = 2;
@@ -105,14 +110,14 @@ public class RichEditorToolbar extends FrameLayout {
         setClipToPadding(false);
 
         topGradient = new View(context);
-        topGradient.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{
+        topGradient.setBackground(topGradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{
             color(Theme.key_windowBackgroundWhite),
             Theme.multAlpha(color(Theme.key_windowBackgroundWhite), 0.0f)
         }));
         addView(topGradient, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 8 + 44 + 16, Gravity.FILL_HORIZONTAL | Gravity.TOP));
 
         bottomGradient = new View(context);
-        bottomGradient.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{
+        bottomGradient.setBackground(bottomGradientDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{
             Theme.multAlpha(color(Theme.key_windowBackgroundWhite), 0.0f),
             color(Theme.key_windowBackgroundWhite)
         }));
@@ -126,8 +131,8 @@ public class RichEditorToolbar extends FrameLayout {
         backButton = new ImageView(context);
         backButton.setImageResource(R.drawable.ic_ab_back);
         backButton.setScaleType(ImageView.ScaleType.CENTER);
-        backButton.setBackground(RichEditor.withShadow(Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22))));
-        backButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        backButton.setBackground(RichEditor.withShadow(trackFill(backButton, Theme.key_glass_targetMainTabs, Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22)))));
+        ThemeBind.colorFilter(backButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(backButton);
         backButton.setContentDescription(getString(R.string.AccDescrGoBack));
         backButton.setOnClickListener(v -> delegate.onBack());
@@ -135,14 +140,14 @@ public class RichEditorToolbar extends FrameLayout {
 
         historyButtons = new LinearLayout(context);
         historyButtons.setOrientation(LinearLayout.HORIZONTAL);
-        historyButtons.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        historyButtons.setBackground(RichEditor.withShadow(trackFill(historyButtons, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         topPanel.addView(historyButtons, LayoutHelper.createFrame(82, 44, Gravity.TOP | Gravity.RIGHT, 8, 8, 8, 8));
 
         undoButton = new ImageView(context);
         undoButton.setImageResource(R.drawable.iv_undo);
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
-        undoButton.setBackground(Theme.createSelectorDrawable(color(Theme.key_listSelector)));
-        undoButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(undoButton, Theme.createSelectorDrawable(color(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(undoButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(undoButton);
         undoButton.setContentDescription("Undo");
         undoButton.setOnClickListener(v -> delegate.onUndo());
@@ -151,8 +156,8 @@ public class RichEditorToolbar extends FrameLayout {
         redoButton = new ImageView(context);
         redoButton.setImageResource(R.drawable.iv_redo);
         redoButton.setScaleType(ImageView.ScaleType.CENTER);
-        redoButton.setBackground(Theme.createSelectorDrawable(color(Theme.key_listSelector)));
-        redoButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(redoButton, Theme.createSelectorDrawable(color(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(redoButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(redoButton);
         redoButton.setContentDescription("Redo");
         redoButton.setOnClickListener(v -> delegate.onRedo());
@@ -177,8 +182,8 @@ public class RichEditorToolbar extends FrameLayout {
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
-        aiButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        aiButton.setBackground(RichEditor.withShadow(Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22))));
+        ThemeBind.colorFilter(aiButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        aiButton.setBackground(RichEditor.withShadow(trackFill(aiButton, Theme.key_glass_targetMainTabs, Theme.createRadSelectorDrawable(color(Theme.key_glass_targetMainTabs), Theme.blendOver(color(Theme.key_glass_targetMainTabs), color(Theme.key_listSelector)), dp(22), dp(22)))));
         bottomPanel.addView(aiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setContentDescription("AI");
@@ -189,7 +194,7 @@ public class RichEditorToolbar extends FrameLayout {
         blocksContainer2.setClipChildren(false);
 
         final FrameLayout blocksContainer = new FrameLayout(context);
-        blocksContainer.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_windowBackgroundWhite))));
+        blocksContainer.setBackground(RichEditor.withShadow(trackFill(blocksContainer, Theme.key_windowBackgroundWhite, Theme.createRoundRectDrawable(dp(22), color(Theme.key_windowBackgroundWhite)))));
         blocksContainer2.addView(blocksContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
 
         blocksScrollView = new HorizontalScrollView(context) {
@@ -222,8 +227,8 @@ public class RichEditorToolbar extends FrameLayout {
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
         emojiButton.setPadding(dp(7), dp(7), dp(7), dp(7));
-        emojiButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)));
+        ThemeBind.colorFilter(emojiButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(emojiButton, Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
         blocksLayout.addView(emojiButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL));
         ScaleStateListAnimator.apply(emojiButton);
@@ -238,8 +243,8 @@ public class RichEditorToolbar extends FrameLayout {
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);
         addButton.setScaleType(ImageView.ScaleType.CENTER);
-        addButton.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        addButton.setBackground(Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)));
+        ThemeBind.colorFilter(addButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(addButton, Theme.createRadSelectorDrawable(color(Theme.key_windowBackgroundWhite), color(Theme.key_listSelector), dp(20), dp(20)), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         blocksLayout.addView(addButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
         ScaleStateListAnimator.apply(addButton);
         addButton.setContentDescription("Attach");
@@ -299,11 +304,11 @@ public class RichEditorToolbar extends FrameLayout {
         }
         trashPanelIcon.setScaleType(ImageView.ScaleType.CENTER);
         trashPanelIcon.setColorFilter(new PorterDuffColorFilter(color(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        trashPanelIcon.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        trashPanelIcon.setBackground(RichEditor.withShadow(trackFill(trashPanelIcon, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         trashPanel.addView(trashPanelIcon, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
         final FrameLayout formattingStylesContainer = new FrameLayout(context);
-        formattingStylesContainer.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        formattingStylesContainer.setBackground(RichEditor.withShadow(trackFill(formattingStylesContainer, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         formattingPanel.addView(formattingStylesContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44));
 
         formattingScrollView = new HorizontalScrollView(context) {
@@ -362,7 +367,7 @@ public class RichEditorToolbar extends FrameLayout {
         formattingLayout2 = new LinearLayout(context);
         formattingLayout2.setOrientation(LinearLayout.HORIZONTAL);
         formattingLayout2.setPadding(dp(2), 0, dp(2), 0);
-        formattingLayout2.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        formattingLayout2.setBackground(RichEditor.withShadow(trackFill(formattingLayout2, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         formattingPanel.addView(formattingLayout2, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM, 8, 0, 0, 0));
 
         linkButton = new RichEditor.Button(context, R.drawable.media_link_24, resourcesProvider);
@@ -379,7 +384,7 @@ public class RichEditorToolbar extends FrameLayout {
         formattingLayout3 = new LinearLayout(context);
         formattingLayout3.setOrientation(LinearLayout.HORIZONTAL);
         formattingLayout3.setPadding(dp(2), 0, dp(2), 0);
-        formattingLayout3.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        formattingLayout3.setBackground(RichEditor.withShadow(trackFill(formattingLayout3, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         formattingPanel.addView(formattingLayout3, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM, 8, 0, 0, 0));
 
         mathButton = new RichEditor.Button(context, R.drawable.iv_math, resourcesProvider);
@@ -393,7 +398,7 @@ public class RichEditorToolbar extends FrameLayout {
         formattingLayout1 = new LinearLayout(context);
         formattingLayout1.setOrientation(LinearLayout.HORIZONTAL);
         formattingLayout1.setPadding(dp(2), 0, dp(2), 0);
-        formattingLayout1.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs))));
+        formattingLayout1.setBackground(RichEditor.withShadow(trackFill(formattingLayout1, Theme.key_glass_targetMainTabs, Theme.createRoundRectDrawable(dp(22), color(Theme.key_glass_targetMainTabs)))));
         formattingPanel.addView(formattingLayout1, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM, 0, 0, 8, 0));
 
         aiStyleButton = new RichEditor.Button(context, R.drawable.input_ai, resourcesProvider);
@@ -409,7 +414,7 @@ public class RichEditorToolbar extends FrameLayout {
                 return sendLoading || super.isOpen();
             }
         };
-        sendButton.setBackground(RichEditor.withShadow(Theme.createRoundRectDrawable(dp(22), color(Theme.key_chat_messagePanelSend))));
+        sendButton.setBackground(RichEditor.withShadow(trackFill(sendButton, Theme.key_chat_messagePanelSend, Theme.createRoundRectDrawable(dp(22), color(Theme.key_chat_messagePanelSend)))));
         ScaleStateListAnimator.apply(sendButton);
         bottomPanel.addView(sendButton, LayoutHelper.createLinear(44, 44, 0, Gravity.RIGHT, 8, 0, 0, 0));
         sendButton.setContentDescription("Send");
@@ -710,5 +715,82 @@ public class RichEditorToolbar extends FrameLayout {
 
     private int color(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    // backgrounds wrapped by RichEditor.withShadow (not reachable by ThemeBind): recolored in place by updateColors()
+    private GradientDrawable topGradientDrawable, bottomGradientDrawable;
+    private final ArrayList<View> fillOwners = new ArrayList<>();
+    private final ArrayList<Drawable> fillDrawables = new ArrayList<>();
+    private final ArrayList<Integer> fillKeys = new ArrayList<>();
+    private final ArrayList<Integer> fillLastColors = new ArrayList<>();
+    private final ArrayList<Integer> fillLastRippleColors = new ArrayList<>();
+    private int lastGradientColor;
+    private boolean gradientColorApplied;
+    private int lastTrashIconColor;
+    private boolean trashIconColorApplied;
+
+    private Drawable trackFill(View owner, int key, Drawable inner) {
+        fillOwners.add(owner);
+        fillDrawables.add(inner);
+        fillKeys.add(key);
+        fillLastColors.add(color(key));
+        fillLastRippleColors.add(inner instanceof RippleDrawable ? Theme.blendOver(color(key), color(Theme.key_listSelector)) : 0);
+        return inner;
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            final int white = color(Theme.key_windowBackgroundWhite);
+            if (!gradientColorApplied || white != lastGradientColor) {
+                gradientColorApplied = true;
+                lastGradientColor = white;
+                if (topGradientDrawable != null) {
+                    topGradientDrawable.setColors(new int[]{ white, Theme.multAlpha(white, 0.0f) });
+                }
+                if (bottomGradientDrawable != null) {
+                    bottomGradientDrawable.setColors(new int[]{ Theme.multAlpha(white, 0.0f), white });
+                }
+            }
+            for (int i = 0; i < fillDrawables.size(); ++i) {
+                final Drawable d = fillDrawables.get(i);
+                final int c = color(fillKeys.get(i));
+                boolean changed = false;
+                if (d instanceof RippleDrawable) {
+                    // createRadSelectorDrawable(color, blendOver(color, listSelector), ...)
+                    final int ripple = Theme.blendOver(c, color(Theme.key_listSelector));
+                    if (c != fillLastColors.get(i)) {
+                        Theme.setSelectorDrawableColor(d, c, false);
+                        changed = true;
+                    }
+                    if (ripple != fillLastRippleColors.get(i)) {
+                        fillLastRippleColors.set(i, ripple);
+                        Theme.setSelectorDrawableColor(d, ripple, true);
+                        changed = true;
+                    }
+                } else if (c != fillLastColors.get(i)) {
+                    Theme.setDrawableColor(d, c);
+                    changed = true;
+                }
+                fillLastColors.set(i, c);
+                if (!changed) {
+                    continue;
+                }
+                final View owner = fillOwners.get(i);
+                if (owner != null) {
+                    owner.invalidate();
+                }
+            }
+            if (trashPanelIcon != null) {
+                final int trashColor = color(trashHovered ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteBlackText);
+                if (!trashIconColorApplied || trashColor != lastTrashIconColor) {
+                    trashIconColorApplied = true;
+                    lastTrashIconColor = trashColor;
+                    trashPanelIcon.setColorFilter(new PorterDuffColorFilter(trashColor, PorterDuff.Mode.SRC_IN));
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

@@ -105,7 +105,7 @@ public class BasePermissionsActivity extends FragmentActivity {
 
     protected AlertDialog createPermissionErrorAlert(@RawRes int animationId, String message) {
         return new AlertDialog.Builder(this)
-                .setTopAnimation(animationId, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground))
+                .setTopAnimation(animationId, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
                 .setMessage(AndroidUtilities.replaceTags(message))
                 .setPositiveButton(LocaleController.getString(R.string.PermissionOpenSettings), (dialogInterface, i) -> {
                     try {

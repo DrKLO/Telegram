@@ -19,10 +19,14 @@ import com.huawei.hms.location.LocationSettingsRequest;
 import com.huawei.hms.location.LocationSettingsStatusCodes;
 import com.huawei.hms.location.SettingsClient;
 
+import java.util.HashMap;
+
 @SuppressLint("MissingPermission")
 public class HuaweiLocationProvider implements ILocationServiceProvider {
     private FusedLocationProviderClient locationProviderClient;
     private SettingsClient settingsClient;
+    // the client removes updates by the callback instance, so keep the one registered for each listener
+    private final HashMap<ILocationListener, LocationCallback> callbacks = new HashMap<>();
 
     @Override
     public void init(Context context) {
@@ -46,23 +50,27 @@ public class HuaweiLocationProvider implements ILocationServiceProvider {
     }
 
     @Override
-    public void requestLocationUpdates(ILocationRequest request, ILocationListener locationListener) {
-        locationProviderClient.requestLocationUpdates(((HuaweiLocationRequest) request).request, new LocationCallback() {
+    public synchronized void requestLocationUpdates(ILocationRequest request, ILocationListener locationListener) {
+        final LocationCallback oldCallback = callbacks.remove(locationListener);
+        if (oldCallback != null) {
+            locationProviderClient.removeLocationUpdates(oldCallback);
+        }
+        final LocationCallback callback = new LocationCallback() {
             @Override
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 locationListener.onLocationChanged(locationResult.getLastLocation());
             }
-        }, Looper.getMainLooper());
+        };
+        callbacks.put(locationListener, callback);
+        locationProviderClient.requestLocationUpdates(((HuaweiLocationRequest) request).request, callback, Looper.getMainLooper());
     }
 
     @Override
-    public void removeLocationUpdates(ILocationListener locationListener) {
-        locationProviderClient.removeLocationUpdates(new LocationCallback() {
-            @Override
-            public void onLocationResult(@NonNull LocationResult locationResult) {
-                locationListener.onLocationChanged(locationResult.getLastLocation());
-            }
-        });
+    public synchronized void removeLocationUpdates(ILocationListener locationListener) {
+        final LocationCallback callback = callbacks.remove(locationListener);
+        if (callback != null) {
+            locationProviderClient.removeLocationUpdates(callback);
+        }
     }
 
     @Override

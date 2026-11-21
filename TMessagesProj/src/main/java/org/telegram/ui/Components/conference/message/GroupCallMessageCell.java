@@ -261,7 +261,7 @@ public class GroupCallMessageCell extends ViewGroup
         if (animatedReactionDrawable != null) {
             animatedReactionDrawable.addView(this);
         }
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         if (groupCallMessage != null) {
             groupCallMessage.subscribeToStateUpdates(onMessageStateUpdateListener);
         }

@@ -104,6 +104,10 @@ void TL_api_request::serializeToStream(NativeByteBuffer *stream) {
 }
 
 void TL_api_response::readParamsEx(NativeByteBuffer *stream, uint32_t bytes, bool &error) {
+    if (bytes < 4 || stream->position() < 4 || bytes - 4 > stream->remaining()) {
+        error = true;
+        return;
+    }
     response = std::unique_ptr<NativeByteBuffer>(new NativeByteBuffer(stream->bytes() + stream->position() - 4, bytes));
     stream->skip((uint32_t) (bytes - 4));
 }
@@ -199,7 +203,7 @@ void TL_resPQ::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool &e
         return;
     }
     uint32_t count = stream->readUint32(&error);
-    if (count * sizeof(int64_t) + stream->position() > stream->limit()) {
+    if (error || count > (stream->limit() - stream->position()) / sizeof(int64_t)) {
         error = true;
         return;
     }
@@ -459,7 +463,7 @@ void TL_msgs_state_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
         return;
     }
     uint32_t count = stream->readUint32(&error);
-    if (count * sizeof(int64_t) + stream->position() > stream->limit()) {
+    if (error || count > (stream->limit() - stream->position()) / sizeof(int64_t)) {
         error = true;
         return;
     }
@@ -548,7 +552,7 @@ void TL_msgs_all_info::readParams(NativeByteBuffer *stream, int32_t instanceNum,
         return;
     }
     uint32_t count = stream->readUint32(&error);
-    if (count * sizeof(int64_t) + stream->position() > stream->limit()) {
+    if (error || count > (stream->limit() - stream->position()) / sizeof(int64_t)) {
         error = true;
         return;
     }
@@ -620,7 +624,7 @@ void TL_msgs_ack::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool
         return;
     }
     uint32_t count = stream->readUint32(&error);
-    if (count * sizeof(int64_t) + stream->position() > stream->limit()) {
+    if (error || count > (stream->limit() - stream->position()) / sizeof(int64_t)) {
         error = true;
         return;
     }
@@ -686,6 +690,10 @@ void TL_message::readParams(NativeByteBuffer *stream, int32_t instanceNum, bool 
     msg_id = stream->readInt64(&error);
     seqno = stream->readInt32(&error);
     bytes = stream->readInt32(&error);
+    if (error || bytes < 0 || (uint32_t) bytes > stream->remaining()) {
+        error = true;
+        return;
+    }
     TLObject *object = ConnectionsManager::getInstance(instanceNum).TLdeserialize(nullptr, (uint32_t) bytes, stream);
     if (object == nullptr) {
         unparsedBody = std::unique_ptr<NativeByteBuffer>(new NativeByteBuffer(stream->bytes() + stream->position(), (uint32_t) bytes));
@@ -725,7 +733,7 @@ void TL_msg_resend_req::readParams(NativeByteBuffer *stream, int32_t instanceNum
         return;
     }
     uint32_t count = stream->readUint32(&error);
-    if (count * sizeof(int64_t) + stream->position() > stream->limit()) {
+    if (error || count > (stream->limit() - stream->position()) / sizeof(int64_t)) {
         error = true;
         return;
     }

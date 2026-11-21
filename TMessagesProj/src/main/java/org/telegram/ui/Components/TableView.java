@@ -30,6 +30,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
@@ -45,6 +46,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.TextViewWithLoading;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.AvatarSpan;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
@@ -54,7 +56,7 @@ import org.telegram.ui.Stories.recorder.HintView2;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class TableView extends TableLayout {
+public class TableView extends TableLayout implements Theme.Colorable {
 
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -108,7 +110,7 @@ public class TableView extends TableLayout {
         LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
         textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textFontSizeDp);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         textView.setMaxLines(4);
         textView.setSingleLine(false);
         textView.setText(text);
@@ -137,13 +139,13 @@ public class TableView extends TableLayout {
             ImageView copyView = new ImageView(getContext());
             copyView.setImageResource(R.drawable.msg_copy);
             copyView.setScaleType(ImageView.ScaleType.CENTER);
-            copyView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(copyView, Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
             copyView.setOnClickListener(v -> {
                 AndroidUtilities.addToClipboard(text);
                 copyButton.run();
             });
             ScaleStateListAnimator.apply(copyView);
-            copyView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), .10f), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+            ThemeBind.selectorBackground(copyView, Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider), .10f), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlueIcon, .10f), resourcesProvider);
             idLayout.addView(copyView, LayoutHelper.createFrame(30, 30, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         }
         return addRowUnpadded(title, idLayout);
@@ -154,8 +156,8 @@ public class TableView extends TableLayout {
         LinkSpanDrawable.LinksTextView textView = new LinkSpanDrawable.LinksTextView(getContext());
         textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MONO));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
 //        textView.setMaxLines(4);
         textView.setMaxLines(1);
         textView.setSingleLine();
@@ -185,7 +187,7 @@ public class TableView extends TableLayout {
     public TableRow addRowUserWithEmojiStatus(CharSequence title, final int currentAccount, final long did, Runnable onClick) {
         final LinkSpanDrawable.LinksSimpleTextView textView = new LinkSpanDrawable.LinksSimpleTextView(getContext(), resourcesProvider);
         textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
-        textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_featuredStickers_addButton, resourcesProvider);
         textView.setLinkTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         textView.setTextSize(14);
         AvatarSpan avatarSpan = new AvatarSpan(textView, currentAccount, 24);
@@ -232,6 +234,12 @@ public class TableView extends TableLayout {
         final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(textView, dp(20));
         emojiDrawable.setColor(color);
         emojiDrawable.offset(dp(12), 0);
+        if (emojiStatusTextViews == null) {
+            emojiStatusTextViews = new ArrayList<>();
+            emojiStatusDrawables = new ArrayList<>();
+        }
+        emojiStatusTextViews.add(textView);
+        emojiStatusDrawables.add(emojiDrawable);
         textView.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
             @Override
             public void onViewAttachedToWindow(@NonNull View v) {
@@ -244,7 +252,7 @@ public class TableView extends TableLayout {
             }
         });
         final Drawable premiumDrawable = getContext().getResources().getDrawable(R.drawable.msg_premium_liststar).mutate();
-        premiumDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        ThemeBind.drawableColorFilter(this, premiumDrawable, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.SRC_IN);
         final Utilities.Callback<Object[]> updateStatus = args -> {
             if (did == UserObject.ANONYMOUS || UserObject.isService(did)) {
                 return;
@@ -290,8 +298,8 @@ public class TableView extends TableLayout {
         final ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext(), resourcesProvider);
         textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_featuredStickers_addButton, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_featuredStickers_addButton, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setSingleLine(true);
         textView.setDisablePaddingsOffsetY(true);
@@ -366,8 +374,8 @@ public class TableView extends TableLayout {
         final ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext(), resourcesProvider);
         textView.setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
         textView.setEllipsize(TextUtils.TruncateAt.END);
-        textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setSingleLine(true);
         textView.setDisablePaddingsOffsetY(true);
@@ -401,7 +409,7 @@ public class TableView extends TableLayout {
 
     public TableRow addRow(CharSequence title, CharSequence text, TableRowTitle[] titleRef, ButtonSpan.TextViewButtons[] textViewRef) {
         ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setText(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
         NotificationCenter.listenEmojiLoading(textView);
@@ -432,7 +440,7 @@ public class TableView extends TableLayout {
 
     public TableRow addRow(CharSequence title, CharSequence text, CharSequence buttonText, Runnable buttonOnClick, Integer buttonColor) {
         final ButtonSpan.TextViewButtons textView = new ButtonSpan.TextViewButtons(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         final SpannableStringBuilder ssb = new SpannableStringBuilder(Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false));
         if (buttonText != null) {
@@ -454,8 +462,8 @@ public class TableView extends TableLayout {
 
     public TableRowFullContent addFullRow(CharSequence text) {
         SpoilersTextView textView = new SpoilersTextView(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         text = Emoji.replaceEmoji(text, textView.getPaint().getFontMetricsInt(), false);
         textView.setText(text);
@@ -474,7 +482,7 @@ public class TableView extends TableLayout {
 
     public void addFullRow(CharSequence text, ArrayList<TLRPC.MessageEntity> entities) {
         AnimatedEmojiSpan.TextViewEmojis textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         text = new SpannableStringBuilder(text);
         MessageObject.addEntitiesToText(text, entities, false, false, false, false);
@@ -502,7 +510,7 @@ public class TableView extends TableLayout {
             this.resourcesProvider = table.resourcesProvider;
 
             setPadding(dp(12.66f), dp(9.33f), dp(12.66f), dp(9.33f));
-            setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(this, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             setTypeface(AndroidUtilities.bold());
             setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             setText(title);
@@ -658,15 +666,61 @@ public class TableView extends TableLayout {
         }
     }
 
+    private void updatePaintColors() {
+        borderPaint.setColor(Theme.getColor(Theme.key_table_border, resourcesProvider));
+        backgroundPaint.setColor(Theme.getColor(Theme.key_table_background, resourcesProvider));
+    }
+
+    private ArrayList<LinkSpanDrawable.LinksSimpleTextView> emojiStatusTextViews;
+    private ArrayList<AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable> emojiStatusDrawables;
+
+    private void updateEmojiStatusColors() {
+        try {
+            if (emojiStatusTextViews == null || emojiStatusDrawables == null) {
+                return;
+            }
+            final int color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+            for (int i = 0; i < emojiStatusTextViews.size(); ++i) {
+                final LinkSpanDrawable.LinksSimpleTextView textView = emojiStatusTextViews.get(i);
+                if (textView != null) {
+                    textView.setLinkTextColor(color);
+                    textView.invalidate();
+                }
+            }
+            for (int i = 0; i < emojiStatusDrawables.size(); ++i) {
+                final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable drawable = emojiStatusDrawables.get(i);
+                if (drawable != null) {
+                    drawable.setColor(color);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        updatePaintColors();
+        updateEmojiStatusColors();
+        for (int i = 0; i < getChildCount(); ++i) {
+            final View row = getChildAt(i);
+            row.invalidate();
+            if (row instanceof ViewGroup) {
+                for (int j = 0; j < ((ViewGroup) row).getChildCount(); ++j) {
+                    ((ViewGroup) row).getChildAt(j).invalidate();
+                }
+            }
+        }
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
 
         borderPaint.setStyle(Paint.Style.STROKE);
         borderPaint.setStrokeWidth(w);
-        borderPaint.setColor(Theme.getColor(Theme.key_table_border, resourcesProvider));
         backgroundPaint.setStyle(Paint.Style.FILL);
-        backgroundPaint.setColor(Theme.getColor(Theme.key_table_background, resourcesProvider));
+        updatePaintColors();
 
         final int height = getChildCount();
         for (int y = 0; y < height; ++y) {

@@ -25,12 +25,14 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.LocationController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -39,7 +41,37 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.Components.ShareLocationDrawable;
 
-public class SendLocationCell extends FrameLayout {
+public class SendLocationCell extends FrameLayout implements Theme.Colorable {
+
+    private Drawable circleDrawable;
+    private int circleColorKey = -1;
+    private int circleColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (circleDrawable != null && circleColorKey >= 0) {
+                final int color = getThemedColor(circleColorKey);
+                if (color != circleColor) {
+                    circleColor = color;
+                    Theme.setSelectorDrawableColor(circleDrawable, color, false);
+                    Theme.setSelectorDrawableColor(circleDrawable, color, true);
+                    if (imageView != null) {
+                        imageView.invalidate();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        if (circleColorKey >= 0) {
+            colors.add(circleColorKey);
+        }
+    }
 
     private int currentAccount = UserConfig.selectedAccount;
     private SimpleTextView accurateTextView;
@@ -78,7 +110,7 @@ public class SendLocationCell extends FrameLayout {
 
         accurateTextView = new SimpleTextView(context);
         accurateTextView.setTextSize(14);
-        accurateTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+        ThemeBind.textColor(accurateTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
         accurateTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         addView(accurateTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? 16 : 73, 33, LocaleController.isRTL ? 73 : 16, 0));
 
@@ -88,14 +120,17 @@ public class SendLocationCell extends FrameLayout {
     }
     private void updateImage() {
         titleTextView.setTag(live ? liveDisable ? Theme.key_text_RedBold : Theme.key_location_sendLiveLocationText : Theme.key_location_sendLocationText);
-        titleTextView.setTextColor(getThemedColor(live ? liveDisable ? Theme.key_text_RedBold : Theme.key_location_sendLiveLocationText : Theme.key_location_sendLocationText));
+        ThemeBind.textColor(titleTextView, live ? liveDisable ? Theme.key_text_RedBold : Theme.key_location_sendLiveLocationText : Theme.key_location_sendLocationText, resourcesProvider);
 
         imageView.setTag(live ? liveDisable ? Theme.key_color_red : Theme.key_location_sendLiveLocationBackground + Theme.key_location_sendLiveLocationIcon : Theme.key_location_sendLocationBackground + Theme.key_location_sendLocationIcon);
         Drawable circle = Theme.createSimpleSelectorCircleDrawable(dp(46), getThemedColor(live ? liveDisable ? Theme.key_color_red : Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground), getThemedColor(live ? liveDisable ? Theme.key_color_red : Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground));
+        circleDrawable = circle;
+        circleColor = 0;
+        circleColorKey = live ? liveDisable ? Theme.key_color_red : Theme.key_location_sendLiveLocationBackground : Theme.key_location_sendLocationBackground;
         if (live) {
             rect = new RectF();
             Drawable drawable = new ShareLocationDrawable(getContext(), liveDisable ? ShareLocationDrawable.TYPE_DISABLE : ShareLocationDrawable.TYPE_ADD);
-            drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLiveLocationIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_location_sendLiveLocationIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(dp(46), dp(46));
             imageView.setBackgroundDrawable(combinedDrawable);
@@ -105,7 +140,7 @@ public class SendLocationCell extends FrameLayout {
             }
         } else {
             Drawable drawable = getResources().getDrawable(R.drawable.pin).mutate();
-            drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_location_sendLocationIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(dp(46), dp(46));
             combinedDrawable.setIconSize(dp(24), dp(24));

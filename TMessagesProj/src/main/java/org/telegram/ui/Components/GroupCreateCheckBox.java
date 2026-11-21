@@ -22,7 +22,7 @@ import androidx.annotation.Keep;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
-public class GroupCreateCheckBox extends View {
+public class GroupCreateCheckBox extends View implements Theme.Colorable {
 
     private Paint backgroundPaint;
     private Paint backgroundInnerPaint;
@@ -82,6 +82,7 @@ public class GroupCreateCheckBox extends View {
         updateColors();
     }
 
+    @Override
     public void updateColors() {
         backgroundInnerPaint.setColor(Theme.getColor(innerKey));
         backgroundPaint.setColor(Theme.getColor(backgroundKey));

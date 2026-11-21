@@ -291,7 +291,8 @@ public class EditTextEffects extends EditText {
                 Build.MANUFACTURER == null ||
                 !Build.MANUFACTURER.toLowerCase().contains("honor") &&
                 !Build.MANUFACTURER.toLowerCase().contains("huawei") &&
-                !Build.MANUFACTURER.toLowerCase().contains("alps")
+                !Build.MANUFACTURER.toLowerCase().contains("alps") &&
+                !Build.MANUFACTURER.toLowerCase().contains("vivo")
             ) && (
                 Build.MODEL == null ||
                 !Build.MODEL.toLowerCase().contains("mediapad")

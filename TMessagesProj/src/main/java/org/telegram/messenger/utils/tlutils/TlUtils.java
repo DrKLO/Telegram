@@ -223,9 +223,14 @@ public class TlUtils {
         if (newGroupCall instanceof TLRPC.TL_groupCall && oldGroupCall instanceof TLRPC.TL_groupCall) {
             final TLRPC.TL_groupCall tlNew = (TLRPC.TL_groupCall) newGroupCall;
 
+            final TLRPC.TL_groupCall tlOld = (TLRPC.TL_groupCall) oldGroupCall;
+            // updateGroupCall pushes may come without stream_dc_id: the stream DC of a call does
+            // not change, and without it the stream parts are requested from DC 0 and never answered
+            if ((tlNew.flags & 16) == 0 && (tlOld.flags & 16) != 0 && tlNew.id == tlOld.id) {
+                tlNew.stream_dc_id = tlOld.stream_dc_id;
+                tlNew.flags |= 16;
+            }
             if (tlNew.min) {
-                final TLRPC.TL_groupCall tlOld = (TLRPC.TL_groupCall) oldGroupCall;
-
                 tlNew.can_change_join_muted = tlOld.can_change_join_muted;
                 tlNew.can_start_video = tlOld.can_start_video;
                 tlNew.creator = tlOld.creator;

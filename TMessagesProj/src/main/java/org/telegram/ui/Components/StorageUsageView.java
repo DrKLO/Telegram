@@ -14,13 +14,26 @@ import android.widget.TextView;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
-public class StorageUsageView extends FrameLayout {
+public class StorageUsageView extends FrameLayout implements Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        try {
+            if (progressView != null && telegramCacheTextView != null && lastProgressColor != Theme.getColor(Theme.key_player_progress)) {
+                invalidate(); // re-reads the progress color
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private Paint paintFill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint paintCalculcating = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -126,7 +139,7 @@ public class StorageUsageView extends FrameLayout {
 
 
         calculatingTextView = new TextView(context);
-        calculatingTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(calculatingTextView, Theme.key_windowBackgroundWhiteGrayText);
 
         String calculatingString = LocaleController.getString("CalculatingSize",R.string.CalculatingSize);
         int indexOfDots = calculatingString.indexOf("...");
@@ -142,19 +155,19 @@ public class StorageUsageView extends FrameLayout {
 
         telegramCacheTextView = new TextView(context);
         telegramCacheTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        telegramCacheTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(telegramCacheTextView, Theme.key_windowBackgroundWhiteGrayText);
 
         telegramDatabaseTextView = new TextView(context);
         telegramDatabaseTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        telegramDatabaseTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(telegramDatabaseTextView, Theme.key_windowBackgroundWhiteGrayText);
 
         freeSizeTextView = new TextView(context);
         freeSizeTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        freeSizeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(freeSizeTextView, Theme.key_windowBackgroundWhiteGrayText);
 
         totlaSizeTextView = new TextView(context);
         totlaSizeTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
-        totlaSizeTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(totlaSizeTextView, Theme.key_windowBackgroundWhiteGrayText);
 
 
         lastProgressColor = Theme.getColor(Theme.key_player_progress);
@@ -178,7 +191,7 @@ public class StorageUsageView extends FrameLayout {
         divider = new View(getContext());
         linearLayout.addView(divider, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 21, 0, 0, 0));
         divider.getLayoutParams().height = 1;
-        divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        ThemeBind.backgroundColor(divider, Theme.key_divider);
 
         textSettingsCell = new TextSettingsCell(getContext());
         linearLayout.addView(textSettingsCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -256,7 +269,7 @@ public class StorageUsageView extends FrameLayout {
             }
         }
 
-        textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textSettingsCell.getTextView(), Theme.key_windowBackgroundWhiteBlackText);
 
         requestLayout();
     }
@@ -282,8 +295,8 @@ public class StorageUsageView extends FrameLayout {
             totlaSizeTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
         }
 
-        textSettingsCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+        ThemeBind.textColor(textSettingsCell.getTextView(), Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.backgroundColor(divider, Theme.key_divider);
     }
 
     private class ProgressView extends View {

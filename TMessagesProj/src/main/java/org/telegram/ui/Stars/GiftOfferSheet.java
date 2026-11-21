@@ -37,6 +37,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.BillingController;
 import org.telegram.messenger.DialogObject;
@@ -56,6 +57,7 @@ import org.telegram.ui.AccountFrozenAlert;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedTextView;
@@ -81,6 +83,24 @@ import org.telegram.ui.TON.TONIntroActivity;
 import java.util.ArrayList;
 
 public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
+
+    private int themedNavigationBarColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (navBarColor == themedNavigationBarColor) {
+                final int color = getThemedColor(Theme.key_dialogBackground);
+                if (color != navBarColor) {
+                    fixNavigationBar(color);
+                    themedNavigationBarColor = navBarColor;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private final @Nullable BalanceCloud balanceCloud;
     private final TL_stars.TL_starGiftUnique giftUnique;
     private final String giftName;
@@ -190,7 +210,8 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             }
         });
 
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        fixNavigationBarKey(Theme.key_dialogBackground);
+        themedNavigationBarColor = navBarColor;
 
         LinearLayout layout = new LinearLayout(context);
         layout.setClickable(true);
@@ -238,7 +259,7 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             starsCountEditField.setMaxLines(1);
             starsCountEditField.setBackground(null);
             starsCountEditField.setPadding(dp(42), dp(16), dp(16), dp(16));
-            starsCountEditField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(starsCountEditField, Theme.key_windowBackgroundWhiteBlackText);
             starsCountEditField.requestFocus();
 
             starsCountEditOutline.setLeftPadding(dp(28));
@@ -261,7 +282,7 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             starsCountEditOutline.addView(iconTon, LayoutHelper.createFrame(22, 22, Gravity.LEFT | Gravity.CENTER_VERTICAL, 14, 0, 0, 0));
 
             dollarsEqView = new AnimatedTextView(context);
-            dollarsEqView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(dollarsEqView, Theme.key_windowBackgroundWhiteGrayText);
             dollarsEqView.setTextSize(dp(13));
             dollarsEqView.setGravity(Gravity.RIGHT);
             starsCountEditOutline.addView(dollarsEqView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
@@ -283,7 +304,7 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             publishingTimeField.setMaxLines(1);
             publishingTimeField.setBackground(null);
             publishingTimeField.setPadding(dp(16), dp(16), dp(16), dp(16));
-            publishingTimeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(publishingTimeField, Theme.key_windowBackgroundWhiteBlackText);
             publishingTimeField.setFocusable(false);
             publishingTimeField.setClickable(false);
             publishingTimeField.setEnabled(false);
@@ -311,11 +332,11 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
 
             ImageView iconArrow = new ImageView(context);
             iconArrow.setImageResource(R.drawable.arrow_more);
-            iconArrow.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(iconArrow, Theme.key_dialogEmptyImage, resourcesProvider, PorterDuff.Mode.SRC_IN);
             publishingTimeOutline.addView(iconArrow, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
             publishingTimeHint = new TextView(context);
-            publishingTimeHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            ThemeBind.textColor(publishingTimeHint, Theme.key_windowBackgroundWhiteGrayText);
             publishingTimeHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
 
             bodyLayout.addView(publishingTimeHint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 33, 4, 33, 0));
@@ -538,11 +559,11 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
 
     private void checkButtonOfferText(boolean animated) {
         final boolean isTon = inputAmount.currency == AmountUtils.Currency.TON;
-        buttonView.setText(StarsIntroActivity.replaceStars(isTon,
+        buttonView.setText(StarsIntroActivity.whiteGram(isTon, StarsIntroActivity.replaceStars(isTon,
             LocaleController.formatString(R.string.GiftOfferButtonStars, isTon ? inputAmount.asDecimalString() :
                 LocaleController.formatNumber(inputAmount.asDecimal(), ',')),
             isTon ? spanRefTon: spanRefStars
-        ), animated);
+        )), animated);
     }
 
     private void checkButtonEnabled(boolean animated) {
@@ -589,8 +610,8 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             starsCountEditHint.setText(replaceTags(formatString(key, giftName)));
         }
 
-        starsCountEditHint.setTextColor(getThemedColor((inputAmountError & (~ERROR_FLAG_AMOUNT_NOT_ENOUGH)) == 0 ?
-            Theme.key_windowBackgroundWhiteGrayText : Theme.key_text_RedBold));
+        ThemeBind.textColor(starsCountEditHint, (inputAmountError & (~ERROR_FLAG_AMOUNT_NOT_ENOUGH)) == 0 ?
+            Theme.key_windowBackgroundWhiteGrayText : Theme.key_text_RedBold, resourcesProvider);
     }
 
     private void checkRateText(boolean animated) {
@@ -647,13 +668,13 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
 
         final TextView titleView = new TextView(getContext());
         titleView.setText(getString(R.string.GiftOfferConfirmSend));
-        titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_dialogTextBlack, resourcesProvider);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         topView.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 4, 24, 14));
 
         final TextView textView = new TextView(getContext());
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(AndroidUtilities.replaceTags(inputAmount.currency == AmountUtils.Currency.STARS ?
             formatString(R.string.GiftOfferTransferInfoTextStars, amountFmt, DialogObject.getShortName(dialogId), giftName) :
@@ -783,7 +804,7 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
         topView.addView(new StarGiftSheet.GiftTransferTopView(context, gift, obj), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, -4, 0, 0));
 
         final TextView textView = new TextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setText(AndroidUtilities.replaceTags(amount.currency == AmountUtils.Currency.STARS ?
                 formatString(R.string.GiftOfferTransferInfoTextSellStars, amountFmt, DialogObject.getShortName(dialogId), giftName, amountMinusFeeFmt) :
@@ -827,7 +848,7 @@ public class GiftOfferSheet extends BottomSheetWithRecyclerListView {
             hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             hintView.setGravity(Gravity.CENTER);
             hintView.setText(buttonHint);
-            hintView.setTextColor(Theme.getColor(badBrice ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            ThemeBind.textColor(hintView, badBrice ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             topView.addView(hintView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 40, 12, 40, 9));
         }
 

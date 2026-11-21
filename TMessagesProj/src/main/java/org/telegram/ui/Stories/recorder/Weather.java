@@ -504,7 +504,7 @@ public class Weather {
                         try {
                             final Context finalContext = context;
                             AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                            builder.setTopAnimation(R.raw.permission_request_location, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground));
+                            builder.setTopAnimation(R.raw.permission_request_location, AlertsCreator.PERMISSIONS_REQUEST_TOP_ICON_SIZE, false, Theme.getColor(Theme.key_dialogTopBackground)); builder.setTopBackgroundColorKey(Theme.key_dialogTopBackground, null);
                             builder.setMessage(getString(R.string.GpsDisabledAlertText));
                             builder.setPositiveButton(getString(R.string.Enable), (dialog, id) -> {
                                 try {

@@ -17,6 +17,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.messenger.R;
 
 import java.util.ArrayList;
@@ -48,13 +49,13 @@ public class HashtagHistoryView extends FrameLayout {
         emptyView = new FrameLayout(context);
 
         emptyImage = new ImageView(context);
-        emptyImage.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(emptyImage, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         emptyImage.setScaleType(ImageView.ScaleType.CENTER);
         emptyImage.setImageResource(R.drawable.large_hashtags);
         emptyView.addView(emptyImage, LayoutHelper.createFrame(56, 56, Gravity.CENTER_HORIZONTAL | Gravity.TOP));
 
         emptyText = new TextView(context);
-        emptyText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider));
+        ThemeBind.textColor(emptyText, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider);
         emptyText.setText(LocaleController.getString(R.string.HashtagSearchPlaceholder));
         emptyText.setGravity(Gravity.CENTER);
         emptyView.addView(emptyText, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 56, 0, 0));

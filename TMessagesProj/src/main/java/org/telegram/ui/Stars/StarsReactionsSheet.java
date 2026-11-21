@@ -51,6 +51,7 @@ import androidx.core.graphics.ColorUtils;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -75,6 +76,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.ChatActivity;
@@ -166,6 +168,24 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         return super.isTouchOutside(x, y);
     }
 
+    private int fixedNavBarColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (navBarColorKey < 0 && navBarColor == fixedNavBarColor) {
+                final int color = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+                if (color != navBarColor) {
+                    fixedNavBarColor = navBarColor = color;
+                    setOverlayNavBarColor(color);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public StarsReactionsSheet(
         Context context,
         int currentAccount,
@@ -228,6 +248,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         lastSelectedPeer = peer == UserObject.ANONYMOUS ? selfId : peer;
 
         fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        fixedNavBarColor = navBarColor;
 
         layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -298,7 +319,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         dialogSelectorLayout = new FrameLayout(context);
         dialogSelectorInnerLayout = new FrameLayout(context);
-        dialogSelectorInnerLayout.setBackground(Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider)));
+        ThemeBind.fillBackground(dialogSelectorInnerLayout, Theme.createRoundRectDrawable(dp(14), Theme.getColor(Theme.key_dialogBackgroundGray, resourcesProvider)), ThemeBind.of(Theme.key_dialogBackgroundGray), resourcesProvider);
         dialogImageView = new BackupImageView(context);
         dialogImageView.setRoundRadius(dp(14));
         dialogImageView.getImageReceiver().setCrossfadeWithOldImage(true);
@@ -306,7 +327,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         dialogSelectorInnerLayout.addView(dialogImageView, LayoutHelper.createFrame(28, 28, Gravity.LEFT | Gravity.FILL_VERTICAL));
         dialogSelectorIconView = new ImageView(context);
         dialogSelectorIconView.setScaleType(ImageView.ScaleType.CENTER);
-        dialogSelectorIconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(dialogSelectorIconView, Theme.key_dialogTextGray3, resourcesProvider, PorterDuff.Mode.SRC_IN);
         dialogSelectorIconView.setImageResource(R.drawable.arrows_select);
         dialogSelectorInnerLayout.addView(dialogSelectorIconView, LayoutHelper.createFrame(18, 18, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
         dialogSelectorLayout.addView(dialogSelectorInnerLayout, LayoutHelper.createFrame(52, 28, Gravity.CENTER));
@@ -321,7 +342,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
                 super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(ActionBar.getCurrentActionBarHeight(), MeasureSpec.EXACTLY));
             }
         };
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setGravity(Gravity.CENTER);
         titleView.setText(getString(R.string.StarsReactionTitle2));
@@ -335,7 +356,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         closeView = new ImageView(context);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setImageResource(R.drawable.ic_close_white);
-        closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogEmptyImage, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(closeView, Theme.key_dialogEmptyImage, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(closeView);
         closeView.setOnClickListener(v -> dismiss());
 
@@ -361,7 +382,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
         statusView = new TextView(context);
-        statusView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(statusView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         statusView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         statusView.setGravity(Gravity.CENTER);
         statusView.setSingleLine(false);
@@ -442,7 +463,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             layout.addView(topSendersView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 110, 0, liveStories ? -50 : 0, 0, 0));
 
             checkSeparatorView = new View(context);
-            checkSeparatorView.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+            ThemeBind.backgroundColor(checkSeparatorView, Theme.key_divider, resourcesProvider);
             if (!liveStories && (sendEnabled || me != null)) {
                 layout.addView(checkSeparatorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
             }
@@ -484,7 +505,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         checkBox.setDrawBackgroundAsArc(10);
 
         checkTextView = new TextView(context);
-        checkTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(checkTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         checkTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         checkTextView.setText(LocaleController.getString(R.string.StarsReactionShowMeInTopSenders));
 
@@ -502,7 +523,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             }
         });
         ScaleStateListAnimator.apply(checkLayout, .05f, 1.2f);
-        checkLayout.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6));
+        ThemeBind.selectorBackground(checkLayout, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 6), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
 
         if (!liveStories && (sendEnabled || me != null)) {
             layout.addView(checkLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, withTopSenders ? 10 : 4, 0, 10));
@@ -611,7 +632,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
 
         LinkSpanDrawable.LinksTextView termsView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
         termsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        termsView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(termsView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         if (liveStories && !sendEnabled) {
             termsView.setText(getString(R.string.LiveStoryReactAdminCant));
         } else {
@@ -620,7 +641,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
             }));
         }
         termsView.setGravity(Gravity.CENTER);
-        termsView.setLinkTextColor(getThemedColor(Theme.key_dialogTextLink));
+        ThemeBind.linkTextColor(termsView, Theme.key_dialogTextLink, resourcesProvider);
         if (sendEnabled || liveStories) {
             layout.addView(termsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 14, 8, 14, 12));
         }
@@ -690,7 +711,7 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
     @Override
     public void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.adminedChannelsLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.adminedChannelsLoaded);
     }
 
     @Override
@@ -1841,7 +1862,31 @@ public class StarsReactionsSheet extends BottomSheet implements NotificationCent
         }
     }
 
-    public class TopSendersView extends View {
+    public class TopSendersView extends View implements Theme.Colorable {
+
+        private PorterDuffColorFilter crownOutlineFilter;
+        private int crownOutlineFilterColor;
+
+        @Override
+        public void updateColors() {
+            try {
+                final int color = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+                backgroundPaint.setColor(color);
+                if (crownOutlineFilter == null || color != crownOutlineFilterColor) {
+                    crownOutlineFilterColor = color;
+                    crownOutlineFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
+                }
+                for (int i = 0; i < senders.size(); ++i) {
+                    final Sender sender = senders.get(i);
+                    if (sender != null && sender.crownOutline != null && sender.crownOutline.getColorFilter() != crownOutlineFilter) {
+                        sender.crownOutline.setColorFilter(crownOutlineFilter);
+                    }
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         public final boolean liveStories;
         public final ArrayList<Sender> senders = new ArrayList<>();

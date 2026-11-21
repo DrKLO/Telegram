@@ -20,6 +20,7 @@ import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,6 +77,7 @@ import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
@@ -323,7 +325,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         if (settingsItem != null) {
             settingsItem.setVisibility(tab.settings ? View.VISIBLE : View.GONE);
         }
+        actionBarColorKey = tab.actionBarColorKey;
         setActionBarColor(!tab.overrideActionBarColor ? Theme.getColor(tab.actionBarColorKey < 0 ? Theme.key_windowBackgroundWhite : tab.actionBarColorKey, resourcesProvider) : tab.actionBarColor, tab.overrideActionBarColor, false);
+        navBarColorThemed = false;
         setNavigationBarColor(tab.navigationBarColor, false);
         return true;
     }
@@ -495,7 +499,14 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
             @Override
             public void onWebAppSetNavigationBarColor(int color) {
+                navBarColorThemed = false;
                 setNavigationBarColor(color, true);
+            }
+
+            @Override
+            public void onWebAppResetNavigationBarColor(int color) {
+                setNavigationBarColor(color, true);
+                navBarColorThemed = true;
             }
 
             @Override
@@ -685,6 +696,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         mainButtonAutoAnimator = VerticalPositionAutoAnimator.attach(botButtons);
 
         setNavigationBarColor(getColor(Theme.key_windowBackgroundGray), false);
+        navBarColorThemed = true;
 
         actionBarShadow = ContextCompat.getDrawable(getContext(), R.drawable.header_shadow).mutate();
 
@@ -777,7 +789,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
     }
 
     public void attachInternal() {
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.didSetNewTheme);
 
         if (dialog != null) {
             dialog.attach();
@@ -834,6 +846,49 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
 
     public void setParentActivity(Activity parentActivity) {
         this.parentActivity = parentActivity;
+    }
+
+    private boolean navBarColorThemed;
+    private int verifiedDrawableColor;
+
+    // called on every theme color update frame (from WindowView.updateColors)
+    private void updateThemeColors() {
+        try {
+            if (actionBar == null || windowView == null) {
+                return;
+            }
+            if (!overrideBackgroundColor) {
+                if (backDrawable != null) {
+                    updateActionBarColors();
+                }
+                final int color = getColor(actionBarColorKey < 0 ? Theme.key_windowBackgroundWhite : actionBarColorKey);
+                if (color != actionBarColor) {
+                    actionBarColor = color;
+                    final Drawable bg = actionBar.getBackground();
+                    if (bg instanceof ColorDrawable && ((ColorDrawable) bg).getColor() != Color.TRANSPARENT) {
+                        actionBar.setBackgroundColor(actionBarColor);
+                    }
+                    windowView.invalidate();
+                }
+            }
+            if (navBarColorThemed && botButtons != null) {
+                final int color = getColor(Theme.key_windowBackgroundGray);
+                if (color != navBarColor) {
+                    setNavigationBarColor(color, false);
+                    windowView.invalidate();
+                }
+            }
+            if (verifiedDrawable != null) {
+                final int color = Theme.getColor(Theme.key_featuredStickers_addButton);
+                if (color != verifiedDrawableColor) {
+                    verifiedDrawableColor = color;
+                    verifiedDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+                    actionBar.getTitleTextView().invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void updateActionBarColors() {
@@ -968,7 +1023,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         TLRPC.UserFull userInfo = MessagesController.getInstance(currentAccount).getUserFull(botId);
         if (userbot != null && userbot.verified || userInfo != null && userInfo.user != null && userInfo.user.verified) {
             verifiedDrawable = getContext().getResources().getDrawable(R.drawable.verified_profile).mutate();
-            verifiedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
+            verifiedDrawable.setColorFilter(new PorterDuffColorFilter(verifiedDrawableColor = Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN));
             verifiedDrawable.setAlpha(0xFF);
             actionBar.getTitleTextView().setDrawablePadding(dp(2));
             actionBar.getTitleTextView().setRightDrawable(new Drawable() {
@@ -1128,7 +1183,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                             loadFromResponse(false);
                         }
                     }));
-                    NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.webViewResultSent);
 
                     break;
                 }
@@ -1203,7 +1258,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                             loadFromResponse(false);
                         }
                     }));
-                    NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.webViewResultSent);
+                    NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.webViewResultSent);
                     break;
                 }
                 case TYPE_WEB_VIEW_BOT_APP: {
@@ -1508,7 +1563,7 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                     .create();
             dialog.show();
             TextView textView = (TextView) dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            textView.setTextColor(getColor(Theme.key_text_RedBold));
+            ThemeBind.textColor(textView, Theme.key_text_RedBold, resourcesProvider);
             return false;
         } else {
             dismiss();
@@ -1591,10 +1646,16 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
         return false;
     }
 
-    public class WindowView extends SizeNotifierFrameLayout implements BaseFragment.AttachedSheetWindow, BottomSheetTabsOverlay.SheetView {
+    public class WindowView extends SizeNotifierFrameLayout implements BaseFragment.AttachedSheetWindow, BottomSheetTabsOverlay.SheetView, Theme.Colorable {
         public WindowView(Context context) {
             super(context);
             setWillNotDraw(false);
+        }
+
+        @Override
+        public void updateColors() {
+            super.updateColors();
+            updateThemeColors();
         }
 
         private final Paint navbarPaint = new Paint(Paint.ANTI_ALIAS_FLAG);

@@ -339,10 +339,8 @@ class ChatsRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
             rv.setTextViewText(R.id.shortcut_widget_item_badge, String.format("%d", dialog.unread_count));
             rv.setViewVisibility(R.id.shortcut_widget_item_badge, View.VISIBLE);
             if (accountInstance.getMessagesController().isDialogMuted(dialog.id, 0)) {
-                rv.setBoolean(R.id.shortcut_widget_item_badge, "setEnabled", false);
                 rv.setInt(R.id.shortcut_widget_item_badge, "setBackgroundResource", R.drawable.widget_badge_muted_background);
             } else {
-                rv.setBoolean(R.id.shortcut_widget_item_badge, "setEnabled", true);
                 rv.setInt(R.id.shortcut_widget_item_badge, "setBackgroundResource", R.drawable.widget_badge_background);
             }
         } else {

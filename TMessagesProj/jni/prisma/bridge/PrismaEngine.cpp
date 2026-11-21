@@ -233,7 +233,11 @@ std::vector<int32_t> Engine::highlight(std::u16string_view text, std::u16string_
 
 std::vector<std::string> Engine::languages() const {
     std::vector<std::string> result;
-    for (const auto& item : highlighter_->languages()) result.push_back(item.first);
+    // File extensions (rs, h, ...) have no display name: they only resolve a diff's
+    // file names and stay out of the language picker.
+    for (const auto& item : highlighter_->languages()) {
+        if (!item.second.empty()) result.push_back(item.first);
+    }
     return result;
 }
 

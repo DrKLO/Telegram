@@ -51,6 +51,7 @@ import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements Theme.Colorable {
 
@@ -664,7 +665,15 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
         }
 //        selectorDrawable.setColor(processColor(Theme.getColor(tabLineColorKey, resourcesProvider)));
         selectorDrawable.setColor(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f));
+        if (backgroundDrawable != null) {
+            // glass background is drawn manually (not the view background), so the theme dispatcher does not reach it
+            backgroundDrawable.updateColors();
+        }
         invalidate();
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(activeTextColorKey);
     }
 
     public int getCurrentTabId() {
@@ -827,20 +836,25 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
             return;
         }
         final int currentScrollX = getScrollX();
-        final int left = child.getLeft();
-        final int width = child.getMeasuredWidth();
-        if (left - dp(50) < currentScrollX) {
-            if (smooth) {
-                smoothScrollTo(left - dp(50), 0);
-            } else {
-                scrollTo(left - dp(50), 0);
-            }
-        } else if (left + width + dp(21) > currentScrollX + getWidth()) {
-            if (smooth) {
-                smoothScrollTo(left + width, 0);
-            } else {
-                scrollTo(left + width, 0);
-            }
+        // keep the neighbouring tabs visible too, so the next ones can be reached by tapping
+        final View prevChild = tabsContainer.getChildAt(position - 1);
+        final View nextChild = tabsContainer.getChildAt(position + 1);
+        final int left = tabsContainer.getLeft() + (prevChild != null ? prevChild.getLeft() : child.getLeft());
+        final int right = tabsContainer.getLeft() + (nextChild != null ? nextChild.getRight() : child.getRight());
+        final int visibleLeft = currentScrollX + getPaddingLeft() + dp(7);
+        final int visibleRight = currentScrollX + getWidth() - getPaddingRight() - dp(7);
+        final int scrollX;
+        if (left < visibleLeft) {
+            scrollX = currentScrollX + left - visibleLeft;
+        } else if (right > visibleRight) {
+            scrollX = currentScrollX + right - visibleRight;
+        } else {
+            return;
+        }
+        if (smooth) {
+            smoothScrollTo(scrollX, 0);
+        } else {
+            scrollTo(scrollX, 0);
         }
     }
 

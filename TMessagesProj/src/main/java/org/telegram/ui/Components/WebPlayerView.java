@@ -2072,6 +2072,13 @@ public class WebPlayerView extends ViewGroup implements VideoPlayer.VideoPlayerD
         return initied;
     }
 
+    /** Same as the inline button while the player is shown in the floating window. */
+    public void exitFromInlineMode() {
+        if (isInline && inlineButton != null) {
+            inlineButton.callOnClick();
+        }
+    }
+
     public boolean isInline() {
         return isInline || switchingInlineMode;
     }

@@ -31,7 +31,7 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 
 import java.util.ArrayList;
 
-public class DialogsHintCell extends FrameLayout {
+public class DialogsHintCell extends FrameLayout implements Theme.Colorable {
 
     private final LinearLayout parentView;
     private final LinearLayout contentView;
@@ -112,6 +112,7 @@ public class DialogsHintCell extends FrameLayout {
 
     }
 
+    @Override
     public void updateColors() {
         titleView.setTextColor(Theme.getColor(titleIsError ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteBlackText));
         messageView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));

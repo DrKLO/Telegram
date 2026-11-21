@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -27,22 +28,24 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatGreetingsView;
-import org.telegram.ui.Components.CircularProgressDrawable;
-import org.telegram.ui.Components.CrossfadeDrawable;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
@@ -57,7 +60,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 
     @Override
     public boolean onFragmentCreate() {
-        getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
+        getNotificationCenter().addWeakObserver(this, NotificationCenter.userInfoDidLoad);
         MediaDataController.getInstance(currentAccount).checkStickers(MediaDataController.TYPE_IMAGE);
         MediaDataController.getInstance(currentAccount).loadRecents(MediaDataController.TYPE_IMAGE, false, true, false);
         MediaDataController.getInstance(currentAccount).loadRecents(MediaDataController.TYPE_FAVE, false, true, false);
@@ -83,8 +86,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
     }
 
     private static final int done_button = 1;
-    private CrossfadeDrawable doneButtonDrawable;
-    private ActionBarMenuItem doneButton;
+    private SimpleActionBarDoneButton doneButton;
 
     @Override
     protected CharSequence getTitle() {
@@ -106,7 +108,13 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
     private boolean keyboardVisible;
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
+        setHasOwnBackground(true);
         AndroidUtilities.requestAdjustResize(getParentActivity(), classGuid);
 
         greetingsView = new ChatGreetingsView(context, getUserConfig().getCurrentUser(), currentAccount, sticker, getResourceProvider()) {
@@ -191,7 +199,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         };
         titleEdit.autofocused = true;
         titleEdit.setShowLimitOnFocus(true);
-        titleEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(titleEdit, Theme.key_windowBackgroundWhite, getResourceProvider());
         titleEdit.setDivider(true);
         titleEdit.hideKeyboardOnEnter();
         messageEdit = new EditTextCell(context, getString(R.string.BusinessIntroMessageHint), true, false, getMessagesController().introDescriptionLengthLimit, resourceProvider) {
@@ -209,18 +217,19 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
             }
         };
         messageEdit.setShowLimitOnFocus(true);
-        messageEdit.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(messageEdit, Theme.key_windowBackgroundWhite, getResourceProvider());
         messageEdit.setDivider(true);
         messageEdit.hideKeyboardOnEnter();
 
         greetingsView.setPreview("", "");
 
         super.createView(context);
+        contentView.setBackground(null);
         listView.setSections();
+        listView.setSectionsDrawBackground(true);
         listView.adapter.setApplyBackground(false);
-        actionBar.setAdaptiveBackground(listView);
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -232,10 +241,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
                 }
             }
         });
-        Drawable checkmark = context.getResources().getDrawable(R.drawable.ic_ab_done).mutate();
-        checkmark.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultIcon), PorterDuff.Mode.MULTIPLY));
-        doneButtonDrawable = new CrossfadeDrawable(checkmark, new CircularProgressDrawable(Theme.getColor(Theme.key_actionBarDefaultIcon)));
-        doneButton = actionBar.createMenu().addItemWithWidth(done_button, doneButtonDrawable, AndroidUtilities.dp(56), LocaleController.getString(R.string.Done));
+        doneButton = simpleActionBar.createDoneButton(done_button, LocaleController.getString(R.string.Save));
         checkDone(false, true);
 
         listView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
@@ -403,14 +409,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
     private void checkDone(boolean animated, boolean ignoreClear) {
         if (doneButton == null) return;
         final boolean hasChanges = hasChanges();
-        doneButton.setEnabled(hasChanges);
-        if (animated) {
-            doneButton.animate().alpha(hasChanges ? 1.0f : 0.0f).scaleX(hasChanges ? 1.0f : 0.0f).scaleY(hasChanges ? 1.0f : 0.0f).setDuration(180).start();
-        } else {
-            doneButton.setAlpha(hasChanges ? 1.0f : 0.0f);
-            doneButton.setScaleX(hasChanges ? 1.0f : 0.0f);
-            doneButton.setScaleY(hasChanges ? 1.0f : 0.0f);
-        }
+        doneButton.setActive(hasChanges, animated);
         if (listView != null && listView.adapter != null && clearVisible != !isEmpty()) {
             saveScrollPosition();
             listView.adapter.update(true);
@@ -420,7 +419,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 
     private int shiftDp = -4;
     private void processDone() {
-        if (doneButtonDrawable.getProgress() > 0f) return;
+        if (doneButton.isLoading()) return;
 
 //        if (!isEmpty()) {
 //            if (TextUtils.isEmpty(titleEdit.getText())) {
@@ -435,7 +434,7 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 //            }
 //        }
 
-        doneButtonDrawable.animateToProgress(1f);
+        doneButton.setLoading(true, true);
         TLRPC.UserFull userFull = getMessagesController().getUserFull(getUserConfig().getClientUserId());
         TL_account.updateBusinessIntro req = new TL_account.updateBusinessIntro();
         if (!isEmpty()) {
@@ -471,10 +470,10 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
 
         getConnectionsManager().sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
             if (err != null) {
-                doneButtonDrawable.animateToProgress(0f);
+                doneButton.setLoading(false, true);
                 BulletinFactory.showError(err);
             } else if (res instanceof TLRPC.TL_boolFalse) {
-                doneButtonDrawable.animateToProgress(0f);
+                doneButton.setLoading(false, true);
                 BulletinFactory.of(this).createErrorBulletin(LocaleController.getString(R.string.UnknownError)).show();
             } else {
                 if (inputSticker != null) {
@@ -587,10 +586,9 @@ public class BusinessIntroActivity extends UniversalFragment implements Notifica
         return true;
     }
 
+    @Nullable
     @Override
-    public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
-        listView.setClipToPadding(false);
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
     }
-
 }

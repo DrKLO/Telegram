@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class GigagroupConvertAlert extends BottomSheet {
 
@@ -49,7 +50,7 @@ public class GigagroupConvertAlert extends BottomSheet {
             textView.setGravity(Gravity.CENTER_HORIZONTAL);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity(Gravity.CENTER);
-            textView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(textView, Theme.key_featuredStickers_buttonText);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.bold());
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -83,7 +84,7 @@ public class GigagroupConvertAlert extends BottomSheet {
         TextView percentTextView = new TextView(context);
         percentTextView.setTypeface(AndroidUtilities.bold());
         percentTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
-        percentTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(percentTextView, Theme.key_dialogTextBlack);
         percentTextView.setText(LocaleController.getString(R.string.GigagroupConvertTitle));
         linearLayout.addView(percentTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 18, 17, 0));
 
@@ -97,12 +98,12 @@ public class GigagroupConvertAlert extends BottomSheet {
             container.addView(linearLayout2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 8, 0, 0));
 
             ImageView imageView = new ImageView(context);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextGray3), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_dialogTextGray3, PorterDuff.Mode.MULTIPLY);
             imageView.setImageResource(R.drawable.list_circle);
 
             TextView textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            ThemeBind.textColor(textView, Theme.key_dialogTextGray3);
             textView.setGravity(Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT));
             textView.setMaxWidth(AndroidUtilities.dp(260));
 
@@ -143,7 +144,7 @@ public class GigagroupConvertAlert extends BottomSheet {
 
         TextView cancelTextView = new TextView(context);
         cancelTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        cancelTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2));
+        ThemeBind.textColor(cancelTextView, Theme.key_dialogTextBlue2);
         cancelTextView.setText(LocaleController.getString(R.string.GigagroupConvertCancelButton));
         cancelTextView.setGravity(Gravity.CENTER);
         linearLayout.addView(cancelTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 48, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 17, 0, 17, 16));

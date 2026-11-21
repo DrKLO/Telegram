@@ -59,6 +59,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.spoilers.SpoilerEffect2;
@@ -125,7 +126,7 @@ public class ChatAttachAlertPhotoLayoutPreview extends ChatAttachAlert.AttachAle
         header.setLines(1);
         header.setMaxLines(1);
         header.setEllipsize(TextUtils.TruncateAt.END);
-        header.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(header, Theme.key_dialogTextBlack, resourcesProvider);
         header.setText(LocaleController.getString(R.string.AttachMediaPreview));
         header.setTypeface(AndroidUtilities.bold());
         header.setCompoundDrawablePadding(AndroidUtilities.dp(4));

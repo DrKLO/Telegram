@@ -75,6 +75,7 @@ import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.StickersActivity;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.MessageSendPreview;
 import org.telegram.ui.Components.AIEditorAlert;
@@ -102,6 +103,7 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class RichEditor extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -563,7 +565,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         backButton.setImageResource(R.drawable.ic_ab_back);
         backButton.setScaleType(ImageView.ScaleType.CENTER);
         backButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
-        backButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(backButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(backButton);
         backButton.setContentDescription(getString(R.string.AccDescrGoBack));
         backButton.setOnClickListener(v -> {
@@ -579,8 +581,8 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         undoButton = new ImageView(context);
         undoButton.setImageResource(R.drawable.iv_undo);
         undoButton.setScaleType(ImageView.ScaleType.CENTER);
-        undoButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        undoButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(undoButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), getResourceProvider());
+        ThemeBind.colorFilter(undoButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(undoButton);
         undoButton.setContentDescription(getString(R.string.Undo));
         undoButton.setOnClickListener(v -> listView.undo());
@@ -589,8 +591,8 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         redoButton = new ImageView(context);
         redoButton.setImageResource(R.drawable.iv_redo);
         redoButton.setScaleType(ImageView.ScaleType.CENTER);
-        redoButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        redoButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.selectorBackground(redoButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), getResourceProvider());
+        ThemeBind.colorFilter(redoButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(redoButton);
         redoButton.setContentDescription(getString(R.string.Redo));
         redoButton.setOnClickListener(v -> listView.redo());
@@ -618,7 +620,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
-        aiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(aiButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         aiButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
         bottomPanel.addView(aiButton, LayoutHelper.createLinear(44, 44, 0, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(aiButton);
@@ -669,8 +671,8 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
 
         emojiButton = new ChatActivityEnterViewAnimatedIconView(context, 24);
         emojiButton.setPadding(dp(7), dp(7), dp(7), dp(7));
-        emojiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)));
+        ThemeBind.colorFilter(emojiButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(emojiButton, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), getResourceProvider());
         emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
         blocksLayout.addView(emojiButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL));
         ScaleStateListAnimator.apply(emojiButton);
@@ -797,8 +799,8 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         addButton = new ImageView(context);
         addButton.setImageResource(R.drawable.outline_poll_attach_24);
         addButton.setScaleType(ImageView.ScaleType.CENTER);
-        addButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        addButton.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)));
+        ThemeBind.colorFilter(addButton, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
+        ThemeBind.selectorBackground(addButton, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), dp(20), dp(20)), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), getResourceProvider());
         blocksLayout.addView(addButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
         ScaleStateListAnimator.apply(addButton);
         addButton.setContentDescription(getString(R.string.AccDescrAttachButton));
@@ -860,7 +862,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             trashDrawable.setCustomEndFrame(0);
         }
         trashPanelIcon.setScaleType(ImageView.ScaleType.CENTER);
-        trashPanelIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(trashPanelIcon, Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         trashPanelIcon.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
         trashPanel.addView(trashPanelIcon, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
 
@@ -1057,7 +1059,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
             trashPanelIcon.setScaleX(scale);
             trashPanelIcon.setScaleY(scale);
         }
-        trashPanelIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(hovered ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(trashPanelIcon, hovered ? Theme.key_text_RedBold : Theme.key_windowBackgroundWhiteBlackText, getResourceProvider(), PorterDuff.Mode.SRC_IN);
         final RLottieDrawable d = trashPanelIcon.getAnimatedDrawable();
         if (d != null) {
             if (hovered) {
@@ -1539,6 +1541,13 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                 setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
             }
         }
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_featuredStickers_addButton);
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
+            colors.add(Theme.key_listSelector);
+            colors.add(backgroundColorKey);
+        }
     }
 
     public static Drawable withShadow(Drawable inner) {
@@ -1641,15 +1650,20 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         private final Outline outline = new Outline();
         private boolean pathDirty = true;
 
+        private boolean themedShadow;  // default shadow: strength depends on day/night, re-checked on draw
+        private boolean shadowDark;
+
         ShadowWrapperDrawable(Drawable inner) {
             this.inner = inner;
             inner.setCallback(this);
             shadowPaint.setColor(0x00000000);
-            if (Theme.isCurrentThemeDark()) {
-                shadowPaint.setShadowLayer(dp(12), 0, dp(4), Theme.multAlpha(0xFF000000, .30f));
-            } else {
-                shadowPaint.setShadowLayer(dp(12), 0, dp(4), Theme.multAlpha(0xFF000000, .10f));
-            }
+            themedShadow = true;
+            applyThemedShadow(Theme.isCurrentThemeDark());
+        }
+
+        private void applyThemedShadow(boolean dark) {
+            shadowDark = dark;
+            shadowPaint.setShadowLayer(dp(12), 0, dp(4), Theme.multAlpha(0xFF000000, dark ? .30f : .10f));
         }
         ShadowWrapperDrawable(Drawable inner, float r, float x, float y, int color) {
             this.inner = inner;
@@ -1724,6 +1738,9 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            if (themedShadow && shadowDark != Theme.isCurrentThemeDark()) {
+                applyThemedShadow(!shadowDark);
+            }
             if (pathDirty) rebuildPath();
             canvas.drawPath(shadowPath, shadowPaint);
             inner.draw(canvas);
@@ -1998,6 +2015,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         final long dialogId = chatActivity.getDialogId();
         final MessageObject replyToMsg = chatActivity.getReplyMessage();
         final MessageObject replyToTopMsg = chatActivity.getThreadMessage();
+        final ChatActivity.ReplyQuote replyQuote = chatActivity.getReplyingQuote();
         final long monoForumPeerId = chatActivity.getSendMonoForumPeerId();
         final SendMessageChatArguments sendMessageChatArguments = chatActivity.getMessageChatSendParams();
         final MessageObject editing = editingMessageObject;
@@ -2025,6 +2043,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
                     dialogId,
                     replyToMsg,
                     replyToTopMsg,
+                    replyQuote,
                     notify,
                     scheduleDate,
                     scheduleRepeatPeriod,
@@ -2037,6 +2056,12 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         };
         if (onSentCallback != null) {
             onSentCallback.run();
+        }
+        if (editing == null) {
+            final ChatActivityEnterView enterView = chatActivity.getChatActivityEnterView();
+            if (enterView != null) {
+                enterView.onRichEditorSent(notify, scheduleDate, scheduleRepeatPeriod);
+            }
         }
         if (scheduleDate != 0 && editing == null) {
             pendingSend = doSend;
@@ -2529,7 +2554,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         return super.onFragmentCreate();
     }
 
@@ -2576,7 +2601,7 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         final ImageView topIcon = new ImageView(context);
         topIcon.setImageResource(R.drawable.large_article);
         topIcon.setScaleType(ImageView.ScaleType.CENTER);
-        topIcon.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        ThemeBind.fillBackground(topIcon, Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
         layout.addView(topIcon, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 18, 0, 0));
 
         final TextView titleTextView = new TextView(context);
@@ -2584,14 +2609,14 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setGravity(Gravity.CENTER);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         layout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 25, 16, 25, 0));
 
         final TextView textView = new TextView(context);
         textView.setText(AndroidUtilities.replaceTags(getString(R.string.ArticleConversionText)));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setGravity(Gravity.CENTER);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         layout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 25, 11, 25, 0));
 
         final ButtonWithCounterView button1 = new ButtonWithCounterView(context, resourcesProvider).setRound();
@@ -2614,5 +2639,38 @@ public class RichEditor extends BaseFragment implements NotificationCenter.Notif
         });
 
         return sheet;
+    }
+
+    private int lastWhiteColor, lastSelectorColor, lastSendColor;
+    private boolean themeColorsApplied;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int white = getThemedColor(Theme.key_windowBackgroundWhite);
+            final int selector = getThemedColor(Theme.key_listSelector);
+            final int send = getThemedColor(Theme.key_chat_messagePanelSend);
+            if (themeColorsApplied && white == lastWhiteColor && selector == lastSelectorColor && send == lastSendColor) {
+                return;
+            }
+            themeColorsApplied = true;
+            lastWhiteColor = white;
+            lastSelectorColor = selector;
+            lastSendColor = send;
+            if (topGradient != null) topGradient.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int [] { getThemedColor(Theme.key_windowBackgroundWhite), Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), 0.0f) }));
+            if (bottomGradient != null) bottomGradient.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int [] { Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhite), 0.0f), getThemedColor(Theme.key_windowBackgroundWhite) }));
+            if (backButton != null) backButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
+            if (historyButtons != null) historyButtons.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
+            if (aiButton != null) aiButton.setBackground(withShadow(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector)), dp(22), dp(22))));
+            if (trashPanelIcon != null) trashPanelIcon.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
+            if (formattingLayout2 != null) formattingLayout2.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
+            if (formattingLayout3 != null) formattingLayout3.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
+            if (formattingLayout1 != null) formattingLayout1.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_windowBackgroundWhite))));
+            if (sendButton != null) sendButton.setBackground(withShadow(Theme.createRoundRectDrawable(dp(22), getThemedColor(Theme.key_chat_messagePanelSend))));
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

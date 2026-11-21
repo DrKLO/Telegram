@@ -52,6 +52,7 @@ import android.text.Editable;
 import android.text.Layout;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
@@ -121,9 +122,11 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotGuardHelper;
 import org.telegram.messenger.ChatObject;
 import org.telegram.utils.code.highlight.CodeHighlighting;
+import org.telegram.utils.code.highlight.PrismaTokenStyles;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileStreamLoadOperation;
 import org.telegram.messenger.ImageLoader;
@@ -161,6 +164,7 @@ import org.telegram.ui.ActionBar.BottomSheetTabDialog;
 import org.telegram.ui.ActionBar.BottomSheetTabs;
 import org.telegram.ui.ActionBar.BottomSheetTabsOverlay;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.AlertsCreator;
@@ -181,6 +185,7 @@ import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MarkdownParser;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.MediaActionDrawable;
@@ -343,6 +348,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
     private Paint headerPaint = new Paint();
     private Paint statusBarPaint = new Paint();
     private Paint navigationBarPaint = new Paint();
+    private boolean navigationBarPaintThemed;
     private Paint headerProgressPaint = new Paint();
 
     private ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout;
@@ -859,15 +865,15 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public FontCell(Context context) {
             super(context);
 
-            setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
+            ThemeBind.selectorBackground(this, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2), null, ThemeBind.of(Theme.key_listSelector), ArticleViewer.this.getResourcesProvider());
 
             radioButton = new RadioButton(context);
             radioButton.setSize(dp(20));
-            radioButton.setColor(getThemedColor(Theme.key_dialogRadioBackground), getThemedColor(Theme.key_dialogRadioBackgroundChecked));
+            ThemeBind.radioColors(radioButton, Theme.key_dialogRadioBackground, Theme.key_dialogRadioBackgroundChecked, ArticleViewer.this.getResourcesProvider());
             addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 0 : 22), 13, (LocaleController.isRTL ? 22 : 0), 0));
 
             textView = new TextView(context);
-            textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, ArticleViewer.this.getResourcesProvider());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setLines(1);
             textView.setMaxLines(1);
@@ -927,9 +933,28 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
     private boolean closeAnimationInProgress;
 
-    private class WindowView extends FrameLayout {
+    private class WindowView extends FrameLayout implements Theme.Colorable {
 
         private final Paint blackPaint = new Paint();
+
+        @Override
+        public void updateColors() {
+            applyThemeColorsHook();
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_iv_background);
+            colors.add(Theme.key_windowBackgroundWhite);
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
+            colors.add(Theme.key_windowBackgroundWhiteGrayText);
+            colors.add(Theme.key_windowBackgroundWhiteLinkText);
+            colors.add(Theme.key_windowBackgroundWhiteLinkSelection);
+            colors.add(Theme.key_windowBackgroundWhiteInputField);
+            colors.add(Theme.key_divider);
+            colors.add(Theme.key_switchTrack);
+            colors.add(Theme.key_chat_inReplyLine);
+        }
 
         private Runnable attachRunnable;
         private int startedTrackingPointerId;
@@ -1626,7 +1651,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             popupLayout.setShownFromBottom(false);
 
             deleteView = new TextView(parentActivity);
-            deleteView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
+            ThemeBind.selectorBackground(deleteView, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2), null, ThemeBind.of(Theme.key_listSelector), getResourcesProvider());
             deleteView.setGravity(Gravity.CENTER_VERTICAL);
             deleteView.setPadding(dp(20), 0, dp(20), 0);
             deleteView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -1662,9 +1687,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             });
         }
 
-        deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+        ThemeBind.textColor(deleteView, Theme.key_actionBarDefaultSubmenuItem, getResourcesProvider());
         if (popupLayout != null) {
-            popupLayout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+            ThemeBind.backgroundColor(popupLayout, Theme.key_actionBarDefaultSubmenuBackground, getResourcesProvider());
         }
 
         popupLayout.measure(View.MeasureSpec.makeMeasureSpec(dp(1000), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(dp(1000), View.MeasureSpec.AT_MOST));
@@ -3148,6 +3173,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         TL_iv.PageBlock parentBlock
     ) {
         int flags = getTextFlags(richText);
+        int mapKey = 0;
         SparseArray<TextPaint> currentMap = null;
         int textSize = dp(14);
         int textColor = 0xffff0000;
@@ -3250,10 +3276,16 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 textColor = parent.getGrayTextColor();
             }
         } else if (parentBlock instanceof TL_iv.pageBlockPreformatted) {
+            final TL_iv.pageBlockPreformatted pageBlockPreformatted = (TL_iv.pageBlockPreformatted) parentBlock;
+            if (pageBlockPreformatted.codeLength < 0) {
+                pageBlockPreformatted.codeLength = MarkdownParser.richTextToString(pageBlockPreformatted.text).length();
+            }
+            final int sizeDecrement = RichMessageLayout.RichPreformattedBlock.getCodeSizeDecrement(pageBlockPreformatted.codeLength);
             currentMap = resources.preformattedTextPaints;
-            textSize = dp(14);
+            textSize = dp(14 - sizeDecrement);
             textColor = parent.getTextColor();
             flags |= TEXT_FLAG_MONO;
+            mapKey = sizeDecrement << 16;
         } else if (parentBlock instanceof TL_iv.pageBlockParagraph) {
             currentMap = resources.paragraphTextPaints;
             textSize = dp(16);
@@ -3351,7 +3383,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             resources.errorTextPaint.setTextSize(dp(14));
             return resources.errorTextPaint;
         }
-        TextPaint paint = currentMap.get(flags);
+        mapKey |= flags;
+        TextPaint paint = currentMap.get(mapKey);
         if (paint == null) {
             paint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             if ((flags & TEXT_FLAG_MONO) != 0) {
@@ -3399,7 +3432,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 paint.baselineShift += dp(2.0f);
             }
             paint.setColor(textColor);
-            currentMap.put(flags, paint);
+            currentMap.put(mapKey, paint);
         }
         paint.setTextSize(textSize + additionalSize);
         return paint;
@@ -4110,11 +4143,11 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
         parentFragment = fragment;
         currentAccount = fragment != null && !(fragment instanceof EmptyBaseFragment) ? fragment.getCurrentAccount() : UserConfig.selectedAccount;
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidStart);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingProgressDidChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidReset);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.messagePlayingDidStart);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.emojiLoaded);
         if (parentActivity == activity || parentActivity != null && isSheet && sheet != null && sheet.dialog != null) {
             updatePaintColors(this);
             refreshThemeColors();
@@ -4412,7 +4445,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                                 Uri uri = Utilities.uriParseSafe(query);
                                 if (spans.length > 0 && start == 0 && end > 0 || uri != null && uri.getScheme() != null) {
                                     if (uri != null && uri.getScheme() == null && uri.getHost() == null && uri.getPath() != null) {
-                                        query = Browser.replace(uri, "https", null, uri.getPath(), "/");
+                                        query = Browser.replace(uri, "https", null, uri.getEncodedPath(), "/");
                                     }
                                     page.getWebView().loadUrl(query);
                                 } else {
@@ -4451,7 +4484,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                         if (uri != null && TextUtils.equals(uri.getScheme(), "javascript")) return;
                         if (spans.length > 0 && start == 0 && end > 0 || uri != null && uri.getScheme() != null) {
                             if (uri != null && uri.getScheme() == null && uri.getHost() == null && uri.getPath() != null) {
-                                url = Browser.replace(uri, "https", null, uri.getPath(), "/");
+                                url = Browser.replace(uri, "https", null, uri.getEncodedPath(), "/");
                             }
                             page.getWebView().loadUrl(url);
                         } else {
@@ -4824,7 +4857,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 }
                 if (parentActivity == null || parentActivity.isFinishing()) return;
                 if (file != null) {
-                    AndroidUtilities.openForView(file, null, "text/markdown", parentActivity, getResourcesProvider(), true);
+                    AndroidUtilities.openForView(file, null, MarkdownParser.isExtensionDiff(FileLoader.getFileExtension(file)) ? "text/x-diff" : "text/markdown", parentActivity, getResourcesProvider(), true);
                     return;
                 }
                 if (webPageUrl == null) return;
@@ -4954,8 +4987,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         searchUpButton = new ImageView(parentActivity);
         searchUpButton.setScaleType(ImageView.ScaleType.CENTER);
         searchUpButton.setImageResource(R.drawable.msg_go_up);
-        searchUpButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
-        searchUpButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+        ThemeBind.colorFilter(searchUpButton, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider(), PorterDuff.Mode.MULTIPLY);
+        ThemeBind.selectorBackground(searchUpButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector), getResourcesProvider());
         searchPanel.addView(searchUpButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 48, 0));
         searchUpButton.setOnClickListener(view -> {
             if (pages[0].isWeb()) {
@@ -4971,8 +5004,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         searchDownButton = new ImageView(parentActivity);
         searchDownButton.setScaleType(ImageView.ScaleType.CENTER);
         searchDownButton.setImageResource(R.drawable.msg_go_down);
-        searchDownButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
-        searchDownButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+        ThemeBind.colorFilter(searchDownButton, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider(), PorterDuff.Mode.MULTIPLY);
+        ThemeBind.selectorBackground(searchDownButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector), getResourcesProvider());
         searchPanel.addView(searchDownButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 0, 0, 0));
         searchDownButton.setOnClickListener(view -> {
             if (pages[0].isWeb()) {
@@ -4988,7 +5021,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         searchCountText = new AnimatedTextView(parentActivity, true, true, true);
         searchCountText.setScaleProperty(.6f);
         searchCountText.setAnimationProperties(0.4f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-        searchCountText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(searchCountText, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider());
         searchCountText.setTextSize(dp(15));
         searchCountText.setTypeface(AndroidUtilities.bold());
         searchCountText.setGravity(Gravity.LEFT);
@@ -5012,6 +5045,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             uiFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
         }
         navigationBarPaint.setColor(navigationColor);
+        navigationBarPaintThemed = true;
         windowLayoutParams.systemUiVisibility = uiFlags;
 
         windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
@@ -5872,24 +5906,72 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         }
     }
 
+    private void applyThemeColorsHook() {
+        try {
+            final int ivBackground = getThemedColor(Theme.key_iv_background);
+            if (pages != null) {
+                for (int i = 0; i < pages.length; ++i) {
+                    if (pages[i] != null) {
+                        pages[i].updateThemedWebColors(ivBackground);
+                    }
+                }
+            }
+            if (actionBar != null) {
+                actionBar.setMenuColors(pages != null && pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : ivBackground);
+                actionBar.setColors(pages != null && pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getActionBarColor() : ivBackground, false);
+            }
+            if (backgroundPaint != null) {
+                backgroundPaint.setColor(ivBackground);
+            }
+            if (navigationBarPaintThemed && navigationBarPaint != null) {
+                navigationBarPaint.setColor(sheet == null ? Theme.getColor(Theme.key_windowBackgroundGray, null, true) : getThemedColor(Theme.key_windowBackgroundGray));
+            }
+            if (sheet != null && sheet.dialog != null && sheet.dialog.windowView != null) {
+                AndroidUtilities.setLightStatusBar(sheet.dialog.windowView, sheet.isAttachedLightStatusBar());
+            }
+            if (backgroundPaint != null && quoteLinePaint != null) {
+                updatePaintColors(this);
+            }
+            if (pages != null) {
+                for (int i = 0; i < pages.length; ++i) {
+                    if (pages[i] != null && pages[i].listView != null) {
+                        final RecyclerListView listView = pages[i].listView;
+                        for (int a = 0; a < listView.getChildCount(); ++a) {
+                            final View child = listView.getChildAt(a);
+                            if (child instanceof BlockTableCell && ((BlockTableCell) child).tableLayout != null) {
+                                ((BlockTableCell) child).tableLayout.invalidate();
+                            }
+                            child.invalidate();
+                        }
+                    }
+                }
+            }
+            if (windowView != null) {
+                windowView.invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     private void refreshThemeColors() {
         if (deleteView != null) {
-            deleteView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2));
-            deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.selectorBackground(deleteView, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 2), null, ThemeBind.of(Theme.key_listSelector), getResourcesProvider());
+            ThemeBind.textColor(deleteView, Theme.key_actionBarDefaultSubmenuItem, getResourcesProvider());
         }
         if (popupLayout != null) {
-            popupLayout.setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+            ThemeBind.backgroundColor(popupLayout, Theme.key_actionBarDefaultSubmenuBackground, getResourcesProvider());
         }
         if (searchUpButton != null) {
-            searchUpButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
-            searchUpButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+            ThemeBind.colorFilter(searchUpButton, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider(), PorterDuff.Mode.MULTIPLY);
+            ThemeBind.selectorBackground(searchUpButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector), getResourcesProvider());
         }
         if (searchDownButton != null) {
-            searchDownButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
-            searchDownButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
+            ThemeBind.colorFilter(searchDownButton, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider(), PorterDuff.Mode.MULTIPLY);
+            ThemeBind.selectorBackground(searchDownButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1), null, ThemeBind.of(Theme.key_actionBarActionModeDefaultSelector), getResourcesProvider());
         }
         if (searchCountText != null) {
-            searchCountText.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(searchCountText, Theme.key_windowBackgroundWhiteBlackText, getResourcesProvider());
         }
         if (actionBar != null) {
             actionBar.setMenuColors(pages[0] != null && SharedConfig.adaptableColorInBrowser ? pages[0].getBackgroundColor() : getThemedColor(Theme.key_iv_background));
@@ -6390,6 +6472,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         private TLRPC.WebPage currentPage;
         private TL_iv.pageBlockChannel channelBlock;
         private boolean isRtl;
+        private int diffScrollX;
         private final boolean padding;
 
         public WebpageAdapter(Context ctx, boolean withPadding) {
@@ -8452,6 +8535,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             radialProgress.draw(canvas);
             canvas.save();
             canvas.translate(seekBarX, seekBarY);
+            seekBar.setColors(parent.getThemedColor(Theme.key_chat_inAudioSeekbar), parent.getThemedColor(Theme.key_chat_inAudioCacheSeekbar), parent.getThemedColor(Theme.key_chat_inAudioSeekbarFill), parent.getThemedColor(Theme.key_chat_inAudioSeekbarFill), parent.getThemedColor(Theme.key_chat_inAudioSeekbarSelected));
             seekBar.draw(canvas);
             canvas.restore();
             int count = 0;
@@ -9297,7 +9381,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             TL_iv.pageBlockEmbed previousBlock = currentBlock;
             currentBlock = block;
             if (webView != null) {
-                webView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(webView, Theme.key_windowBackgroundWhite, ArticleViewer.this.getResourcesProvider());
             }
             if (previousBlock != currentBlock) {
                 wasUserInteraction = false;
@@ -10390,7 +10474,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 group.calculate();
             }
             innerAdapter.notifyDataSetChanged();
-            innerListView.setGlowColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.listGlowColor(innerListView, Theme.key_windowBackgroundWhite, ArticleViewer.this.getResourcesProvider());
             requestLayout();
         }
 
@@ -10516,7 +10600,30 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
 
     private static Paint dotsPaint;
 
-    private class BlockSlideshowCell extends FrameLayout implements TextSelectionHelper.ArticleSelectableView {
+    private class BlockSlideshowCell extends FrameLayout implements TextSelectionHelper.ArticleSelectableView, Theme.Colorable {
+
+        private int edgeEffectColor;
+
+        @Override
+        public void updateColors() {
+            try {
+                if (innerListView == null) {
+                    return;
+                }
+                final int color = getThemedColor(Theme.key_windowBackgroundWhite);
+                if (color != edgeEffectColor) {
+                    edgeEffectColor = color;
+                    AndroidUtilities.setViewPagerEdgeEffectColor(innerListView, color);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhite);
+        }
 
         private ViewPager innerListView;
         private PagerAdapter innerAdapter;
@@ -10649,7 +10756,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     }
                 }
             });
-            AndroidUtilities.setViewPagerEdgeEffectColor(innerListView, getThemedColor(Theme.key_windowBackgroundWhite));
+            AndroidUtilities.setViewPagerEdgeEffectColor(innerListView, edgeEffectColor = getThemedColor(Theme.key_windowBackgroundWhite));
             addView(innerListView);
 
             dotsContainer = new View(context) {
@@ -11602,7 +11709,24 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         }
     }
 
-    public static class BlockRelatedArticlesShadowCell extends View {
+    public static class BlockRelatedArticlesShadowCell extends View implements Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (shadowDrawable != null && parent != null) {
+                    Theme.setCombinedDrawableColor(shadowDrawable, parent.getThemedColor(Theme.key_iv_backgroundGray), false);
+                    invalidate();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_iv_backgroundGray);
+        }
 
         private final IArticleViewer parent;
         private CombinedDrawable shadowDrawable;
@@ -13176,7 +13300,36 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         }
     }
 
-    public static class BlockChannelCell extends FrameLayout implements TextSelectionHelper.ArticleSelectableView {
+    public static class BlockChannelCell extends FrameLayout implements TextSelectionHelper.ArticleSelectableView, Theme.Colorable {
+
+        private int lastThemeGrayTextColor;
+
+        @Override
+        public void updateColors() {
+            try {
+                if (currentType != 0 || currentBlock == null || parent == null || textView == null || imageView == null || backgroundPaint == null) {
+                    return;
+                }
+                final int color = parent.getThemedColor(Theme.key_switchTrack);
+                textView.setTextColor(parent.getLinkTextColor());
+                backgroundPaint.setColor(Color.argb(34, Color.red(color), Color.green(color), Color.blue(color)));
+                final int grayTextColor = parent.getGrayTextColor();
+                if (grayTextColor != lastThemeGrayTextColor) {
+                    lastThemeGrayTextColor = grayTextColor;
+                    imageView.setColorFilter(new PorterDuffColorFilter(grayTextColor, PorterDuff.Mode.MULTIPLY));
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_switchTrack);
+            colors.add(Theme.key_windowBackgroundWhiteLinkText);
+            colors.add(Theme.key_windowBackgroundWhiteGrayText);
+        }
 
         private final IArticleViewer parent;
         private final WebpageAdapter adapter;
@@ -13238,7 +13391,8 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 int b = Color.blue(color);
                 textView.setTextColor(parent.getLinkTextColor());
                 backgroundPaint.setColor(Color.argb(34, r, g, b));
-                imageView.setColorFilter(new PorterDuffColorFilter(parent.getGrayTextColor(), PorterDuff.Mode.MULTIPLY));
+                lastThemeGrayTextColor = parent.getGrayTextColor();
+                imageView.setColorFilter(new PorterDuffColorFilter(lastThemeGrayTextColor, PorterDuff.Mode.MULTIPLY));
             } else {
                 textView.setTextColor(0xffffffff);
                 backgroundPaint.setColor(0x7f000000);
@@ -13918,6 +14072,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                         parent.pressedLinkOwnerLayout = null;
                         parent.pressedLinkOwnerView = null;
                     }
+                    if (currentBlock != null && currentBlock.diff && !syncingScroll) {
+                        syncDiffScroll(l);
+                    }
                 }
             };
             scrollView.setPadding(0, dp(8), 0, dp(8));
@@ -13932,7 +14089,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                     if (currentBlock != null) {
                         if (text == null) {
                             text = getText(parent, adapter, this, currentBlock.text, currentBlock.text, currentBlock, dp(5000));
-                            if (!TextUtils.isEmpty(currentBlock.language)) {
+                            if (currentBlock.diff) {
+                                text = highlightDiff(text, currentBlock.language);
+                            } else if (!TextUtils.isEmpty(currentBlock.language)) {
                                 text = CodeHighlighting.getHighlighted(text, currentBlock.language);
                             }
                         }
@@ -13941,6 +14100,18 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                             height += textLayout.getHeight();
                             for (int a = 0, count = textLayout.getLineCount(); a < count; a++) {
                                 width = Math.max((int) Math.ceil(textLayout.getLineWidth(a)), width);
+                            }
+                            if (currentBlock.diff && textLayout.textLayout != null) {
+                                // all chunks are scrolled together, so they share the width of the longest line
+                                width = Math.max((int) Math.ceil(textLayout.textLayout.getPaint().measureText("m") * currentBlock.diffColumns), width);
+                            }
+                            chunkSpacing = 0;
+                            if (currentBlock.continuesNext && textLayout.textLayout != null && textLayout.getLineCount() > 1) {
+                                // the last line has no line spacing, add it back so lines of the next chunk don't come closer
+                                final StaticLayout layout = textLayout.textLayout;
+                                final int last = layout.getLineCount() - 1;
+                                chunkSpacing = Math.max(0, (layout.getLineBottom(0) - layout.getLineTop(0)) - (layout.getLineBottom(last) - layout.getLineTop(last)));
+                                height += chunkSpacing;
                             }
                         }
                     } else {
@@ -13984,10 +14155,72 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             setWillNotDraw(false);
         }
 
+        private SpannableString highlightDiff(CharSequence source, String language) {
+            final SpannableString diffText = new SpannableString(source);
+            setDiffMarkerSpans(diffText);
+            CodeHighlighting.highlightMasked(diffText, MarkdownParser.maskDiff(diffText), language, () -> {
+                // highlighting replaces color spans of the whole text
+                setDiffMarkerSpans(diffText);
+                if (text == diffText) {
+                    textContainer.requestLayout();
+                    invalidate();
+                }
+            });
+            return diffText;
+        }
+
+        private static void setDiffMarkerSpans(SpannableString diffText) {
+            int lineStart = 0;
+            while (lineStart <= diffText.length()) {
+                int lineEnd = TextUtils.indexOf(diffText, '\n', lineStart);
+                if (lineEnd < 0) lineEnd = diffText.length();
+                switch (MarkdownParser.getDiffLineType(diffText, lineStart)) {
+                    case MarkdownParser.DIFF_LINE_META:
+                        if (lineEnd > lineStart) diffText.setSpan(new CodeHighlighting.ColorSpan(PrismaTokenStyles.COMMENT), lineStart, lineEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        break;
+                    case MarkdownParser.DIFF_LINE_INSERTED:
+                        diffText.setSpan(new CodeHighlighting.ColorSpan(PrismaTokenStyles.INSERTED), lineStart, lineStart + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        break;
+                    case MarkdownParser.DIFF_LINE_DELETED:
+                        diffText.setSpan(new CodeHighlighting.ColorSpan(PrismaTokenStyles.DELETED), lineStart, lineStart + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        break;
+                }
+                lineStart = lineEnd + 1;
+            }
+        }
+
+        private boolean syncingScroll;
+        private int chunkSpacing;
+
+        private void syncDiffScroll(int scrollX) {
+            if (adapter != null) adapter.diffScrollX = scrollX;
+            if (!(getParent() instanceof ViewGroup)) return;
+            final ViewGroup list = (ViewGroup) getParent();
+            for (int i = 0; i < list.getChildCount(); ++i) {
+                final View child = list.getChildAt(i);
+                if (child != this && child instanceof BlockPreformattedCell) {
+                    final BlockPreformattedCell cell = (BlockPreformattedCell) child;
+                    if (cell.currentBlock != null && cell.currentBlock.diff) {
+                        cell.syncingScroll = true;
+                        cell.scrollView.scrollTo(scrollX, 0);
+                        cell.syncingScroll = false;
+                    }
+                }
+            }
+        }
+
         public void setBlock(TL_iv.pageBlockPreformatted block) {
             text = null;
             currentBlock = block;
-            scrollView.setScrollX(0);
+            syncingScroll = true;
+            scrollView.setScrollX(block.diff && adapter != null ? adapter.diffScrollX : 0);
+            syncingScroll = false;
+            // a scrollbar per chunk flashes when the page appears
+            scrollView.setHorizontalScrollBarEnabled(!block.diff);
+            scrollView.setPadding(0, block.continuesPrev ? 0 : dp(8), 0, block.continuesNext ? 0 : dp(8));
+            final MarginLayoutParams lp = (MarginLayoutParams) textContainer.getLayoutParams();
+            lp.topMargin = block.continuesPrev ? 0 : dp(12);
+            lp.bottomMargin = block.continuesNext ? 0 : dp(12);
             textContainer.requestLayout();
         }
 
@@ -14021,7 +14254,31 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             if (currentBlock == null) {
                 return;
             }
-            canvas.drawRect(0, dp(8), getMeasuredWidth(), getMeasuredHeight() - dp(8), preformattedBackgroundPaint);
+            if (currentBlock.diff) {
+                drawDiffLines(canvas);
+                return;
+            }
+            canvas.drawRect(0, currentBlock.continuesPrev ? 0 : dp(8), getMeasuredWidth(), getMeasuredHeight() - (currentBlock.continuesNext ? 0 : dp(8)), preformattedBackgroundPaint);
+        }
+
+        private final Paint diffLinePaint = new Paint();
+
+        private void drawDiffLines(Canvas canvas) {
+            if (textLayout == null || textLayout.textLayout == null) return;
+            final StaticLayout layout = textLayout.textLayout;
+            final CharSequence layoutText = layout.getText();
+            final int top = scrollView.getTop() + textContainer.getTop();
+            for (int i = 0, count = layout.getLineCount(); i < count; ++i) {
+                final int type = MarkdownParser.getDiffLineType(layoutText, layout.getLineStart(i));
+                if (type == MarkdownParser.DIFF_LINE_INSERTED) {
+                    diffLinePaint.setColor(0x2634c759);
+                } else if (type == MarkdownParser.DIFF_LINE_DELETED) {
+                    diffLinePaint.setColor(0x26ff3b30);
+                } else {
+                    continue;
+                }
+                canvas.drawRect(0, top + layout.getLineTop(i), getMeasuredWidth(), top + layout.getLineBottom(i) + (i == count - 1 ? chunkSpacing : 0), diffLinePaint);
+            }
         }
 
         @Override
@@ -14304,6 +14561,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             textView.setTextColor(getGrayTextColor());
             viewsTextView.setTextColor(getGrayTextColor());
             textView.setBackgroundColor(Color.argb(34, Color.red(color), Color.green(color), Color.blue(color)));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText, ArticleViewer.this.getResourcesProvider());
+            ThemeBind.textColor(viewsTextView, Theme.key_windowBackgroundWhiteGrayText, ArticleViewer.this.getResourcesProvider());
+            ThemeBind.backgroundColor(textView, ThemeBind.alpha(Theme.key_switchTrack, 34), ArticleViewer.this.getResourcesProvider());
         }
     }
 
@@ -14749,6 +15009,23 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
         public boolean backButton, forwardButton;
         public int webActionBarColor = getThemedColor(Theme.key_iv_background);
         public int webBackgroundColor = getThemedColor(Theme.key_iv_background);
+        private int themedWebColor = webBackgroundColor;
+
+        public void updateThemedWebColors(int ivBackground) {
+            if (themedWebColor == ivBackground) {
+                return;
+            }
+            if (webActionBarColor == themedWebColor) {
+                webActionBarColor = ivBackground;
+            }
+            if (webBackgroundColor == themedWebColor) {
+                webBackgroundColor = ivBackground;
+            }
+            themedWebColor = ivBackground;
+            if (errorShown && errorContainer != null) {
+                errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(ivBackground) <= .721f, false);
+            }
+        }
 
         public WebInstantView.Loader currentInstantLoader;
 
@@ -14883,7 +15160,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                         createErrorContainer();
                         errorContainer.set(getWebView() != null ? getWebView().getUrl() : null, errorCode, description);
                         errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_iv_background)) <= .721f, false);
-                        errorContainer.setBackgroundColor(getThemedColor(Theme.key_iv_background));
+                        ThemeBind.backgroundColor(errorContainer, Theme.key_iv_background, ArticleViewer.this.getResourcesProvider());
                     }
                     AndroidUtilities.updateViewVisibilityAnimated(errorContainer, errorShown = shown, 1f, false);
                     invalidate();
@@ -15353,6 +15630,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             webViewContainer.resetWebView();
             webActionBarColor = getThemedColor(Theme.key_iv_background);
             webBackgroundColor = getThemedColor(Theme.key_iv_background);
+            themedWebColor = webBackgroundColor;
             if (errorContainer != null) {
                 errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(webBackgroundColor) <= .721f, true);
                 errorContainer.setBackgroundColor(webBackgroundColor);
@@ -15463,7 +15741,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             super.onAttachedToWindow();
             if (errorShown && errorContainer != null) {
                 errorContainer.setDark(AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_iv_background)) <= .721f, false);
-                errorContainer.setBackgroundColor(getThemedColor(Theme.key_iv_background));
+                ThemeBind.backgroundColor(errorContainer, Theme.key_iv_background, ArticleViewer.this.getResourcesProvider());
             }
         }
     }

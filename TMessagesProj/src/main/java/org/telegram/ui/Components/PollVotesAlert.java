@@ -10,6 +10,7 @@ package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -69,6 +70,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.ChatActivity;
@@ -160,19 +162,19 @@ public class PollVotesAlert extends BottomSheet {
         public SectionCell(Context context) {
             super(context);
 
-            setBackgroundColor(Theme.getColor(Theme.key_dialogBackgroundGray));
+            ThemeBind.backgroundColor(this, Theme.key_dialogBackgroundGray);
 
             textView = new AnimatedEmojiSpan.TextViewEmojis(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setTypeface(AndroidUtilities.bold());
-            textView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+            ThemeBind.textColor(textView, Theme.key_graySectionText);
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
 
             middleTextView = new TextView(getContext());
             middleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            middleTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+            ThemeBind.textColor(middleTextView, Theme.key_graySectionText);
             middleTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
 
             righTextView = new AnimatedTextView(getContext()) {
@@ -195,7 +197,7 @@ public class PollVotesAlert extends BottomSheet {
                 }
             };
             righTextView.setTextSize(dp(14));
-            righTextView.setTextColor(Theme.getColor(Theme.key_graySectionText));
+            ThemeBind.textColor(righTextView, Theme.key_graySectionText);
             righTextView.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT));
             righTextView.setOnClickListener(v -> onCollapseClick());
 
@@ -276,7 +278,29 @@ public class PollVotesAlert extends BottomSheet {
         }
     };
 
-    public class UserCell extends LinearLayout {
+    public class UserCell extends LinearLayout implements Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (statusBadgeComponent != null && statusBadgeComponent.getDrawable() instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
+                    final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable drawable = (AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) statusBadgeComponent.getDrawable();
+                    if (drawable.getColor() != null) {
+                        drawable.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                        if (nameTextView != null) {
+                            nameTextView.invalidate();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        @Override
+        public void addColorKeys(java.util.HashSet<Integer> colors) {
+            colors.add(Theme.key_chats_verifiedBackground);
+        }
 
         private final BackupImageView avatarImageView;
         private final SimpleTextView nameTextView;
@@ -316,19 +340,19 @@ public class PollVotesAlert extends BottomSheet {
             addView(avatarImageView, LayoutHelper.createLinear(34, 34, Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
 
             nameTextView = new SimpleTextView(context);
-            nameTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(nameTextView, Theme.key_dialogTextBlack);
             nameTextView.setTypeface(AndroidUtilities.bold());
             nameTextView.setTextSize(16);
             nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
             addView(nameTextView, LayoutHelper.createLinear(0, 24, 1, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
 
             dateTextView = new TextView(context);
-            dateTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            ThemeBind.textColor(dateTextView, Theme.key_dialogTextGray3);
             dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             addView(dateTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 4, 0, 2, 0));
 
             timeTextView = new TextView(context);
-            timeTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(timeTextView, Theme.key_dialogTextBlack);
             timeTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             addView(timeTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 2, 0, 4, 0));
 
@@ -853,7 +877,7 @@ public class PollVotesAlert extends BottomSheet {
         listView.setSectionsType(RecyclerListView.SECTIONS_TYPE_DATE);
         containerView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
         listView.setAdapter(listAdapter = new Adapter(context));
-        listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
+        ThemeBind.listGlowColor(listView, Theme.key_dialogScrollGlow);
         listView.setOnItemClickListener((view, position) -> {
             if (!AndroidUtilities.isContextSafe(context) || queries != null && !queries.isEmpty()) {
                 return;
@@ -920,6 +944,7 @@ public class PollVotesAlert extends BottomSheet {
                 if (lastFragment instanceof ChatActivity) {
                     if (userCell.currentUser != null) {
                         TLRPC.User currentUser = ((ChatActivity) lastFragment).getCurrentUser();
+                        View child = listView.getChildAt(0);
                         fragment.setPlayProfileAnimation(currentUser != null && currentUser.id == userCell.currentUser.id ? 1 : 0);
                     } else {
                         TLRPC.Chat currentChat = ((ChatActivity) lastFragment).getCurrentChat();
@@ -944,7 +969,6 @@ public class PollVotesAlert extends BottomSheet {
                     int offset = dp(13);
                     int top = scrollOffsetY - backgroundPaddingTop - offset;
                     if (top + backgroundPaddingTop < ActionBar.getCurrentActionBarHeight() && listView.canScrollVertically(1)) {
-                        View child = listView.getChildAt(0);
                         RecyclerListView.Holder holder = (RecyclerListView.Holder) listView.findViewHolderForAdapterPosition(0);
                         if (holder != null && holder.itemView.getTop() > dp(7)) {
                             listView.smoothScrollBy(0, holder.itemView.getTop() - dp(7));
@@ -958,7 +982,7 @@ public class PollVotesAlert extends BottomSheet {
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setTypeface(AndroidUtilities.bold());
         titleTextView.setPadding(dp(21), dp(5), dp(14), dp(21));
-        titleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(titleTextView, Theme.key_dialogTextBlack);
         titleTextView.setTag(RecyclerListView.TAG_NOT_SECTION);
         titleTextView.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
         if (poll.question != null) {
@@ -982,12 +1006,12 @@ public class PollVotesAlert extends BottomSheet {
                 containerView.invalidate();
             }
         };
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_dialogTextBlack), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_dialogButtonSelector), false);
-        actionBar.setTitleColor(Theme.getColor(Theme.key_dialogTextBlack));
-        actionBar.setSubtitleColor(Theme.getColor(Theme.key_player_actionBarSubtitle));
+        ThemeBind.actionBarItemsColor(actionBar, Theme.key_dialogTextBlack, false);
+        ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_dialogButtonSelector, false);
+        ThemeBind.actionBarTitleColor(actionBar, Theme.key_dialogTextBlack);
+        ThemeBind.actionBarSubtitleColor(actionBar, Theme.key_player_actionBarSubtitle);
         actionBar.setOccupyStatusBar(false);
         actionBar.setAlpha(0.0f);
         actionBar.setTitle(LocaleController.getString(R.string.PollResults));
@@ -1008,7 +1032,7 @@ public class PollVotesAlert extends BottomSheet {
 
         actionBarShadow = new View(context);
         actionBarShadow.setAlpha(0.0f);
-        actionBarShadow.setBackgroundColor(Theme.getColor(Theme.key_dialogShadowLine));
+        ThemeBind.backgroundColor(actionBarShadow, Theme.key_dialogShadowLine);
         containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1));
     }
 
@@ -1276,7 +1300,7 @@ public class PollVotesAlert extends BottomSheet {
                 default: {
                     TextCell textCell = new TextCell(mContext, 23, true);
                     textCell.setOffsetFromImage(65);
-                    textCell.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+                    ThemeBind.backgroundColor(textCell, Theme.key_dialogBackground, PollVotesAlert.this.resourcesProvider);
                     textCell.setColors(Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhiteBlueText4);
                     view = textCell;
                     break;
@@ -1444,32 +1468,52 @@ public class PollVotesAlert extends BottomSheet {
 
         themeDescriptions.add(new ThemeDescription(containerView, 0, null, null, null, null, Theme.key_sheet_scrollUp));
         themeDescriptions.add(new ThemeDescription(containerView, 0, null, null, new Drawable[]{shadowDrawable}, null, Theme.key_dialogBackground));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogBackground));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_dialogScrollGlow));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_dialogTextBlack));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBTITLECOLOR, null, null, null, null, Theme.key_player_actionBarSubtitle));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
 
-        themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
 
-        themeDescriptions.add(new ThemeDescription(actionBarShadow, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_dialogShadowLine));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, delegate, Theme.key_dialogBackground));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, null, null, null, delegate, Theme.key_dialogBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SECTIONS, new Class[]{SectionCell.class}, new String[]{"textView"}, null, null, null, Theme.key_graySectionText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SECTIONS, new Class[]{SectionCell.class}, new String[]{"middleTextView"}, null, null, null, Theme.key_graySectionText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SECTIONS, new Class[]{SectionCell.class}, new String[]{"righTextView"}, null, null, null, Theme.key_graySectionText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR | ThemeDescription.FLAG_SECTIONS, new Class[]{SectionCell.class}, null, null, null, Theme.key_graySection));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_dialogTextBlack));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_switchTrackChecked));
 
         return themeDescriptions;
+    }
+
+    private boolean themeColorsApplied;
+    private int lastThemeGrayColor, lastThemeBackgroundColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int gray = Theme.getColor(Theme.key_dialogBackgroundGray);
+            final int background = Theme.getColor(Theme.key_dialogBackground);
+            if (!themeColorsApplied || gray != lastThemeGrayColor || background != lastThemeBackgroundColor) {
+                themeColorsApplied = true;
+                lastThemeGrayColor = gray;
+                lastThemeBackgroundColor = background;
+                if (shadowDrawable != null) {
+                    shadowDrawable.setColorFilter(new PorterDuffColorFilter(gray, PorterDuff.Mode.MULTIPLY));
+                }
+                updatePlaceholder();
+            }
+
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_graySection);
+        keys.add(Theme.key_graySectionText);
     }
 }

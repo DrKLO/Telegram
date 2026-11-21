@@ -35,6 +35,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 public class GroupCallRecordAlert extends BottomSheet {
 
@@ -50,7 +51,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         super(context, false);
 
         int color = Theme.getColor(Theme.key_voipgroup_inviteMembersBackground);
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(containerView, shadowDrawable, Theme.key_voipgroup_inviteMembersBackground, PorterDuff.Mode.MULTIPLY);
 
         containerView = new FrameLayout(context) {
 
@@ -203,7 +204,7 @@ public class GroupCallRecordAlert extends BottomSheet {
         positiveButton.setMinWidth(AndroidUtilities.dp(64));
         positiveButton.setTag(Dialog.BUTTON_POSITIVE);
         positiveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        positiveButton.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+        ThemeBind.textColor(positiveButton, Theme.key_voipgroup_nameText);
         positiveButton.setGravity(Gravity.CENTER);
         positiveButton.setTypeface(AndroidUtilities.bold());
         positiveButton.setText(LocaleController.getString(R.string.VoipRecordStart));

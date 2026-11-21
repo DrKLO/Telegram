@@ -25,6 +25,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -164,6 +165,10 @@ public class RichQuoteAuthorCell extends RichBlockCell
         authorEditText.updateColors();
         authorEditText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
         authorEditText.setHintTextColor(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 0.5f));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_featuredStickers_addButton);
     }
 
     public static final class Factory extends UItem.UItemFactory<RichQuoteAuthorCell> {

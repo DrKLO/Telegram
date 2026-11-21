@@ -30,6 +30,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_aicompose;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -66,8 +67,8 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         this.currentAccount = currentAccount;
         this.onAddToPage = onAddToPage;
 
-        setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
-        fixNavigationBar(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+        setBackgroundColorKey(Theme.key_windowBackgroundGray);
+        fixNavigationBarKey(Theme.key_windowBackgroundGray);
 
         topView = new FrameLayout(context);
 
@@ -75,7 +76,7 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         titleView.setText(getString(R.string.ArticleAICreate));
         titleView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         topView.addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.LEFT | Gravity.TOP, 22, 6, 56, 0));
 
@@ -84,7 +85,7 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         final ImageView closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.ic_close_white);
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
-        closeButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(closeButton, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         ScaleStateListAnimator.apply(closeButton);
         closeButton.setOnClickListener(v -> dismiss());
         topView.addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.TOP, 0, 10, 12, 0));
@@ -92,7 +93,7 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         previewBox = new FrameLayout(context);
         previewView = new RichMessageLayout.PreviewView(context, currentAccount, resourcesProvider);
         previewView.setPadding(dp(14), dp(12), dp(14), dp(12));
-        previewView.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(previewView, Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         previewBox.addView(previewView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         previewBox.setPadding(dp(12), dp(12), dp(12), 0);
 
@@ -100,7 +101,7 @@ public class RichAIComposeSheet extends BottomSheetWithRecyclerListView {
         promptCell = new EditTextCell(context, getString(R.string.ArticleAIPrompt), true, false, MessagesController.getInstance(currentAccount).config.aicomposeTonePromptLengthMax.get(), resourcesProvider);
         promptCell.editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         promptCell.editText.setMaxLines(5);
-        promptCell.setBackground(Theme.createRoundRectDrawable(dp(20), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+        ThemeBind.fillBackground(promptCell, Theme.createRoundRectDrawable(dp(20), Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)), ThemeBind.of(Theme.key_windowBackgroundWhite), resourcesProvider);
         promptCell.editText.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}

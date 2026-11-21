@@ -22,6 +22,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DownloadController;
+import org.telegram.messenger.DownloadSpeedEstimator;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileRefController;
@@ -552,6 +553,52 @@ public class StoriesController {
         sortStoriesRunnable.run();
     }
 
+    // Which version of a story video to load: the original, or its smallest alternative when the
+    // connection can't carry the original. A version that already has data is kept, so preloads aren't wasted.
+    public static TLRPC.Document getStoryVideoDocument(int currentAccount, TL_stories.StoryItem storyItem) {
+        TLRPC.Document main = storyItem.media.getDocument();
+        if (main == null || storyItem.media.alt_documents == null) {
+            return main;
+        }
+        TLRPC.Document alt = main;
+        for (TLRPC.Document d : storyItem.media.alt_documents) {
+            if (d != null && MessageObject.isVideoDocument(d) && d.size > 0 && d.size < alt.size) {
+                alt = d;
+            }
+        }
+        if (alt == main) {
+            return main;
+        }
+        double duration = MessageObject.getDocumentDuration(main);
+        long mainBitrate = (long) (main.size * 8 / Math.max(1.0, duration > 0 ? duration : 15));
+        long speed = DownloadSpeedEstimator.getBitrate();
+        boolean pickMain;
+        if (ApplicationLoader.isConnectionSlow() || ApplicationLoader.isRoaming()) {
+            pickMain = false;
+        } else if (isFullyCached(currentAccount, main)) {
+            pickMain = true;
+        } else if (isFullyCached(currentAccount, alt)) {
+            pickMain = speed >= 4 * mainBitrate;
+        } else if (hasData(currentAccount, main) != hasData(currentAccount, alt)) {
+            pickMain = hasData(currentAccount, main);
+        } else {
+            // Headroom for preloading the next stories while this one plays.
+            pickMain = speed * 0.6 >= mainBitrate;
+        }
+        return pickMain ? main : alt;
+    }
+
+    private static boolean hasData(int currentAccount, TLRPC.Document document) {
+        String name = FileLoader.getAttachFileName(document);
+        int dot = name.lastIndexOf('.');
+        return FileLoader.getInstance(currentAccount).isLoadingFile(name) || new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE), (dot > 0 ? name.substring(0, dot) : name) + ".temp").exists();
+    }
+
+    private static boolean isFullyCached(int currentAccount, TLRPC.Document document) {
+        String name = FileLoader.getAttachFileName(document);
+        return new File(FileLoader.getDirectory(FileLoader.MEDIA_DIR_STORIES), name).exists() || FileLoader.getInstance(currentAccount).getPathToAttach(document, true).exists();
+    }
+
     public void preloadUserStories(TL_stories.PeerStories userStories) {
         int preloadPosition = 0;
         for (int i = 0; i < userStories.stories.size(); i++) {
@@ -585,7 +632,7 @@ public class StoriesController {
         storyItem.dialogId = dialogId;
         if (isVideo) {
             TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(storyItem.media.getDocument().thumbs, 1000);
-            FileLoader.getInstance(currentAccount).loadFile(storyItem.media.getDocument(), storyItem, FileLoader.PRIORITY_LOW, 1);
+            FileLoader.getInstance(currentAccount).loadFile(getStoryVideoDocument(currentAccount, storyItem), storyItem, FileLoader.PRIORITY_LOW, 1);
             FileLoader.getInstance(currentAccount).loadFile(ImageLocation.getForDocument(size, storyItem.media.getDocument()), storyItem, "jpg", FileLoader.PRIORITY_LOW, 1);
         } else {
             TLRPC.Photo photo = storyItem.media == null ? null : storyItem.media.photo;

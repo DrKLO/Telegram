@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import android.graphics.PorterDuff;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Build;
@@ -16,6 +17,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.core.widget.NestedScrollView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -27,10 +29,12 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.ManageLinksActivity;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class PermanentLinkBottomSheet extends BottomSheet {
 
@@ -50,7 +54,7 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         setAllowNestedScroll(true);
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
-        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundWhite));
+        fixNavigationBarKey(Theme.key_windowBackgroundWhite);
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -59,8 +63,8 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         frameLayout.addView(linearLayout);
 
         ImageView closeView = new ImageView(context);
-        closeView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        closeView.setColorFilter(getThemedColor(Theme.key_sheet_other));
+        ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
+        ThemeBind.colorFilter(closeView, Theme.key_sheet_other, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
         closeView.setImageResource(R.drawable.ic_layer_close);
         closeView.setOnClickListener((view) -> dismiss());
         int closeViewPadding = AndroidUtilities.dp(8);
@@ -82,13 +86,13 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setGravity(Gravity.CENTER_HORIZONTAL);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText);
 
         subtitle = new TextView(context);
         subtitle.setText(isChannel ? LocaleController.getString(R.string.LinkInfoChannel) : LocaleController.getString(R.string.LinkInfo));
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitle.setGravity(Gravity.CENTER_HORIZONTAL);
-        subtitle.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        ThemeBind.textColor(subtitle, Theme.key_dialogTextBlack);
         subtitle.setLineSpacing(subtitle.getLineSpacingExtra(), subtitle.getLineSpacingMultiplier() * 1.1f);
 
         manage = new TextView(context);
@@ -98,8 +102,8 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         manage.setSingleLine(true);
         manage.setTypeface(AndroidUtilities.bold());
         manage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        manage.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        manage.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)));
+        ThemeBind.textColor(manage, Theme.key_featuredStickers_addButton);
+        ThemeBind.selectorBackground(manage, Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(8), Color.TRANSPARENT, ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120)), null, ThemeBind.alpha(Theme.key_featuredStickers_addButton, 120));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             manage.setLetterSpacing(0.025f);
         }
@@ -180,12 +184,6 @@ public class PermanentLinkBottomSheet extends BottomSheet {
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
         ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = this::updateColors;
-        arrayList.add(new ThemeDescription(titleView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(subtitle, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_dialogTextBlack));
-        arrayList.add(new ThemeDescription(manage, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_featuredStickers_addButton));
-        arrayList.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_addButton));
-        arrayList.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_buttonText));
-        arrayList.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteBlueText));
         return arrayList;
     }
 
@@ -197,8 +195,11 @@ public class PermanentLinkBottomSheet extends BottomSheet {
         linkIcon.setLayerColor("Bottom", color);
         linkIcon.setLayerColor("Center", color);
         linkActionView.updateColors();
-        setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
+        setBackgroundColor(lastBackgroundColor = Theme.getColor(Theme.key_dialogBackground));
+        lastLinkIconColor = color;
     }
+
+    private int lastLinkIconColor, lastBackgroundColor, lastManageRippleColor;
 
     @Override
     public void dismissInternal() {
@@ -208,5 +209,44 @@ public class PermanentLinkBottomSheet extends BottomSheet {
     @Override
     public void dismiss() {
         super.dismiss();
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            // recolor in place: updateColors() recreates drawables; linkActionView colors are ThemeBind bindings,
+            // its QR sheet recolors itself
+            if (imageView != null) {
+                Theme.setDrawableColor(imageView.getBackground(), Theme.getColor(Theme.key_featuredStickers_addButton));
+            }
+            final int manageRipple = ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_addButton), 120);
+            if (manage != null && manageRipple != lastManageRippleColor) {
+                lastManageRippleColor = manageRipple;
+                Theme.setSelectorDrawableColor(manage.getBackground(), manageRipple, true);
+            }
+            int color = Theme.getColor(Theme.key_featuredStickers_buttonText);
+            if (linkIcon != null && color != lastLinkIconColor) {
+                lastLinkIconColor = color;
+                linkIcon.setLayerColor("Top", color);
+                linkIcon.setLayerColor("Bottom", color);
+                linkIcon.setLayerColor("Center", color);
+            }
+            final int backgroundColor = Theme.getColor(Theme.key_dialogBackground);
+            if (backgroundColor != lastBackgroundColor) {
+                lastBackgroundColor = backgroundColor;
+                setBackgroundColor(backgroundColor);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_windowBackgroundWhiteBlueText);
+        keys.add(Theme.key_featuredStickers_buttonText);
     }
 }

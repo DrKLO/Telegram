@@ -8,14 +8,19 @@
 
 package org.telegram.messenger;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.LaunchActivity;
 
@@ -127,6 +132,7 @@ public class LocationSharingService extends Service implements NotificationCente
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (getInfos().isEmpty()) {
             stopSelf();
+            return Service.START_NOT_STICKY;
         }
         try {
             if (builder == null) {
@@ -147,10 +153,84 @@ public class LocationSharingService extends Service implements NotificationCente
             }
 
             updateNotification(false);
-            startForeground(6, builder.build());
+            if (!startForegroundCompat(builder.build())) {
+                showPausedNotification();
+                stopSelf();
+                return Service.START_NOT_STICKY;
+            }
+            hidePausedNotification();
         } catch (Throwable e) {
             FileLog.e(e);
         }
         return Service.START_NOT_STICKY;
+    }
+
+    private boolean startForegroundCompat(Notification notification) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            startForeground(6, notification);
+            return true;
+        }
+        try {
+            startForeground(6, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            return true;
+        } catch (Throwable e) {
+            // not allowed when started from background, the location is available only while the app is in use
+            FileLog.e(e);
+            return false;
+        }
+    }
+
+    private static final String PAUSED_NOTIFICATION_TAG = "live_location_paused";
+
+    // shown while there are active sharings but the service can't run, LocationController restarts it when the app is resumed
+    public static void showPausedNotification() {
+        boolean hasSharings = false;
+        boolean forever = false;
+        long timeLeft = 0;
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            final ArrayList<LocationController.SharingLocationInfo> infos = LocationController.getInstance(a).sharingLocationsUI;
+            for (int i = 0; i < infos.size(); i++) {
+                final LocationController.SharingLocationInfo info = infos.get(i);
+                hasSharings = true;
+                if (info.stopTime == Integer.MAX_VALUE) {
+                    forever = true;
+                } else {
+                    timeLeft = Math.max(timeLeft, (info.stopTime - (long) ConnectionsManager.getInstance(info.account).getCurrentTime()) * 1000L);
+                }
+            }
+        }
+        if (!hasSharings || !forever && timeLeft <= 0) {
+            return;
+        }
+        try {
+            final Context context = ApplicationLoader.applicationContext;
+            Intent intent = new Intent(context, LaunchActivity.class);
+            intent.setAction("org.tmessages.openlocations");
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            PendingIntent contentIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+            Intent stopIntent = new Intent(context, StopLiveLocationReceiver.class);
+
+            final String text = LocaleController.getString(R.string.LiveLocationPausedText);
+            NotificationsController.checkOtherNotificationsChannel();
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, NotificationsController.OTHER_NOTIFICATIONS_CHANNEL);
+            builder.setSmallIcon(R.drawable.live_loc);
+            builder.setContentTitle(LocaleController.getString(R.string.LiveLocationPausedTitle));
+            builder.setContentText(text);
+            builder.setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+            builder.setContentIntent(contentIntent);
+            builder.setAutoCancel(true);
+            builder.addAction(0, LocaleController.getString(R.string.StopLiveLocation), PendingIntent.getBroadcast(context, 2, stopIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+            if (!forever) {
+                // nothing to resume once the last sharing expires
+                builder.setTimeoutAfter(timeLeft);
+            }
+            NotificationManagerCompat.from(context).notify(PAUSED_NOTIFICATION_TAG, 6, builder.build());
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    public static void hidePausedNotification() {
+        NotificationManagerCompat.from(ApplicationLoader.applicationContext).cancel(PAUSED_NOTIFICATION_TAG, 6);
     }
 }

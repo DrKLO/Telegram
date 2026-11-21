@@ -99,8 +99,23 @@ public class ImportingService extends Service implements NotificationCenter.Noti
             }
         }
         builder.setProgress(100, 0, true);
-        startForeground(5, builder.build());
+        try {
+            startForeground(5, builder.build());
+        } catch (Throwable e) {
+            // ForegroundServiceStartNotAllowedException, e.g. when the dataSync time limit is exhausted
+            FileLog.e(e);
+        }
         NotificationManagerCompat.from(ApplicationLoader.applicationContext).notify(5, builder.build());
         return Service.START_NOT_STICKY;
+    }
+
+    @Override
+    public void onTimeout(int startId, int fgsType) {
+        // dataSync time limit is exhausted (6 hours a day in background since Android 15), the service must stop now
+        FileLog.d("ImportingService timeout, type = " + fgsType);
+        try {
+            stopForeground(true);
+        } catch (Throwable ignore) {}
+        stopSelf();
     }
 }

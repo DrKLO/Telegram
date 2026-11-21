@@ -11,6 +11,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.BoostRepository;
@@ -23,7 +24,7 @@ public class BoostTypeSingleCell extends BoostTypeCell {
     }
 
     public void setGiveaway(TL_stories.PrepaidGiveaway prepaidGiveaway) {
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_dialogTextGray3, resourcesProvider);
         if (prepaidGiveaway instanceof TL_stories.TL_prepaidStarsGiveaway) {
             TL_stories.TL_prepaidStarsGiveaway prepaid = (TL_stories.TL_prepaidStarsGiveaway) prepaidGiveaway;
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_STARS);

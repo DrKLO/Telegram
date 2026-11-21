@@ -190,4 +190,13 @@ public class VideoEncodingService extends Service implements NotificationCenter.
         return instance != null;
     }
 
+    @Override
+    public void onTimeout(int startId, int fgsType) {
+        // dataSync time limit is exhausted (6 hours a day in background since Android 15), the service must stop now
+        FileLog.d("VideoEncodingService timeout, type = " + fgsType);
+        try {
+            stopForeground(true);
+        } catch (Throwable ignore) {}
+        stopSelf();
+    }
 }

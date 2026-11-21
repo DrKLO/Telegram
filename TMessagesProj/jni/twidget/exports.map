@@ -1,0 +1,8 @@
+{
+  global:
+    Java_*;        # the JNI functions (also registered by JNI_OnLoad)
+    JNI_OnLoad;
+  local:
+    *;             # hide the rest: without this the static libc++ (c++_static) is exported, ~1900 symbols, and its
+                   # unused code cannot be dropped
+};

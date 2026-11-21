@@ -28,6 +28,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
@@ -379,7 +380,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 emptyImageView = new ImageView(context);
                 emptyImageView.setScaleType(ImageView.ScaleType.CENTER);
                 emptyImageView.setImageResource(R.drawable.stickers_empty);
-                emptyImageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelEmptyText), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.colorFilter(emptyImageView, Theme.key_chat_emojiPanelEmptyText, resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 layout.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
                 layout.addView(new Space(context), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 15));
@@ -387,7 +388,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
                 emptyTextView = new TextView(context);
                 emptyTextView.setText(LocaleController.getString(R.string.NoStickersFound));
                 emptyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                emptyTextView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelEmptyText));
+                ThemeBind.textColor(emptyTextView, Theme.key_chat_emojiPanelEmptyText, resourcesProvider);
                 layout.addView(emptyTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
                 view = layout;
@@ -660,9 +661,7 @@ public class StickersSearchAdapter extends RecyclerListView.SelectionAdapter {
     public void updateColors(RecyclerListView listView) {
         for (int i = 0, size = listView.getChildCount(); i < size; i++) {
             final View child = listView.getChildAt(i);
-            if (child instanceof FeaturedStickerSetInfoCell) {
-                ((FeaturedStickerSetInfoCell) child).updateColors();
-            } else if (child instanceof StickerSetNameCell) {
+            if (child instanceof StickerSetNameCell) {
                 ((StickerSetNameCell) child).updateColors();
             }
         }

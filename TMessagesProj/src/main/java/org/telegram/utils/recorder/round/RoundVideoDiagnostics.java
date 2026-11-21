@@ -15,10 +15,6 @@ final class RoundVideoDiagnostics {
     private final long sessionId = NEXT_SESSION_ID.getAndIncrement();
     private final long startedAtMs = SystemClock.elapsedRealtime();
 
-    long getSessionId() {
-        return sessionId;
-    }
-
     boolean isEnabled() {
         return BuildVars.LOGS_ENABLED;
     }

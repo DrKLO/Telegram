@@ -38,6 +38,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -206,7 +207,7 @@ public class TableCell extends FrameLayout {
         String timeTxt = LocaleController.getInstance().getFormatterDay().format(date);
 
         dateTextView.setText(LocaleController.formatString("formatDateAtTime", R.string.formatDateAtTime, monthTxt, timeTxt));
-        reasonTextView.setTextColor(Theme.getColor(giftCode.via_giveaway ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(reasonTextView, giftCode.via_giveaway ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider);
         TLRPC.Chat fromChat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-DialogObject.getPeerDialogId(giftCode.from_id));
         boolean isChannel = ChatObject.isChannelAndNotMegaGroup(fromChat);
         if (giftCode.via_giveaway) {
@@ -249,7 +250,7 @@ public class TableCell extends FrameLayout {
             builder = AndroidUtilities.replaceSingleTag(builder.toString(), Theme.key_chat_messageLinkIn, 0, () -> onObjectClicked.run(giftCode), resourcesProvider);
             reasonTextView.setText(builder);
             toTextView.setText(LocaleController.getString(R.string.BoostingNoRecipient));
-            toTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(toTextView, Theme.key_dialogTextBlack, resourcesProvider);
             ((MarginLayoutParams) toTextView.getLayoutParams()).leftMargin = 0;
             ((MarginLayoutParams) toTextView.getLayoutParams()).rightMargin = 0;
             toImageView.setVisibility(GONE);
@@ -281,12 +282,12 @@ public class TableCell extends FrameLayout {
 
         if (blueColor) {
             textView = new LinkSpanDrawable.LinksTextView(getContext(), resourcesProvider);
-            textView.setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText, resourcesProvider));
+            ThemeBind.linkTextColor(textView, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         } else {
             textView = new TextView(getContext());
         }
 
-        textView.setTextColor(Theme.getColor(blueColor ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, blueColor ? Theme.key_dialogTextBlue : Theme.key_dialogTextBlack, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         if (!blueColor) {
             textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -294,7 +295,7 @@ public class TableCell extends FrameLayout {
         if (text != null) {
             textView.setTypeface(AndroidUtilities.bold());
             textView.setText(text);
-            textView.setBackgroundColor(Theme.getColor(Theme.key_graySection, resourcesProvider));
+            ThemeBind.backgroundColor(textView, Theme.key_graySection, resourcesProvider);
             textView.setPadding(AndroidUtilities.dp(LocaleController.isRTL ? 32 : 12), AndroidUtilities.dp(11), AndroidUtilities.dp(LocaleController.isRTL ? 12 : 32), AndroidUtilities.dp(11));
         } else {
             textView.setSingleLine(true);

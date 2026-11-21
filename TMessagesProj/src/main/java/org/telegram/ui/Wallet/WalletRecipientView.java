@@ -33,6 +33,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -45,6 +46,7 @@ public class WalletRecipientView extends FrameLayout {
     private final FrameLayout content;
     private final AvatarDrawable addressInfoAvatarDrawable = new AvatarDrawable();
     private final BackupImageView addressInfoImage;
+    private android.graphics.drawable.Drawable gramCircleDrawable;
     private final TextView addressInfoName;
     private final AddressView addressInfoAddress;
     private final ImageView addressInfoIcon;
@@ -60,11 +62,11 @@ public class WalletRecipientView extends FrameLayout {
         content.setPivotX(0);
         content.setPivotY(0);
         addView(content, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        content.setBackground(Theme.createRadSelectorDrawable(
+        ThemeBind.selectorBackground(content, Theme.createRadSelectorDrawable(
             getThemedColor(Theme.key_windowBackgroundGray),
             Theme.blendOver(getThemedColor(Theme.key_windowBackgroundGray), getThemedColor(Theme.key_listSelector)),
             dp(32), dp(32)
-        ));
+        ), ThemeBind.of(Theme.key_windowBackgroundGray), ThemeBind.blendOver(Theme.key_windowBackgroundGray, Theme.key_listSelector), resourcesProvider);
         ScaleStateListAnimator.apply(this, .02f, 1.2f);
         addressInfoImage = new BackupImageView(context);
         addressInfoImage.setRoundRadius(dp(18));
@@ -72,7 +74,7 @@ public class WalletRecipientView extends FrameLayout {
 
         addressInfoName = new TextView(context);
         addressInfoName.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        addressInfoName.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(addressInfoName, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         addressInfoName.setSingleLine();
         addressInfoName.setEllipsize(TextUtils.TruncateAt.END);
         addressInfoName.setTypeface(AndroidUtilities.bold());
@@ -83,7 +85,7 @@ public class WalletRecipientView extends FrameLayout {
 
         addressInfoIcon = new ImageView(context);
         addressInfoIcon.setImageResource(R.drawable.msg2_help);
-        addressInfoIcon.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayText6), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(addressInfoIcon, Theme.key_windowBackgroundWhiteGrayText6, resourcesProvider, PorterDuff.Mode.SRC_IN);
         addressInfoIcon.setScaleType(ImageView.ScaleType.CENTER);
         addressInfoIcon.setScaleX(0.9f);
         addressInfoIcon.setScaleY(0.9f);
@@ -112,7 +114,7 @@ public class WalletRecipientView extends FrameLayout {
                 topImageView.setForUserOrChat(recipientUser, topAvatarDrawable);
                 top.addView(topImageView, LayoutHelper.createLinear(30, 30, Gravity.CENTER_VERTICAL));
                 final TextView title = new TextView(getContext());
-                title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
                 title.setText(LocaleController.formatString(R.string.WalletUserWallet, name));
                 title.setTypeface(AndroidUtilities.bold());
@@ -121,8 +123,8 @@ public class WalletRecipientView extends FrameLayout {
                 layout.addView(top, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
                 final LinkSpanDrawable.LinksTextView description = new LinkSpanDrawable.LinksTextView(getContext());
-                description.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-                description.setLinkTextColor(getThemedColor(Theme.key_chat_messageLinkIn));
+                ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+                ThemeBind.linkTextColor(description, Theme.key_chat_messageLinkIn, resourcesProvider);
                 description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 description.setPadding(dp(4), 0, dp(4), 0);
                 description.setText(AndroidUtilities.replaceSingleTag(LocaleController.formatString(R.string.WalletAddressLinkedToUser, UserObject.getUserName(recipientUser)), () -> {
@@ -136,11 +138,11 @@ public class WalletRecipientView extends FrameLayout {
             addressView.setPadding(dp(4), 0, dp(4), 0);
             final TextView addressText = new TextView(getContext());
             addressText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addressText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(addressText, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             addressText.setText(formatAddressTwoLines(address));
             addressText.setPadding(dp(10), dp(12), dp(10), dp(12));
             addressText.setTypeface(AndroidUtilities.getTypeface("fonts/rmono.ttf"));
-            addressText.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundGray), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundGray), getThemedColor(Theme.key_listSelector)), 10, 10));
+            ThemeBind.selectorBackground(addressText, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundGray), Theme.blendOver(getThemedColor(Theme.key_windowBackgroundGray), getThemedColor(Theme.key_listSelector)), 10, 10), ThemeBind.of(Theme.key_windowBackgroundGray), ThemeBind.blendOver(Theme.key_windowBackgroundGray, Theme.key_listSelector), resourcesProvider);
             addressText.setGravity(Gravity.CENTER);
             addressView.addView(addressText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 0, 0, 0, 0));
             layout.addView(addressView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 14, 0, 0));
@@ -209,8 +211,12 @@ public class WalletRecipientView extends FrameLayout {
         } else if (!TextUtils.isEmpty(address)) {
             setClickable(false);
             setVisibility(View.VISIBLE);
+            if (gramCircleDrawable == null) {
+                gramCircleDrawable = Theme.createCircleDrawable(dp(34), 0xFFFFFFFF);
+                ThemeBind.drawableColorFilter(addressInfoImage, gramCircleDrawable, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.SRC_IN);
+            }
             addressInfoImage.setImageDrawable(new CombinedDrawable(
-                Theme.createCircleDrawable(dp(34), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
+                gramCircleDrawable,
                 getContext().getResources().getDrawable(R.drawable.menu_gram_24).mutate()
             ));
             addressInfoName.setText(getString(R.string.WalletGramWalletAddress));

@@ -12,7 +12,6 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.icu.number.Scale;
 import android.os.Vibrator;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -21,7 +20,6 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.DigitsKeyListener;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -30,7 +28,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -49,10 +46,12 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.SimpleActionBarDoneButton;
 import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -70,6 +69,7 @@ import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stories.recorder.KeyboardNotifier;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class LinkEditActivity extends BaseFragment {
 
@@ -100,7 +100,8 @@ public class LinkEditActivity extends BaseFragment {
     private SectionsScrollView scrollView;
     private EditText nameEditText;
     private TextInfoPrivacyCell dividerName;
-    private TextView createTextView;
+    private static final int done_button = 1;
+    private SimpleActionBarDoneButton createTextView;
     private int shakeDp = -3;
 
     private boolean ignoreSet;
@@ -126,175 +127,54 @@ public class LinkEditActivity extends BaseFragment {
     int currentInviteDate;
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (type == CREATE_TYPE) {
-            actionBar.setTitle(getString(R.string.NewLink));
+            simpleActionBar.setTitle(getString(R.string.NewLink));
         } else if (type == EDIT_TYPE) {
-            actionBar.setTitle(getString(R.string.EditLink));
+            simpleActionBar.setTitle(getString(R.string.EditLink));
         }
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
                     AndroidUtilities.hideKeyboard(usesEditText);
+                } else if (id == done_button) {
+                    onCreateClicked(createTextView);
                 }
             }
         });
 
-        createTextView = new TextView(context);
-        createTextView.setBackground(new Drawable() {
-            final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-            @Override
-            public void draw(@NonNull Canvas canvas) {
-                p.setColor(Theme.getColor(Theme.key_telegram_color));
-                canvas.drawRoundRect(getBounds().left, getBounds().exactCenterY() - dp(14),
-                        getBounds().right, getBounds().exactCenterY() + dp(14), dp(14), dp(14), p);
-            }
-
-            @Override
-            public void setAlpha(int alpha) {
-
-            }
-
-            @Override
-            public void setColorFilter(@Nullable ColorFilter colorFilter) {
-
-            }
-
-            @Override
-            public int getOpacity() {
-                return PixelFormat.UNKNOWN;
-            }
-        });
-        createTextView.setEllipsize(TextUtils.TruncateAt.END);
-        createTextView.setGravity(Gravity.CENTER);
-        createTextView.setOnClickListener(this::onCreateClicked);
-        createTextView.setSingleLine();
-        if (type == CREATE_TYPE) {
-            createTextView.setText(getString(R.string.CreateLinkHeaderNoCaps));
-        } else if (type == EDIT_TYPE) {
-            createTextView.setText(getString(R.string.SaveLinkHeaderNoCaps));
-        }
-        createTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        createTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
-        createTextView.setTypeface(AndroidUtilities.bold());
-        createTextView.setPadding(dp(12), 0, dp(12), 0);
-        ScaleStateListAnimator.apply(createTextView);
-
-        actionBar.addView(createTextView, LayoutHelper.createFrame(
-            LayoutHelper.WRAP_CONTENT, ActionBar.getCurrentActionBarHeight() / AndroidUtilities.density,
-            Gravity.END | Gravity.BOTTOM, 0, 0, 12, 0));
+        createTextView = simpleActionBar.createDoneButton(done_button, getString(type == CREATE_TYPE ? R.string.Create : R.string.Save));
 
         LinearLayout linearLayout = new SectionsScrollView.SectionsLinearLayout(context) {
-
             @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-//                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-//                int elementsHeight = 0;
-//                int h = MeasureSpec.getSize(heightMeasureSpec);
-//                for (int i = 0; i < getChildCount(); i++) {
-//                    View child = getChildAt(i);
-//                    if (child != buttonTextView && child.getVisibility() != View.GONE) {
-//                        elementsHeight += child.getMeasuredHeight();
-//                    }
-//                }
-//                elementsHeight += dp(79);
-//
-//                int topMargin;
-//                int buttonH = dp(48) + dp(24) + dp(16);
-//                if (elementsHeight >= h - buttonH) {
-//                    topMargin = dp(24);
-//                } else {
-//                    topMargin = dp(24) + (h - buttonH) - elementsHeight;
-//                }
-//
-//                if (((LayoutParams) buttonLayout.getLayoutParams()).topMargin != topMargin) {
-//                    int oldMargin = ((LayoutParams) buttonLayout.getLayoutParams()).topMargin;
-//                    ((LayoutParams) buttonLayout.getLayoutParams()).topMargin = topMargin;
-//                    if (!firstLayout) {
-//                        buttonLayout.setTranslationY(oldMargin - topMargin);
-//                        buttonLayout.animate().translationY(0).setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator).start();
-//                    }
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            }
-
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
+            protected void dispatchDraw(@NonNull Canvas canvas) {
                 super.dispatchDraw(canvas);
                 firstLayout = false;
             }
         };
         scrollView = new SectionsScrollView(context, linearLayout, resourceProvider);
-        actionBar.setAdaptiveBackground(scrollView);
+        scrollView.setDrawBackground(true);
+        scrollView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
         SizeNotifierFrameLayout contentView = new SizeNotifierFrameLayout(context) {
-
-//            int oldKeyboardHeight;
-//
-//            @Override
-//            protected AdjustPanLayoutHelper createAdjustPanLayoutHelper() {
-//                AdjustPanLayoutHelper panLayoutHelper = new AdjustPanLayoutHelper(this) {
-//                    @Override
-//                    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
-//                        super.onTransitionStart(keyboardVisible, contentHeight);
-//                        scrollView.getLayoutParams().height = contentHeight;
-//                    }
-//                    @Override
-//                    protected void onTransitionEnd() {
-//                        super.onTransitionEnd();
-//                        scrollView.getLayoutParams().height = LinearLayout.LayoutParams.MATCH_PARENT;
-//                        scrollView.requestLayout();
-//                    }
-//                    @Override
-//                    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
-//                        super.onPanTranslationUpdate(y, progress, keyboardVisible);
-//                        setTranslationY(0);
-//                        buttonLayout.setTranslationY(y);
-//                    }
-//                    @Override
-//                    protected boolean heightAnimationEnabled() {
-//                        return !finished;
-//                    }
-//                };
-//                panLayoutHelper.setCheckHierarchyHeight(true);
-//                return panLayoutHelper;
-//            }
-//
-//            @Override
-//            protected void onAttachedToWindow() {
-//                super.onAttachedToWindow();
-//                adjustPanLayoutHelper.onAttach();
-//            }
-//
-//            @Override
-//            protected void onDetachedFromWindow() {
-//                super.onDetachedFromWindow();
-//                adjustPanLayoutHelper.onDetach();
-//            }
 
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 measureKeyboardHeight();
-//                boolean isNeedScrollToEnd = usesEditText.isCursorVisible() || nameEditText.isCursorVisible();
-//                if (oldKeyboardHeight != keyboardHeight && keyboardHeight > dp(20) && isNeedScrollToEnd) {
-//                    scrollToEnd = true;
-//                    invalidate();
-//                } else if (scrollView.getScrollY() == 0 && !isNeedScrollToEnd) {
-//                    scrollToStart = true;
-//                    invalidate();
-//                }
-
                 if (keyboardHeight != 0 && keyboardHeight < dp(20)) {
                     usesEditText.clearFocus();
                     nameEditText.clearFocus();
                 }
                 buttonLayout.setVisibility(keyboardHeight > dp(20) ? GONE : VISIBLE);
-
-//                oldKeyboardHeight = keyboardHeight;
             }
 
             @Override
@@ -463,7 +343,7 @@ public class LinkEditActivity extends BaseFragment {
                 canvas.restore();
             }
         };
-        approveCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(approveCell, Theme.key_windowBackgroundWhite);
         approveCell.setTag(Theme.key_windowBackgroundWhite);
         approveCell.setTextAndCheck(getString(R.string.ApproveNewMembers2), false, false);
         approveCell.setOnClickListener(view -> {
@@ -505,7 +385,7 @@ public class LinkEditActivity extends BaseFragment {
             TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
             if (inviteToEdit == null && ChatObject.isChannelAndNotMegaGroup(MessagesController.getInstance(currentAccount).getChat(chatId)) && chatFull != null && chatFull.paid_media_allowed || inviteToEdit != null && inviteToEdit.subscription_pricing != null) {
                 subCell = new TextCheckCell(context);
-                subCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(subCell, Theme.key_windowBackgroundWhite);
                 subCell.setDrawCheckRipple(true);
                 subCell.setTextAndCheck(getString(R.string.RequireMonthlyFee), false, true);
                 if (inviteToEdit != null) {
@@ -547,7 +427,7 @@ public class LinkEditActivity extends BaseFragment {
 
                 subPriceView = new TextView(context);
                 subPriceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                subPriceView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
+                ThemeBind.textColor(subPriceView, Theme.key_windowBackgroundWhiteGrayText3);
                 subEditPriceCell = new EditTextCell(context, getString(getConnectionsManager().isTestBackend() ? R.string.RequireMonthlyFeePriceHintTest5Minutes : R.string.RequireMonthlyFeePriceHint), false, false, -1, resourceProvider) {
                     private boolean ignoreTextChanged;
                     @Override
@@ -577,7 +457,7 @@ public class LinkEditActivity extends BaseFragment {
                 };
                 subEditPriceCell.editText.setInputType(InputType.TYPE_CLASS_NUMBER);
                 subEditPriceCell.editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-                subEditPriceCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(subEditPriceCell, Theme.key_windowBackgroundWhite, getResourceProvider());
                 subEditPriceCell.hideKeyboardOnEnter();
                 subEditPriceCell.addView(subPriceView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 19, 0));
 
@@ -623,11 +503,11 @@ public class LinkEditActivity extends BaseFragment {
         nameEditText.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(32) });
         nameEditText.setGravity(Gravity.CENTER_VERTICAL);
         nameEditText.setHint(getString(R.string.LinkNameHint));
-        nameEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.hintTextColor(nameEditText, Theme.key_windowBackgroundWhiteGrayText);
         nameEditText.setLines(1);
         nameEditText.setPadding(dp(22), 0, dp(22), 0);
         nameEditText.setSingleLine();
-        nameEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameEditText, Theme.key_windowBackgroundWhiteBlackText);
         nameEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         linearLayout.addView(nameEditText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
 
@@ -637,9 +517,9 @@ public class LinkEditActivity extends BaseFragment {
 
         if (type == EDIT_TYPE) {
             revokeLink = new TextSettingsCell(context);
-            revokeLink.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(revokeLink, Theme.key_windowBackgroundWhite);
             revokeLink.setText(getString(R.string.RevokeLink), false);
-            revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+            ThemeBind.textColor(revokeLink.getTextView(), Theme.key_text_RedRegular);
             revokeLink.setOnClickListener(view -> {
                 AlertDialog.Builder builder2 = new AlertDialog.Builder(getParentActivity());
                 builder2.setMessage(getString(R.string.RevokeAlert));
@@ -658,31 +538,30 @@ public class LinkEditActivity extends BaseFragment {
         contentView.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         buttonLayout = new FrameLayout(context);
-        buttonLayout.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(buttonLayout, Theme.key_windowBackgroundGray, getResourceProvider());
         new KeyboardNotifier(contentView, keyboardHeight -> {
 //            buttonLayout.setVisibility((keyboardHeight > dp(40)) ? View.GONE : View.VISIBLE);
         });
         //buttonLayout.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 15, 16, 16));
         contentView.addView(buttonLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
-        timeHeaderCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        timeChooseView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        timeEditText.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        usesHeaderCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        usesChooseView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        usesEditText.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        nameEditText.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(timeHeaderCell, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(timeChooseView, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(timeEditText, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(usesHeaderCell, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(usesChooseView, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(usesEditText, Theme.key_windowBackgroundWhite);
+        ThemeBind.backgroundColor(nameEditText, Theme.key_windowBackgroundWhite);
 
         //buttonTextView.setOnClickListener(this::onCreateClicked);
         //buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         //buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
 
-        usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(usesEditText, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.hintTextColor(usesEditText, Theme.key_windowBackgroundWhiteGrayText);
 
-        timeEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(timeEditText, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.hintTextColor(timeEditText, Theme.key_windowBackgroundWhiteGrayText);
 
         usesEditText.setCursorVisible(false);
         setInviteToEdit(inviteToEdit);
@@ -976,7 +855,7 @@ public class LinkEditActivity extends BaseFragment {
                 usesEditText.setText(Integer.toString(invite.usage_limit));
             }
             if (approveCell != null) {
-                approveCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(approveCell, Theme.key_windowBackgroundWhite);
                 approveCell.setChecked(invite.request_needed);
             }
             setUsesVisible(!invite.request_needed);
@@ -1027,6 +906,17 @@ public class LinkEditActivity extends BaseFragment {
     }
 
     @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Nullable
+    @Override
+    protected SectionsScrollView getScrollViewForSimpleGlass() {
+        return scrollView;
+    }
+
+    @Override
     public void finishFragment() {
         scrollView.getLayoutParams().height = scrollView.getHeight();
         finished = true;
@@ -1036,57 +926,49 @@ public class LinkEditActivity extends BaseFragment {
 
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
-        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = () -> {
-            if (dividerUses != null) {
-                Context context = dividerUses.getContext();
-                // buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
-
-                usesEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                usesEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-
-                timeEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                timeEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-                // buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                if (revokeLink != null) {
-                    revokeLink.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-                }
-
-                createTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-                nameEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                nameEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            }
-        };
+        ThemeDescription.ThemeDescriptionDelegate descriptionDelegate = this::descriptionDelegateThemeColors;
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
-        themeDescriptions.add(new ThemeDescription(timeHeaderCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
-        themeDescriptions.add(new ThemeDescription(usesHeaderCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-        themeDescriptions.add(new ThemeDescription(timeHeaderCell, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(usesHeaderCell, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(timeChooseView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(usesChooseView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(timeEditText, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(usesEditText, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(revokeLink, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
 
-        themeDescriptions.add(new ThemeDescription(divider, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(dividerUses, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        themeDescriptions.add(new ThemeDescription(dividerName, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_addButton));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_addButtonPressed));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_windowBackgroundWhiteGrayText));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_featuredStickers_buttonText));
-        themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, descriptionDelegate, Theme.key_text_RedRegular));
 
         return themeDescriptions;
     }
 
 
+
+    private void descriptionDelegateThemeColors() {
+        if (dividerUses != null) {
+            Context context = dividerUses.getContext();
+            // buttonTextView.setBackgroundDrawable(Theme.createSimpleSelectorRoundRectDrawable(dp(6), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+
+            ThemeBind.textColor(usesEditText, Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.hintTextColor(usesEditText, Theme.key_windowBackgroundWhiteGrayText);
+
+            ThemeBind.textColor(timeEditText, Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.hintTextColor(timeEditText, Theme.key_windowBackgroundWhiteGrayText);
+            // buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            if (revokeLink != null) {
+                ThemeBind.textColor(revokeLink.getTextView(), Theme.key_text_RedRegular);
+            }
+
+            ThemeBind.textColor(nameEditText, Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.hintTextColor(nameEditText, Theme.key_windowBackgroundWhiteGrayText);
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_featuredStickers_addButtonPressed);
+        keys.add(Theme.key_featuredStickers_addButton);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_windowBackgroundWhiteBlueHeader);
+    }
 }

@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.GroupCreateUserCell;
 import org.telegram.ui.Cells.ShareDialogCell;
 
@@ -53,6 +54,25 @@ import java.util.ArrayList;
 public class JoinCallAlert extends BottomSheet {
 
     private Drawable shadowDrawable;
+    private boolean shadowThemed;
+    private int shadowThemedColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int color = Theme.getColor(Theme.key_dialogBackground);
+            if (shadowThemed && shadowDrawable != null && color != shadowThemedColor) {
+                shadowThemedColor = color;
+                shadowDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                if (containerView != null) {
+                    containerView.invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private BottomSheetCell doneButton;
     private RecyclerListView listView;
     private TextView textView;
@@ -136,10 +156,10 @@ public class JoinCallAlert extends BottomSheet {
                 textView[a].setEllipsize(TextUtils.TruncateAt.END);
                 textView[a].setGravity(Gravity.CENTER);
                 if (hasBackground) {
-                    textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+                    ThemeBind.textColor(textView[a], Theme.key_featuredStickers_buttonText);
                     textView[a].setTypeface(AndroidUtilities.bold());
                 } else {
-                    textView[a].setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+                    ThemeBind.textColor(textView[a], Theme.key_featuredStickers_addButton);
                 }
                 textView[a].setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
                 textView[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -326,6 +346,8 @@ public class JoinCallAlert extends BottomSheet {
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = Theme.getColor(Theme.key_voipgroup_inviteMembersBackground), PorterDuff.Mode.MULTIPLY));
         } else {
             shadowDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = Theme.getColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+            shadowThemed = true;
+            shadowThemedColor = backgroundColor;
             selectedPeer = chats.get(0);
         }
         fixNavigationBar(backgroundColor);
@@ -461,7 +483,7 @@ public class JoinCallAlert extends BottomSheet {
         listView.setClipToPadding(false);
         listView.setEnabled(true);
         listView.setSelectorDrawableColor(0);
-        listView.setGlowColor(Theme.getColor(Theme.key_dialogScrollGlow));
+        ThemeBind.listGlowColor(listView, Theme.key_dialogScrollGlow);
         listView.setOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -512,9 +534,9 @@ public class JoinCallAlert extends BottomSheet {
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         if (type == TYPE_DISPLAY) {
-            textView.setTextColor(Theme.getColor(Theme.key_voipgroup_nameText));
+            ThemeBind.textColor(textView, Theme.key_voipgroup_nameText);
         } else {
-            textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(textView, Theme.key_dialogTextBlack);
         }
         textView.setSingleLine(true);
         textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -540,9 +562,9 @@ public class JoinCallAlert extends BottomSheet {
 
         messageTextView = new TextView(getContext());
         if (type == TYPE_DISPLAY) {
-            messageTextView.setTextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
+            ThemeBind.textColor(messageTextView, Theme.key_voipgroup_lastSeenText);
         } else {
-            messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3));
+            ThemeBind.textColor(messageTextView, Theme.key_dialogTextGray3);
         }
         messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         boolean hasGroup = false;
@@ -557,7 +579,7 @@ public class JoinCallAlert extends BottomSheet {
             }
         }
         messageTextView.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
-        messageTextView.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
+        ThemeBind.linkTextColor(messageTextView, Theme.key_dialogTextLink);
         if (type == TYPE_CREATE) {
             StringBuilder builder = new StringBuilder();
             if (ChatObject.isChannel(chat) && !chat.megagroup) {

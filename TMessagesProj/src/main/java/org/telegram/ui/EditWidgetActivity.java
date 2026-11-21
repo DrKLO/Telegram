@@ -65,6 +65,7 @@ import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.GroupCreateUserCell;
@@ -81,6 +82,7 @@ import org.telegram.ui.Components.RecyclerListView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class EditWidgetActivity extends BaseFragment {
 
@@ -833,7 +835,7 @@ public class EditWidgetActivity extends BaseFragment {
         listAdapter = new ListAdapter(context);
 
         FrameLayout frameLayout = new FrameLayout(context);
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(frameLayout, Theme.key_windowBackgroundGray);
         fragmentView = frameLayout;
 
         listView = new RecyclerListView(context);
@@ -913,6 +915,7 @@ public class EditWidgetActivity extends BaseFragment {
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
 
         private Context mContext;
+        private Drawable selectChatsDrawable1, selectChatsDrawable2;
 
         public ListAdapter(Context context) {
             mContext = context;
@@ -935,11 +938,11 @@ public class EditWidgetActivity extends BaseFragment {
             switch (viewType) {
                 case 0:
                     view = new TextInfoPrivacyCell(mContext);
-                    view.setBackgroundDrawable(Theme.getThemedDrawableByKey(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    ThemeBind.themedBackground(view, mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                     break;
                 case 1:
                     view = new TextCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case 2:
                     view = widgetPreviewCell = new WidgetPreviewCell(mContext);
@@ -958,7 +961,7 @@ public class EditWidgetActivity extends BaseFragment {
                         }
                         return false;
                     });
-                    sortImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_pinnedIcon), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(sortImageView, Theme.key_chats_pinnedIcon, PorterDuff.Mode.MULTIPLY);
                     view = cell;
                     break;
             }
@@ -987,10 +990,14 @@ public class EditWidgetActivity extends BaseFragment {
                 case 1: {
                     TextCell cell = (TextCell) holder.itemView;
                     cell.setColors(-1, Theme.key_windowBackgroundWhiteBlueText4);
-                    Drawable drawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
-                    Drawable drawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
-                    drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked), PorterDuff.Mode.MULTIPLY));
-                    drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck), PorterDuff.Mode.MULTIPLY));
+                    if (selectChatsDrawable1 == null) {
+                        selectChatsDrawable1 = mContext.getResources().getDrawable(R.drawable.poll_add_circle);
+                        selectChatsDrawable2 = mContext.getResources().getDrawable(R.drawable.poll_add_plus);
+                    }
+                    Drawable drawable1 = selectChatsDrawable1;
+                    Drawable drawable2 = selectChatsDrawable2;
+                    ThemeBind.drawableColorFilter(cell, drawable1, Theme.key_switchTrackChecked, PorterDuff.Mode.MULTIPLY);
+                    ThemeBind.drawableColorFilter(cell, drawable2, Theme.key_checkboxCheck, PorterDuff.Mode.MULTIPLY);
                     CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
                     cell.setTextAndIcon(LocaleController.getString(R.string.SelectChats), combinedDrawable, chatsStartRow != -1);
                     cell.getImageView().setPadding(0, AndroidUtilities.dp(7), 0, 0);
@@ -1014,7 +1021,7 @@ public class EditWidgetActivity extends BaseFragment {
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
             if (type == 3 || type == 1) {
-                holder.itemView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(holder.itemView, Theme.key_windowBackgroundWhite);
             }
         }
 
@@ -1065,29 +1072,33 @@ public class EditWidgetActivity extends BaseFragment {
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem));
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM | ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_actionBarDefaultSubmenuItemIcon));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
 
 
         return themeDescriptions;
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_windowBackgroundGrayShadow);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
+        keys.add(Theme.key_windowBackgroundWhite);
     }
 }

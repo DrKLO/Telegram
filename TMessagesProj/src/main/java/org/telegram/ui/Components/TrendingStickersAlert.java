@@ -23,6 +23,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class TrendingStickersAlert extends BottomSheet {
 
@@ -109,8 +110,6 @@ public class TrendingStickersAlert extends BottomSheet {
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         final ArrayList<ThemeDescription> descriptions = new ArrayList<>();
         layout.getThemeDescriptions(descriptions, layout::updateColors);
-        descriptions.add(new ThemeDescription(alertContainerView, 0, null, null, new Drawable[]{shadowDrawable}, null, Theme.key_dialogBackground));
-        descriptions.add(new ThemeDescription(alertContainerView, 0, null, null, null, null, Theme.key_sheet_scrollUp));
         return descriptions;
     }
 
@@ -323,5 +322,13 @@ public class TrendingStickersAlert extends BottomSheet {
                 }
             }
         }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_sheet_scrollUp);
+        keys.add(Theme.key_dialogBackground);
     }
 }

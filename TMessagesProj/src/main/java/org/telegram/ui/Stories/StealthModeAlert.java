@@ -26,6 +26,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
@@ -75,7 +76,7 @@ public class StealthModeAlert extends BottomSheet {
 
         ImageView imageView = new ImageView(getContext());
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        imageView.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(80), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        ThemeBind.fillBackground(imageView, Theme.createCircleDrawable(AndroidUtilities.dp(80), Theme.getColor(Theme.key_featuredStickers_addButton)), ThemeBind.of(Theme.key_featuredStickers_addButton));
         imageView.setImageResource(R.drawable.large_stealth);
         frameLayout.addView(imageView, LayoutHelper.createFrame(80, 80, Gravity.CENTER_HORIZONTAL, 0, 18, 0, 0));
 
@@ -86,7 +87,7 @@ public class StealthModeAlert extends BottomSheet {
         TextView title = new TextView(getContext());
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         title.setText(LocaleController.getString(R.string.StealthModeTitle));
         linearLayout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
@@ -94,7 +95,7 @@ public class StealthModeAlert extends BottomSheet {
         subtitle.setTextSize(14);
         subtitle.setAlignment(Layout.Alignment.ALIGN_CENTER);
         subtitle.setMaxLines(100);
-        subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        ThemeBind.textColor(subtitle, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         if (UserConfig.getInstance(currentAccount).isPremium()) {
             subtitle.setText(LocaleController.getString(R.string.StealthModeHint));
         } else {
@@ -230,14 +231,14 @@ public class StealthModeAlert extends BottomSheet {
         if (stealthMode != null && ConnectionsManager.getInstance(currentAccount).getCurrentTime() < stealthMode.active_until_date) {
             stealthModeIsActive = true;
             button.setOverlayText(LocaleController.getString(R.string.StealthModeIsActive), true, animated);
-            button.overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(button.overlayTextView, Theme.key_featuredStickers_buttonText);
         } else if (stealthMode == null || ConnectionsManager.getInstance(currentAccount).getCurrentTime() > stealthMode.cooldown_until_date) {
             if (type == TYPE_FROM_STORIES) {
                 button.setOverlayText(LocaleController.getString(R.string.EnableStealthMode), true, animated);
             } else if (type == TYPE_FROM_DIALOGS) {
                 button.setOverlayText(LocaleController.getString(R.string.EnableStealthModeAndOpenStory), true, animated);
             }
-            button.overlayTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            ThemeBind.textColor(button.overlayTextView, Theme.key_featuredStickers_buttonText);
         } else {
             long timeLeft = stealthMode.cooldown_until_date - ConnectionsManager.getInstance(currentAccount).getCurrentTime();
             int s = (int) ((timeLeft) % 60);
@@ -245,7 +246,7 @@ public class StealthModeAlert extends BottomSheet {
             int h = (int) ((timeLeft / 60 / 60));
             String time = String.format(Locale.ENGLISH, "%02d", h) + String.format(Locale.ENGLISH, ":%02d", m) + String.format(Locale.ENGLISH, ":%02d", s);
             button.setOverlayText(LocaleController.formatString("AvailableIn", R.string.AvailableIn, time), true, animated);
-            button.overlayTextView.setTextColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_buttonText), 125));
+            ThemeBind.textColor(button.overlayTextView, ThemeBind.alpha(Theme.key_featuredStickers_buttonText, 125));
             AndroidUtilities.cancelRunOnUIThread(updateButtonRunnuble);
             AndroidUtilities.runOnUIThread(updateButtonRunnuble, 1000);
         }
@@ -260,17 +261,17 @@ public class StealthModeAlert extends BottomSheet {
         public ItemCell(Context context) {
             super(context);
             imageView = new ImageView(context);
-            imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_featuredStickers_addButton, PorterDuff.Mode.MULTIPLY);
             addView(imageView, LayoutHelper.createFrame(28, 28, 0, 25, 12, 16, 0));
 
             textView = new TextView(context);
             textView.setTypeface(AndroidUtilities.bold());
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 68, 8, 16, 0));
 
             description = new TextView(context);
-            description.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+            ThemeBind.textColor(description, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addView(description, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 68, 28, 16, 8));
         }

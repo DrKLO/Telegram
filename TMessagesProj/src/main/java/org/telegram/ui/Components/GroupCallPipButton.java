@@ -439,8 +439,8 @@ public class GroupCallPipButton extends FrameLayout implements NotificationCente
         super.onAttachedToWindow();
         if (!stub) {
             setAmplitude(0);
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupCallUpdated);
+            NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.webRtcMicAmplitudeEvent);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.groupCallUpdated);
 
             boolean isMuted = VoIPService.getSharedInstance() != null && VoIPService.getSharedInstance().isMicMute();
             if (VoIPService.getSharedInstance() != null) {

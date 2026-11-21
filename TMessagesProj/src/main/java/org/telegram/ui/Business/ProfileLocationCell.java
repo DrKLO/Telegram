@@ -27,6 +27,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.RecyclerListView;
@@ -36,10 +37,28 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.Locale;
 
-public class ProfileLocationCell extends LinearLayout {
+public class ProfileLocationCell extends LinearLayout implements Theme.Colorable {
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final LoadingDrawable thumbDrawable;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (thumbDrawable != null) {
+                final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+                thumbDrawable.setColors(
+                    Theme.multAlpha(color, .05f),
+                    Theme.multAlpha(color, .15f),
+                    Theme.multAlpha(color, .1f),
+                    Theme.multAlpha(color, .3f)
+                );
+                invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
     private final ImageReceiver imageReceiver = new ImageReceiver(this);
 
     private final TextView textView1, textView2;
@@ -65,13 +84,13 @@ public class ProfileLocationCell extends LinearLayout {
 
         textView1 = new TextView(context);
         textView1.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(textView1, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         textView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         addView(textView1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 18, 10, LocaleController.isRTL ? 18 : 70, 4));
 
         textView2 = new TextView(context);
         textView2.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+        ThemeBind.textColor(textView2, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
         textView2.setText(LocaleController.getString(R.string.BusinessProfileLocation));
         textView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         addView(textView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL | Gravity.TOP, LocaleController.isRTL ? 70 : 18, 0, LocaleController.isRTL ? 18 : 70, 8));

@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
@@ -24,6 +25,7 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.boosts.cells.BaseCell;
@@ -36,7 +38,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import java.util.Date;
 
 @SuppressLint("ViewConstructor")
-public class SelectorUserCell extends BaseCell {
+public class SelectorUserCell extends BaseCell implements Theme.Colorable {
 
     private final boolean[] isOnline = new boolean[1];
     @Nullable
@@ -89,20 +91,20 @@ public class SelectorUserCell extends BaseCell {
         optionsView = new ImageView(context);
         optionsView.setScaleType(ImageView.ScaleType.CENTER);
         optionsView.setImageResource(R.drawable.ic_ab_other);
-        optionsView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_inMenu, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(optionsView, Theme.key_chat_inMenu, resourcesProvider, PorterDuff.Mode.SRC_IN);
         addView(optionsView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
 
         audioView = new ImageView(context);
         audioView.setScaleType(ImageView.ScaleType.CENTER);
         audioView.setImageResource(R.drawable.menu_phone);
-        audioView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(audioView, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.SRC_IN);
         addView(audioView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 52 : 12, 0, LocaleController.isRTL ? 12 : 52, 0));
         audioView.setVisibility(View.GONE);
 
         videoView = new ImageView(context);
         videoView.setScaleType(ImageView.ScaleType.CENTER);
         videoView.setImageResource(R.drawable.menu_videocall);
-        videoView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(videoView, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.SRC_IN);
         addView(videoView, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), 12, 0, 12, 0));
         videoView.setVisibility(View.GONE);
     }
@@ -207,11 +209,37 @@ public class SelectorUserCell extends BaseCell {
         } else {
             setSubtitle(LocaleController.formatUserStatus(UserConfig.selectedAccount, user, isOnline));
         }
-        subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider);
         if (checkBox != null) {
             checkBox.setAlpha(1f);
         }
-        titleTextView.setRightDrawable(statusBadgeComponent.updateDrawable(user, Theme.getColor(Theme.key_chats_verifiedBackground), false));
+        titleTextView.setRightDrawable(statusBadgeComponent.updateDrawable(user, badgeColor = Theme.getColor(Theme.key_chats_verifiedBackground), false));
+    }
+
+    private int badgeColor;
+
+    /** re-applies the status badge color set by setUser (Theme.Colorable, never called from the constructor) */
+    @Override
+    public void updateColors() {
+        try {
+            if (user == null || statusBadgeComponent == null || titleTextView == null) {
+                return;
+            }
+            final int color = Theme.getColor(Theme.key_chats_verifiedBackground);
+            if (color == badgeColor) {
+                return;
+            }
+            badgeColor = color;
+            statusBadgeComponent.updateDrawable(user, color, false);
+            titleTextView.invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_chats_verifiedBackground);
     }
 
     public void setCustomUser(Drawable icon, CharSequence title, CharSequence subtitle) {
@@ -223,7 +251,7 @@ public class SelectorUserCell extends BaseCell {
         titleTextView.setText(title);
         isOnline[0] = false;
         setSubtitle(subtitle);
-        subtitleTextView.setTextColor(Theme.getColor(isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, isOnline[0] ? Theme.key_dialogTextBlue2 : Theme.key_dialogTextGray3, resourcesProvider);
         if (checkBox != null) {
             checkBox.setAlpha(1f);
         }
@@ -253,7 +281,7 @@ public class SelectorUserCell extends BaseCell {
             subtitle = LocaleController.getString(isChannel ? R.string.DiscussChannel : R.string.AccDescrGroup);
         }
         setSubtitle(subtitle);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_dialogTextGray3, resourcesProvider);
         setCheckboxAlpha(participants_count > 200 ? .3f : 1f, false);
     }
 
@@ -269,7 +297,7 @@ public class SelectorUserCell extends BaseCell {
 
         titleTextView.setText(chat.title);
 
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextGray3, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_dialogTextGray3, resourcesProvider);
         setSubtitle(LocaleController.formatString(R.string.BoostExpireOn, LocaleController.getInstance().getFormatterBoostExpired().format(new Date(boost.expires * 1000L))));
 
         if (boost.cooldown_until_date > 0) {

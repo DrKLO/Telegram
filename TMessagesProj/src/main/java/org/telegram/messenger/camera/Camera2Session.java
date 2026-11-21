@@ -336,6 +336,35 @@ public class Camera2Session {
         return diffOrientation;
     }
 
+    /**
+     * Rotation the round video recorder applies to its GL quad on top of the SurfaceTexture
+     * transform, which only makes the frame upright for the device's natural orientation.
+     * Counter-clockwise degrees equal to the display rotation. {@link #getWorldAngle()} stays
+     * as the attach camera (CameraView) expects it.
+     */
+    public int getRoundVideoRotationAngle() {
+        try {
+            Context context = ApplicationLoader.applicationContext;
+            if (context == null) {
+                return 0;
+            }
+            int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+            switch (rotation) {
+                case Surface.ROTATION_90:
+                    return 90;
+                case Surface.ROTATION_180:
+                    return 180;
+                case Surface.ROTATION_270:
+                    return 270;
+                default:
+                    return 0;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return 0;
+    }
+
     public int getCurrentOrientation() {
         return getJpegOrientation();
     }

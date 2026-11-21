@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.TranslateController.normalizeLanguage;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -72,6 +73,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 
 import java.io.BufferedReader;
@@ -104,6 +106,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     private LoadingTextView loadingTextView;
     private FrameLayout textViewContainer;
     private LinkSpanDrawable.LinksTextView textView;
+    private Drawable textSelectHandleLeft, textSelectHandleRight;
+    private int lastButtonColor, lastHandleColor;
+    private boolean lastButtonDark = Theme.isCurrentThemeDark();
 
     private boolean sheetTopNotAnimate;
     private RecyclerListView listView;
@@ -158,8 +163,8 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         loadingTextView = new LoadingTextView(context);
         loadingTextView.setPadding(dp(22), dp(12), dp(22), dp(6));
         loadingTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, SharedConfig.fontSize);
-        loadingTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        loadingTextView.setLinkTextColor(Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), .2f));
+        ThemeBind.textColor(loadingTextView, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.linkTextColor(loadingTextView, ThemeBind.multAlpha(Theme.key_dialogTextBlack, .2f), resourcesProvider);
         loadingTextView.setText(Emoji.replaceEmoji(text == null ? "" : text.toString(), loadingTextView.getPaint().getFontMetricsInt(), true));
 
         textViewContainer = new FrameLayout(context) {
@@ -172,20 +177,22 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         textView.setDisablePaddingsOffsetY(true);
         textView.setPadding(dp(22), dp(12), dp(22), dp(6));
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, SharedConfig.fontSize);
-        textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
-        textView.setLinkTextColor(getThemedColor(Theme.key_chat_messageLinkIn));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
         textView.setTextIsSelectable(true);
-        textView.setHighlightColor(getThemedColor(Theme.key_chat_inTextSelectionHighlight));
-        int handleColor = getThemedColor(Theme.key_chat_TextSelectionCursor);
+        ThemeBind.highlightColor(textView, Theme.key_chat_inTextSelectionHighlight, resourcesProvider);
+        int handleColor = lastHandleColor = getThemedColor(Theme.key_chat_TextSelectionCursor);
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !XiaomiUtilities.isMIUI()) {
                 Drawable left = textView.getTextSelectHandleLeft();
                 left.setColorFilter(handleColor, PorterDuff.Mode.SRC_IN);
                 textView.setTextSelectHandleLeft(left);
+                textSelectHandleLeft = left;
 
                 Drawable right = textView.getTextSelectHandleRight();
                 right.setColorFilter(handleColor, PorterDuff.Mode.SRC_IN);
                 textView.setTextSelectHandleRight(right);
+                textSelectHandleRight = right;
             }
         } catch (Exception e) {}
         textViewContainer.addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -271,10 +278,10 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         containerView.addView(headerView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 78, Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
         buttonView = new FrameLayout(context);
-        buttonView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+        ThemeBind.backgroundColor(buttonView, Theme.key_dialogBackground, resourcesProvider);
 
         buttonShadowView = new View(context);
-        buttonShadowView.setBackgroundColor(getThemedColor(Theme.key_dialogShadowLine));
+        ThemeBind.backgroundColor(buttonShadowView, Theme.key_dialogShadowLine, resourcesProvider);
         buttonShadowView.setAlpha(0);
         buttonView.addView(buttonShadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight() / dpf2(1), Gravity.TOP | Gravity.FILL_HORIZONTAL));
 
@@ -284,11 +291,11 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         buttonTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         buttonTextView.setEllipsize(TextUtils.TruncateAt.END);
         buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText);
         buttonTextView.setTypeface(AndroidUtilities.bold());
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setText(LocaleController.getString(R.string.CloseTranslation));
-        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton), 24));
+        buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(lastButtonColor = Theme.getColor(Theme.key_featuredStickers_addButton), 24));
         buttonTextView.setOnClickListener(e -> dismiss());
         buttonView.addView(buttonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 16, 16, 16));
 
@@ -1198,14 +1205,14 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             super(context);
 
             backgroundView = new View(context);
-            backgroundView.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+            ThemeBind.backgroundColor(backgroundView, Theme.key_dialogBackground, TranslateAlert2.this.resourcesProvider);
             addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0,  12, 0, 0));
 
             backButton = new ImageView(context);
             backButton.setScaleType(ImageView.ScaleType.CENTER);
             backButton.setImageResource(R.drawable.ic_ab_back);
-            backButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
-            backButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+            ThemeBind.colorFilter(backButton, Theme.key_dialogTextBlack, TranslateAlert2.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
+            ThemeBind.selectorBackground(backButton, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)), null, ThemeBind.of(Theme.key_listSelector), TranslateAlert2.this.resourcesProvider);
             backButton.setAlpha(0f);
             backButton.setOnClickListener(e -> dismiss());
             addView(backButton, LayoutHelper.createFrame(54, 54, Gravity.TOP, 1, 1, 1, 1));
@@ -1219,7 +1226,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     }
                 }
             };
-            titleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+            ThemeBind.textColor(titleTextView, Theme.key_dialogTextBlack, TranslateAlert2.this.resourcesProvider);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             titleTextView.setTypeface(AndroidUtilities.bold());
             titleTextView.setText(LocaleController.getString(R.string.AutomaticTranslation));
@@ -1244,7 +1251,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             if (!TextUtils.isEmpty(fromLanguage) && !"und".equals(fromLanguage)) {
                 fromLanguageTextView = new TextView(context);
                 fromLanguageTextView.setLines(1);
-                fromLanguageTextView.setTextColor(getThemedColor(Theme.key_player_actionBarSubtitle));
+                ThemeBind.textColor(fromLanguageTextView, Theme.key_player_actionBarSubtitle, TranslateAlert2.this.resourcesProvider);
                 fromLanguageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 fromLanguageTextView.setText(capitalFirst(languageName(fromLanguage)));
                 fromLanguageTextView.setPadding(0, dp(2), 0, dp(2));
@@ -1252,7 +1259,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 
             arrowView = new ImageView(context);
             arrowView.setImageResource(R.drawable.search_arrow);
-            arrowView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_player_actionBarSubtitle), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(arrowView, Theme.key_player_actionBarSubtitle, TranslateAlert2.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
             if (LocaleController.isRTL) {
                 arrowView.setScaleX(-1f);
             }
@@ -1306,7 +1313,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 toLanguageTextView.setGravity(Gravity.RIGHT);
             }
             toLanguageTextView.setAnimationProperties(.25f, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-            toLanguageTextView.setTextColor(getThemedColor(Theme.key_player_actionBarSubtitle));
+            ThemeBind.textColor(toLanguageTextView, Theme.key_player_actionBarSubtitle, TranslateAlert2.this.resourcesProvider);
             toLanguageTextView.setTextSize(dp(14));
             toLanguageTextView.setText(capitalFirst(languageName(toLanguage)));
             toLanguageTextView.setPadding(dp(4), dp(2), dp(4), dp(2));
@@ -1329,7 +1336,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             addView(subtitleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 22, 43, 22, 0));
 
             shadow = new View(context);
-            shadow.setBackgroundColor(getThemedColor(Theme.key_dialogShadowLine));
+            ThemeBind.backgroundColor(shadow, Theme.key_dialogShadowLine, TranslateAlert2.this.resourcesProvider);
             shadow.setAlpha(0);
             addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight() / dpf2(1), Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 56, 0, 0));
         }
@@ -1345,7 +1352,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             };
 
             Drawable shadowDrawable2 = ContextCompat.getDrawable(getContext(), R.drawable.popup_fixed_alert).mutate();
-            shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, shadowDrawable2, Theme.key_actionBarDefaultSubmenuBackground, TranslateAlert2.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
             layout.setBackground(shadowDrawable2);
 
             final Runnable[] dismiss = new Runnable[1];
@@ -1449,7 +1456,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
     }
 
-    private class ContainerView extends FrameLayout {
+    private class ContainerView extends FrameLayout implements Theme.Colorable {
         public ContainerView(Context context) {
             super(context);
 
@@ -1540,7 +1547,18 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             super.onDetachedFromWindow();
             Bulletin.removeDelegate(this);
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                bgPaint.setColor(getThemedColor(Theme.key_dialogBackground));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     public static String capitalFirst(String text) {
         if (text == null || text.length() <= 0) {
@@ -1684,9 +1702,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
     @Override
     public void show() {
         super.show();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.translationModelDownloaded);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.translationModelDownloading);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.translationModelDownloaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.translationModelDownloading);
     }
 
     @Override
@@ -1854,5 +1872,34 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 
     public static void resetToLanguage() {
         MessagesController.getGlobalMainSettings().edit().remove("translate_to_language").apply();
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int buttonColor = Theme.getColor(Theme.key_featuredStickers_addButton);
+            if (buttonTextView != null && (buttonColor != lastButtonColor || lastButtonDark != Theme.isCurrentThemeDark())) { // the ripple shade depends on dark / light
+                lastButtonColor = buttonColor;
+                lastButtonDark = Theme.isCurrentThemeDark();
+                buttonTextView.setBackground(Theme.AdaptiveRipple.filledRect(buttonColor, 24));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            final int handleColor = getThemedColor(Theme.key_chat_TextSelectionCursor);
+            if (handleColor != lastHandleColor) {
+                lastHandleColor = handleColor;
+                if (textSelectHandleLeft != null) {
+                    textSelectHandleLeft.setColorFilter(handleColor, PorterDuff.Mode.SRC_IN);
+                }
+                if (textSelectHandleRight != null) {
+                    textSelectHandleRight.setColorFilter(handleColor, PorterDuff.Mode.SRC_IN);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

@@ -25,6 +25,7 @@ import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.LaunchActivity;
@@ -164,7 +165,7 @@ public class PasswordRequest {
                                 builder.setView(linearLayout);
 
                                 TextView messageTextView = new TextView(parentActivity);
-                                messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                                ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                                 messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.WithdrawChannelAlertText)));
@@ -177,10 +178,10 @@ public class PasswordRequest {
                                 ImageView dotImageView = new ImageView(parentActivity);
                                 dotImageView.setImageResource(R.drawable.list_circle);
                                 dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                                dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                                ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                                 messageTextView = new TextView(parentActivity);
-                                messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                                ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                                 messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText1)));
@@ -199,10 +200,10 @@ public class PasswordRequest {
                                 dotImageView = new ImageView(parentActivity);
                                 dotImageView.setImageResource(R.drawable.list_circle);
                                 dotImageView.setPadding(LocaleController.isRTL ? AndroidUtilities.dp(11) : 0, AndroidUtilities.dp(9), LocaleController.isRTL ? 0 : AndroidUtilities.dp(11), 0);
-                                dotImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+                                ThemeBind.colorFilter(dotImageView, Theme.key_dialogTextBlack, PorterDuff.Mode.MULTIPLY);
 
                                 messageTextView = new TextView(parentActivity);
-                                messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                                ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                                 messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                                 messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                                 messageTextView.setText(AndroidUtilities.replaceTags(LocaleController.getString(R.string.EditAdminTransferAlertText2)));
@@ -219,7 +220,7 @@ public class PasswordRequest {
                                     builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                                 } else {
                                     messageTextView = new TextView(parentActivity);
-                                    messageTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                                    ThemeBind.textColor(messageTextView, Theme.key_dialogTextBlack);
                                     messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                                     messageTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
                                     messageTextView.setText(LocaleController.getString(R.string.EditAdminTransferAlertText3));

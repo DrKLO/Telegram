@@ -45,6 +45,7 @@ import org.telegram.messenger.WebFile;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_wallet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -97,6 +98,7 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
 
     private final LinearLayout nftLayout;
     private final BackupImageView nftImageView;
+    private Drawable nftThumbIcon;
     private final LinearLayout nftTextLayout;
     private final TextView nftTitle;
     private final TextView nftText;
@@ -259,10 +261,28 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
                 titleView.setText(UserObject.getUserName(user));
             } else {
                 avatarView.setVisibility(View.GONE);
-                setIconColor(IconBackgroundColors.BLUE);
+                setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
                 iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
                 titleView.setText(addressFormatter.format(transaction.peer.address));
             }
+        } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerChannel) {
+            final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(transaction.peer.channel_id);
+            if (chat != null) {
+                avatarView.setVisibility(View.VISIBLE);
+                avatarDrawable.setInfo(currentAccount, chat);
+                avatarView.setForUserOrChat(chat, avatarDrawable);
+                titleView.setText(chat.title);
+            } else {
+                avatarView.setVisibility(View.GONE);
+                setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
+                iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
+                titleView.setText(!TextUtils.isEmpty(transaction.peer.domain) ? transaction.peer.domain : addressFormatter.format(transaction.peer.address));
+            }
+        } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerTelegramGift) {
+            avatarView.setVisibility(View.GONE);
+            setIconColor(incoming ? IconBackgroundColors.GREEN : IconBackgroundColors.BLUE);
+            iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
+            titleView.setText(getString(R.string.WalletTransactionTelegram));
         } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerOnramp) {
             final TL_wallet.walletTransactionPeerOnramp peer = (TL_wallet.walletTransactionPeerOnramp) transaction.peer;
             avatarView.setVisibility(View.GONE);
@@ -276,8 +296,9 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
             }
             subtitleView.setText(CurrenciesController.capitalizeFirstLetter(peer.provider_name, Locale.getDefault()));
         } else {
+            // Plain address peers have no avatar: outgoing transfers use the green icon like gift transfers.
             avatarView.setVisibility(View.GONE);
-            setIconColor(IconBackgroundColors.BLUE);
+            setIconColor(incoming ? IconBackgroundColors.BLUE : IconBackgroundColors.GREEN);
             iconView.setImageResource(incoming ? R.drawable.wallet_transaction_in : R.drawable.wallet_transaction_out);
             if (!TextUtils.isEmpty(transaction.peer.domain)) {
                 titleView.setText(transaction.peer.domain);
@@ -296,6 +317,8 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
             subtitleView.setText(getString(R.string.WalletFailedTransfer));
         } else if (transaction.key_change || transaction.peer instanceof TL_wallet.walletTransactionPeerOnramp) {
 
+        } else if (transaction.peer instanceof TL_wallet.walletTransactionPeerTelegramGift && ((TL_wallet.walletTransactionPeerTelegramGift) transaction.peer).own_profile) {
+            subtitleView.setText(incoming ? getString(R.string.WalletMovedFromProfile) : getString(R.string.WalletMovedToProfile));
         } else if (transaction.nft != null) {
             subtitleView.setText(incoming ? getString(R.string.WalletIncomingTransferNft) : getString(R.string.WalletOutgoingTransferNft));
         } else {
@@ -310,9 +333,15 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
         if (transaction.nft != null) {
             nftLayout.setVisibility(View.VISIBLE);
             final int thumbColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
-            final Drawable thumbIcon = getContext().getResources().getDrawable(R.drawable.wallet_nft_placeholder).mutate();
-            thumbIcon.setColorFilter(new PorterDuffColorFilter(thumbColor, PorterDuff.Mode.SRC_IN));
-            final CombinedDrawable thumb = new CombinedDrawable(Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(thumbColor, 0.10f)), thumbIcon);
+            if (nftThumbIcon == null) {
+                // created once per cell: the binding keeps a reference to the drawable
+                nftThumbIcon = getContext().getResources().getDrawable(R.drawable.wallet_nft_placeholder).mutate();
+            }
+            final Drawable thumbIcon = nftThumbIcon;
+            ThemeBind.drawableColorFilter(this, thumbIcon, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider, PorterDuff.Mode.SRC_IN);
+            nftThumbBackground = Theme.createRoundRectDrawable(dp(8), Theme.multAlpha(thumbColor, 0.10f));
+            ThemeBind.custom(this, 100, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteGrayText, 0.10f), resourcesProvider, TransactionCell::getNftThumbBackgroundColor, TransactionCell::setNftThumbBackgroundColor);
+            final CombinedDrawable thumb = new CombinedDrawable(nftThumbBackground, thumbIcon);
             final TLRPC.WebDocument imageDocument = transaction.nft.image_small != null ? transaction.nft.image_small : transaction.nft.image != null ? transaction.nft.image : transaction.nft.image_small;
             if (imageDocument != null) {
                 final ImageLocation image = ImageLocation.getForWebFile(WebFile.createWithWebDocument(imageDocument));
@@ -333,10 +362,10 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
             amountView.setVisibility(View.VISIBLE);
             amountView.setCompoundDrawablesRelative(null, null, giftDrawable, null);
             if (incoming) {
-                giftDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_color_green, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                ThemeBind.drawableColorFilter(this, giftDrawable, Theme.key_color_green, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 amountView.setText(LocaleController.getString(R.string.WalletIncomingCollectibleAmount));
             } else {
-                giftDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                ThemeBind.drawableColorFilter(this, giftDrawable, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider, PorterDuff.Mode.SRC_IN);
                 amountView.setText(LocaleController.getString(R.string.WalletOutgoingCollectibleAmount));
             }
         } else {
@@ -420,9 +449,37 @@ public class TransactionCell extends FrameLayout implements Theme.Colorable {
                   ? Theme.getColor(Theme.key_color_green, resourcesProvider)
                   : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         transactionAmount.setColor(amountColor);
-        nftLayout.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)));
+        final int nftBackgroundColor = Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider);
+        if (nftLayout.getBackground() instanceof ShapeDrawable) {
+            final ShapeDrawable nftBackground = (ShapeDrawable) nftLayout.getBackground();
+            if (nftBackground.getPaint().getColor() != nftBackgroundColor) {
+                nftBackground.getPaint().setColor(nftBackgroundColor);
+                nftBackground.invalidateSelf();
+            }
+        } else {
+            nftLayout.setBackground(Theme.createRoundRectDrawable(dp(10), nftBackgroundColor));
+        }
         nftTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         nftText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhite);
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_windowBackgroundGray);
+    }
+
+    private ShapeDrawable nftThumbBackground;
+
+    private static int getNftThumbBackgroundColor(TransactionCell cell) {
+        return cell.nftThumbBackground != null ? cell.nftThumbBackground.getPaint().getColor() : 0;
+    }
+
+    private static void setNftThumbBackgroundColor(TransactionCell cell, int color) {
+        if (cell.nftThumbBackground != null) {
+            cell.nftThumbBackground.getPaint().setColor(color);
+            cell.nftThumbBackground.invalidateSelf();
+        }
     }
 
     boolean isRaised() { return pendingProgress > 0 || sparks.isActive(); }

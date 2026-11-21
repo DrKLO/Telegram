@@ -28,6 +28,7 @@ import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
@@ -107,14 +108,14 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
         title.setTypeface(AndroidUtilities.bold());
         title.setTag(Theme.key_windowBackgroundWhiteBlackText);
-        title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         title.setGravity(Gravity.CENTER);
 
         subtitle = new LinkSpanDrawable.LinksTextView(context);
         subtitle.setTag(Theme.key_windowBackgroundWhiteGrayText);
-        subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
-        subtitle.setLinkTextColor(getThemedColor(Theme.key_windowBackgroundWhiteLinkText));
+        ThemeBind.textColor(subtitle, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        ThemeBind.linkTextColor(subtitle, Theme.key_windowBackgroundWhiteLinkText, resourcesProvider);
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitle.setGravity(Gravity.CENTER);
 
@@ -140,7 +141,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         ((LinearLayout.LayoutParams) subtitle.getLayoutParams()).topMargin = AndroidUtilities.dp(12);
         TextView buttonTextView = new TextView(getContext());
         buttonTextView.setText(sting);
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
         buttonTextView.setPadding(AndroidUtilities.dp(45), AndroidUtilities.dp(12), AndroidUtilities.dp(45), AndroidUtilities.dp(12));
         buttonTextView.setGravity(Gravity.CENTER);
         buttonTextView.setTypeface(AndroidUtilities.bold());
@@ -156,10 +157,13 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         buttonLayout.setOnClickListener(v -> {
             AndroidUtilities.runOnUIThread(action, 100);
         });
-        buttonLayout.setBackground(
+        ThemeBind.selectorBackground(buttonLayout,
                 Theme.createSimpleSelectorRoundRectDrawable(dp(8),
                         Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
-                        ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider), 30))
+                        ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider), 30)),
+                ThemeBind.of(Theme.key_featuredStickers_addButton),
+                ThemeBind.alpha(Theme.key_featuredStickers_buttonText, 30),
+                resourcesProvider
         );
         ScaleStateListAnimator.apply(buttonLayout, 0.05f, 1.5f);
         buttonLayout.addView(buttonTextView);
@@ -192,10 +196,10 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
 
     public void setColors(int titleKey, int subtitleKey, int key1, int key2) {
         title.setTag(titleKey);
-        title.setTextColor(getThemedColor(titleKey));
+        ThemeBind.textColor(title, titleKey, resourcesProvider);
 
         subtitle.setTag(subtitleKey);
-        subtitle.setTextColor(getThemedColor(subtitleKey));
+        ThemeBind.textColor(subtitle, subtitleKey, resourcesProvider);
         colorKey1 = key1;
     }
 
@@ -265,7 +269,7 @@ public class StickerEmptyView extends FrameLayout implements NotificationCenter.
         if (getVisibility() == VISIBLE) {
             setSticker();
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.diceStickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.diceStickersDidLoad);
     }
 
     @Override

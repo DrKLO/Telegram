@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +66,7 @@ public class TextSelectionHint extends View {
         textPaint.setColor(textColor);
         selectionPaint.setColor(textColor);
         selectionPaint.setAlpha((int) (alpha * 0.14));
-        setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), getThemedColor(Theme.key_undo_background)));
+        ThemeBind.fillBackground(this, Theme.createRoundRectDrawable(AndroidUtilities.dp(6), getThemedColor(Theme.key_undo_background)), ThemeBind.of(Theme.key_undo_background), resourcesProvider);
     }
 
 

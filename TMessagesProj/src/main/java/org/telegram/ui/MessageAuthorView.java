@@ -2,6 +2,7 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -40,6 +41,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.AvatarsDrawable;
 import org.telegram.ui.Components.AvatarsImageView;
@@ -55,7 +57,7 @@ import org.telegram.ui.Components.StatusBadgeComponent;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class MessageAuthorView extends FrameLayout {
+public class MessageAuthorView extends FrameLayout implements Theme.Colorable {
 
     public TLRPC.User user = null;
     LinkSpanDrawable.LinksTextView titleView;
@@ -77,8 +79,8 @@ public class MessageAuthorView extends FrameLayout {
         titleView = new LinkSpanDrawable.LinksTextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         titleView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
-        titleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+        ThemeBind.textColor(titleView, Theme.key_actionBarDefaultSubmenuItem);
+        ThemeBind.linkTextColor(titleView, Theme.key_chat_messageLinkIn);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setSingleLine();
         titleView.setLines(1);
@@ -148,5 +150,22 @@ public class MessageAuthorView extends FrameLayout {
 
     protected void openUser(long userId) {
 
+    }
+
+    private int lastSelectorColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            // recolor the ripple in place: no new drawable per theme frame
+            final int selectorColor = Theme.getColor(Theme.key_dialogButtonSelector);
+            if (selectorColor != lastSelectorColor) {
+                lastSelectorColor = selectorColor;
+                Theme.setSelectorDrawableColor(getBackground(), selectorColor, true);
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

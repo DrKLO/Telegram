@@ -103,6 +103,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.FixedHeightEmptyCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -142,7 +143,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectAnimatedEmojiDialog extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class SelectAnimatedEmojiDialog extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
 
     public final static int TYPE_EMOJI_STATUS = 0;
     public final static int TYPE_REACTIONS = 1;
@@ -496,6 +497,8 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         this.baseFragment = baseFragment;
         this.includeHint = MessagesController.getGlobalMainSettings().getInt("emoji" + (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP || type == TYPE_EMOJI_STATUS_CHANNEL || type == TYPE_EMOJI_STATUS_CHANNEL_TOP ? "status" : "reaction") + "usehint", 0) < 3;
         this.accentColor = accentColor;
+        // the default accent comes from the theme: follow theme switches (a caller-passed color is kept)
+        this.accentColorThemed = accentColor == Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider);
 
         selectorPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
         selectorAccentPaint.setColor(ColorUtils.setAlphaComponent(accentColor, 30));
@@ -521,7 +524,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         if (bubbleX != null) {
             bubble1View = new View(context);
             Drawable bubble1Drawable = getResources().getDrawable(R.drawable.shadowed_bubble1).mutate();
-            bubble1Drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, bubble1Drawable, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             bubble1View.setBackground(bubble1Drawable);
             addView(bubble1View, LayoutHelper.createFrame(10, 10, (isBottom() ? Gravity.BOTTOM : Gravity.TOP) | Gravity.LEFT, bubbleX / AndroidUtilities.density + (bubbleRight ? -12 : 4), (isBottom() ? 0 : topMarginDp), 0, (isBottom() ? topMarginDp : 0)));
         }
@@ -636,7 +639,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 }
             };
             Drawable bubble2Drawable = getResources().getDrawable(R.drawable.shadowed_bubble2_half);
-            bubble2Drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, bubble2Drawable, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             bubble2View.setBackground(bubble2Drawable);
             addView(bubble2View, LayoutHelper.createFrame(17, 9, (isBottom() ? Gravity.BOTTOM : Gravity.TOP) | Gravity.LEFT, bubbleX / AndroidUtilities.density + (bubbleRight ? -25 : 10), isBottom() ? 0 : 5 + topMarginDp, 0, isBottom() ? 5 + topMarginDp + 9 : 0));
         }
@@ -739,7 +742,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                 }
             }
         };
-        emojiTabsShadow.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        ThemeBind.backgroundColor(emojiTabsShadow, Theme.key_divider, resourcesProvider);
         if (type != TYPE_EFFECTS && type != TYPE_EXPANDABLE_REACTIONS && type != TYPE_STICKER_SET_EMOJI) {
             contentView.addView(emojiTabsShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.TOP, 0, 36, 0, 0));
         }
@@ -900,7 +903,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         }
 
         emptyViewText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        emptyViewText.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelEmptyText, resourcesProvider));
+        ThemeBind.textColor(emptyViewText, Theme.key_chat_emojiPanelEmptyText, resourcesProvider);
         emojiSearchEmptyViewImageView = new BackupImageView(context);
         emojiSearchEmptyView = new FrameLayout(context);
         emojiSearchEmptyView.addView(emojiSearchEmptyViewImageView, LayoutHelper.createFrame(36, 36, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 16, 0, 0));
@@ -1136,14 +1139,14 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             }
         };
         Drawable topGradient = getResources().getDrawable(R.drawable.gradient_top);
-        topGradient.setColorFilter(new PorterDuffColorFilter(AndroidUtilities.multiplyAlphaComponent(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), .8f), PorterDuff.Mode.SRC_IN));
+        ThemeBind.drawableColorFilter(topGradientView, topGradient, ThemeBind.multAlpha(Theme.key_actionBarDefaultSubmenuBackground, .8f), resourcesProvider, PorterDuff.Mode.SRC_IN);
         topGradientView.setBackground(topGradient);
         topGradientView.setAlpha(0);
         contentView.addView(topGradientView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, Gravity.TOP | Gravity.FILL_HORIZONTAL, 0, 36 + 1f / AndroidUtilities.density, 0, 0));
 
         bottomGradientView = new View(context);
         Drawable bottomGradient = getResources().getDrawable(R.drawable.gradient_bottom);
-        bottomGradient.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.drawableColorFilter(this, bottomGradient, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider, PorterDuff.Mode.SRC_IN);
         if (type == TYPE_EFFECTS) {
             bottomGradientView.setBackground(bottomGradient);
         }
@@ -1311,6 +1314,35 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
     private Drawable premiumStar;
     private ColorFilter premiumStarColorFilter;
+    private boolean accentColorThemed;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (!accentColorThemed) {
+                return;
+            }
+            final int color = Theme.getColor(Theme.key_windowBackgroundWhiteBlueIcon, resourcesProvider);
+            if (color == accentColor) {
+                return;
+            }
+            accentColor = color;
+            selectorAccentPaint.setColor(ColorUtils.setAlphaComponent(accentColor, 30));
+            premiumStarColorFilter = new PorterDuffColorFilter(accentColor, PorterDuff.Mode.SRC_IN);
+            if (bigReactionAnimatedEmoji != null) {
+                bigReactionAnimatedEmoji.setColorFilter(premiumStarColorFilter);
+            }
+            if (emojiGridView != null) {
+                emojiGridView.invalidate();
+            }
+            if (emojiSearchGridView != null) {
+                emojiSearchGridView.invalidate();
+            }
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private Drawable getPremiumStar() {
         if (premiumStar == null) {
@@ -2530,7 +2562,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     textView.setText(LocaleController.getString(R.string.ReactionsLongtapHint));
                 }
                 textView.setGravity(Gravity.CENTER);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
                 view = textView;
             } else if (viewType == VIEW_TYPE_SEARCH) {
                 view = new FixedHeightEmptyCell(getContext(), 52);
@@ -2938,11 +2970,11 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
             lockView = new RLottieImageView(context);
             lockView.setAnimation(R.raw.unlock_icon, 20, 20);
-            lockView.setColorFilter(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider));
+            ThemeBind.colorFilter(lockView, Theme.key_chat_emojiPanelStickerSetName, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             layoutView.addView(lockView, LayoutHelper.createLinear(20, 20));
 
             textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider));
+            ThemeBind.textColor(textView, Theme.key_chat_emojiPanelStickerSetName, resourcesProvider);
             textView.setTypeface(AndroidUtilities.bold());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             textView.setEllipsize(TextUtils.TruncateAt.END);
@@ -2954,7 +2986,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             closeIcon = new ImageView(context);
             closeIcon.setImageResource(R.drawable.msg_close);
             closeIcon.setScaleType(ImageView.ScaleType.CENTER);
-            closeIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelStickerSetNameIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(closeIcon, Theme.key_chat_emojiPanelStickerSetNameIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             addView(closeIcon, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
         }
 
@@ -3040,11 +3072,11 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             addButtonTextView.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
             addButtonTextView.setTextSize(AndroidUtilities.dp(14));
             addButtonTextView.setTypeface(AndroidUtilities.bold());
-            addButtonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            ThemeBind.textColor(addButtonTextView, Theme.key_featuredStickers_buttonText, resourcesProvider);
             addButtonTextView.setGravity(Gravity.CENTER);
 
             addButtonView = new FrameLayout(getContext());
-            addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 8));
+            ThemeBind.selectorBackground(addButtonView, Theme.AdaptiveRipple.filledRect(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 8), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.adaptiveRipple(Theme.key_featuredStickers_addButton), resourcesProvider);
             addButtonView.addView(addButtonTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
             addView(addButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -3164,7 +3196,11 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             textView.setTextColor(0xffffffff);// Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             final int backgroundColor = useAccentForPlus ? Theme.blendOver(accentColor, Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite), .4f)) : ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_chat_emojiPanelStickerSetName, resourcesProvider), 99);
-            textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(11), backgroundColor));
+            if (useAccentForPlus) {
+                textView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(11), backgroundColor));
+            } else {
+                ThemeBind.fillBackground(textView, Theme.createRoundRectDrawable(AndroidUtilities.dp(11), backgroundColor), ThemeBind.alpha(Theme.key_chat_emojiPanelStickerSetName, 99), resourcesProvider);
+            }
             textView.setTypeface(AndroidUtilities.bold());
             textView.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(1.66f), AndroidUtilities.dp(4), AndroidUtilities.dp(2f));
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
@@ -4305,7 +4341,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             setDrawSelectorBehind(true);
             setClipToPadding(false);
             setSelectorRadius(AndroidUtilities.dp(4));
-            setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+            ThemeBind.listSelectorColor(this, Theme.key_listSelector, resourcesProvider);
         }
 
         SparseArray<ArrayList<ImageViewEmoji>> viewsGroupedByLines = new SparseArray<>();
@@ -4330,7 +4366,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             if (child instanceof ImageViewEmoji && (((ImageViewEmoji) child).empty || ((ImageViewEmoji) child).drawable instanceof AnimatedEmojiDrawable && ((AnimatedEmojiDrawable) ((ImageViewEmoji) child).drawable).canOverrideColor())) {
                 setSelectorDrawableColor(ColorUtils.setAlphaComponent(accentColor, 30));
             } else {
-                setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+                ThemeBind.listSelectorColor(this, Theme.key_listSelector, resourcesProvider);
             }
             return super.canHighlightChildAt(child, x, y);
         }
@@ -4947,13 +4983,13 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         isAttached = true;
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredEmojiDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.stickersDidLoad);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.featuredEmojiDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.stickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.recentEmojiStatusesUpdate);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         if (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+            NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.starUserGiftsLoaded);
         }
 
         if (scrimDrawable != null) {
@@ -4972,7 +5008,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.groupStickersDidLoad);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (type == TYPE_EMOJI_STATUS || type == TYPE_EMOJI_STATUS_TOP) {
-            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.starUserGiftsLoaded);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.starUserGiftsLoaded);
         }
 
         if (scrimDrawable != null) {
@@ -5145,9 +5181,9 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
 
             box = new FrameLayout(context);
             if (drawBackground) {
-                setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+                ThemeBind.backgroundColor(this, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
             }
-            box.setBackground(Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_chat_emojiPanelBackground, resourcesProvider)));
+            ThemeBind.fillBackground(box, Theme.createRoundRectDrawable(dp(18), Theme.getColor(Theme.key_chat_emojiPanelBackground, resourcesProvider)), ThemeBind.of(Theme.key_chat_emojiPanelBackground), resourcesProvider);
             box.setClipToOutline(true);
             box.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
             addView(box, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP | Gravity.FILL_HORIZONTAL, 8, 8 + 4, 8, 8));
@@ -5258,10 +5294,10 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             input.setHint(LocaleController.getString(R.string.Search));
 
-            input.setHintTextColor(Theme.getColor(Theme.key_chat_emojiSearchIcon, resourcesProvider));
-            input.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.hintTextColor(input, Theme.key_chat_emojiSearchIcon, resourcesProvider);
+            ThemeBind.textColor(input, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             input.setImeOptions(EditorInfo.IME_ACTION_SEARCH | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-            input.setCursorColor(Theme.getColor(Theme.key_featuredStickers_addedIcon, resourcesProvider));
+            ThemeBind.cursorColor(input, Theme.key_featuredStickers_addedIcon, resourcesProvider);
             input.setCursorSize(dp(20));
             input.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             input.setCursorWidth(1.5f);
@@ -5274,7 +5310,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             if (drawBackground) {
                 inputBoxGradient = new View(context);
                 Drawable gradientDrawable = context.getResources().getDrawable(R.drawable.gradient_right).mutate();
-                gradientDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_emojiPanelBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.drawableColorFilter(this, gradientDrawable, Theme.key_chat_emojiPanelBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 inputBoxGradient.setBackground(gradientDrawable);
                 inputBoxGradient.setAlpha(0f);
                 inputBox.addView(inputBoxGradient, LayoutHelper.createFrame(18, LayoutHelper.MATCH_PARENT, Gravity.LEFT));
@@ -5300,7 +5336,7 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
                     return Theme.getColor(Theme.key_chat_emojiSearchIcon, resourcesProvider);
                 }
             });
-            clear.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(15)));
+            ThemeBind.selectorBackground(clear, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_20DP, AndroidUtilities.dp(15)), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             clear.setAlpha(0f);
             clear.setOnClickListener(e -> {
                 input.setText("");
@@ -5467,12 +5503,37 @@ public class SelectAnimatedEmojiDialog extends FrameLayout implements Notificati
             invalidate();
         }
 
+        private void updateSearchColors() {
+            try {
+                if (searchStateDrawable != null) {
+                    searchStateDrawable.setColor(Theme.getColor(Theme.key_chat_emojiSearchIcon, resourcesProvider));
+                }
+                // input cursor color: bound with ThemeBind.cursorColor at creation
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+
+        private Drawable customBoxBackground;
+        private int customBoxBackgroundColor;
+
         @Override
         public void updateColors() {
-            if (useCustomBackground) {
-                box.setBackground(Theme.createRoundRectDrawable(dp(18),
-                    Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f)));
+            updateSearchColors();
+            if (useCustomBackground && box != null) {
+                final int color = Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider), 0.06f);
+                if (customBoxBackground == null || box.getBackground() != customBoxBackground) {
+                    box.setBackground(customBoxBackground = Theme.createRoundRectDrawable(dp(18), color));
+                } else if (color != customBoxBackgroundColor) {
+                    Theme.setDrawableColor(customBoxBackground, color);
+                    box.invalidate();
+                }
+                customBoxBackgroundColor = color;
             }
+        }
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_actionBarDefaultSubmenuItem);
         }
     }
 

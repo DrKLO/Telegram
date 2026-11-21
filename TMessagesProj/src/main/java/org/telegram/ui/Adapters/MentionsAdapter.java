@@ -15,7 +15,9 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Build;
 import android.text.Spanned;
@@ -55,6 +57,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Business.QuickRepliesActivity;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.BotSwitchCell;
@@ -1937,7 +1940,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                 TextView textView = new TextView(mContext);
                 textView.setPadding(dp(8), dp(8), dp(8), dp(8));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText2));
+                ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
                 view = textView;
                 break;
             case 5:
@@ -1953,7 +1956,11 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
                         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(8), MeasureSpec.EXACTLY));
                     }
                 };
-                CombinedDrawable combinedDrawable = new CombinedDrawable(new ColorDrawable(stories ? Theme.multAlpha(0xFFFFFFFF, .15f) : Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider)), Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)), 0, 0);
+                final ColorDrawable dividerBackground = new ColorDrawable(stories ? Theme.multAlpha(0xFFFFFFFF, .15f) : Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
+                if (!stories) {
+                    ThemeBind.drawableColorFilter(view, dividerBackground, Theme.key_windowBackgroundGray, resourcesProvider, PorterDuff.Mode.SRC_IN);
+                }
+                CombinedDrawable combinedDrawable = new CombinedDrawable(dividerBackground, Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider)), 0, 0);
                 combinedDrawable.setFullsize(true);
                 view.setBackground(combinedDrawable);
                 break;
@@ -2115,7 +2122,23 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
         return hintHashtag != null && position == 0;
     }
 
-    public static class HashtagHint extends LinearLayout {
+    public static class HashtagHint extends LinearLayout implements Theme.Colorable {
+
+        private Drawable hashtagBackground;
+
+        @Override
+        public void updateColors() {
+            try {
+                if (hashtagBackground != null) {
+                    Theme.setDrawableColor(hashtagBackground, Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+                    if (imageView != null) {
+                        imageView.invalidate();
+                    }
+                }
+            } catch (Exception e) {
+                org.telegram.messenger.FileLog.e(e);
+            }
+        }
 
         private final Theme.ResourcesProvider resourcesProvider;
         private final BackupImageView imageView;
@@ -2141,12 +2164,12 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
 
             titleView = new TextView(context);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            textView.setTextColor(transparent ? Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), .5f) : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(textView, transparent ? ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .5f) : ThemeBind.of(Theme.key_windowBackgroundWhiteGrayText2), resourcesProvider);
             textLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
@@ -2154,7 +2177,7 @@ public class MentionsAdapter extends RecyclerListView.SelectionAdapter implement
             if (hashtag == null) return;
             if (type == 0) {
                 CombinedDrawable drawable = new CombinedDrawable(
-                    Theme.createRoundRectDrawable(dp(28), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
+                    hashtagBackground = Theme.createRoundRectDrawable(dp(28), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)),
                     getContext().getResources().getDrawable(R.drawable.menu_hashtag).mutate()
                 );
                 drawable.setIconOffset(dp(-0.66f), 0);

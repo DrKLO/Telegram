@@ -24,7 +24,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 
-public class SenderSelectView extends View {
+public class SenderSelectView extends View implements Theme.Colorable {
     private final static float SPRING_MULTIPLIER = 100f;
     private final static FloatPropertyCompat<SenderSelectView> MENU_PROGRESS = new SimpleFloatPropertyCompat<SenderSelectView>("menuProgress", obj -> obj.menuProgress, (obj, value) -> {
         obj.menuProgress = value;
@@ -53,10 +53,24 @@ public class SenderSelectView extends View {
         setContentDescription(LocaleController.formatString("AccDescrSendAsPeer", R.string.AccDescrSendAsPeer, ""));
     }
 
-    private void updateColors() {
+    private int lastSelectorColor;
+
+    @Override
+    public void updateColors() {
         backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
         menuPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoicePressed));
-        selectorDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(18), Color.TRANSPARENT, Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite), 0.2f));
+        if (selectorDrawable != null) {
+            // theme update: recolor in place (keeps the pressed state), only when the color changed
+            final int selectorColor = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite), 0.2f);
+            if (selectorColor != lastSelectorColor) {
+                lastSelectorColor = selectorColor;
+                Theme.setSelectorDrawableColor(selectorDrawable, selectorColor, true);
+            }
+            invalidate();
+            return;
+        }
+        lastSelectorColor = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite), 0.2f);
+        selectorDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(18), Color.TRANSPARENT, lastSelectorColor);
         selectorDrawable.setCallback(this);
     }
 

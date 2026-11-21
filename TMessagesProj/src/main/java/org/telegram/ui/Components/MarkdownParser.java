@@ -100,11 +100,27 @@ public class MarkdownParser {
         );
     }
 
-    public static TLRPC.WebPage fromMarkdown(MessageObject messageObject) {
-        if (messageObject == null || messageObject.messageOwner == null) return null;
-        final TLRPC.Document document = messageObject.getDocument();
-        if (document == null) return null;
+    public static boolean isDiff(MessageObject msg) {
+        if (msg == null) return false;
+        return isExtensionDiff(msg.getExtension()) || isMimeDiff(msg.getMimeType());
+    }
 
+    public static boolean isExtensionDiff(String ext) {
+        return "diff".equalsIgnoreCase(ext) || "patch".equalsIgnoreCase(ext);
+    }
+
+    public static boolean isMimeDiff(String mime) {
+        if (mime == null) return false;
+        final String lmime = mime.toLowerCase();
+        return lmime.startsWith("text/x-diff") || lmime.startsWith("text/x-patch");
+    }
+
+    public static TLRPC.WebPage fromDocument(MessageObject messageObject) {
+        if (isDiff(messageObject)) return fromDiff(messageObject);
+        return fromMarkdown(messageObject);
+    }
+
+    private static File getDocumentFile(MessageObject messageObject) {
         File file = null;
         if (!TextUtils.isEmpty(messageObject.messageOwner.attachPath)) {
             file = new File(messageObject.messageOwner.attachPath);
@@ -116,7 +132,181 @@ public class MarkdownParser {
             file = FileLoader.getInstance(messageObject.currentAccount).getPathToMessage(messageObject.messageOwner, true, true);
         }
         if (file == null || !file.exists()) return null;
-        if (file.length() > MAX_FILE_SIZE) return null;
+        return file;
+    }
+
+    // larger files are opened in another app, like too large markdown
+    private static final int MAX_DIFF_FILE_SIZE = 2 * 1024 * 1024;
+    // longer lines (minified code, lock files) are cut, so that a line never wraps or takes a huge layout
+    private static final int MAX_DIFF_LINE_LENGTH = 400;
+    private static final int DIFF_CHUNK_LINES = 80;
+    private static final int DIFF_MAX_CHUNK_LINES = 160;
+
+    public static TLRPC.WebPage fromDiff(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) return null;
+        final TLRPC.Document document = messageObject.getDocument();
+        if (document == null) return null;
+
+        final File file = getDocumentFile(messageObject);
+        if (file == null || file.length() > MAX_DIFF_FILE_SIZE) return null;
+
+        String filename = null;
+        final TLRPC.TL_documentAttributeFilename attr1 = find(document.attributes, TLRPC.TL_documentAttributeFilename.class);
+        if (attr1 != null) filename = attr1.file_name;
+
+        final TLRPC.TL_webPage webpage = new TLRPC.TL_webPage();
+        webpage.url = filename == null ? "" : filename;
+        webpage.display_url = filename == null ? "" : filename;
+        if (!TextUtils.isEmpty(filename)) {
+            webpage.flags |= TLObject.FLAG_2;
+            webpage.title = filename;
+        }
+
+        final TL_iv.TL_page page = new TL_iv.TL_page();
+        page.local = file;
+        page.url = webpage.url;
+        int columns = 0;
+        try {
+            final StringBuilder chunk = new StringBuilder();
+            int lines = 0;
+            TL_iv.pageBlockPreformatted prev = null;
+            String language = "";
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.length() > MAX_DIFF_LINE_LENGTH) {
+                        line = line.substring(0, MAX_DIFF_LINE_LENGTH) + "…";
+                    }
+                    // split into small blocks, so that only visible ones are laid out and highlighted
+                    final boolean fileStart = line.startsWith("diff ") || line.startsWith("Index: ");
+                    final boolean hunkStart = line.startsWith("@@");
+                    if (lines > 0 && (fileStart || lines >= DIFF_MAX_CHUNK_LINES || lines >= DIFF_CHUNK_LINES && hunkStart)) {
+                        prev = addDiffChunk(page.blocks, chunk, language, prev);
+                        chunk.setLength(0);
+                        lines = 0;
+                    }
+                    if (fileStart) {
+                        language = diffLanguage(line);
+                    } else if (line.startsWith("+++ ") && !line.startsWith("+++ /dev/null")) {
+                        language = diffLanguage(line);
+                    }
+                    if (lines > 0) chunk.append('\n');
+                    chunk.append(line);
+                    lines++;
+                    int lineColumns = line.length();
+                    for (int i = 0; i < line.length(); ++i) {
+                        if (line.charAt(i) == '\t') lineColumns += 3;
+                    }
+                    columns = Math.max(columns, lineColumns);
+                }
+            }
+            if (lines > 0) {
+                addDiffChunk(page.blocks, chunk, language, prev);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+        if (page.blocks.isEmpty()) return null;
+        // text size is picked by the whole document length, not by chunk
+        int codeLength = 0;
+        for (int i = 0; i < page.blocks.size(); ++i) {
+            codeLength += richTextToString(page.blocks.get(i).text).length();
+        }
+        for (int i = 0; i < page.blocks.size(); ++i) {
+            ((TL_iv.pageBlockPreformatted) page.blocks.get(i)).codeLength = codeLength;
+            ((TL_iv.pageBlockPreformatted) page.blocks.get(i)).diffColumns = columns;
+        }
+
+        webpage.flags |= TLObject.FLAG_10;
+        webpage.cached_page = page;
+
+        return webpage;
+    }
+
+    private static TL_iv.pageBlockPreformatted addDiffChunk(ArrayList<TL_iv.PageBlock> blocks, CharSequence text, String language, TL_iv.pageBlockPreformatted prev) {
+        final TL_iv.pageBlockPreformatted b = new TL_iv.pageBlockPreformatted();
+        b.text = plain(text.toString());
+        b.language = language;
+        b.diff = true;
+        if (prev != null) {
+            prev.continuesNext = true;
+            b.continuesPrev = true;
+        }
+        blocks.add(b);
+        return b;
+    }
+
+    // language of the changed file, by the extension of the last path in a diff header line
+    private static String diffLanguage(String line) {
+        String path = line;
+        final int tab = path.indexOf('\t');
+        if (tab >= 0) path = path.substring(0, tab);
+        path = path.trim();
+        final int space = path.lastIndexOf(' ');
+        if (space >= 0) path = path.substring(space + 1);
+        final int dot = path.lastIndexOf('.');
+        if (dot < 0 || dot < path.lastIndexOf('/')) return "";
+        final String ext = path.substring(dot + 1).toLowerCase();
+        switch (ext) {
+            case "kt": case "kts": return "kotlin";
+            case "py": return "python";
+            case "rb": return "ruby";
+            case "rs": return "rust";
+            case "h": return "c";
+            case "cc": case "cxx": case "hpp": case "hh": return "cpp";
+            case "m": case "mm": return "objectivec";
+            case "cs": return "csharp";
+            case "sh": case "zsh": return "bash";
+            case "yml": return "yaml";
+            case "gradle": return "groovy";
+            case "md": return "markdown";
+            case "htm": return "html";
+            default: return ext;
+        }
+    }
+
+    public static final int DIFF_LINE_CONTEXT = 0;
+    public static final int DIFF_LINE_INSERTED = 1;
+    public static final int DIFF_LINE_DELETED = 2;
+    public static final int DIFF_LINE_META = 3;
+
+    public static int getDiffLineType(CharSequence text, int start) {
+        if (start >= text.length()) return DIFF_LINE_CONTEXT;
+        final char c = text.charAt(start);
+        if (c == '\n' || c == ' ') return DIFF_LINE_CONTEXT;
+        if (c == '+' || c == '-') {
+            if (start + 3 < text.length() && text.charAt(start + 1) == c && text.charAt(start + 2) == c && text.charAt(start + 3) == ' ') {
+                return DIFF_LINE_META;
+            }
+            return c == '+' ? DIFF_LINE_INSERTED : DIFF_LINE_DELETED;
+        }
+        return DIFF_LINE_META;
+    }
+
+    // same length as text: meta lines and +/- markers are blanked out, so that only the code gets highlighted
+    public static String maskDiff(CharSequence text) {
+        final char[] chars = new char[text.length()];
+        int lineStart = 0;
+        for (int i = 0; i <= text.length(); ++i) {
+            if (i < text.length() && text.charAt(i) != '\n') continue;
+            final int type = getDiffLineType(text, lineStart);
+            for (int j = lineStart; j < i; ++j) {
+                chars[j] = type == DIFF_LINE_META || j == lineStart ? ' ' : text.charAt(j);
+            }
+            if (i < text.length()) chars[i] = '\n';
+            lineStart = i + 1;
+        }
+        return new String(chars);
+    }
+
+    public static TLRPC.WebPage fromMarkdown(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) return null;
+        final TLRPC.Document document = messageObject.getDocument();
+        if (document == null) return null;
+
+        final File file = getDocumentFile(messageObject);
+        if (file == null || file.length() > MAX_FILE_SIZE) return null;
 
         String filename = null;
         final TLRPC.TL_documentAttributeFilename attr1 = find(document.attributes, TLRPC.TL_documentAttributeFilename.class);

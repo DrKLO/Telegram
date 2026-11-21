@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaDataController;
@@ -40,6 +41,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -52,7 +54,25 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.ui.Components.StatusBadgeComponent;
 import org.telegram.ui.Stories.StoriesUtilities;
 
-public class ReactedUserHolderView extends FrameLayout {
+public class ReactedUserHolderView extends FrameLayout implements Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        try {
+            if (statusBadgeComponent != null && statusBadgeComponent.getDrawable() instanceof AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) {
+                final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable drawable = (AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable) statusBadgeComponent.getDrawable();
+                if (drawable.getColor() != null) {
+                    drawable.setColor(Theme.getColor(style == STYLE_STORY ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_chats_verifiedBackground, resourcesProvider));
+                    if (titleView != null) {
+                        titleView.invalidate();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     public boolean drawDivider;
     int currentAccount;
 
@@ -132,7 +152,7 @@ public class ReactedUserHolderView extends FrameLayout {
         };
         NotificationCenter.listenEmojiLoading(titleView);
         titleView.setTextSize(16);
-        titleView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+        ThemeBind.textColor(titleView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
         titleView.setEllipsizeByGradient(true);
         titleView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         titleView.setRightPadding(AndroidUtilities.dp(30));
@@ -148,7 +168,7 @@ public class ReactedUserHolderView extends FrameLayout {
 
         subtitleView = new SimpleTextView(context);
         subtitleView.setTextSize(13);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         subtitleView.setEllipsizeByGradient(true);
         subtitleView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         subtitleView.setTranslationX(LocaleController.isRTL ? AndroidUtilities.dp(30) : 0);

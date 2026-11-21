@@ -43,6 +43,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.ChatActivityEnterViewAnimatedIconView;
 import org.telegram.ui.Components.CheckBox2;
@@ -181,9 +182,9 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             }
         };
         ((EditTextCaption) textView).setAllowTextEntitiesIntersection(true);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        textView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
-        textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        ThemeBind.linkTextColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
+        ThemeBind.hintTextColor(textView, Theme.key_windowBackgroundWhiteHintText, resourcesProvider);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setMaxLines(Integer.MAX_VALUE);
         textView.setBackground(null);
@@ -199,16 +200,16 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
             moveImageView.setFocusable(false);
             moveImageView.setScaleType(ImageView.ScaleType.CENTER);
             moveImageView.setImageResource(R.drawable.menu_poll_order_24);
-            moveImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(moveImageView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             addView(moveImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 6, 2, 6, 0));
 
             deleteImageView = new ImageView(context);
             deleteImageView.setFocusable(false);
             deleteImageView.setScaleType(ImageView.ScaleType.CENTER);
-            deleteImageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
+            ThemeBind.selectorBackground(deleteImageView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_stickers_menuSelector), resourcesProvider);
             deleteImageView.setImageResource(R.drawable.poll_remove);
             deleteImageView.setOnClickListener(onDelete);
-            deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(deleteImageView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             deleteImageView.setContentDescription(LocaleController.getString(R.string.Delete));
             addView(deleteImageView, LayoutHelper.createFrame(48, 50, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 3 : 0, 0, LocaleController.isRTL ? 0 : 3, 0));
 
@@ -238,14 +239,14 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
 
         if (type == TYPE_EMOJI) {
             emojiButton = new ChatActivityEnterViewAnimatedIconView(context);
-            emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(emojiButton, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.SRC_IN);
             emojiButton.setState(ChatActivityEnterViewAnimatedIconView.State.SMILE, false);
             int padding = dp(9.5f);
             emojiButton.setPadding(padding, padding, padding, padding);
             emojiButton.setVisibility(View.GONE);
             int endMargin = deleteImageView == null ? 3 : 38;
             addView(emojiButton, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? endMargin : 0, 0, LocaleController.isRTL ? 0 : endMargin, 0));
-            emojiButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
+            ThemeBind.selectorBackground(emojiButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_stickers_menuSelector), resourcesProvider);
             emojiButton.setOnClickListener(view -> onEmojiButtonClicked(this));
             emojiButton.setContentDescription(LocaleController.getString(R.string.Emoji));
         }
@@ -258,7 +259,7 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
 
         attachView = new PollAttachButton(getContext(), resourcesProvider);
         attachView.setFocusable(false);
-        attachView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)));
+        ThemeBind.selectorBackground(attachView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector, resourcesProvider)), null, ThemeBind.of(Theme.key_stickers_menuSelector), resourcesProvider);
         ScaleStateListAnimator.apply(attachView);
         addView(attachView, LayoutHelper.createFrame(48, 50, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 4 : 0, 0, LocaleController.isRTL ? 0 : 4, 0));
 
@@ -281,13 +282,13 @@ public class PollEditTextCell extends FrameLayout implements SuggestEmojiView.An
 
     public void setIconsColor(int key) {
         if (moveImageView != null) {
-            moveImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(key, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(moveImageView, key, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         }
         if (deleteImageView != null) {
-            deleteImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(key, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(deleteImageView, key, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         }
         if (emojiButton != null) {
-            emojiButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(key, resourcesProvider), PorterDuff.Mode.SRC_IN));
+            ThemeBind.colorFilter(emojiButton, key, resourcesProvider, PorterDuff.Mode.SRC_IN);
         }
     }
 

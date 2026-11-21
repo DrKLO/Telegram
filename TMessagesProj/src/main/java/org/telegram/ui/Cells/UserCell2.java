@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -30,13 +31,14 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
 
-public class UserCell2 extends FrameLayout {
+public class UserCell2 extends FrameLayout implements Theme.Colorable {
 
     private Theme.ResourcesProvider resourcesProvider;
     private BackupImageView avatarImageView;
@@ -88,7 +90,7 @@ public class UserCell2 extends FrameLayout {
             }
         };
         NotificationCenter.listenEmojiLoading(nameTextView);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTextSize(17);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) : (68 + padding), 14.5f, LocaleController.isRTL ? (68 + padding) : 28 + (checkbox == 2 ? 18 : 0), 0));
@@ -100,7 +102,7 @@ public class UserCell2 extends FrameLayout {
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
@@ -168,6 +170,16 @@ public class UserCell2 extends FrameLayout {
     public void setStatusColors(int color, int onlineColor) {
         statusColor = color;
         statusOnlineColor = onlineColor;
+        statusColorsThemed = false;
+    }
+
+    private boolean statusColorsThemed = true;
+
+    private void refreshStatusColors() {
+        if (statusColorsThemed) {
+            statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+            statusOnlineColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
+        }
     }
 
     @Override
@@ -315,5 +327,24 @@ public class UserCell2 extends FrameLayout {
     @Override
     public boolean hasOverlappingRendering() {
         return false;
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            final int oldStatusColor = statusColor, oldStatusOnlineColor = statusOnlineColor;
+            refreshStatusColors();
+            // recolor the status in place instead of a full update(0) re-bind on every theme frame
+            if (statusTextView != null) {
+                final int current = statusTextView.getTextColor();
+                if (current == oldStatusOnlineColor && oldStatusOnlineColor != statusOnlineColor) {
+                    statusTextView.setTextColor(statusOnlineColor);
+                } else if (current == oldStatusColor && oldStatusColor != statusColor) {
+                    statusTextView.setTextColor(statusColor);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

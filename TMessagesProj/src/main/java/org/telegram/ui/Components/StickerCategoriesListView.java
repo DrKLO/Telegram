@@ -42,13 +42,14 @@ import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
 import java.util.Set;
 
-public class StickerCategoriesListView extends RecyclerListView {
+public class StickerCategoriesListView extends RecyclerListView implements Theme.Colorable {
 
     @IntDef({
         CategoriesType.DEFAULT,
@@ -135,7 +136,7 @@ public class StickerCategoriesListView extends RecyclerListView {
 
         setSelectorRadius(dp(15));
         setSelectorType(Theme.RIPPLE_MASK_CIRCLE_20DP);
-        setSelectorDrawableColor(getThemedColor(Theme.key_listSelector));
+        ThemeBind.listSelectorColor(this, Theme.key_listSelector, resourcesProvider);
         selectedPaint.setColor(getThemedColor(Theme.key_listSelector));
 
         setWillNotDraw(false);
@@ -625,7 +626,18 @@ public class StickerCategoriesListView extends RecyclerListView {
                 (int) (255 * alpha));
     }
 
-    private class CategoryButton extends RLottieImageView {
+    private class CategoryButton extends RLottieImageView implements Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (selectedAnimator == null) {
+                    updateSelectedT(selectedT);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         private int imageColor;
         private float selectedT;
@@ -1011,6 +1023,16 @@ public class StickerCategoriesListView extends RecyclerListView {
                     onResult.run(false, null, 0L, true);
                 }
             });
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            selectedPaint.setColor(getThemedColor(Theme.key_listSelector));
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

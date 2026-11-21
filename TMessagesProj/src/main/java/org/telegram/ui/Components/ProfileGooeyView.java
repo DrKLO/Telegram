@@ -89,6 +89,33 @@ public class ProfileGooeyView extends FrameLayout {
         return notchInfo != null;
     }
 
+    /** Size of a hiding avatar, dp, when it has gone into the camera cutout. */
+    public float getHiddenAvatarSizeDp() {
+        if (notchInfo != null && notchInfo.isLikelyCircle) {
+            return 0.5f * notchInfo.bounds.width() / AndroidUtilities.density;
+        }
+        return 24f;
+    }
+
+    /** Y of the center of a round camera cutout, where a hiding avatar goes; {@code fallback} without one. */
+    public float getHiddenAvatarCenterY(float fallback) {
+        if (notchInfo != null && notchInfo.isLikelyCircle) {
+            return notchInfo.bounds.centerY();
+        }
+        return fallback;
+    }
+
+    /**
+     * Hides the avatar (the first child, pivot at its top left corner) into the camera cutout:
+     * 0 shown, 1 gone. The caller moves and scales the avatar towards the cutout.
+     */
+    public void setHideProgress(float progress) {
+        setPullProgress(progress);
+        setBlurIntensity(Math.min((MathUtils.clamp(progress, 0.2f, 0.7f) - 0.2f) / 0.5f, 0.75f));
+        setGooeyEnabled(progress > 0 && progress < 1);
+        setVisibility(progress >= 1.0f ? View.GONE : View.VISIBLE);
+    }
+
     public void setIntensity(float intensity) {
         this.intensity = intensity;
         impl.setIntensity(intensity);

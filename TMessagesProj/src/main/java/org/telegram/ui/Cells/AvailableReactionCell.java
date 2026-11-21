@@ -25,6 +25,7 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.LayoutHelper;
@@ -47,7 +48,7 @@ public class AvailableReactionCell extends FrameLayout {
 
         textView = new SimpleTextView(context);
         NotificationCenter.listenEmojiLoading(textView);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
         textView.setTextSize(16);
         textView.setTypeface(AndroidUtilities.bold());
         textView.setMaxLines(1);
@@ -100,7 +101,7 @@ public class AvailableReactionCell extends FrameLayout {
         locked = canLock && react.premium && !UserConfig.getInstance(currentAccount).isPremium();
         if (locked) {
             Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.other_lockedfolders2);
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_stickers_menu), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_stickers_menu, PorterDuff.Mode.MULTIPLY);
             textView.setRightDrawable(drawable);
 
         } else {
@@ -144,7 +145,6 @@ public class AvailableReactionCell extends FrameLayout {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         float w = Theme.dividerPaint.getStrokeWidth();
         int l = 0, r = 0;
         int pad = AndroidUtilities.dp(81);

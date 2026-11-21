@@ -21,6 +21,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.Forum.ForumBubbleDrawable;
 import org.telegram.ui.Components.Forum.ForumUtilities;
@@ -36,6 +37,10 @@ public class TopicButton {
     public int color, bgColor;
     public Drawable image;
     public int imageColor = 0;
+    private int themeColorKey = -1;
+    private boolean hasThemeIconColor;
+    private int themeIconColor;
+    private int themeGeneration = ThemeBind.generation();
     public AnimatedColor animatedColor;
     public AnimatedColor animatedBgColor;
 
@@ -69,10 +74,12 @@ public class TopicButton {
             image = null;
             waitingForColor = false;
             if (messageObject.isOutOwner()) {
-                color = bgColor = Theme.getColor(Theme.key_chat_outReplyLine, cell.getResourcesProvider());
+                color = bgColor = Theme.getColor(themeColorKey = Theme.key_chat_outReplyLine, cell.getResourcesProvider());
             } else {
-                color = bgColor = Theme.getColor(Theme.key_chat_inReplyLine, cell.getResourcesProvider());
+                color = bgColor = Theme.getColor(themeColorKey = Theme.key_chat_inReplyLine, cell.getResourcesProvider());
             }
+            hasThemeIconColor = false;
+            themeGeneration = ThemeBind.generation();
             animatedColor.force(color);
             width = dp(24);
             return active = true;
@@ -101,17 +108,22 @@ public class TopicButton {
                     ((LetterDrawable) ((CombinedDrawable) image).getIcon()).scale = 0.65f;
                 }
             }
+            themeColorKey = -1;
+            hasThemeIconColor = false;
             if (messageObject.isOutOwner()) {
-                color = bgColor = Theme.getColor(Theme.key_chat_outReplyLine, cell.getResourcesProvider());
+                color = bgColor = Theme.getColor(themeColorKey = Theme.key_chat_outReplyLine, cell.getResourcesProvider());
             } else if (topic.id == 1) {
-                color = bgColor = Theme.getColor(Theme.key_chat_inReplyLine, cell.getResourcesProvider());
+                color = bgColor = Theme.getColor(themeColorKey = Theme.key_chat_inReplyLine, cell.getResourcesProvider());
             } else if (topic.icon_emoji_id != 0) {
-                color = bgColor = Theme.getColor(Theme.key_chat_inReplyLine, cell.getResourcesProvider());
+                color = bgColor = Theme.getColor(themeColorKey = Theme.key_chat_inReplyLine, cell.getResourcesProvider());
                 waitingForColor = true;
             } else {
                 color = getColor(topic.icon_color);
                 bgColor = getBackgroundColor(topic.icon_color);
+                themeIconColor = topic.icon_color;
+                hasThemeIconColor = true;
             }
+            themeGeneration = ThemeBind.generation();
             animatedColor.force(color);
             width = dp(43.66f);
             return active = true;
@@ -194,8 +206,21 @@ public class TopicButton {
                 final int iconColor = AnimatedEmojiDrawable.getDominantColor((AnimatedEmojiDrawable) image);
                 this.color = getColor(iconColor);
                 this.bgColor = getBackgroundColor(iconColor);
+                themeColorKey = -1;
+                themeIconColor = iconColor;
+                hasThemeIconColor = true;
             }
             waitingForColor = false;
+        }
+        if (themeGeneration != ThemeBind.generation()) {
+            // theme colors changed since the colors were computed
+            themeGeneration = ThemeBind.generation();
+            if (themeColorKey >= 0) {
+                this.color = this.bgColor = Theme.getColor(themeColorKey, cell.getResourcesProvider());
+            } else if (hasThemeIconColor) {
+                this.color = getColor(themeIconColor);
+                this.bgColor = getBackgroundColor(themeIconColor);
+            }
         }
         final int color = animatedColor.set(this.color);
         final int bgColor = animatedBgColor.set(this.bgColor);

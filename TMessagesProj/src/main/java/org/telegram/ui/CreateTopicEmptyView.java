@@ -14,10 +14,12 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -37,10 +39,12 @@ public class CreateTopicEmptyView extends LinearLayout {
 
         backupImageView = new BackupImageView(context);
 
+        final int textColorKey = Theme.isCompactMode(resourcesProvider) ? Theme.key_chat_compact_topicEmptyText : Theme.key_chat_serviceText;
+
         TextView headerTextView = new TextView(context);
         headerTextView.setTypeface(AndroidUtilities.bold());
         headerTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        headerTextView.setTextColor(getThemedColor(Theme.key_chat_serviceText));
+        ThemeBind.textColor(headerTextView, textColorKey, resourcesProvider);
         headerTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         headerTextView.setMaxWidth(AndroidUtilities.dp(210));
 
@@ -49,7 +53,7 @@ public class CreateTopicEmptyView extends LinearLayout {
 
         TextView description = new TextView(context);
         description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        description.setTextColor(getThemedColor(Theme.key_chat_serviceText));
+        ThemeBind.textColor(description, textColorKey, resourcesProvider);
         description.setGravity(Gravity.CENTER_HORIZONTAL);
         description.setMaxWidth(AndroidUtilities.dp(160));
 

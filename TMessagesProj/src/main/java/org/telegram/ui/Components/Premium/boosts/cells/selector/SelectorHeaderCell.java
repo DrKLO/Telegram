@@ -17,10 +17,33 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 @SuppressLint("ViewConstructor")
-public class SelectorHeaderCell extends FrameLayout {
+public class SelectorHeaderCell extends FrameLayout implements Theme.Colorable {
+
+    private int themedBackColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (backDrawable == null) {
+                return;
+            }
+            final int color = Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider);
+            if (color != themedBackColor) {
+                themedBackColor = color;
+                backDrawable.setColor(color);
+                backDrawable.setRotatedColor(color);
+                if (closeView != null) {
+                    closeView.invalidate();
+                }
+            }
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+    }
 
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -39,12 +62,12 @@ public class SelectorHeaderCell extends FrameLayout {
         textView.setTypeface(AndroidUtilities.bold());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, LocaleController.isRTL ? 16 : 53, 0, LocaleController.isRTL ? 53 : 16, 0));
 
         closeView = new ImageView(context);
         closeView.setImageDrawable(backDrawable = new BackDrawable(false));
-        backDrawable.setColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        backDrawable.setColor(themedBackColor = Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         backDrawable.setRotatedColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         backDrawable.setAnimationTime(220);
         addView(closeView, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 16, 0, 16, 0));

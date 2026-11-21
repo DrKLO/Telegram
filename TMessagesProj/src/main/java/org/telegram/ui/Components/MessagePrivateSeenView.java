@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.AppGlobalConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
@@ -38,6 +39,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
@@ -99,13 +101,13 @@ public class MessagePrivateSeenView extends FrameLayout {
             icon = R.drawable.msg_seen;
         }
         Drawable drawable = ContextCompat.getDrawable(context, icon).mutate();
-        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, drawable, Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         iconView.setImageDrawable(drawable);
 
         loadingView = new TextView(context);
         SpannableStringBuilder text = new SpannableStringBuilder("loading text ");
         text.setSpan(new LoadingSpan(loadingView, dp(96), dp(2), resourcesProvider), 0, text.length() - 1, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-        loadingView.setTextColor(Theme.multAlpha(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider), .7f));
+        ThemeBind.textColor(loadingView, ThemeBind.multAlpha(Theme.key_dialogTextBlack, .7f), resourcesProvider);
         loadingView.setText(text);
         loadingView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         addView(loadingView, LayoutHelper.createFrame(96, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 40, -1, 8, 0));
@@ -116,13 +118,13 @@ public class MessagePrivateSeenView extends FrameLayout {
         addView(valueLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 38, 0, 8, 0));
 
         valueTextView = new TextView(context);
-        valueTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(valueTextView, Theme.key_dialogTextBlack, resourcesProvider);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         valueLayout.addView(valueTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, -1, 0, 0));
 
         premiumTextView = new TextView(context);
-        premiumTextView.setBackground(Theme.createRoundRectDrawable(dp(20), Theme.multAlpha(Theme.getColor(Theme.key_divider, resourcesProvider), .75f)));
-        premiumTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.fillBackground(premiumTextView, Theme.createRoundRectDrawable(dp(20), Theme.multAlpha(Theme.getColor(Theme.key_divider, resourcesProvider), .75f)), ThemeBind.multAlpha(Theme.key_divider, .75f), resourcesProvider);
+        ThemeBind.textColor(premiumTextView, Theme.key_dialogTextBlack, resourcesProvider);
         premiumTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         premiumTextView.setPadding(dp(5.33f), dp(2), dp(5.33f), dp(2.33f));
         valueLayout.addView(premiumTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
@@ -177,7 +179,7 @@ public class MessagePrivateSeenView extends FrameLayout {
             loadingView.animate().alpha(0f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(320).start();
 
             if (isPremiumLocked) {
-                setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 0));
+                ThemeBind.selectorBackground(this, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 6, 0), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
                 setOnClickListener(v -> showSheet(getContext(), currentAccount, dialogId, false, dismiss, this::request, resourcesProvider));
             } else {
                 setBackground(null);
@@ -189,7 +191,20 @@ public class MessagePrivateSeenView extends FrameLayout {
     public boolean isPremiumLocked = false;
 
     public static void showSheet(Context context, int currentAccount, long dialogId, boolean lastSeen, Runnable dismiss, Runnable updated, Theme.ResourcesProvider resourcesProvider) {
-        BottomSheet sheet = new BottomSheet(context, false, resourcesProvider);
+        BottomSheet sheet = new BottomSheet(context, false, resourcesProvider) {
+            @Override
+            public void onThemeColorsChanged() {
+                super.onThemeColorsChanged();
+                try {
+                    final int color = getThemedColor(Theme.key_dialogBackground);
+                    if (navBarColor != color) {
+                        fixNavigationBar(color);
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        };
         sheet.fixNavigationBar(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
 
         final boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
@@ -203,20 +218,20 @@ public class MessagePrivateSeenView extends FrameLayout {
         imageView.setAnimation(lastSeen ? R.raw.large_lastseen : R.raw.large_readtime, 70, 70);
         imageView.playAnimation();
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
-        imageView.setBackground(Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        ThemeBind.fillBackground(imageView, Theme.createCircleDrawable(dp(80), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)), ThemeBind.of(Theme.key_featuredStickers_addButton), resourcesProvider);
         layout.addView(imageView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_HORIZONTAL, 0, 16, 0, 16));
 
         TextView headerView = new TextView(context);
         headerView.setTypeface(AndroidUtilities.bold());
         headerView.setGravity(Gravity.CENTER);
-        headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(headerView, Theme.key_dialogTextBlack, resourcesProvider);
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         headerView.setText(LocaleController.getString(lastSeen ? R.string.PremiumLastSeenHeader1 : R.string.PremiumReadHeader1));
         layout.addView(headerView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 0, 12, 0));
 
         TextView descriptionView = new TextView(context);
         descriptionView.setGravity(Gravity.CENTER);
-        descriptionView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(descriptionView, Theme.key_dialogTextBlack, resourcesProvider);
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         String username = "";
         if (dialogId > 0) {
@@ -291,7 +306,7 @@ public class MessagePrivateSeenView extends FrameLayout {
             };
             or.setGravity(Gravity.CENTER);
             or.setAlignment(Layout.Alignment.ALIGN_CENTER);
-            or.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
+            ThemeBind.textColor(or, Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider);
             or.setText(" " + LocaleController.getString(R.string.PremiumOr) + " ");
             or.setTextSize(14);
             layout.addView(or, LayoutHelper.createLinear(270, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 17, 12, 17));
@@ -299,14 +314,14 @@ public class MessagePrivateSeenView extends FrameLayout {
             TextView headerView2 = new TextView(context);
             headerView2.setTypeface(AndroidUtilities.bold());
             headerView2.setGravity(Gravity.CENTER);
-            headerView2.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(headerView2, Theme.key_dialogTextBlack, resourcesProvider);
             headerView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
             headerView2.setText(LocaleController.getString(lastSeen ? R.string.PremiumLastSeenHeader2 : R.string.PremiumReadHeader2));
             layout.addView(headerView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 12, 0, 12, 0));
 
             TextView descriptionView2 = new TextView(context);
             descriptionView2.setGravity(Gravity.CENTER);
-            descriptionView2.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(descriptionView2, Theme.key_dialogTextBlack, resourcesProvider);
             descriptionView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             descriptionView2.setText(AndroidUtilities.replaceTags(LocaleController.formatString(lastSeen ? R.string.PremiumLastSeenText2 : R.string.PremiumReadText2, username)));
             layout.addView(descriptionView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 9, 32, 19));

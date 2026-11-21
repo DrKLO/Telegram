@@ -1,0 +1,43 @@
+From 969c7eb091989a664cb7bf66a1f02051cc46cb52 Mon Sep 17 00:00:00 2001
+From: Joshua Rogers <MegaManSec@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 15:31:55 +0200
+Subject: [PATCH] avutil/encryption_info: avoid stack exhaustion freeing init
+ info list
+
+Fixes: Stack overflow
+Found-by: Joshua Rogers <joshua.rogers@aisle.com>
+Fixes: tyKGcmR25mD8
+---
+ libavutil/encryption_info.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/libavutil/encryption_info.c b/libavutil/encryption_info.c
+index a3eb955d2d..6fc3e33842 100644
+--- a/libavutil/encryption_info.c
++++ b/libavutil/encryption_info.c
+@@ -218,16 +218,19 @@ AVEncryptionInitInfo *av_encryption_init_info_alloc(
+ 
+ void av_encryption_init_info_free(AVEncryptionInitInfo *info)
+ {
+-    uint32_t i;
+-    if (info) {
++    while (info) {
++        AVEncryptionInitInfo *next = info->next;
++        uint32_t i;
++
+         for (i = 0; i < info->num_key_ids; i++) {
+             av_free(info->key_ids[i]);
+         }
+-        av_encryption_init_info_free(info->next);
+         av_free(info->system_id);
+         av_free(info->key_ids);
+         av_free(info->data);
+         av_free(info);
++
++        info = next;
+     }
+ }
+ 
+-- 
+2.55.0
+

@@ -336,7 +336,7 @@ public class GroupCallPipAlertView extends LinearLayout implements VoIPService.S
             boolean isMute = VoIPService.getSharedInstance() == null || VoIPService.getSharedInstance().isMicMute() || mutedByAdmin;
             muteProgress = isMute ? 1f : 0f;
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this,NotificationCenter.groupCallUpdated);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this,NotificationCenter.groupCallUpdated);
         updateButtons(false);
     }
 

@@ -28,6 +28,7 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class RichDetailsCell extends FrameLayout implements Theme.Colorable, TextSelectionHelper.ArticleSelectableView {
 
@@ -245,6 +246,11 @@ public class RichDetailsCell extends FrameLayout implements Theme.Colorable, Tex
         editText.updateColors();
         arrow.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsArrow, resourcesProvider));
         dividerPaint.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsLine, resourcesProvider));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inArticleDetailsArrow);
+        colors.add(Theme.key_chat_inArticleDetailsLine);
     }
 
     @Override

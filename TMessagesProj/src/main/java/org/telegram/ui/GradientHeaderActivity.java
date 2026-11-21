@@ -29,9 +29,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.SimpleActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -122,7 +124,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 if (isLandscapeMode) {
-                    firstViewHeight = statusBarHeight + actionBar.getMeasuredHeight() - AndroidUtilities.dp(16);
+                    firstViewHeight = statusBarHeight + getHeaderView().getMeasuredHeight() - AndroidUtilities.dp(16);
                 } else {
                     int h = AndroidUtilities.dp(140) + statusBarHeight;
                     if (backgroundView.getMeasuredHeight() + AndroidUtilities.dp(24) > h) {
@@ -159,20 +161,18 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         Rect padding = new Rect();
         shadowDrawable = ContextCompat.getDrawable(context, R.drawable.sheet_shadow_round).mutate();
-        shadowDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
+        shadowDrawable.setColorFilter(new PorterDuffColorFilter(appliedShadowColor = getThemedColor(Theme.key_dialogBackground), PorterDuff.Mode.MULTIPLY));
         shadowDrawable.getPadding(padding);
         statusBarHeight = parentLayout != null && parentLayout.isLayersLayout() ? 0 : AndroidUtilities.statusBarHeight;
         contentView = createContentView();
-        if (parentLayout != null && parentLayout.isLayersLayout()) {
-            actionBar.setOccupyStatusBar(false);
+        if (simpleActionBar == null) {
+            if (parentLayout != null && parentLayout.isLayersLayout()) {
+                actionBar.setOccupyStatusBar(false);
+            }
+            actionBar.setAddToContainer(false);
         }
-        actionBar.setAddToContainer(false);
         listView = new RecyclerListView(context);
-        if (useFillLastLayoutManager) {
-            layoutManager = new FillLastLinearLayoutManager(context, dp(68) + statusBarHeight - AndroidUtilities.dp(16), listView);
-        } else {
-            layoutManager = new LinearLayoutManager(context);
-        }
+        layoutManager = createMainLayoutManager(context);
         listView.setLayoutManager(layoutManager);
         if (layoutManager instanceof FillLastLinearLayoutManager) {
             ((FillLastLinearLayoutManager) layoutManager).setFixedLastItemHeight();
@@ -185,7 +185,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 if (view.getParent() != listView) return false;
                 final RecyclerView.ViewHolder viewHolder = listView.getChildViewHolder(view);
                 return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
-            }, dp(12), dp(16), listView::drawBackgroundRect, true);
+            }, dp(12), dp(16), true);
         } else {
             listView.setSections(true);
         }
@@ -196,7 +196,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    int maxTop = actionBar.getBottom() + AndroidUtilities.dp(16);
+                    int maxTop = getHeaderView().getBottom() + AndroidUtilities.dp(16);
                     if (totalProgress > 0.5f) {
                         listView.smoothScrollBy(0, currentYOffset - maxTop);
                     } else {
@@ -204,8 +204,8 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                         if (listView.getLayoutManager() != null) {
                             firstView = listView.getLayoutManager().findViewByPosition(0);
                         }
-                        if (firstView != null && firstView.getTop() < 0) {
-                            listView.smoothScrollBy(0, firstView.getTop());
+                        if (firstView != null && firstView.getTop() + getMainListOffsetY() < 0) {
+                            listView.smoothScrollBy(0, Math.round(firstView.getTop() + getMainListOffsetY()));
                         }
                     }
                 }
@@ -227,24 +227,68 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         contentView.addView(particlesView = createParticlesView(), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         contentView.addView(backgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        contentView.addView(actionBar);
+        attachMainList(context);
+        contentView.addView(getHeaderView());
 
         fragmentView = contentView;
-        actionBar.setBackground(null);
-        actionBar.setCastShadows(false);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        final ActionBar.ActionBarMenuOnItemClick onItemClick = new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
                 }
             }
-        });
-        actionBar.setForceSkipTouches(true);
+        };
+        if (simpleActionBar != null) {
+            simpleActionBar.setBackground(null);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            simpleActionBar.setActionBarMenuOnItemClick(onItemClick);
+            simpleActionBar.setForceSkipTouches(true);
+        } else {
+            actionBar.setBackground(null);
+            actionBar.setCastShadows(false);
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setActionBarMenuOnItemClick(onItemClick);
+            actionBar.setForceSkipTouches(true);
+        }
         updateColors();
         return fragmentView;
+    }
+
+    /** The header over the gradient: the {@link SimpleActionBar} of simple glass screens or the regular ActionBar. */
+    protected View getHeaderView() {
+        return simpleActionBar != null ? simpleActionBar : actionBar;
+    }
+
+    /** Creates the main list manager; subclasses may install a scroll coordinator's manager. */
+    protected LinearLayoutManager createMainLayoutManager(Context context) {
+        return useFillLastLayoutManager
+                ? new FillLastLinearLayoutManager(context, dp(68) + statusBarHeight - dp(16), listView)
+                : new LinearLayoutManager(context);
+    }
+
+    /** Attaches the scrolling layer below the ActionBar, after the decorative header layers. */
+    protected void attachMainList(Context context) {
+        contentView.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+    }
+
+    /** Returns the direct content child that uses the main list's header clipping policy. */
+    protected View getMainScrollLayer() {
+        return listView;
+    }
+
+    /** Maps main-list local coordinates to content coordinates for header motion and snapping. */
+    protected float getMainListOffsetY() {
+        return 0f;
+    }
+
+    /** Returns whether the ActionBar supplies a translucent background over scrolling content. */
+    protected boolean usesActionBarFadeBackground() {
+        return false;
+    }
+
+    /** Reports whether the former solid header has nonzero opacity. */
+    protected void onHeaderBackgroundVisibilityChanged(boolean visible) {
     }
 
     protected ContentView createContentView() {
@@ -269,7 +313,7 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             backgroundView.measure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
             particlesView.getLayoutParams().height = particlesViewHeight > 0 ? particlesViewHeight : backgroundView.getMeasuredHeight();
             if (layoutManager instanceof FillLastLinearLayoutManager) {
-                ((FillLastLinearLayoutManager) layoutManager).setAdditionalHeight(actionBar.getMeasuredHeight());
+                ((FillLastLinearLayoutManager) layoutManager).setAdditionalHeight(getHeaderView().getMeasuredHeight());
                 ((FillLastLinearLayoutManager) layoutManager).setMinimumLastViewHeight(0);
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -283,6 +327,11 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         @Override
         public boolean dispatchTouchEvent(MotionEvent ev) {
+            if (usesActionBarFadeBackground()) {
+                // These screens place the header above the list in the actual hierarchy.
+                // Native dispatch preserves the touch target and handles child transforms.
+                return super.dispatchTouchEvent(ev);
+            }
             if (actionBar != null) {
                 View backButton = actionBar.getBackButton();
                 if (backButton != null && backButton.getVisibility() == View.VISIBLE) {
@@ -384,12 +433,13 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 firstView = listView.getLayoutManager().findViewByPosition(0);
             }
 
-            currentYOffset = firstView == null ? 0 : firstView.getBottom();
-            int h = actionBar.getBottom() + dp(16);
+            currentYOffset = firstView == null ? 0 : Math.round(firstView.getBottom() + getMainListOffsetY());
+            final View header = getHeaderView();
+            int h = header.getBottom() + dp(16);
             totalProgress = (1f - (currentYOffset - h) / (float) (firstViewHeight - h));
             totalProgress = Utilities.clamp(totalProgress, 1f, 0f);
 
-            int maxTop = actionBar.getBottom() + AndroidUtilities.dp(16);
+            int maxTop = header.getBottom() + AndroidUtilities.dp(16);
             if (currentYOffset < maxTop) {
                 currentYOffset = maxTop;
             }
@@ -408,8 +458,9 @@ public abstract class GradientHeaderActivity extends BaseFragment {
                 listView.invalidate();
             }
             onHeaderCollapseProgress(totalProgress);
-            float fromTranslation = currentYOffset - (actionBar.getMeasuredHeight() + backgroundView.getMeasuredHeight() - statusBarHeight) + dp(16);
-            float toTranslation = ((actionBar.getMeasuredHeight() - statusBarHeight - backgroundView.titleView.getMeasuredHeight()) / 2f) + statusBarHeight - backgroundView.getTop() - backgroundView.titleView.getTop();
+            final int headerHeight = header.getMeasuredHeight();
+            float fromTranslation = currentYOffset - (headerHeight + backgroundView.getMeasuredHeight() - statusBarHeight) + dp(16);
+            float toTranslation = ((headerHeight - statusBarHeight - backgroundView.titleView.getMeasuredHeight()) / 2f) + statusBarHeight - backgroundView.getTop() - backgroundView.titleView.getTop();
 
             float translationsY = Math.max(toTranslation, fromTranslation);
             float iconTranslationsY = -translationsY / 4f + dp(16);
@@ -423,11 +474,19 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             backgroundView.aboveTitleLayout.setAlpha(alpha);
             backgroundView.belowSubTitleLayout.setAlpha(alpha);
             backgroundView.subtitleView.setAlpha(alpha);
+            if (usesActionBarFadeBackground()) {
+                // Alpha alone does not remove a View from touch hit testing.
+                int visibility = alpha > 0f ? View.VISIBLE : View.INVISIBLE;
+                backgroundView.aboveTitleLayout.setVisibility(visibility);
+                backgroundView.belowSubTitleLayout.setVisibility(visibility);
+                backgroundView.subtitleView.setVisibility(visibility);
+            }
             particlesView.setAlpha(1f - totalProgress);
             particlesView.setTranslationY(backgroundView.getY() + backgroundView.aboveTitleLayout.getY() - AndroidUtilities.dp(30));
             float toX = AndroidUtilities.dp(72) - backgroundView.titleView.getLeft();
             float f = totalProgress > 0.3f ? (totalProgress - 0.3f) / 0.7f : 0f;
-            backgroundView.titleView.setTranslationX(toX * (1f - CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(1 - f)));
+            backgroundView.titleView.setTranslationX(usesActionBarFadeBackground() ? 0f
+                    : toX * (1f - CubicBezierInterpolator.EASE_OUT_QUINT.getInterpolation(1 - f)));
 
             if (!isDialogVisible) {
                 invalidate();
@@ -442,16 +501,21 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             }
 
             int titleColor = ColorUtils.blendARGB(getThemedColor(Theme.key_dialogTextBlack), getThemedColor(whiteBackground ? Theme.key_windowBackgroundWhiteBlackText : Theme.key_premiumGradientBackgroundOverlay), alpha);
-            actionBar.getBackButton().setColorFilter(titleColor);
+            if (actionBar != null) {
+                actionBar.getBackButton().setColorFilter(titleColor);
+            }
             backgroundView.titleView.setTextColor(titleColor);
             headerBgPaint.setAlpha((int) (255 * (1f - alpha)));
+            onHeaderBackgroundVisibilityChanged(headerBgPaint.getAlpha() > 0);
             setLightStatusBar(Theme.blendOver(Theme.getColor(Theme.key_premiumGradientBackground4, resourceProvider), headerBgPaint.getColor()));
-            canvas.drawRect(0, 0, getMeasuredWidth(), actionBar.getMeasuredHeight(), headerBgPaint);
+            if (!usesActionBarFadeBackground()) {
+                canvas.drawRect(0, 0, getMeasuredWidth(), header.getMeasuredHeight(), headerBgPaint);
+            }
 
             super.dispatchDraw(canvas);
 
             if (alpha <= 0.01f && drawActionBarShadow()) {
-                parentLayout.drawHeaderShadow(canvas, 0xFF, actionBar.getMeasuredHeight());
+                parentLayout.drawHeaderShadow(canvas, 0xFF, header.getMeasuredHeight());
             }
         }
 
@@ -465,9 +529,9 @@ public abstract class GradientHeaderActivity extends BaseFragment {
 
         @Override
         protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-            if (child == listView) {
+            if (child == getMainScrollLayer() && !usesActionBarFadeBackground()) {
                 canvas.save();
-                canvas.clipRect(0, actionBar.getBottom(), getMeasuredWidth(), getMeasuredHeight());
+                canvas.clipRect(0, getHeaderView().getBottom(), getMeasuredWidth(), getMeasuredHeight());
                 super.drawChild(canvas, child, drawingTime);
                 canvas.restore();
                 return true;
@@ -553,11 +617,22 @@ public abstract class GradientHeaderActivity extends BaseFragment {
     protected void onHeaderCollapseProgress(float progress) {
     }
 
+    private int appliedItemsColor, appliedShadowColor;
+
     private void updateColors() {
-        if (backgroundView == null || actionBar == null) return;
+        if (backgroundView == null || actionBar == null && simpleActionBar == null) return;
         headerBgPaint.setColor(getThemedColor(Theme.key_dialogBackground));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), false);
-        actionBar.setItemsBackgroundColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_premiumGradientBackgroundOverlay), 60), false);
+        if (actionBar != null) {
+            final int itemsColor = Theme.getColor(Theme.key_premiumGradientBackgroundOverlay);
+            if (itemsColor != appliedItemsColor) {
+                appliedItemsColor = itemsColor;
+                actionBar.setItemsColor(itemsColor, false);
+            }
+            final int itemsBackgroundColor = ColorUtils.setAlphaComponent(itemsColor, 60);
+            if (actionBar.itemsBackgroundColor != itemsBackgroundColor) {
+                actionBar.setItemsBackgroundColor(itemsBackgroundColor, false);
+            }
+        }
         particlesView.drawable.updateColors();
         if (backgroundView != null) {
             if (whiteBackground) {
@@ -694,6 +769,23 @@ public abstract class GradientHeaderActivity extends BaseFragment {
             }
             layoutManager.scrollToPositionWithOffset(savedScrollPosition, offset);
             savedScrollPosition = -1;
+        }
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            final int shadowColor = getThemedColor(Theme.key_dialogBackground);
+            if (shadowDrawable != null && shadowColor != appliedShadowColor) {
+                appliedShadowColor = shadowColor;
+                shadowDrawable.setColorFilter(new PorterDuffColorFilter(shadowColor, PorterDuff.Mode.MULTIPLY));
+            }
+            if (particlesView != null && particlesView.drawable != null && contentView != null) {
+                updateColors();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

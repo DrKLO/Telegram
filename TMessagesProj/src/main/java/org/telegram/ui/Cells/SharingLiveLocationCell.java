@@ -30,6 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
@@ -48,6 +49,7 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.CombinedDrawable;
@@ -58,7 +60,30 @@ import org.telegram.ui.LocationActivity;
 import java.util.HashSet;
 import java.util.List;
 
-public class SharingLiveLocationCell extends FrameLayout {
+public class SharingLiveLocationCell extends FrameLayout implements Theme.Colorable {
+
+    private Drawable placeCircleDrawable;
+    private int placeCircleColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (placeCircleDrawable != null) {
+                final int color = getThemedColor(Theme.key_location_placeLocationBackground);
+                if (color != placeCircleColor) {
+                    placeCircleColor = color;
+                    Theme.setSelectorDrawableColor(placeCircleDrawable, color, false);
+                    Theme.setSelectorDrawableColor(placeCircleDrawable, color, true);
+                    placeCircleDrawable.invalidateSelf();
+                    if (avatarImageView != null) {
+                        avatarImageView.invalidate();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private BackupImageView avatarImageView;
     private SimpleTextView nameTextView;
@@ -98,7 +123,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         nameTextView = new SimpleTextView(context);
         NotificationCenter.listenEmojiLoading(nameTextView);
         nameTextView.setTextSize(16);
-        nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         nameTextView.setScrollNonFitText(true);
@@ -111,7 +136,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             distanceTextView.setSingleLine();
             distanceTextViewSingle = true;
             distanceTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            distanceTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText3));
+            ThemeBind.textColor(distanceTextView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider);
             distanceTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
             addView(distanceTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), LocaleController.isRTL ? padding : 73, 33, LocaleController.isRTL ? 73 : padding, 0));
@@ -234,9 +259,11 @@ public class SharingLiveLocationCell extends FrameLayout {
     public void setDialog(MessageObject messageObject, Location userLocation, boolean userLocationDenied) {
         if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.local_id == -1) {
             Drawable drawable = getResources().getDrawable(R.drawable.pin);
-            drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_location_sendLocationIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             int color = getThemedColor(Theme.key_location_placeLocationBackground);
             Drawable circle = Theme.createSimpleSelectorCircleDrawable(dp(42), color, color);
+            placeCircleDrawable = circle;
+            placeCircleColor = color;
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(dp(42), dp(42));
             combinedDrawable.setIconSize(dp(24), dp(24));
@@ -304,9 +331,11 @@ public class SharingLiveLocationCell extends FrameLayout {
             }
 
             Drawable drawable = getResources().getDrawable(R.drawable.pin);
-            drawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_location_sendLocationIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(this, drawable, Theme.key_location_sendLocationIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             int color = getThemedColor(Theme.key_location_placeLocationBackground);
             Drawable circle = Theme.createSimpleSelectorCircleDrawable(dp(42), color, color);
+            placeCircleDrawable = circle;
+            placeCircleColor = color;
             CombinedDrawable combinedDrawable = new CombinedDrawable(circle, drawable);
             combinedDrawable.setCustomSize(dp(42), dp(42));
             combinedDrawable.setIconSize(dp(24), dp(24));

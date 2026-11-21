@@ -225,7 +225,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
 
         private void drawNavigationBarGradient(Canvas canvas, BaseFragment fragment) {
-            if (!drawNavigationBar || !isSupportEdgeToEdge || fragment == null) return;
+            // the layers layout is a window in the middle of the screen, the navigation bar is not under it
+            if (isLayersLayout || !drawNavigationBar || !isSupportEdgeToEdge || fragment == null || fragment.getListViewForSimpleGlass() != null) return;
 
             int height = AndroidUtilities.navigationBarHeight;
             if (height < dp(32)) return;
@@ -286,6 +287,12 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                     }
 
                     drawInsets(canvas, color, drawNavbar);
+                    if (drawNavbar && isSupportEdgeToEdge && getBottomTabsHeight(false) <= 0 && systemAndDisplayInsets != null && systemAndDisplayInsets.bottom > 0) {
+                        // attached sheets are measured above the navigation bar, while an edge-to-edge fragment draws under it
+                        super.dispatchDraw(canvas);
+                        canvas.drawRect(0, getHeight() - systemAndDisplayInsets.bottom, getWidth(), getHeight(), Theme.fillingPaint(color));
+                        return;
+                    }
                 }
             }
             super.dispatchDraw(canvas);
@@ -403,7 +410,19 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         @Override
         public void addView(View child, int index, ViewGroup.LayoutParams params) {
             super.addView(child, index, params);
-            ViewCompat.requestApplyInsets(this);
+            applyInsets(this);
+        }
+
+        /**
+         * The last insets straight to this container (and the new fragment in it). requestApplyInsets would dispatch
+         * them through the whole window on the next traversal, on every fragment switch (a frame lost to it).
+         */
+        private void applyInsets(View fallback) {
+            if (lastWindowInsetsCompat != null && getParent() == ActionBarLayout.this) {
+                dispatchApplyWindowInsetsInternal(this, lastWindowInsetsCompat);
+            } else if (fallback != null) {
+                ViewCompat.requestApplyInsets(fallback);
+            }
         }
 
         @Override
@@ -447,7 +466,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             if (this.edgeToEdgeSupportMode != edgeToEdgeSupportMode) {
                 this.edgeToEdgeSupportMode = edgeToEdgeSupportMode;
                 this.isSupportEdgeToEdge = edgeToEdgeSupportMode != EdgeToEdgeSupportMode.NONE;
-                ViewCompat.requestApplyInsets((View) getParent());
+                applyInsets((View) getParent());
             }
         }
         public void setDrawNavigationBar(boolean drawNavigationBar) {
@@ -638,6 +657,97 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     private ArrayList<ArrayList<ThemeDescription>> themeAnimatorDescriptions = new ArrayList<>();
     private ArrayList<ThemeDescription> presentingFragmentDescriptions;
     private ArrayList<ThemeDescription.ThemeDescriptionDelegate> themeAnimatorDelegate = new ArrayList<>();
+
+    // All theme keys whose color changes in the running theme animation (not only keys some ThemeDescription mentions):
+    // their interpolated value is published as the animated color on every frame, so ThemeBind bindings and
+    // Theme.Colorable hooks animate smoothly without ThemeDescriptions.
+    private int[] themeKeysStart;          // colors of every key before the theme is applied
+    private int[] animatedThemeKeys, animatedThemeKeysStart, animatedThemeKeysEnd;
+    private int animatedThemeKeysCount;
+    private Theme.ResourcesProvider animatedThemeKeysProvider;
+
+    private static int themeKeyColor(int key, Theme.ResourcesProvider resourcesProvider, boolean ignoreAnimation) {
+        if (resourcesProvider != null) {
+            return resourcesProvider.getColor(key);
+        }
+        return Theme.getColor(key, null, ignoreAnimation);
+    }
+
+    private void snapshotThemeKeysStart(Theme.ResourcesProvider resourcesProvider) {
+        try {
+            final int n = Theme.colorsCount;
+            themeKeysStart = new int[n];
+            for (int key = 0; key < n; ++key) {
+                themeKeysStart[key] = themeKeyColor(key, resourcesProvider, false);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            themeKeysStart = null;
+        }
+    }
+
+    private void snapshotThemeKeysEnd(Theme.ResourcesProvider resourcesProvider) {
+        animatedThemeKeysCount = 0;
+        animatedThemeKeysProvider = resourcesProvider;
+        if (themeKeysStart == null) {
+            return;
+        }
+        try {
+            final int n = Math.min(Theme.colorsCount, themeKeysStart.length);
+            if (animatedThemeKeys == null || animatedThemeKeys.length < n) {
+                animatedThemeKeys = new int[n];
+                animatedThemeKeysStart = new int[n];
+                animatedThemeKeysEnd = new int[n];
+            }
+            for (int key = 0; key < n; ++key) {
+                final int end = themeKeyColor(key, resourcesProvider, true);
+                if (end != themeKeysStart[key] && isInterpolatableThemeKey(key, themeKeysStart[key], end)) {
+                    animatedThemeKeys[animatedThemeKeysCount] = key;
+                    animatedThemeKeysStart[animatedThemeKeysCount] = themeKeysStart[key];
+                    animatedThemeKeysEnd[animatedThemeKeysCount] = end;
+                    animatedThemeKeysCount++;
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            animatedThemeKeysCount = 0;
+        } finally {
+            themeKeysStart = null;
+        }
+    }
+
+    /**
+     * Keys that are not plain colors switch at once instead of being blended: numbers and flags (wallpaper rotation and file
+     * offset, the animated-gradient flag), and gradient colors where 0 means "no such gradient stop" (blending a color with 0
+     * gives dark half-transparent stops, e.g. bubbles flashing black).
+     */
+    private static boolean isInterpolatableThemeKey(int key, int start, int end) {
+        if (key == Theme.key_wallpaperFileOffset || key == Theme.key_chat_outBubbleGradientAnimated || key == Theme.key_chat_wallpaper_gradient_rotation) {
+            return false;
+        }
+        if (key == Theme.key_chat_outBubbleGradient1 || key == Theme.key_chat_outBubbleGradient2 || key == Theme.key_chat_outBubbleGradient3
+                || key == Theme.key_chat_wallpaper || key == Theme.key_chat_wallpaper_gradient_to1 || key == Theme.key_chat_wallpaper_gradient_to2 || key == Theme.key_chat_wallpaper_gradient_to3) {
+            return start != 0 && end != 0;
+        }
+        return true;
+    }
+
+    private void applyAnimatedThemeKeys(float value) {
+        for (int i = 0; i < animatedThemeKeysCount; ++i) {
+            final int color = ColorUtils.blendARGB(animatedThemeKeysStart[i], animatedThemeKeysEnd[i], value);
+            if (animatedThemeKeysProvider != null) {
+                animatedThemeKeysProvider.setAnimatedColor(animatedThemeKeys[i], color);
+            } else {
+                Theme.setAnimatedColor(animatedThemeKeys[i], color);
+            }
+        }
+    }
+
+    private void clearAnimatedThemeKeys() {
+        animatedThemeKeysCount = 0;
+        animatedThemeKeysProvider = null;
+        themeKeysStart = null;
+    }
     private AnimatorSet themeAnimatorSet;
     AnimationNotificationsLocker notificationsLocker = new AnimationNotificationsLocker();
     private float themeAnimationValue;
@@ -1394,7 +1504,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         lastFragment.setTitleOverlayTextIfActionBarAttached(titleOverlayText, titleOverlayTextId, overlayAction);
         lastFragment.attachSheets(containerViewBack);
         if (!lastFragment.hasOwnBackground && fragmentView.getBackground() == null) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         }
         lastFragment.onResume();
         if (themeAnimatorSet != null) {
@@ -1549,6 +1659,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (!currentFragment.onBackPressed(false)) {
             return false;
         }
+        if (currentFragment.simpleActionBar != null && currentFragment.simpleActionBar.hasBackAction()) {
+            return false; // the back closes the menu or the search of the header, see onBackInvoked
+        }
         if (currentFragment.hasShownSheet() || !currentFragment.canBeginSlide()) {
             return false;
         }
@@ -1678,6 +1791,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         }
         if (!storyViewerAttached() && currentActionBar != null && !currentActionBar.isActionModeShowed() && currentActionBar.isSearchFieldVisible) {
             currentActionBar.closeSearchField();
+            return;
+        }
+        final BaseFragment lastFragmentForBar = fragmentsStack.get(fragmentsStack.size() - 1);
+        if (!storyViewerAttached() && lastFragmentForBar.simpleActionBar != null && lastFragmentForBar.simpleActionBar.onBackPressed()) {
             return;
         }
         if (sheetFragment != null && !sheetFragment.onBackPressed(true)) {
@@ -2070,7 +2187,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
 
         currentActionBar = fragment.actionBar;
         if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         }
 
         LayoutContainer temp = containerView;
@@ -2398,7 +2515,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
         }
         if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         }
         containerView.addView(fragmentView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         containerView.setShouldHandleBottomInsets(fragment.getEdgeToEdgeSupportMode());
@@ -2433,7 +2550,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
         }
         if (!fragment.hasOwnBackground && fragmentView.getBackground() == null) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         }
         containerView.addView(fragmentView, Utilities.clamp(position, containerView.getChildCount(), 0), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         containerView.setShouldHandleBottomInsets(fragment.getEdgeToEdgeSupportMode());
@@ -2536,6 +2653,10 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (!inPreviewMode && !transitionAnimationPreviewMode) {
             return;
         }
+        if (transitionAnimationInProgress && onCloseAnimationEndRunnable != null) {
+            // already closing: closing again would end that animation and then close the fragment below the preview
+            return;
+        }
         if (delayedOpenAnimationRunnable != null) {
             AndroidUtilities.cancelRunOnUIThread(delayedOpenAnimationRunnable);
             delayedOpenAnimationRunnable = null;
@@ -2622,7 +2743,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
             currentActionBar = previousFragment.actionBar;
             if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
             }
 
             if (needAnimation) {
@@ -2793,7 +2914,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         previousFragment.onBecomeFullyVisible();
         currentActionBar = previousFragment.actionBar;
         if (!previousFragment.hasOwnBackground && fragmentView.getBackground() == null) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         }
     }
 
@@ -2855,6 +2976,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
     @Keep
     public void setThemeAnimationValue(float value) {
         themeAnimationValue = value;
+        applyAnimatedThemeKeys(value);
         for (int j = 0, N = themeAnimatorDescriptions.size(); j < N; j++) {
             ArrayList<ThemeDescription> descriptions = themeAnimatorDescriptions.get(j);
             int[] startColors = animateStartColors.get(j);
@@ -2901,7 +3023,22 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (delegate != null) {
             delegate.onThemeProgress(value);
         }
-        globallyUpdateColors(this);
+        // Colorable views and ThemeBind bindings in every window (this layout, sheets, dialogs, popups, overlays)
+        ThemeBind.updateAllForFrame(value, this);
+        notifyFragmentsThemeColorsChanged();
+    }
+
+    public void notifyFragmentsThemeColorsChanged() {
+        for (int i = 0; i < fragmentsStack.size(); ++i) {
+            if (fragmentsStack.get(i).getFragmentView() == null) {
+                continue; // views not created (or cleared): nothing to recolor
+            }
+            try {
+                fragmentsStack.get(i).onThemeColorsChanged();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
     }
 
     @Keep
@@ -2990,8 +3127,13 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                     }
                     if (i == 0) {
                         if (settings.afterStartDescriptionsAddedRunnable != null) {
+                            if (settings.resourcesProvider != null) {
+                                snapshotThemeKeysStart(settings.resourcesProvider);
+                            }
                             settings.afterStartDescriptionsAddedRunnable.run();
                         }
+                        // global theme: start snapshot was taken before Theme.applyTheme (see below)
+                        snapshotThemeKeysEnd(settings.resourcesProvider);
                     }
                     addEndDescriptions(descriptions);
                     if (fragment.visibleDialog instanceof BottomSheet) {
@@ -3016,6 +3158,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                     animateStartColors.clear();
                     animateEndColors.clear();
                     themeAnimatorDelegate.clear();
+                    clearAnimatedThemeKeys();
                     presentingFragmentDescriptions = null;
                     animationProgressListener = null;
                     if (settings.afterAnimationRunnable != null) {
@@ -3046,6 +3189,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                             animateStartColors.clear();
                             animateEndColors.clear();
                             themeAnimatorDelegate.clear();
+                            clearAnimatedThemeKeys();
+                    clearAnimatedThemeKeys();
                             Theme.setAnimatingColor(false);
                             presentingFragmentDescriptions = null;
                             animationProgressListener = null;
@@ -3063,6 +3208,8 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
                             animateStartColors.clear();
                             animateEndColors.clear();
                             themeAnimatorDelegate.clear();
+                            clearAnimatedThemeKeys();
+                    clearAnimatedThemeKeys();
                             Theme.setAnimatingColor(false);
                             presentingFragmentDescriptions = null;
                             animationProgressListener = null;
@@ -3082,6 +3229,9 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
         };
         if (fragmentCount >= 1 && settings.applyTheme && settings.applyTrulyTheme) {
+            if (settings.resourcesProvider == null) {
+                snapshotThemeKeysStart(null);
+            }
             if (settings.accentId != -1 && settings.theme != null) {
                 settings.theme.setCurrentAccentId(settings.accentId);
                 Theme.saveThemeAccents(settings.theme, true, false, true, false);
@@ -3094,20 +3244,6 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             }
         } else {
             next.run();
-        }
-    }
-
-    // updates only Theme.Colorable views
-    private void globallyUpdateColors(ViewGroup parent) {
-        if (parent == null) return;
-        for (int i = 0; i < parent.getChildCount(); ++i) {
-            final View child = parent.getChildAt(i);
-            if (child instanceof Theme.Colorable) {
-                ((Theme.Colorable) child).updateColors();
-            }
-            if (child instanceof ViewGroup) {
-                globallyUpdateColors((ViewGroup) child);
-            }
         }
     }
 
@@ -3199,7 +3335,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
             rebuildAllFragmentViews(rebuildLastAfterAnimation, showLastAfterAnimation);
             rebuildAfterAnimation = false;
         } else if (animateThemeAfterAnimation) {
-            ThemeAnimationSettings settings = new ThemeAnimationSettings(animateSetThemeAfterAnimation, animateSetThemeAccentIdAfterAnimation, animateSetThemeNightAfterAnimation, false);
+            ThemeAnimationSettings settings = new ThemeAnimationSettings(animateSetThemeAfterAnimation, animateSetThemeAccentIdAfterAnimation, animateSetThemeNightAfterAnimation, true);
             if (!animateSetThemeAfterAnimationApply) {
                 settings.applyTheme = settings.applyTrulyTheme = animateSetThemeAfterAnimationApply;
             }

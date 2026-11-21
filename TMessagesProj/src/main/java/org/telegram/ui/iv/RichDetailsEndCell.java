@@ -12,6 +12,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import java.util.HashSet;
 
 public class RichDetailsEndCell extends View implements Theme.Colorable {
 
@@ -36,6 +37,10 @@ public class RichDetailsEndCell extends View implements Theme.Colorable {
     @Override
     public void updateColors() {
         paint.setColor(Theme.getColor(Theme.key_chat_inArticleDetailsLine, resourcesProvider));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inArticleDetailsLine);
     }
 
     @Override

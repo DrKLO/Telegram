@@ -47,6 +47,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChannelMonetizationLayout;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.RestrictedLanguagesSelectActivity;
@@ -55,6 +56,7 @@ import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 
 public class TranslateButton extends FrameLayout implements Theme.Colorable {
 
@@ -125,13 +127,31 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         updateColors();
     }
 
+    private int appliedAddContactColor, appliedSelectorColor, appliedCloseColor;
+    private boolean colorsApplied;
+
     @Override
     public void updateColors() {
+        final int addContact = Theme.getColor(Theme.key_chat_addContact, resourcesProvider);
+        final int selector = Theme.getColor(Theme.key_listSelector, resourcesProvider);
+        final int close = Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider);
+        if (colorsApplied && addContact == appliedAddContactColor && selector == appliedSelectorColor && close == appliedCloseColor) {
+            return; // nothing changed: skip re-creating the backgrounds and filters
+        }
+        colorsApplied = true;
+        appliedAddContactColor = addContact;
+        appliedSelectorColor = selector;
+        appliedCloseColor = close;
         textView.setTextColor(Theme.getColor(Theme.key_chat_addContact, resourcesProvider));
         textView.setBackground(Theme.createInsetRoundRectDrawable(Theme.getColor(Theme.key_chat_addContact, resourcesProvider) & 0x19ffffff, dp(15), dp(3)));
         menuView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 0));
         menuView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_topPanelClose, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         translateDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_addContact, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_addContact);
+        colors.add(Theme.key_chat_topPanelClose);
     }
 
     public void setLeftMargin(float leftMargin) {
@@ -151,7 +171,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
 
         final ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert4, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK);
         final ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-        popupLayout.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+        ThemeBind.backgroundColor(popupLayout, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
 
         LinearLayout swipeBack = new LinearLayout(getContext());
         swipeBack.setOrientation(LinearLayout.VERTICAL);
@@ -355,8 +375,8 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         final LinkSpanDrawable.LinksTextView cocoonButton = new LinkSpanDrawable.LinksTextView(getContext());
         cocoonButton.setPadding(dp(13), dp(8.33f), dp(13), dp(8.33f));
         cocoonButton.setDisablePaddingsOffsetY(true);
-        cocoonButton.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
-        cocoonButton.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        ThemeBind.textColor(cocoonButton, Theme.key_dialogTextBlack, resourcesProvider);
+        ThemeBind.linkTextColor(cocoonButton, Theme.key_chat_messageLinkIn, resourcesProvider);
         cocoonButton.setEmojiColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         CharSequence cocoonText = TextUtils.concat(AndroidUtilities.replaceTags(getString(R.string.CocoonPoweredBy)), " ", AndroidUtilities.premiumText(getString(R.string.CocoonPoweredByLink), () -> {
             popupWindow.dismiss();
@@ -369,7 +389,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         cocoonText = AndroidUtilities.replaceCharSequence("🥚 ", cocoonText, eggSpaced);
         cocoonText = AndroidUtilities.replaceCharSequence("🥚", cocoonText, egg);
         cocoonButton.setText(HintView2.cutInFancyHalfText(cocoonText, cocoonButton.getPaint()));
-        cocoonButton.setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 12));
+        ThemeBind.selectorBackground(cocoonButton, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 12), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         cocoonButton.setOnClickListener(v -> {
             popupWindow.dismiss();
             showCocoonAlert(getContext(), resourcesProvider);
@@ -481,13 +501,13 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         );
 
         final View separatorView = new View(context);
-        separatorView.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        ThemeBind.backgroundColor(separatorView, Theme.key_divider, resourcesProvider);
         layout.addView(separatorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1.0f / AndroidUtilities.density, Gravity.FILL_HORIZONTAL, 24, 0, 24, 0));
 
         final LinkSpanDrawable.LinksTextView footerView = new LinkSpanDrawable.LinksTextView(context);
         footerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        footerView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
-        footerView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+        ThemeBind.textColor(footerView, Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        ThemeBind.linkTextColor(footerView, Theme.key_chat_messageLinkIn, resourcesProvider);
         footerView.setGravity(Gravity.CENTER);
         footerView.setText(AndroidUtilities.replaceSingleTag(getString(R.string.CocoonFooter), () -> {
             sheet[0].dismiss();

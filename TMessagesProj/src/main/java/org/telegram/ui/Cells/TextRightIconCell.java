@@ -13,6 +13,7 @@ import android.widget.ImageView;
 
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class TextRightIconCell extends FrameLayout {
@@ -26,13 +27,13 @@ public class TextRightIconCell extends FrameLayout {
         this.resourcesProvider = resourcesProvider;
 
         textView = new SimpleTextView(context);
-        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_dialogTextBlack, resourcesProvider);
         textView.setTextSize(16);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.CENTER_VERTICAL, 22, 0, 56, 0));
 
         ivIcon = new ImageView(context);
-        ivIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(ivIcon, Theme.key_windowBackgroundWhiteGrayText5, resourcesProvider, PorterDuff.Mode.SRC_IN);
         addView(ivIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER_VERTICAL | Gravity.END, 0, 0, 16, 0));
         setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_dialogBackground));
     }

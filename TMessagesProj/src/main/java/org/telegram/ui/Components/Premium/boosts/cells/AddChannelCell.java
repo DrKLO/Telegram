@@ -14,6 +14,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.CombinedDrawable;
 
 @SuppressLint("ViewConstructor")
@@ -29,7 +30,7 @@ public class AddChannelCell extends FrameLayout {
         textView = new SimpleTextView(context);
         textView.setTextSize(16);
         textView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-        textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
+        ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
         textView.setTag(Theme.key_windowBackgroundWhiteBlueHeader);
         addView(textView);
 
@@ -41,11 +42,11 @@ public class AddChannelCell extends FrameLayout {
 
         Drawable drawable1 = getResources().getDrawable(R.drawable.poll_add_circle);
         Drawable drawable2 = getResources().getDrawable(R.drawable.poll_add_plus);
-        drawable1.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_switchTrackChecked, resourcesProvider), PorterDuff.Mode.MULTIPLY));
-        drawable2.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_checkboxCheck, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, drawable1, Theme.key_switchTrackChecked, resourcesProvider, PorterDuff.Mode.MULTIPLY);
+        ThemeBind.drawableColorFilter(this, drawable2, Theme.key_checkboxCheck, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
         imageView.setImageDrawable(combinedDrawable);
-        setBackgroundColor(Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+        ThemeBind.backgroundColor(this, Theme.key_dialogBackground, resourcesProvider);
     }
 
     @Override

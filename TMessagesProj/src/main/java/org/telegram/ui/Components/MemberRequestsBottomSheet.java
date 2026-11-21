@@ -35,7 +35,7 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
         keyListViewBackground = Theme.key_windowBackgroundGray;
         keyInviteMembersBackground = Theme.key_windowBackgroundGray;
         setColorProgress(0);
-        fixNavigationBar(getThemedColor(Theme.key_windowBackgroundGray));
+        fixNavigationBarKey(Theme.key_windowBackgroundGray);
 
 
         this.needSnapToTop = false;
@@ -159,4 +159,15 @@ public class MemberRequestsBottomSheet extends UsersAlertBase {
             delegate.setAdapterItemsEnabled(true);
         }
     }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        final int color = getThemedColor(Theme.key_windowBackgroundGray);
+        if (color != lastThemedBackgroundColor) { // setBackgroundColor allocates a color filter
+            lastThemedBackgroundColor = color;
+            setBackgroundColor(color);
+        }
+    }
+    private int lastThemedBackgroundColor;
 }

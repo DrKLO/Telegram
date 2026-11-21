@@ -16,6 +16,7 @@ import android.view.ViewParent;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.TableColumnBalancer;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
@@ -183,49 +184,26 @@ public class RichTableCellGrid extends ViewGroup {
         rowHeights = new int[rowCount];
 
         final int minColWidth = dp(model.block.compact ? COMPACT_MIN_COL_DP : MIN_COL_DP);
-        // Match RichMessageLayout's table behavior: size columns from their content, but cap
-        // each one so very long text wraps after the table has grown to a useful width.
+        // Match RichMessageLayout's table behavior: fit the width with a few wrapped lines per
+        // cell, and only overflow (scroll) when cells would otherwise wrap too much.
         final int cellHorizontalPaddingDp = model.block.compact ? 5 : CELL_HORIZONTAL_PADDING_DP;
-        final int maxTextWidth = colCount == 2
-            ? Math.max(0, parentWidth / 2 - dp(cellHorizontalPaddingDp * 4))
-            : Math.max(0, Math.round(parentWidth / 1.5f));
-        final int maxColWidth = Math.max(minColWidth, maxTextWidth + dp(cellHorizontalPaddingDp * 2));
-        for (int c = 0; c < colCount; c++) colWidths[c] = minColWidth;
+        final int cellPadding = dp(cellHorizontalPaddingDp * 2);
+        final int maxColWidth = Math.max(minColWidth, colCount > 1 ? Math.round(parentWidth * 0.8f) : parentWidth);
+        final int maxContentWidth = Math.max(1, maxColWidth - cellPadding);
+        final java.util.ArrayList<TableColumnBalancer.Cell> metrics = new java.util.ArrayList<>();
         for (int i = 0; i < getChildCount(); i++) {
             final View child = getChildAt(i);
             if (!(child instanceof RichTableCellHost)) continue;
             final RichTableCellHost host = (RichTableCellHost) child;
-            if (TableModel.spanCol(host.cell) != 1) continue;
             final int column = model.anchorColOf(host.cell);
             if (column < 0 || column >= colCount) continue;
-            final int desired = Math.round(Layout.getDesiredWidth(host.editText.getText(), host.editText.getPaint()))
-                + dp(cellHorizontalPaddingDp * 2);
-            colWidths[column] = Math.max(colWidths[column], Math.min(maxColWidth, desired));
+            final CharSequence text = host.editText.getText();
+            final int desired = text == null ? 0 : (int) Math.ceil(Layout.getDesiredWidth(text, host.editText.getPaint()));
+            metrics.add(TableColumnBalancer.measure(text, host.editText.getPaint(), column,
+                TableModel.spanCol(host.cell), cellPadding, maxContentWidth, desired));
         }
-        // A merged cell can also make its covered columns wider. Apply those constraints after
-        // single-column cells establish the natural width of each individual column.
-        for (int i = 0; i < getChildCount(); i++) {
-            final View child = getChildAt(i);
-            if (!(child instanceof RichTableCellHost)) continue;
-            final RichTableCellHost host = (RichTableCellHost) child;
-            final int span = TableModel.spanCol(host.cell);
-            if (span <= 1) continue;
-            final int column = model.anchorColOf(host.cell);
-            final int end = Math.min(colCount, column + span);
-            if (column < 0 || column >= end) continue;
-            int coveredWidth = 0;
-            for (int c = column; c < end; c++) coveredWidth += colWidths[c];
-            final int desired = Math.min(maxColWidth * (end - column),
-                Math.round(Layout.getDesiredWidth(host.editText.getText(), host.editText.getPaint()))
-                    + dp(cellHorizontalPaddingDp * 2));
-            int deficit = desired - coveredWidth;
-            for (int c = column; c < end && deficit > 0; c++) {
-                final int columnsLeft = end - c;
-                final int extra = (deficit + columnsLeft - 1) / columnsLeft;
-                colWidths[c] += extra;
-                deficit -= extra;
-            }
-        }
+        final int[] balanced = TableColumnBalancer.compute(metrics, colCount, parentWidth, minColWidth);
+        System.arraycopy(balanced, 0, colWidths, 0, colCount);
 
         int intrinsicWidth = 0;
         for (int width : colWidths) intrinsicWidth += width;

@@ -1,5 +1,6 @@
 package org.telegram.ui.Components;
 
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -31,6 +32,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.voip.GroupCallMiniTextureView;
 import org.telegram.ui.Components.voip.GroupCallRenderersContainer;
 import org.telegram.ui.Components.voip.GroupCallStatusIcon;
@@ -142,7 +144,7 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
         }
     }
 
-    public class GroupCallUserCell extends FrameLayout implements GroupCallStatusIcon.Callback {
+    public class GroupCallUserCell extends FrameLayout implements Theme.Colorable, GroupCallStatusIcon.Callback {
 
         AvatarDrawable avatarDrawable = new AvatarDrawable();
 
@@ -569,7 +571,18 @@ public class GroupCallFullscreenAdapter extends RecyclerListView.SelectionAdapte
         public boolean isRemoving(RecyclerListView listView) {
             return listView.getChildAdapterPosition(this) == RecyclerView.NO_POSITION;
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                backgroundPaint.setColor(Theme.getColor(Theme.key_voipgroup_listViewBackground));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     public void update(boolean animated, RecyclerListView listView) {
         if (groupCall == null) {

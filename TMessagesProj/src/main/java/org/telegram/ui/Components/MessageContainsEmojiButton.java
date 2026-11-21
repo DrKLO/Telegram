@@ -27,12 +27,14 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.FileLog;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 
 import java.util.ArrayList;
 
-public class MessageContainsEmojiButton extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
+public class MessageContainsEmojiButton extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
 
     private int currentAccount;
     private Theme.ResourcesProvider resourcesProvider;
@@ -60,6 +62,25 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
     public final static int STICKERS_BOT_TYPE = 4;
     int type;
 
+    @Override
+    public void updateColors() {
+        try {
+            if (textPaint != null) {
+                final int alpha = textPaint.getAlpha();
+                textPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                textPaint.setAlpha(alpha);
+                invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void addColorKeys(java.util.HashSet<Integer> colors) {
+        colors.add(Theme.key_actionBarDefaultSubmenuItem);
+    }
+
     private class BoldAndAccent extends CharacterStyle {
         @Override
         public void updateDrawState(TextPaint textPaint) {
@@ -76,7 +97,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         this.currentAccount = currentAccount;
         this.type = type;
 
-        setBackground(Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 16));
+        ThemeBind.selectorBackground(this, Theme.createRadSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 0, 16), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(AndroidUtilities.dp(13));
@@ -138,7 +159,7 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
                         }
                     }, 0, emoji.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     emojiDrawable = AnimatedEmojiDrawable.make(currentAccount, AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, document);
-                    emojiDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                    ThemeBind.drawableColorFilter(this, emojiDrawable, Theme.key_windowBackgroundWhiteBlueText, resourcesProvider, PorterDuff.Mode.SRC_IN);
                     emojiDrawable.addView(this);
 
                     SpannableString stickerPack = new SpannableString(stickerPackName);
@@ -385,6 +406,6 @@ public class MessageContainsEmojiButton extends FrameLayout implements Notificat
         if (emojiDrawable != null) {
             emojiDrawable.addView(this);
         }
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.groupStickersDidLoad);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.groupStickersDidLoad);
     }
 }

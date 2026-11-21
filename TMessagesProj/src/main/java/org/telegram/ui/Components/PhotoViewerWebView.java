@@ -48,7 +48,10 @@ import org.telegram.messenger.Utilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.PhotoViewer;
+import org.telegram.utils.pip.PipCoordinator;
+import org.telegram.utils.pip.PipSession;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -260,7 +263,7 @@ public class PhotoViewerWebView extends FrameLayout {
             @Override
             public void draw(Canvas canvas) {
                 super.draw(canvas);
-                if (PipVideoOverlay.getInnerView() == this && progressBarBlackBackground.getVisibility() == VISIBLE) {
+                if (getParent() != PhotoViewerWebView.this && progressBarBlackBackground.getVisibility() == VISIBLE) {
                     canvas.drawColor(Color.BLACK);
                     drawBlackBackground(canvas, getWidth(), getHeight());
                 }
@@ -388,13 +391,13 @@ public class PhotoViewerWebView extends FrameLayout {
 
         errorMessage = new TextView(context);
         errorMessage.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        errorMessage.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        ThemeBind.textColor(errorMessage, Theme.key_windowBackgroundWhiteGrayText);
         errorMessage.setGravity(Gravity.CENTER);
         errorLayout.addView(errorMessage, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL));
 
         errorButton = new TextView(context);
         errorButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        errorButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
+        ThemeBind.textColor(errorButton, Theme.key_windowBackgroundWhiteBlueText);
         errorButton.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
         errorButton.setBackground(Theme.AdaptiveRipple.rectByKey(Theme.key_windowBackgroundWhiteBlueText, 12));
         errorButton.setVisibility(GONE);
@@ -629,24 +632,26 @@ public class PhotoViewerWebView extends FrameLayout {
     }
 
     public boolean openInPip() {
-        boolean inAppOnly = isInAppOnly();
-        if (!inAppOnly && !checkInlinePermissions()) {
-            return false;
-        }
         if (progressBar.getVisibility() == View.VISIBLE) {
             return false;
         }
-        if (PipVideoOverlay.isVisible()) {
-            PipVideoOverlay.dismiss();
+        final PipSession floating = PipCoordinator.getInstance().findFloating();
+        if (floating != null) {
+            floating.dismiss();
             AndroidUtilities.runOnUIThread(this::openInPip, 300);
             return true;
         }
 
         progressBarBlackBackground.setVisibility(VISIBLE);
-        if (PipVideoOverlay.show(inAppOnly, (Activity) getContext(), this, webView, currentWebpage.embed_width, currentWebpage.embed_height, false)) {
-            PipVideoOverlay.setPhotoViewer(PhotoViewer.getInstance());
-        }
-        return true;
+        return photoViewer.startEmbedPip();
+    }
+
+    public int getEmbedWidth() {
+        return currentWebpage != null ? currentWebpage.embed_width : 0;
+    }
+
+    public int getEmbedHeight() {
+        return currentWebpage != null ? currentWebpage.embed_height : 0;
     }
 
     public boolean isYouTube() {
@@ -798,7 +803,7 @@ public class PhotoViewerWebView extends FrameLayout {
             parent.removeView(webView);
         }
         addView(webView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        PipVideoOverlay.dismiss();
+        photoViewer.completeEmbedPipExpand();
     }
 
     public void release() {

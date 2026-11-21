@@ -1,0 +1,49 @@
+From 0e8c7403780e3276c149ea79b9c1e03bedb21a25 Mon Sep 17 00:00:00 2001
+From: Michael Niedermayer <michael@niedermayer.cc>
+Date: Thu, 24 Sep 2026 00:44:25 +0200
+Subject: [PATCH] avcodec/hevc: reject a slice whose layer is not in the VPS of
+ its SPS
+
+Fixes: out of array read
+Fixes: undefined shift
+Fixes: 3JrnwpkctVpF
+Fixes: hevc_layer_idx_oob.hevc
+Fixes: poc.hevc
+Replicated through UnModified FFmpeg
+Replicated through API
+Regression since: 02a9435cb0
+Found-by: Glops Elemiu
+Found-by: Kasif Dekel
+---
+ libavcodec/hevc/hevcdec.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/libavcodec/hevc/hevcdec.c b/libavcodec/hevc/hevcdec.c
+index b6234a6c34..9bbe6fe5a5 100644
+--- a/libavcodec/hevc/hevcdec.c
++++ b/libavcodec/hevc/hevcdec.c
+@@ -793,8 +793,8 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
+     const HEVCPPS *pps;
+     const HEVCSPS *sps;
+     const HEVCVPS *vps;
+-    unsigned pps_id, layer_idx;
+-    int i, ret;
++    unsigned pps_id;
++    int i, ret, layer_idx;
+ 
+     // Coded parameters
+     sh->first_slice_in_pic_flag = get_bits1(gb);
+@@ -818,6 +818,10 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
+     sps = pps->sps;
+     vps = sps->vps;
+     layer_idx = vps->layer_idx[s->nuh_layer_id];
++    if (layer_idx < 0) {
++        av_log(s->avctx, AV_LOG_ERROR, "Layer %d is not in the VPS\n", s->nuh_layer_id);
++        return AVERROR_INVALIDDATA;
++    }
+ 
+     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
+         sh->no_output_of_prior_pics_flag = 1;
+-- 
+2.55.0
+

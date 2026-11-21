@@ -13,6 +13,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AvatarDrawable;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public class ParticipantsTypeCell extends BaseCell {
         }
         radioButton.setChecked(isSelected, false);
         setDivider(needDivider);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlue2, resourcesProvider));
+        ThemeBind.textColor(subtitleTextView, Theme.key_dialogTextBlue2, resourcesProvider);
 
         if (countries.size() == 0) {
             setSubtitle(withArrow(LocaleController.getString(R.string.BoostingFromAllCountries)));

@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -32,6 +33,7 @@ import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.ChatBackgroundDrawable;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.AnimatedColor;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -56,6 +58,9 @@ public class ThemePreviewMessagesCell extends LinearLayout {
 
     private Drawable backgroundDrawable;
     private Drawable oldBackgroundDrawable;
+    private ColorDrawable compactBackground;
+    private boolean wasCompact;
+    private boolean compactAnimation;
     private ChatMessageCell[] cells = new ChatMessageCell[2];
     private Drawable shadowDrawable;
     private INavigationLayout parentLayout;
@@ -479,14 +484,30 @@ public class ThemePreviewMessagesCell extends LinearLayout {
     public boolean customAnimation;
     private final AnimatedFloat overrideDrawableUpdate = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
 
+    private Drawable getCompactBackground() {
+        final int color = Theme.getColor(Theme.key_chat_compact_background);
+        if (compactBackground == null || compactBackground.getColor() != color) {
+            compactBackground = new ColorDrawable(color);
+        }
+        return compactBackground;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         Drawable newDrawable = overrideDrawable != null ? overrideDrawable : Theme.getCachedWallpaperNonBlocking();
         if (Theme.wallpaperLoadTask != null) {
             invalidate();
         }
+        final boolean compact = overrideDrawable == null && SharedConfig.compactMode;
+        if (compact) {
+            newDrawable = getCompactBackground();
+        }
+        if (wasCompact != compact) {
+            wasCompact = compact;
+            compactAnimation = backgroundDrawable != null;
+        }
         if (newDrawable != backgroundDrawable && newDrawable != null) {
-            if (Theme.isAnimatingColor() || customAnimation) {
+            if (Theme.isAnimatingColor() || customAnimation || compactAnimation) {
                 oldBackgroundDrawable = backgroundDrawable;
                 oldBackgroundGradientDisposable = backgroundGradientDisposable;
             } else if (backgroundGradientDisposable != null) {
@@ -496,7 +517,7 @@ public class ThemePreviewMessagesCell extends LinearLayout {
             backgroundDrawable = newDrawable;
             overrideDrawableUpdate.set(0, true);
         }
-        float themeAnimationValue = customAnimation ? overrideDrawableUpdate.set(1) : parentLayout.getThemeAnimationValue();
+        float themeAnimationValue = customAnimation || compactAnimation ? overrideDrawableUpdate.set(1) : parentLayout.getThemeAnimationValue();
         for (int a = 0; a < 2; a++) {
             Drawable drawable = a == 0 ? oldBackgroundDrawable : backgroundDrawable;
             if (drawable == null) {
@@ -552,11 +573,15 @@ public class ThemePreviewMessagesCell extends LinearLayout {
                     oldBackgroundGradientDisposable = null;
                 }
                 oldBackgroundDrawable = null;
+                compactAnimation = false;
                 invalidate();
             }
         }
-        shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-        shadowDrawable.draw(canvas);
+        // inside a section the preview has no shadow edge
+        if (!(getParent() instanceof RecyclerListView && ((RecyclerListView) getParent()).hasSections())) {
+            shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            shadowDrawable.draw(canvas);
+        }
     }
 
     private boolean allowLoadingOnTouch() {

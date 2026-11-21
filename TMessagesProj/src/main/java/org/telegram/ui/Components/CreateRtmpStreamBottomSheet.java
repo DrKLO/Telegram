@@ -35,6 +35,7 @@ import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
@@ -170,8 +171,8 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         startBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         startBtn.setTypeface(AndroidUtilities.bold());
         startBtn.setText(getString(R.string.VoipChannelStartStreaming));
-        startBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
-        startBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)));
+        ThemeBind.textColor(startBtn, Theme.key_featuredStickers_buttonText, resourcesProvider);
+        ThemeBind.selectorBackground(startBtn, Theme.createSimpleSelectorRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhite), 120)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.alpha(Theme.key_windowBackgroundWhite, 120), resourcesProvider);
         containerView.addView(startBtn, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 16, 0, 16, (hasRevoke ? 52 : 0) + 12));
         startBtn.setOnClickListener(view -> {
             selectAfterDismiss = MessagesController.getInstance(currentAccount).getInputPeer(MessageObject.getPeerId(selectedPeer));
@@ -297,13 +298,13 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
             title.setTypeface(AndroidUtilities.bold());
             title.setText(LocaleController.formatString(R.string.Streaming));
             title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-            title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+            ThemeBind.textColor(title, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 14, 0, 7));
 
             TextView description = new TextView(context);
             description.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             description.setGravity(Gravity.CENTER_HORIZONTAL);
-            description.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(description, Theme.key_dialogTextBlack, resourcesProvider);
             description.setText(LocaleController.formatString(R.string.VoipStreamStart));
             description.setLineSpacing(description.getLineSpacingExtra(), description.getLineSpacingMultiplier() * 1.1f);
             addView(description, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 28, 0, 28, 17));
@@ -315,9 +316,9 @@ public class CreateRtmpStreamBottomSheet extends BottomSheetWithRecyclerListView
         @Override
         public TextDetailCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             TextDetailCell view = new TextDetailCell(context, resourcesProvider, true, false);
-            view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite, resourcesProvider);
             Drawable drawable = ContextCompat.getDrawable(context, R.drawable.msg_copy).mutate();
-            drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.drawableColorFilter(view, drawable, Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             view.setImage(drawable);
             view.setImageClickListener(v -> copyRtmpValue(context, view.textView.getText().toString()));
             return view;

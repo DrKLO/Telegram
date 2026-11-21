@@ -1,5 +1,6 @@
 package org.telegram.ui.Wallet;
 
+import android.graphics.PorterDuff;
 import org.telegram.ui.Wallet.GramWallet.SecretPhrase;
 import org.telegram.messenger.LocaleController;
 
@@ -34,6 +35,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EllipsizeSpanAnimator;
 import org.telegram.ui.Components.LinkSpanDrawable;
@@ -80,7 +82,7 @@ public class WalletImportFragment extends BaseFragment {
         actionBar.setOccupyStatusBar(false);
 
         fragmentView = new SizeNotifierFrameLayout(context);
-        ((SizeNotifierFrameLayout) fragmentView).setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        ThemeBind.backgroundColor((SizeNotifierFrameLayout) fragmentView, Theme.key_windowBackgroundWhite, resourceProvider);
 
         ScrollView scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
@@ -110,9 +112,9 @@ public class WalletImportFragment extends BaseFragment {
 
         closeButton = new ImageView(context);
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
-        closeButton.setColorFilter(new android.graphics.PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider), android.graphics.PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(closeButton, Theme.key_windowBackgroundWhiteBlackText, resourceProvider, android.graphics.PorterDuff.Mode.SRC_IN);
         closeButton.setImageResource(R.drawable.ic_ab_close);
-        closeButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3));
+        ThemeBind.selectorBackground(closeButton, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), 3), null, ThemeBind.of(Theme.key_listSelector), resourceProvider);
         closeButton.setOnClickListener(v -> finishFragment());
         ((FrameLayout) fragmentView).addView(closeButton, LayoutHelper.createFrame(48, 48, Gravity.TOP | Gravity.LEFT, 4, 12, 0, 0));
 
@@ -127,15 +129,15 @@ public class WalletImportFragment extends BaseFragment {
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setGravity(Gravity.CENTER_HORIZONTAL);
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+        ThemeBind.textColor(titleView, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
         titleView.setText(matchPublicKey != null ? LocaleController.getString(R.string.WalletSecretPhrase) : LocaleController.getString(R.string.WalletImport));
         root.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 10));
 
         subtitleView = new LinkSpanDrawable.LinksTextView(context);
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         subtitleView.setGravity(Gravity.CENTER_HORIZONTAL);
-        subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourceProvider));
-        subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourceProvider));
+        ThemeBind.textColor(subtitleView, Theme.key_windowBackgroundWhiteGrayText2, resourceProvider);
+        ThemeBind.linkTextColor(subtitleView, Theme.key_chat_messageLinkIn, resourceProvider);
         if (matchPublicKey != null) {
             subtitleView.setText(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.WalletEnterSecretPhrase), () -> {
                 new AlertDialog.Builder(getContext(), getResourceProvider())
@@ -288,11 +290,11 @@ public class WalletImportFragment extends BaseFragment {
                         addressView = new FrameLayout(getContext());
                         final TextView addressText = new TextView(getContext());
                         addressText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                        addressText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
+                        ThemeBind.textColor(addressText, Theme.key_windowBackgroundWhiteBlackText, resourceProvider);
                         addressText.setText(formatAddressTwoLines(address));
                         addressText.setPadding(dp(10), dp(12), dp(10), dp(12));
                         addressText.setTypeface(AndroidUtilities.getTypeface("fonts/rmono.ttf"));
-                        addressText.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider)));
+                        ThemeBind.fillBackground(addressText, Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider)), ThemeBind.of(Theme.key_windowBackgroundGray), resourceProvider);
                         addressText.setGravity(Gravity.CENTER);
                         addressView.addView(addressText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
                     }

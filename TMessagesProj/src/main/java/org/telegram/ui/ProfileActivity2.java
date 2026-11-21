@@ -64,6 +64,8 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Business.ProfileHoursCell;
 import org.telegram.ui.Business.ProfileLocationCell;
 import org.telegram.ui.Cells.TextDetailCell;
@@ -227,7 +229,8 @@ public class ProfileActivity2 extends BaseFragment implements
         actionBar.setAddToContainer(false);
         actionBar.setClipContent(true);
         actionBar.setBackgroundColor(Color.TRANSPARENT);
-        actionBar.setOccupyStatusBar(isMain || !AndroidUtilities.isTablet() && !inBubbleMode);
+        // a sheet's window is over the status bar (on tablets too)
+        actionBar.setOccupyStatusBar(isMain || parentLayout != null && parentLayout.isSheet() || !AndroidUtilities.isTablet() && !inBubbleMode);
 
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         final ActionBarMenu menu = actionBar.createMenu();
@@ -413,6 +416,21 @@ public class ProfileActivity2 extends BaseFragment implements
     }
 
     private AnimatedFloat expanded = new AnimatedFloat(() -> AndroidUtilities.runOnUIThread(this::updateScrollLayout), 0, 420, CubicBezierInterpolator.EASE_OUT_QUINT);
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        try {
+            if (fragmentView != null && avatarImage != null && title != null && subtitle != null) {
+                updateScrollLayout();
+            }
+            if (sharedMediaLayout != null) {
+                updateColors();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     private void updateScrollLayout() {
         final int statusBarHeight = AndroidUtilities.getStatusBarHeight(getContext());
@@ -636,7 +654,7 @@ public class ProfileActivity2 extends BaseFragment implements
                 final String usernameRaw = usernameObj.username;
                 SpannableString username = new SpannableString("@" + usernameRaw);
                 username.setSpan(makeUsernameLinkSpan(usernameObj), 0, username.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                username.setSpan(new ForegroundColorSpan(getThemedColor(Theme.key_chat_messageLinkIn)), 0, username.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                username.setSpan(new ForegroundColorSpanThemable(Theme.key_chat_messageLinkIn, getResourceProvider()), 0, username.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 usernames.append(username);
                 if (i < alsoUsernames.size() - 1) {
                     usernames.append(", ");
@@ -1115,15 +1133,6 @@ public class ProfileActivity2 extends BaseFragment implements
         @Override
         public void onStopNestedScroll(View child) {
 
-        }
-
-        @Override
-        protected void drawList(Canvas blurCanvas, boolean top, ArrayList<IViewWithInvalidateCallback> views) {
-            super.drawList(blurCanvas, top, views);
-            blurCanvas.save();
-            blurCanvas.translate(0, listView.getY());
-            sharedMediaLayout.drawListForBlur(blurCanvas, views);
-            blurCanvas.restore();
         }
 
         @Override

@@ -18,6 +18,7 @@ import static org.telegram.messenger.LocaleController.formatSpannable;
 import static org.telegram.messenger.LocaleController.formatString;
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -65,6 +66,7 @@ import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.ChatMessageTransitionParams;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.MultiLayoutTypingAnimator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
@@ -85,6 +87,7 @@ import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.TranscribeButton;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.URLSpanBotCommand;
+import org.telegram.utils.twidget.WidgetMedia;
 import org.telegram.ui.Components.URLSpanBrowser;
 import org.telegram.ui.Components.URLSpanMono;
 import org.telegram.ui.Components.URLSpanNoUnderline;
@@ -353,6 +356,7 @@ public class MessageObject {
     private boolean layoutCreated;
     private int generatedWithMinSize;
     private float generatedWithDensity;
+    private boolean generatedWithCompactMode;
     private float generatedWithFontSize;
     public boolean wasJustSent;
     public boolean isBotPendingDraft;
@@ -661,7 +665,7 @@ public class MessageObject {
                     "sensitive".equals(reason.reason) &&
                     (
                         "all".equals(reason.platform) ||
-                        "android".equals(reason.platform) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
+                        ("android".equals(reason.platform) || "android-ios".equals(reason.platform) || "ios-android".equals(reason.platform)) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
                         "android-all".equals(reason.platform)
                     )
                 ) {
@@ -678,7 +682,7 @@ public class MessageObject {
                         "sensitive".equals(reason.reason) &&
                         (
                             "all".equals(reason.platform) ||
-                            "android".equals(reason.platform) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
+                            ("android".equals(reason.platform) || "android-ios".equals(reason.platform) || "ios-android".equals(reason.platform)) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
                             "android-all".equals(reason.platform)
                         )
                     ) {
@@ -833,7 +837,7 @@ public class MessageObject {
         public float progress;
 
         public boolean fromPreview;
-        public ChatMessageCell.TransitionParams fromParams;
+        public ChatMessageTransitionParams fromParams;
     }
 
     public static class VCardData {
@@ -1025,13 +1029,13 @@ public class MessageObject {
             return quoteCollapse && collapsed() ? collapsedHeight : height;
         }
 
-        public int height(ChatMessageCell.TransitionParams tp) {
+        public int height(ChatMessageTransitionParams tp) {
             if (!quoteCollapse)
                 return height;
             return AndroidUtilities.lerp(height, collapsedHeight, collapsed(tp));
         }
 
-        public float collapsed(ChatMessageCell.TransitionParams tp) {
+        public float collapsed(ChatMessageTransitionParams tp) {
             final boolean pastCollapsed = tp.animateExpandedQuotes ? (tp.animateExpandedQuotesFrom == null ? true : !tp.animateExpandedQuotesFrom.contains(index)) : collapsed();
             return AndroidUtilities.lerp(pastCollapsed ? 1f : 0f, collapsed() ? 1f : 0f, tp.animateChangeProgress);
         }
@@ -1051,7 +1055,7 @@ public class MessageObject {
             return h;
         }
 
-        public float textYOffset(ArrayList<TextLayoutBlock> blocks, ChatMessageCell.TransitionParams tp) {
+        public float textYOffset(ArrayList<TextLayoutBlock> blocks, ChatMessageTransitionParams tp) {
             if (blocks == null) return 0;
             int h = 0;
             for (int i = 0; i < blocks.size(); ++i) {
@@ -1060,6 +1064,77 @@ public class MessageObject {
                 h += block.padTop + block.height(tp) + block.padBottom;
             }
             return h;
+        }
+
+        // compact mode: a rounded card as rich messages' preformatted blocks, the language and a copy button in its header
+        public boolean compactCode;
+        public static final int COMPACT_CODE_HPAD = 14;
+        public static final int COMPACT_CODE_HEADER = 30;
+        public static final int COMPACT_CODE_TOP = 2;
+        public static final int COMPACT_CODE_BOTTOM = 12;
+        public static final int COMPACT_CODE_RADIUS = 12;
+        public static final int COMPACT_CODE_COPY_SIZE = 18;
+        public static final int COMPACT_CODE_COPY_RIGHT = 10;
+        public static final int COMPACT_CODE_COPY_TOP = 8;
+        private Paint compactCodePaint;
+
+        public void layoutCompactCode(String lng, boolean noforwards) {
+            compactCode = true;
+            hasCodeCopyButton = !noforwards;
+            if (hasCodeCopyButton) {
+                copyIcon = ApplicationLoader.applicationContext.getResources().getDrawable(R.drawable.msg_copy).mutate();
+                copyIcon.setColorFilter(new PorterDuffColorFilter(copyIconColor, PorterDuff.Mode.SRC_IN));
+                copySelector = Theme.createRadSelectorDrawable(copySelectorColor, 0, 0, Math.min(5, SharedConfig.bubbleRadius), 0);
+            }
+            language = TextUtils.isEmpty(lng) ? null : lng;
+            languageLayout = language == null ? null : new Text(language, Math.max(8, SharedConfig.fontSize - 4));
+            languageHeight = 0;
+        }
+
+        // from the card's top to the code, without a language there is no header
+        public int compactCodeTop() {
+            return languageLayout != null ? dp(COMPACT_CODE_HEADER + COMPACT_CODE_TOP) : dp(COMPACT_CODE_BOTTOM);
+        }
+
+        public int codeInset() {
+            return compactCode ? dp(COMPACT_CODE_HPAD * 2) : dp(15);
+        }
+
+        // in the code's coordinates, the card is from -compactCodeTop()
+        public int compactCopyTop() {
+            if (languageLayout != null || textLayout == null || textLayout.getLineCount() == 0) {
+                return -compactCodeTop() + dp(COMPACT_CODE_COPY_TOP);
+            }
+            return Math.round((textLayout.getLineTop(0) + textLayout.getLineBottom(0)) / 2f - dp(COMPACT_CODE_COPY_SIZE) / 2f);
+        }
+
+        public boolean isCompactCopyHit(float x, float y, float width) {
+            return hasCodeCopyButton && x >= width - dp(COMPACT_CODE_COPY_SIZE + COMPACT_CODE_COPY_RIGHT * 2) && x <= width && y >= -compactCodeTop() && y <= compactCopyTop() + dp(COMPACT_CODE_COPY_SIZE + COMPACT_CODE_COPY_TOP);
+        }
+
+        public void drawCompactCode(Canvas canvas, float width, int backgroundColor, int secondaryColor, boolean copyPressed, float alpha) {
+            if (compactCodePaint == null) {
+                compactCodePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            }
+            compactCodePaint.setColor(Theme.multAlpha(backgroundColor, alpha));
+            AndroidUtilities.rectTmp.set(0, -compactCodeTop(), width, height + dp(COMPACT_CODE_BOTTOM));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, dp(COMPACT_CODE_RADIUS), dp(COMPACT_CODE_RADIUS), compactCodePaint);
+            final int copyWidth = hasCodeCopyButton ? dp(COMPACT_CODE_COPY_SIZE + COMPACT_CODE_COPY_RIGHT) : 0;
+            if (languageLayout != null) {
+                languageLayout
+                    .ellipsize((int) width - dp(COMPACT_CODE_HPAD + 12) - copyWidth)
+                    .draw(canvas, dp(COMPACT_CODE_HPAD), -compactCodeTop() + dp(COMPACT_CODE_COPY_TOP + COMPACT_CODE_COPY_SIZE / 2f), secondaryColor, alpha);
+            }
+            if (hasCodeCopyButton) {
+                if (copyIconColor != secondaryColor) {
+                    copyIcon.setColorFilter(new PorterDuffColorFilter(copyIconColor = secondaryColor, PorterDuff.Mode.SRC_IN));
+                }
+                copyIcon.setAlpha((int) (0xFF * alpha * (copyPressed ? .5f : 1f)));
+                final int right = (int) width - dp(COMPACT_CODE_COPY_RIGHT);
+                final int top = compactCopyTop();
+                copyIcon.setBounds(right - dp(COMPACT_CODE_COPY_SIZE), top, right, top + dp(COMPACT_CODE_COPY_SIZE));
+                copyIcon.draw(canvas);
+            }
         }
 
         public void layoutCode(String lng, int codeLength, boolean noforwards) {
@@ -1237,6 +1312,12 @@ public class MessageObject {
 
         public float top; // sum of ph of media above
         public float left; // sum of pw of media on the left side
+
+        // compact mode, in list pixels: where the item is drawn and where its grid cell starts
+        public float compactLeft;
+        public float compactWidth;
+        public float compactCellLeft;
+        public float compactUnit; // pixels per pw unit
 
         public void set(int minX, int maxX, int minY, int maxY, int w, float h, int flags) {
             this.minX = (byte) minX;
@@ -1689,6 +1770,7 @@ public class MessageObject {
                 }
             }
             int avatarOffset = 108;
+            final boolean compactIn = !isOut && !messages.isEmpty() && messages.get(0).isCompactMode();
             for (int a = 0; a < count; a++) {
                 GroupedMessagePosition pos = posArray.get(a);
                 if (isOut) {
@@ -1707,7 +1789,7 @@ public class MessageObject {
                     }
                 }
                 MessageObject messageObject = messages.get(a);
-                if (!isOut && messageObject.needDrawAvatarInternal()) {
+                if (!isOut && !compactIn && messageObject.needDrawAvatarInternal()) {
                     if (pos.edge) {
                         if (pos.spanSize != 1000) {
                             pos.spanSize += avatarOffset;
@@ -1722,6 +1804,74 @@ public class MessageObject {
                     }
                 }
             }
+            if (compactIn) {
+                applyCompactSpans(count);
+            }
+        }
+
+        /**
+         * Compact mode: an incoming album spans the whole chat. Items are placed here in list pixels and each grid
+         * cell is sized to contain its item (cells clip what they draw).
+         * Layouts with a taller item next to stacked ones are positioned by leftSpanOffset and keep their spans.
+         */
+        private void applyCompactSpans(int count) {
+            if (hasSibling) {
+                return;
+            }
+            final int listWidth = getCompactListWidth();
+            final float pad = AndroidUtilities.dp(COMPACT_IN_HORIZONTAL_PADDING);
+            final float gap = AndroidUtilities.dp(3);
+            // with the topics side menu the cells are moved past it (ChatMessageCell#updateTranslation)
+            final float contentWidth = listWidth - pad * 2 - (messages.get(0).sideMenuEnabled ? AndroidUtilities.dp(ChatActivity.SIDE_MENU_WIDTH) : 0);
+            for (int a = 0; a < count; a++) {
+                final GroupedMessagePosition first = posArray.get(a);
+                if ((first.flags & POSITION_FLAG_LEFT) == 0) {
+                    continue;
+                }
+                int rowUnits = 0;
+                for (int b = 0; b < count; b++) {
+                    final GroupedMessagePosition pos = posArray.get(b);
+                    if (pos.minY == first.minY) {
+                        rowUnits += pos.pw;
+                    }
+                }
+                if (rowUnits <= 0) {
+                    continue;
+                }
+                final float unit = contentWidth / rowUnits;
+                final ArrayList<GroupedMessagePosition> row = new ArrayList<>();
+                for (int b = 0; b < count; b++) {
+                    final GroupedMessagePosition pos = posArray.get(b);
+                    if (pos.minY == first.minY) {
+                        row.add(pos);
+                    }
+                }
+                Collections.sort(row, (p1, p2) -> p1.minX - p2.minX);
+                // each cell ends in the middle of the gap after its item, so it fully contains it
+                int units = 0;
+                int spanStart = 0;
+                for (int b = 0; b < row.size(); b++) {
+                    final GroupedMessagePosition pos = row.get(b);
+                    final boolean last = b == row.size() - 1;
+                    pos.compactUnit = unit;
+                    pos.compactLeft = pad + units * unit;
+                    units += pos.pw;
+                    pos.compactWidth = pos.pw * unit - (last ? 0 : gap);
+                    final int spanEnd = last ? 1000 : Math.round((pad + units * unit - gap / 2f) * 1000f / listWidth);
+                    pos.spanSize = spanEnd - spanStart;
+                    pos.compactCellLeft = spanStart * listWidth / 1000f;
+                    spanStart = spanEnd;
+                }
+            }
+        }
+
+        // same width ChatMessageCell#getGroupPhotosWidth lays albums out in
+        private static int getCompactListWidth() {
+            final int width = AndroidUtilities.displaySize.x;
+            if (!AndroidUtilities.isInMultiwindow && AndroidUtilities.isTablet() && (!AndroidUtilities.isSmallTablet() || ApplicationLoader.applicationContext.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+                return width - AndroidUtilities.getTabletLeftFragmentSize(width, 0, 0);
+            }
+            return width;
         }
 
         public int getMaxEditDate() {
@@ -1833,6 +1983,8 @@ public class MessageObject {
     public boolean hasRtl;
     public float textXOffset;
     public RichMessageLayout richLayout;
+    /** A widget message laid out as a rich one (WidgetMedia#richMessage); messageOwner.rich_message stays null. */
+    private TL_iv.RichMessage widgetRichMessage;
     public boolean richCheckboxEcho; // next edit-echo for this message is our own checkbox toggle -> reuse layout, skip relayout
     public ArrayList<TextLayoutBlock> textLayoutBlocks;
     public boolean hasCode;
@@ -3743,6 +3895,54 @@ public class MessageObject {
         return replyUpdated || false;
     }
 
+    // links, link previews and bot buttons of incoming messages are hidden in chats with report spam bar until we write there
+    public boolean linksHidden;
+    private boolean textLinksHidden;
+
+    public boolean shouldHideLinks() {
+        return messageOwner != null && messageOwner.peer_id != null && !isOut() && !isSponsored() && MessagesController.getInstance(currentAccount).isUntrustedDialog(getDialogId());
+    }
+
+    public boolean updateLinksHidden() {
+        final boolean hide = shouldHideLinks();
+        boolean updated = false;
+        if (textLinksHidden != hide && (type == TYPE_TEXT || type == TYPE_EMOJIS) && messageOwner.action == null && !TextUtils.isEmpty(messageOwner.message)) {
+            final boolean wasTranslated = translated || summarized;
+            translated = false;
+            summarized = false;
+            applyNewText(messageOwner.message);
+            if (wasTranslated) {
+                updateTranslation(false);
+            }
+            updated = true;
+        }
+        if (caption != null && captionLinksHidden != hide) {
+            generateCaption();
+            updated = true;
+        }
+        if (linksHidden != hide) {
+            final boolean hadButtons = hasInlineBotButtons();
+            measureInlineBotButtons();
+            linksHidden = hide;
+            updated = updated || hadButtons != hasInlineBotButtons() || getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage;
+        }
+        return updated;
+    }
+
+    private static void removeLinks(CharSequence text) {
+        if (!(text instanceof Spannable)) {
+            return;
+        }
+        final Spannable spannable = (Spannable) text;
+        final URLSpan[] spans = spannable.getSpans(0, spannable.length(), URLSpan.class);
+        for (int i = 0; i < spans.length; ++i) {
+            if (spans[i] instanceof FormattedDateSpan) {
+                continue;
+            }
+            spannable.removeSpan(spans[i]);
+        }
+    }
+
     public void applyNewText() {
         translated = false;
         summarized = false;
@@ -4490,7 +4690,7 @@ public class MessageObject {
     }
 
     public boolean hasInlineBotButtons() {
-        return !isRestrictedMessage && !isRepostPreview && messageOwner != null && (messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows.isEmpty() || getInlineBotButtons() != null);
+        return !isRestrictedMessage && !isRepostPreview && messageOwner != null && (!linksHidden && messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && !((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows.isEmpty() || getInlineBotButtons() != null);
     }
 
     public void measureInlineBotButtons() {
@@ -4503,7 +4703,8 @@ public class MessageObject {
 
         BotInlineKeyboard.Builder builder = new BotInlineKeyboard.Builder();
 
-        if (messageOwner != null && messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && ((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows != null) {
+        linksHidden = shouldHideLinks();
+        if (!linksHidden && messageOwner != null && messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup && ((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup).rows != null) {
             builder.addBotKeyboard((TLRPC.TL_replyInlineMarkup) messageOwner.reply_markup);
         }
         if (hasSuggestionInlineButtons()) {
@@ -5775,6 +5976,19 @@ public class MessageObject {
                     } else {
                         messageText = replaceWithLink(formatPluralStringComma("PaidMessagesPriceUpdated", (int) action.stars), "un1", fromObject);
                     }
+                } else if (messageOwner.action instanceof TLRPC.TL_messageActionNoPaidMessagesTokenUsed) {
+                    // sent by the one who used a free messaging link (QR code) of the other
+                    if (isOutOwner()) {
+                        final TLRPC.User user;
+                        if (messageOwner.saved_peer_id != null) {
+                            user = getUser(users, sUsers, DialogObject.getPeerDialogId(messageOwner.saved_peer_id));
+                        } else {
+                            user = getUser(users, sUsers, DialogObject.getPeerDialogId(messageOwner.peer_id));
+                        }
+                        messageText = replaceWithLink(getString(R.string.NoPaidMessagesTokenUsedOut), "un1", user);
+                    } else {
+                        messageText = replaceWithLink(getString(R.string.NoPaidMessagesTokenUsed), "un1", fromObject);
+                    }
                 } else if (messageOwner.action instanceof TLRPC.TL_messageActionPaidMessagesRefunded) {
                     final TLRPC.TL_messageActionPaidMessagesRefunded action = (TLRPC.TL_messageActionPaidMessagesRefunded) messageOwner.action;
                     if (isOutOwner()) {
@@ -6074,6 +6288,8 @@ public class MessageObject {
                     messageText = getMedia(messageOwner).description;
                 } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
                     messageText = getString(R.string.UnsupportedMedia2);
+                } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWidget) {
+                    messageText = TextUtils.isEmpty(messageOwner.message) ? getString(R.string.AttachWidget) : messageOwner.message;
                 } else if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaDocument) {
                     if (isSticker() || isAnimatedStickerDocument(getDocument(), true)) {
                         String sch = getStickerChar();
@@ -6150,6 +6366,7 @@ public class MessageObject {
     }
 
     public static CharSequence formatTextWithEntities(TLRPC.TL_textWithEntities text, boolean out, boolean photoViewer, TextPaint paint) {
+        if (text == null || text.text == null) return "";
         CharSequence taskText = new SpannableStringBuilder(text.text);
         addEntitiesToText(taskText, text.entities, out, false, photoViewer, false);
         taskText = Emoji.replaceEmoji(taskText, paint.getFontMetricsInt(), false);
@@ -6433,6 +6650,7 @@ public class MessageObject {
     }
 
     public static TLRPC.TL_textWithEntities removeLinks(TLRPC.TL_textWithEntities text) {
+        if (text == null) return null;
         final TLRPC.TL_textWithEntities newText = new TLRPC.TL_textWithEntities();
         newText.text = text.text;
         for (int i = 0; i < text.entities.size(); ++i) {
@@ -6538,6 +6756,8 @@ public class MessageObject {
             return media.description;
         } else if (media instanceof TLRPC.TL_messageMediaUnsupported) {
             return getString(R.string.UnsupportedMedia2);
+        } else if (media instanceof TLRPC.TL_messageMediaWidget) {
+            return TextUtils.isEmpty(messageOwner.message) ? getString(R.string.AttachWidget) : messageOwner.message;
         } else if (media instanceof TLRPC.TL_messageMediaDocument) {
             if (isStickerDocument(media.document) || isAnimatedStickerDocument(media.document, true)) {
                 String sch = getStickerChar();
@@ -6648,7 +6868,7 @@ public class MessageObject {
                 type = TYPE_UNSUPPORTED;
             } else if (isRestrictedMessage) {
                 type = TYPE_TEXT;
-            } else if (messageOwner.rich_message != null) {
+            } else if (messageOwner.rich_message != null || getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWidget) {
                 type = TYPE_ARTICLE;
 //                contentType = 9;
             } else if (emojiAnimatedSticker != null || emojiAnimatedStickerId != null) {
@@ -6828,9 +7048,12 @@ public class MessageObject {
             return false;
         }
         if (layoutCreated) {
-            int newMinSize = AndroidUtilities.isTablet() ? AndroidUtilities.getMinTabletSide() : AndroidUtilities.displaySize.x;
+            int newMinSize = AndroidUtilities.isTablet() && eventId != 0 ? dp(530) : getParentWidth();
             float newFontSize = Theme.chat_msgTextPaint != null ? Theme.chat_msgTextPaint.getTextSize() : 0;
-            if (Math.abs(generatedWithMinSize - newMinSize) > dp(52) || generatedWithDensity != AndroidUtilities.density || generatedWithFontSize != newFontSize) {
+            // A rich message fills its max width, so any change of it must regenerate the layout
+            // (e.g. a Fold's inner tablet chat pane is only ~18dp wider than its cover screen).
+            final int tolerance = type == TYPE_ARTICLE ? 0 : dp(52);
+            if (Math.abs(generatedWithMinSize - newMinSize) > tolerance || generatedWithDensity != AndroidUtilities.density || generatedWithFontSize != newFontSize || generatedWithCompactMode != isCompactMode()) {
                 layoutCreated = false;
             }
         }
@@ -7601,6 +7824,7 @@ public class MessageObject {
     }
 
     private boolean captionTranslated;
+    private boolean captionLinksHidden;
     private boolean captionSummarized;
 
     public void generateExplanation() {
@@ -7629,12 +7853,15 @@ public class MessageObject {
 
     public void generateCaption() {
         if (isRoundVideo()) return;
+        final boolean hideLinks = shouldHideLinks();
         if (caption != null &&
             (translated && (messageOwner.translatedText != null || summarized && messageOwner.translatedSummaryText != null)) == captionTranslated &&
-            summarized == captionSummarized
+            summarized == captionSummarized &&
+            hideLinks == captionLinksHidden
         ) {
             return;
         }
+        captionLinksHidden = hideLinks;
         String text = messageOwner.message;
         ArrayList<TLRPC.MessageEntity> entities = messageOwner.entities;
         boolean forceManualEntities = false;
@@ -7711,6 +7938,9 @@ public class MessageObject {
                 addUrlsByPattern(isOutOwner(), caption, true, 4, (int) getDuration(), false);
             }
             applyTimestampsHighlightForReplyMsg(caption);
+            if (captionLinksHidden) {
+                removeLinks(caption);
+            }
         }
     }
 
@@ -8486,13 +8716,23 @@ public class MessageObject {
         if (preview && parentWidth > 0)
             return parentWidth;
         if (AndroidUtilities.isTablet())
-            return AndroidUtilities.getMinTabletSide();
+            return type == TYPE_ARTICLE ? getTabletChatWidth() : AndroidUtilities.getMinTabletSide();
         if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y)
             return AndroidUtilities.displaySize.x - dp(50);
         return AndroidUtilities.displaySize.x;
     }
 
+    public static int getTabletChatWidth() {
+        final int width = AndroidUtilities.displaySize.x;
+        if (!AndroidUtilities.isInMultiwindow && (!AndroidUtilities.isSmallTablet() || width > AndroidUtilities.displaySize.y)) {
+            return width - AndroidUtilities.getTabletLeftFragmentSize(width, 0, 0);
+        }
+        return width;
+    }
+
     public boolean sideMenuEnabled;
+    public static final int COMPACT_IN_HORIZONTAL_PADDING = 16;
+
     public int getMaxMessageTextWidth() {
         int maxWidth = 0;
         if (AndroidUtilities.isTablet() && eventId != 0) {
@@ -8502,9 +8742,15 @@ public class MessageObject {
         }
         generatedWithDensity = AndroidUtilities.density;
         generatedWithFontSize = Theme.chat_msgTextPaint != null ? Theme.chat_msgTextPaint.getTextSize() : 0;
+        generatedWithCompactMode = isCompactMode();
+        // compact mode: incoming messages span the whole chat with 16dp on each side
+        final boolean compactIn = generatedWithCompactMode && !isOutOwner();
+        final int compactSideMenuWidth = sideMenuEnabled ? dp(ChatActivity.SIDE_MENU_WIDTH) : 0;
         if (hasCode && !isSaved) {
             maxWidth = generatedWithMinSize - dp(45 + 15);
-            if (sideMenuEnabled) {
+            if (compactIn) {
+                maxWidth = generatedWithMinSize - dp(COMPACT_IN_HORIZONTAL_PADDING * 2) - compactSideMenuWidth;
+            } else if (sideMenuEnabled) {
                 maxWidth -= dp(64);
             } else if (needDrawAvatarInternal() && !isOutOwner() && !messageOwner.isThreadMessage) {
                 maxWidth -= dp(52);
@@ -8522,11 +8768,18 @@ public class MessageObject {
         } else if (isAndroidTheme()) {
             maxWidth = dp(200);
         }
-        if (maxWidth == 0) {
+        if (maxWidth == 0 && compactIn) {
+            maxWidth = generatedWithMinSize - dp(COMPACT_IN_HORIZONTAL_PADDING * 2) - compactSideMenuWidth;
+            if (getMedia(messageOwner) instanceof TLRPC.TL_messageMediaGame) {
+                maxWidth -= dp(10);
+            }
+        } else if (maxWidth == 0) {
             final boolean needDrawAvatarInternal = needDrawAvatarInternal();
             maxWidth = generatedWithMinSize - dp(type == TYPE_ARTICLE ? 40 : 80);
             if (sideMenuEnabled) {
-                maxWidth -= dp(64);
+                // A rich message fills this width: the side menu shifts its bubble as far as the cell
+                // does (ChatMessageCell#getBackgroundDrawableLeft), one dp more as for the avatar.
+                maxWidth -= dp(type == TYPE_ARTICLE ? ChatActivity.SIDE_MENU_WIDTH + 52 - 48 : 64);
             } else if (needDrawAvatarInternal && !isOutOwner() && !messageOwner.isThreadMessage) {
                 maxWidth -= dp(52);
             }
@@ -8620,7 +8873,13 @@ public class MessageObject {
         if (!(messageText instanceof Spannable)) {
             messageText = new SpannableStringBuilder(messageText);
         }
-        return addEntitiesToText(messageText, useManualParse);
+        final boolean hasUrls = addEntitiesToText(messageText, useManualParse);
+        textLinksHidden = shouldHideLinks();
+        if (textLinksHidden) {
+            removeLinks(messageText);
+            return false;
+        }
+        return hasUrls;
     }
 
     public static StaticLayout makeStaticLayout(CharSequence text_, TextPaint paint, int width, float lineSpacingMult, float lineSpacingAdd, boolean dontIncludePad) {
@@ -8682,7 +8941,27 @@ public class MessageObject {
         if (translated && messageOwner.translatedRichMessage != null) {
             return messageOwner.translatedRichMessage;
         }
+        if (messageOwner.rich_message == null && getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWidget) {
+            if (widgetRichMessage == null) {
+                widgetRichMessage = WidgetMedia.richMessage(this, (TLRPC.TL_messageMediaWidget) getMedia(messageOwner));
+            }
+            return widgetRichMessage;
+        }
         return messageOwner.rich_message;
+    }
+
+    /**
+     * UI: the message was sent, it has its id and the server's media: the widget made for the temporary message (its
+     * id, no flags) is made anew, what it kept moves to the new id.
+     */
+    public void onWidgetMessageSent(int oldId) {
+        if (widgetRichMessage == null || !(getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWidget)) {
+            return;
+        }
+        WidgetMedia.onMessageSent(currentAccount, getDialogId(), oldId, messageOwner.id);
+        widgetRichMessage = null;
+        generateLayout(null);
+        forceUpdate = true;
     }
 
     public void generateLayout(TLRPC.User fromUser) {
@@ -8733,6 +9012,7 @@ public class MessageObject {
         }
 
         int maxWidth = getMaxMessageTextWidth();
+        final boolean compactCode = isCompactMode() && !isOutOwner();
 
         if (hasSingleQuote) {
             maxWidth -= AndroidUtilities.dp(32);
@@ -8898,6 +9178,10 @@ public class MessageObject {
                     block.padTop = dp(block.first ? 8 : 6);
                     block.padBottom = dp(7);
                 }
+            } else if (block.code && compactCode) {
+                block.layoutCompactCode(range.language, noforwards);
+                block.padTop = block.compactCodeTop() + (block.first ? 0 : dp(8));
+                block.padBottom = dp(TextLayoutBlock.COMPACT_CODE_BOTTOM) + (block.last ? 0 : dp(8));
             } else if (block.code) {
                 block.layoutCode(range.language, range.end - range.start, noforwards);
                 block.padTop = dp(4) + block.languageHeight + (block.first ? 0 : dp(5));
@@ -8921,7 +9205,7 @@ public class MessageObject {
             if (block.quote) {
                 blockMaxWidth -= dp(24);
             } else if (block.code) {
-                blockMaxWidth -= dp(15);
+                blockMaxWidth -= block.codeInset();
             }
             if (blocksCount == 1) {
                 if (block.code && !block.quote && textLayout.getText() instanceof Spannable) {
@@ -9010,7 +9294,7 @@ public class MessageObject {
             if (block.quote) {
                 lastLine += AndroidUtilities.dp(32);
             } else if (block.code) {
-                lastLine += AndroidUtilities.dp(15);
+                lastLine += block.codeInset();
             }
 
             int linesMaxWidth = (int) Math.ceil(lastLine);
@@ -9050,7 +9334,7 @@ public class MessageObject {
                     if (block.quote) {
                         lineWidth += AndroidUtilities.dp(32);
                     } else if (block.code) {
-                        lineWidth += AndroidUtilities.dp(15);
+                        lineWidth += block.codeInset();
                     }
 
                     try {
@@ -9108,7 +9392,9 @@ public class MessageObject {
 
                 textWidth = Math.max(textWidth, Math.min(maxWidth, linesMaxWidth));
             }
-            if (block.languageLayout != null) {
+            if (block.compactCode) {
+                textWidth = Math.max(textWidth, maxWidth);
+            } else if (block.languageLayout != null) {
                 textWidth = (int) Math.max(textWidth, Math.min(block.languageLayout.getCurrentWidth() + dp(15), block.textLayout == null ? 0 : block.textLayout.getWidth()));
             }
 
@@ -9120,7 +9406,7 @@ public class MessageObject {
                 if (block.quote) {
                     right -= AndroidUtilities.dp(32);
                 } else if (block.code) {
-                    right -= AndroidUtilities.dp(15);
+                    right -= block.codeInset();
                 }
                 SpoilerEffect.addSpoilers(null, block.textLayout, -1, right, null, block.spoilers);
             }
@@ -9151,7 +9437,7 @@ public class MessageObject {
         return h;
     }
 
-    public int textHeight(ChatMessageCell.TransitionParams tp) {
+    public int textHeight(ChatMessageTransitionParams tp) {
         if (textLayoutBlocks == null) return 0;
         int h = 0;
         for (int i = 0; i < textLayoutBlocks.size(); ++i) {
@@ -9179,7 +9465,7 @@ public class MessageObject {
             return h;
         }
 
-        public int textHeight(ChatMessageCell.TransitionParams tp) {
+        public int textHeight(ChatMessageTransitionParams tp) {
             int h = 0;
             for (int i = 0; i < textLayoutBlocks.size(); ++i) {
                 h += textLayoutBlocks.get(i).padTop + textLayoutBlocks.get(i).height(tp) + textLayoutBlocks.get(i).padBottom;
@@ -9202,6 +9488,8 @@ public class MessageObject {
                 final long dialogId = messageObject.getDialogId();
                 noforwards = MessagesController.getInstance(messageObject.currentAccount).isPeerNoForwards(dialogId);
             }
+            // captions only, not poll explanations
+            final boolean compactCode = messageObject != null && messageObject.isCompactMode() && !messageObject.isOutOwner() && textPaint == Theme.chat_msgTextPaint;
 
             hasCode = text instanceof Spanned && ((Spanned) text).getSpans(0, text.length(), CodeHighlighting.Span.class).length > 0;
             hasQuote = text instanceof Spanned && ((Spanned) text).getSpans(0, text.length(), QuoteSpan.QuoteStyleSpan.class).length > 0;
@@ -9362,6 +9650,10 @@ public class MessageObject {
                         block.padTop = dp(block.first ? 8 : 6);
                         block.padBottom = dp(7);
                     }
+                } else if (block.code && compactCode) {
+                    block.layoutCompactCode(range.language, noforwards);
+                    block.padTop = block.compactCodeTop() + (block.first ? 0 : dp(8));
+                    block.padBottom = dp(TextLayoutBlock.COMPACT_CODE_BOTTOM) + (block.last ? 0 : dp(8));
                 } else if (block.code) {
                     block.layoutCode(range.language, range.end - range.start, noforwards);
                     block.padTop = dp(4) + block.languageHeight + (block.first ? 0 : dp(5));
@@ -9384,7 +9676,7 @@ public class MessageObject {
                 if (block.quote) {
                     blockMaxWidth -= dp(32);
                 } else if (block.code) {
-                    blockMaxWidth -= dp(15);
+                    blockMaxWidth -= block.codeInset();
                 }
                 if (blocksCount == 1) {
                     if (block.code && !block.quote && textLayout.getText() instanceof Spannable) {
@@ -9499,7 +9791,7 @@ public class MessageObject {
                         if (block.quote) {
                             lineWidth += AndroidUtilities.dp(32);
                         } else if (block.code) {
-                            lineWidth += AndroidUtilities.dp(15);
+                            lineWidth += block.codeInset();
                         }
 
                         try {
@@ -9559,7 +9851,9 @@ public class MessageObject {
 
                     textWidth = Math.max(textWidth, Math.min(width, linesMaxWidth));
                 }
-                if (block.languageLayout != null) {
+                if (block.compactCode) {
+                    textWidth = Math.max(textWidth, width);
+                } else if (block.languageLayout != null) {
                     textWidth = (int) Math.max(textWidth, Math.min(block.languageLayout.getCurrentWidth() + dp(15), block.textLayout == null ? 0 : block.textLayout.getWidth()));
                 }
 
@@ -9569,7 +9863,7 @@ public class MessageObject {
                     if (block.quote) {
                         right -= AndroidUtilities.dp(32);
                     } else if (block.code) {
-                        right -= AndroidUtilities.dp(15);
+                        right -= block.codeInset();
                     }
                     SpoilerEffect.addSpoilers(null, block.textLayout, -1, right, null, block.spoilers);
                 }
@@ -10082,6 +10376,22 @@ public class MessageObject {
 
     public static boolean isOut(TLRPC.Message message) {
         return message.out;
+    }
+
+    // cached: checked while drawing, and a message doesn't change its dialog
+    private byte agentBotDialog; // 0 unknown, 1 no, 2 yes
+
+    public boolean isCompactMode() {
+        if (SharedConfig.compactMode) {
+            return true;
+        }
+        if (agentBotDialog == 0 && messageOwner != null) {
+            final long dialogId = getDialogId();
+            if (dialogId != 0) {
+                agentBotDialog = SharedConfig.isCompactMode(currentAccount, dialogId) ? (byte) 2 : 1;
+            }
+        }
+        return agentBotDialog == 2;
     }
 
     public long getDialogId() {
@@ -11991,7 +12301,12 @@ public class MessageObject {
                 attachPathExists = f.exists();
             }
             if (!attachPathExists) {
-                File file = FileLoader.getInstance(currentAccount).getPathToMessage(messageOwner, useFileDatabaseQueue);
+                File file;
+                if (type == TYPE_VIDEO && needDrawBluredPreview() && isLivePhoto() && getDocument() != null) {
+                    file = FileLoader.getInstance(currentAccount).getPathToAttach(getDocument(), null, true, useFileDatabaseQueue);
+                } else {
+                    file = FileLoader.getInstance(currentAccount).getPathToMessage(messageOwner, useFileDatabaseQueue);
+                }
                 if (type == TYPE_VIDEO && needDrawBluredPreview() || isVoiceOnce() || isRoundOnce()) {
                     mediaExists = new File(file.getAbsolutePath() + ".enc").exists();
                 }
@@ -12784,7 +13099,7 @@ public class MessageObject {
     }
 
     public boolean hasLinkMediaToMakeSmall() {
-        final boolean hasLinkPreview = !isRestrictedMessage && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
+        final boolean hasLinkPreview = !isRestrictedMessage && !linksHidden && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
         final TLRPC.WebPage webpage = hasLinkPreview ? MessageObject.getMedia(messageOwner).webpage : null;
         final String webpageType = webpage != null ? webpage.type : null;
         return hasLinkPreview && !isGiveawayOrGiveawayResults() &&
@@ -12805,7 +13120,7 @@ public class MessageObject {
     }
 
     public boolean isLinkMediaSmall() {
-        final boolean hasLinkPreview = !isRestrictedMessage && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
+        final boolean hasLinkPreview = !isRestrictedMessage && !linksHidden && MessageObject.getMedia(messageOwner) instanceof TLRPC.TL_messageMediaWebPage && MessageObject.getMedia(messageOwner).webpage instanceof TLRPC.TL_webPage;
         final TLRPC.WebPage webpage = hasLinkPreview ? MessageObject.getMedia(messageOwner).webpage : null;
         final String webpageType = webpage != null ? webpage.type : null;
         return !(webpage != null && TextUtils.isEmpty(webpage.description) && TextUtils.isEmpty(webpage.title)) && (

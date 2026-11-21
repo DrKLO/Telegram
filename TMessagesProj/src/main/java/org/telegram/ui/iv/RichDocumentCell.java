@@ -19,6 +19,7 @@ import android.view.View;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLoader;
@@ -28,6 +29,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.TextSelectionHelper;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MediaActionDrawable;
@@ -39,6 +41,7 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class RichDocumentCell extends RichBlockCell implements Theme.Colorable,
         TextSelectionHelper.ArticleSelectableView, RichCaptionHost,
@@ -226,13 +229,40 @@ public class RichDocumentCell extends RichBlockCell implements Theme.Colorable,
         return FileLoader.getInstance(currentAccount).getPathToAttach(document(), true);
     }
 
+    private int progressColorKey = -1;
+    private boolean themedDraggingBackground;
+    private int themeColorsGeneration = ThemeBind.generation();
+
+    // re-reads theme colors set once (progress color, factory background) after a theme change; called on draw
+    private void refreshThemeColors() {
+        try {
+            if (radialProgress != null && progressColorKey >= 0) {
+                radialProgress.setProgressColor(Theme.getColor(progressColorKey, resourcesProvider));
+            }
+            if (themedDraggingBackground && getBackground() instanceof RichEditor.DraggingDrawable) {
+                ((RichEditor.DraggingDrawable) getBackground()).setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    @Override
+    public void draw(Canvas canvas) {
+        if (themeColorsGeneration != ThemeBind.generation()) {
+            themeColorsGeneration = ThemeBind.generation();
+            refreshThemeColors();
+        }
+        super.draw(canvas);
+    }
+
     public void updateButtonState(boolean animated) {
         if (hasPreview) {
             radialProgress.setColorKeys(Theme.key_chat_mediaLoaderPhoto, Theme.key_chat_mediaLoaderPhotoSelected, Theme.key_chat_mediaLoaderPhotoIcon, Theme.key_chat_mediaLoaderPhotoIconSelected);
-            radialProgress.setProgressColor(Theme.getColor(Theme.key_chat_mediaProgress, resourcesProvider));
+            radialProgress.setProgressColor(Theme.getColor(progressColorKey = Theme.key_chat_mediaProgress, resourcesProvider));
         } else {
             radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
-            radialProgress.setProgressColor(Theme.getColor(Theme.key_chat_inFileProgress, resourcesProvider));
+            radialProgress.setProgressColor(Theme.getColor(progressColorKey = Theme.key_chat_inFileProgress, resourcesProvider));
         }
         if (isUploading()) {
             DownloadController.getInstance(currentAccount).removeLoadingFileObserver(this);
@@ -341,6 +371,10 @@ public class RichDocumentCell extends RichBlockCell implements Theme.Colorable,
     @Override public void onProgressUpload(String fileName, long uploadedSize, long totalSize, boolean isEncrypted) {}
     @Override public void onProgressDownload(String fileName, long downloadSize, long totalSize) { radialProgress.setProgress(totalSize <= 0 ? 0 : Math.min(1f, downloadSize / (float) totalSize), true); }
     @Override public void updateColors() { selectionPaint.setColor(Theme.getColor(Theme.key_chat_inTextSelectionHighlight, resourcesProvider)); if (caption != null) caption.applyColors(); }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_chat_inTextSelectionHighlight);
+    }
     @Override public BlockRow getRow() { return currentRow; }
     @Override public RichEditText getCaptionEditText() { return caption.editText; }
     @Override public void persistCaption() { caption.persist(); }
@@ -353,6 +387,7 @@ public class RichDocumentCell extends RichBlockCell implements Theme.Colorable,
         @Override public RichDocumentCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
             final RichDocumentCell cell = new RichDocumentCell(context, currentAccount, resourcesProvider);
             cell.setBackground(new RichEditor.DraggingDrawable(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+            cell.themedDraggingBackground = true;
             return cell;
         }
         @Override public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) { ((RichDocumentCell) view).bind((BlockRow) item.object, (Delegate) item.object2); }

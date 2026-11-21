@@ -10,6 +10,10 @@
 
 #include "api/peer_connection_interface.h"
 
+// TGCALLS SEAM: complete type for PeerConnectionDependencies::dtls_transport_factory
+// (the public header only forward-declares it).
+#include "p2p/base/dtls_transport_factory.h"
+
 #include <utility>
 
 #include "pc/media_factory.h"

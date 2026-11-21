@@ -22,6 +22,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.LayoutHelper;
 
 public class GroupCreateSectionCell extends FrameLayout {
@@ -31,15 +32,15 @@ public class GroupCreateSectionCell extends FrameLayout {
 
     public GroupCreateSectionCell(Context context) {
         super(context);
-        setBackgroundColor(Theme.getColor(Theme.key_graySection));
+        ThemeBind.backgroundColor(this, Theme.key_graySection);
 
         drawable = getResources().getDrawable(R.drawable.shadowdown);
-        drawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_groupcreate_sectionShadow), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.drawableColorFilter(this, drawable, Theme.key_groupcreate_sectionShadow, PorterDuff.Mode.MULTIPLY);
 
         textView = new TextView(getContext());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         textView.setTypeface(AndroidUtilities.bold());
-        textView.setTextColor(Theme.getColor(Theme.key_groupcreate_sectionText));
+        ThemeBind.textColor(textView, Theme.key_groupcreate_sectionText);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 16, 0, 16, 0));
     }

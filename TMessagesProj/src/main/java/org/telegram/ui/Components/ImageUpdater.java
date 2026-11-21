@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -51,6 +52,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.LaunchActivity;
@@ -329,6 +331,14 @@ public class ImageUpdater implements NotificationCenter.NotificationCenterDelega
         parentFragment.showDialog(sheet);
         if (hasAvatar) {
             sheet.setItemColor(items.size() - 1, Theme.getColor(Theme.key_text_RedBold), Theme.getColor(Theme.key_text_RedRegular));
+            final int index = items.size() - 1;
+            if (index >= 0 && index < sheet.getItemViews().size()) {
+                final BottomSheet.BottomSheetCell cell = sheet.getItemViews().get(index);
+                if (cell != null && cell.getTextView() != null && cell.getImageView() != null) {
+                    ThemeBind.textColor(cell.getTextView(), Theme.key_text_RedBold);
+                    ThemeBind.colorFilter(cell.getImageView(), Theme.key_text_RedRegular, PorterDuff.Mode.MULTIPLY);
+                }
+            }
         }
     }
 

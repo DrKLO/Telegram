@@ -42,6 +42,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -299,7 +300,7 @@ public class TopicCreateFragment extends BaseFragment {
         } else {
             actionBar.createMenu().addItem(EDIT_ID, R.drawable.ic_ab_done);
         }
-        actionBar.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundGray, getResourceProvider());
         actionBar.setCastShadows(false);
 
         FrameLayout contentView = new SizeNotifierFrameLayout(context) {
@@ -319,7 +320,7 @@ public class TopicCreateFragment extends BaseFragment {
             }
         };
         fragmentView = contentView;
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        ThemeBind.backgroundColor(contentView, Theme.key_windowBackgroundGray, getResourceProvider());
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -336,8 +337,8 @@ public class TopicCreateFragment extends BaseFragment {
 
         editTextBoldCursor = new EditTextBoldCursor(context);
         editTextBoldCursor.setHintText(LocaleController.getString(R.string.EnterTopicName));
-        editTextBoldCursor.setHintColor(getThemedColor(Theme.key_chat_messagePanelHint));
-        editTextBoldCursor.setTextColor(getThemedColor(Theme.key_chat_messagePanelText));
+        ThemeBind.editHintColor(editTextBoldCursor, Theme.key_chat_messagePanelHint, getResourceProvider());
+        ThemeBind.textColor(editTextBoldCursor, Theme.key_chat_messagePanelText, getResourceProvider());
         editTextBoldCursor.setPadding(dp(0), editTextBoldCursor.getPaddingTop(), dp(0), editTextBoldCursor.getPaddingBottom());
         editTextBoldCursor.setBackground(null);
         editTextBoldCursor.setSingleLine(true);
@@ -442,7 +443,7 @@ public class TopicCreateFragment extends BaseFragment {
         topView.setOrientation(LinearLayout.VERTICAL);
         topView.addView(headerCell);
         topView.addView(editTextContainer);
-        topView.setBackground(Theme.createRoundRectDrawableShadowed(dp(16), getThemedColor(Theme.key_windowBackgroundWhite)));
+        ThemeBind.fillBackground(topView, Theme.createRoundRectDrawableShadowed(dp(16), getThemedColor(Theme.key_windowBackgroundWhite)), ThemeBind.of(Theme.key_windowBackgroundWhite), getResourceProvider());
         linearLayout.addView(topView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 9, 1, 9, 0));
 
 
@@ -504,7 +505,7 @@ public class TopicCreateFragment extends BaseFragment {
         } else {
             ImageView imageView = new ImageView(context);
             imageView.setImageResource(R.drawable.msg_filled_general);
-            imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_inMenu), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(imageView, Theme.key_chat_inMenu, getResourceProvider(), PorterDuff.Mode.MULTIPLY);
             iconContainer.addView(imageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
 
             emojiContainer.addView(
@@ -513,12 +514,12 @@ public class TopicCreateFragment extends BaseFragment {
             );
 
             FrameLayout checkBoxCellContainer = new FrameLayout(context);
-            checkBoxCellContainer.setBackground(Theme.createRoundRectDrawableShadowed(dp(16), getThemedColor(Theme.key_windowBackgroundWhite)));
+            ThemeBind.fillBackground(checkBoxCellContainer, Theme.createRoundRectDrawableShadowed(dp(16), getThemedColor(Theme.key_windowBackgroundWhite)), ThemeBind.of(Theme.key_windowBackgroundWhite), getResourceProvider());
 
             checkBoxCell = new TextCheckCell2(context);
             checkBoxCell.getCheckBox().setDrawIconType(0);
             checkBoxCell.setTextAndCheck(LocaleController.getString(R.string.EditTopicHide), !topicForEdit.hidden, false);
-            checkBoxCell.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), 16, 16));
+            ThemeBind.selectorBackground(checkBoxCell, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_windowBackgroundWhite), getThemedColor(Theme.key_listSelector), 16, 16), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector), getResourceProvider());
             checkBoxCell.setOnClickListener(e -> {
                 checkBoxCell.setChecked(!checkBoxCell.isChecked());
             });

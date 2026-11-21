@@ -96,6 +96,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     private TelegramRoundVideoUpload upload;
     private VideoEditedInfo videoEditedInfo;
     private SendOptions pendingSend;
+    private boolean finishRequested;
+    /** The host destroyed the view while a send was finishing; the session completes detached. */
+    private boolean sendDetached;
     private AnimatorSet visibilityAnimator;
     private ValueAnimator zoomResetAnimator;
     private ValueAnimator cameraFlipAnimator;
@@ -329,11 +332,16 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         setRecordingUiFrameClockActive(false);
         cancelCameraFlipAnimation();
         if (zoomResetAnimator != null) zoomResetAnimator.cancel();
-        if (session != null) {
+        if (session != null && isSendFinishing()) {
+            // The output is still being produced: the session keeps finishing on its own and
+            // the message is sent from onCompleted, so neither the session nor the upload goes.
+            sendDetached = true;
+            session.release();
+        } else if (session != null) {
             session.release();
             session = null;
         }
-        if (upload != null) {
+        if (upload != null && !sendDetached) {
             upload.release(!sent);
             upload = null;
         }
@@ -348,10 +356,11 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         if (stateInfo.getState() == RoundVideoSession.State.RECORDING) {
             pauseForPreview();
         } else if (stateInfo.getState() == RoundVideoSession.State.PREVIEWING) {
+            // Refused at the duration limit: the host keeps showing the paused preview.
+            if (!session.resumeRecording()) return;
             videoEditedInfo = null;
             resumeNotificationPending = true;
             stopNotificationSent = false;
-            session.resumeRecording();
         }
     }
 
@@ -372,6 +381,8 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         progressView.getPaint().setAlpha(255);
         sent = false;
         muted = false;
+        pendingSend = null;
+        finishRequested = false;
         startedNotificationSent = false;
         stopNotificationSent = false;
         lastVisibleDurationMs = 0L;
@@ -497,7 +508,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             pauseForPreview();
             return;
         }
-        if (state != 1 && state != 4) return;
+        if (state != 1 && state != 4 || pendingSend != null) return;
         long duration = getCurrentDurationMs();
         if (duration < MINIMUM_DURATION_MS) {
             NotificationCenter.getInstance(currentAccount).postNotificationName(
@@ -511,9 +522,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         }
         if (stateInfo.getState() == RoundVideoSession.State.RECORDING) {
             postRecordStopped(5);
-        } else {
-            applyExternalTrim();
         }
+        // A resume in progress must not bring the host back into the recording state.
+        resumeNotificationPending = false;
         pendingSend = new SendOptions(
                 notify,
                 scheduleDate,
@@ -522,14 +533,36 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 effectId,
                 stars
         );
-        session.finish(!muted);
+        finishPendingSend();
+    }
+
+    private boolean isSendFinishing() {
+        return pendingSend != null
+                && finishRequested
+                && session != null
+                && session.getStateInfo().getState() == RoundVideoSession.State.FINISHING;
+    }
+
+    /** Finishes a requested send once the session can finish: PAUSING and RESUMING defer it. */
+    private void finishPendingSend() {
+        if (pendingSend == null || finishRequested || session == null || stateInfo == null) return;
+        RoundVideoSession.State state = stateInfo.getState();
+        if (state == RoundVideoSession.State.PREVIEWING) {
+            applyExternalTrim();
+        } else if (state != RoundVideoSession.State.RECORDING) {
+            return;
+        }
+        finishRequested = session.finish(!muted);
     }
 
     @Override
     public void cancel(boolean byGesture) {
-        if (session == null) return;
+        // A send that is already finishing is not cancelled by a late back press or gesture.
+        if (isSendFinishing()) return;
+        // Refused once the result was delivered: the recording is being sent.
+        if (session == null || !session.cancel()) return;
+        pendingSend = null;
         postRecordStopped(byGesture ? 0 : 6);
-        session.cancel();
         if (upload != null) upload.release(true);
         upload = null;
         MediaController.getInstance().requestRecordAudioFocus(false);
@@ -599,6 +632,31 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
     public boolean onInterceptTouchEvent(MotionEvent event) {
         if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
         return super.onInterceptTouchEvent(event);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        setScreenFlashEnabled(false);
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (visibility != VISIBLE) pauseForHiddenWindow();
+    }
+
+    /**
+     * The camera is evicted and the microphone silenced in the background, so an active recording
+     * is kept as a paused preview, and preview playback stops.
+     */
+    private void pauseForHiddenWindow() {
+        if (session == null || stateInfo == null) return;
+        if (stateInfo.getState() == RoundVideoSession.State.RECORDING) {
+            pauseForPreview();
+        } else if (stateInfo.isPreviewPlaying()) {
+            session.pausePreview();
+        }
     }
 
     @Override
@@ -699,6 +757,12 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
                 postRecordStopped(2);
             }
             updateButtons();
+            if (pendingSend != null && !finishRequested) {
+                AndroidUtilities.runOnUIThread(InstantCameraView2.this::finishPendingSend);
+            }
+            if (info.isPreviewPlaying() && getWindowVisibility() != VISIBLE) {
+                AndroidUtilities.runOnUIThread(InstantCameraView2.this::pauseForHiddenWindow);
+            }
         }
 
         @Override
@@ -739,6 +803,9 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             progressView.setProgress(durationMs / 60_000f);
             muted = false;
             muteImageView.setAlpha(0f);
+            // A send deferred while pausing finishes right away; the host already left the
+            // recording UI and must not switch to the preview.
+            if (pendingSend != null) return;
             File previewFile = session == null ? null : session.getPreviewFile();
             if (previewFile == null) return;
             videoEditedInfo = createVideoEditedInfo(previewFile, durationMs, null);
@@ -771,6 +838,12 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
             FileLog.e(error);
             if (upload != null) upload.release(true);
             upload = null;
+            if (sendDetached) {
+                // The session releases itself on failure; nothing is left for the host.
+                sendDetached = false;
+                session = null;
+                return;
+            }
             MediaController.getInstance().requestRecordAudioFocus(false);
             if (startedNotificationSent) {
                 postRecordStopped(6);
@@ -878,6 +951,11 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
         if (upload != null) upload.release(false);
         upload = null;
         MediaController.getInstance().requestRecordAudioFocus(false);
+        if (sendDetached) {
+            // Released by the session itself right after this completion callback.
+            sendDetached = false;
+            session = null;
+        }
     }
 
     private VideoEditedInfo createVideoEditedInfo(
@@ -1070,6 +1148,7 @@ public final class InstantCameraView2 extends InstantCameraViewBase {
 
     private void setScreenFlashEnabled(boolean enabled) {
         Activity activity = delegate.getParentActivity();
+        if (activity == null) activity = AndroidUtilities.findActivity(getContext());
         if (activity == null) return;
         WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
         if (enabled) {

@@ -8,6 +8,9 @@
 
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
+import org.telegram.messenger.FileLog;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
@@ -34,6 +37,7 @@ import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
@@ -42,12 +46,12 @@ import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.WallpapersListActivity;
 
-public class WallpaperCell extends FrameLayout {
+public class WallpaperCell extends FrameLayout implements Theme.Colorable {
 
     int size;
     public boolean drawStubBackground = true;
 
-    public class WallpaperView extends FrameLayout {
+    public class WallpaperView extends FrameLayout implements Theme.Colorable {
 
         private BackupImageView imageView;
         private ImageView imageView2;
@@ -297,7 +301,24 @@ public class WallpaperCell extends FrameLayout {
                 canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
             }
         }
-    }
+
+        private int lastCheckBoxColor, lastCheckBoxCheckColor;
+
+        @Override
+        public void updateColors() {
+            try {
+                final int color = Theme.getColor(Theme.key_checkbox), checkColor = Theme.getColor(Theme.key_checkboxCheck);
+                if (checkBox != null && (color != lastCheckBoxColor || checkColor != lastCheckBoxCheckColor)) { // setColor allocates a color filter
+                    lastCheckBoxColor = color;
+                    lastCheckBoxCheckColor = checkColor;
+                    checkBox.setColor(color, checkColor);
+                }
+                invalidate();
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
     private WallpaperView[] wallpaperViews;
     private int spanCount = 3;
@@ -319,6 +340,7 @@ public class WallpaperCell extends FrameLayout {
         wallpaperViews = new WallpaperView[size];
         for (int a = 0; a < wallpaperViews.length; a++) {
             WallpaperView wallpaperView = wallpaperViews[a] = new WallpaperView(context);
+            wallpaperView.setClipToOutline(true);
             int num = a;
             addView(wallpaperView);
             wallpaperView.setOnClickListener(v -> onWallpaperClick(wallpaperView.currentWallpaper, num));
@@ -347,15 +369,15 @@ public class WallpaperCell extends FrameLayout {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         if (spanCount == 1) {
-            super.onMeasure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(size + AndroidUtilities.dp(6), MeasureSpec.EXACTLY));
-            setPadding(0, 0, 0, AndroidUtilities.dp(6));
+            super.onMeasure(MeasureSpec.makeMeasureSpec(size, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(size + AndroidUtilities.dp(3), MeasureSpec.EXACTLY));
+            setPadding(0, 0, 0, AndroidUtilities.dp(3));
             return;
         }
         int width = MeasureSpec.getSize(widthMeasureSpec);
-        int availableWidth = width - AndroidUtilities.dp(14 * 2 + 6 * (spanCount - 1));
+        int availableWidth = width - AndroidUtilities.dp(12 * 2 + 3 * (spanCount - 1));
         int itemWidth = availableWidth / spanCount;
         int height = currentType == WallpapersListActivity.TYPE_ALL || currentType == WallpapersListActivity.TYPE_CHANNEL_PATTERNS || currentType == WallpapersListActivity.TYPE_CHANNEL_CUSTOM ? AndroidUtilities.dp(180) : itemWidth;
-        setMeasuredDimension(width, height + (isTop ? AndroidUtilities.dp(14) : 0) + (AndroidUtilities.dp(isBottom ? 14 : 6)));
+        setMeasuredDimension(width, height + (isTop ? AndroidUtilities.dp(12) : 0) + (AndroidUtilities.dp(isBottom ? 12 : 3)));
 
         for (int a = 0; a < spanCount; a++) {
             wallpaperViews[a].measure(MeasureSpec.makeMeasureSpec(a == spanCount - 1 ? availableWidth : itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
@@ -369,12 +391,12 @@ public class WallpaperCell extends FrameLayout {
             super.onLayout(changed, left, top, right, bottom);
             return;
         }
-        int l = AndroidUtilities.dp(14);
-        int t = isTop ? AndroidUtilities.dp(14) : 0;
+        int l = AndroidUtilities.dp(12);
+        int t = isTop ? AndroidUtilities.dp(12) : 0;
         for (int a = 0; a < spanCount; a++) {
             int w = wallpaperViews[a].getMeasuredWidth();
             wallpaperViews[a].layout(l, t, l + w, t + wallpaperViews[a].getMeasuredHeight());
-            l += w + AndroidUtilities.dp(6);
+            l += w + AndroidUtilities.dp(3);
         }
     }
 
@@ -383,6 +405,13 @@ public class WallpaperCell extends FrameLayout {
         isTop = top;
         isBottom = bottom;
         for (int a = 0; a < wallpaperViews.length; a++) {
+            if ((top || bottom) && (a == 0 || (a == columns - 1))) {
+                wallpaperViews[a].setOutlineProvider(ViewOutlineProviderImpl.boundsWithRound(dp(16),
+                    a == 0, top, (a == columns - 1), bottom));
+            } else {
+                wallpaperViews[a].setOutlineProvider(null);
+            }
+
             wallpaperViews[a].setVisibility(a < columns ? VISIBLE : GONE);
             wallpaperViews[a].clearAnimation();
         }
@@ -415,6 +444,16 @@ public class WallpaperCell extends FrameLayout {
         if (size != itemSize) {
             this.size = itemSize;
             requestLayout();
+        }
+    }
+
+    @Override
+    public void updateColors() {
+        try {
+            backgroundPaint.setColor(Theme.getColor(Theme.key_sharedMedia_photoPlaceholder));
+            invalidate();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

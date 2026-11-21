@@ -52,6 +52,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
 import org.telegram.ui.GradientClip;
@@ -59,6 +60,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
 
@@ -73,8 +75,8 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
         closeView = new ImageView(context);
         closeView.setScaleType(ImageView.ScaleType.CENTER);
         closeView.setImageResource(R.drawable.ic_close_white);
-        closeView.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        closeView.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)));
+        ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider, PorterDuff.Mode.SRC_ATOP);
+        ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), .10f)), null, ThemeBind.multAlpha(Theme.key_windowBackgroundWhiteBlackText, .10f), resourcesProvider);
         actionBar.addView(closeView, LayoutHelper.createFrame(54, 54, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 8, 0));
         ScaleStateListAnimator.apply(closeView, .1f, 1.5f);
         closeView.setOnClickListener(v -> this.dismiss());
@@ -532,7 +534,7 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             emojifyCheckbox.setDrawBackgroundAsArc(10);
             emojifyContainer.addView(emojifyCheckbox, LayoutHelper.createLinear(22, 22, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
             emojifyTextView = new TextView(context);
-            emojifyTextView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+            ThemeBind.textColor(emojifyTextView, Theme.key_dialogTextBlack, resourcesProvider);
             emojifyTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             emojifyTextView.setTypeface(AndroidUtilities.bold());
             emojifyTextView.setText(LocaleController.getString(R.string.AIEditorEmojify));
@@ -576,6 +578,13 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             anotherExampleIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
             anotherExampleText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
             anotherExample.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), .10f), dp(8), dp(8)));
+        }
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
+            colors.add(Theme.key_windowBackgroundWhiteBlueHeader);
+            colors.add(Theme.key_listSelector);
+            colors.add(Theme.key_featuredStickers_addButton);
         }
 
         public void set(CharSequence text1, CharSequence text2, CharSequence text3, View.OnClickListener onText2Click, boolean emojify, View.OnClickListener onEmojifyClick, View.OnClickListener onAnotherExampleClick) {
@@ -764,6 +773,14 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             copyButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.SRC_IN));
             copyButton.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), 0.10f)));
         }
+        @Override
+        public void addColorKeys(HashSet<Integer> colors) {
+            colors.add(Theme.key_windowBackgroundWhiteBlackText);
+            colors.add(Theme.key_windowBackgroundWhiteBlueHeader);
+            colors.add(Theme.key_chat_inTextSelectionHighlight);
+            colors.add(Theme.key_chat_TextSelectionCursor);
+            colors.add(Theme.key_featuredStickers_addButton);
+        }
 
         public void setHandlesColor(int color) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || XiaomiUtilities.isMIUI()) {
@@ -925,5 +942,26 @@ public class TranslateAlert3 extends BottomSheetWithRecyclerListView {
             }
         }
 
+    }
+
+    private int lastButtonContainerColor, lastBackgroundColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            final int gray = getThemedColor(Theme.key_windowBackgroundGray);
+            if (gray != lastBackgroundColor) {
+                lastBackgroundColor = gray;
+                setBackgroundColor(gray);
+            }
+            if (buttonContainer != null && buttonContainer.getBackground() instanceof GradientDrawable && gray != lastButtonContainerColor) {
+                // recolor in place: no new drawable per theme frame
+                lastButtonContainerColor = gray;
+                ((GradientDrawable) buttonContainer.getBackground()).setColors(new int[] { Theme.multAlpha(gray, 0.0f), gray, gray });
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 }

@@ -11,20 +11,20 @@ import android.graphics.drawable.Drawable;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ChatBackgroundDrawable;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceBitmap;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceWrapped;
+import org.telegram.utils.glass.source.GlassSource;
+import org.telegram.utils.glass.source.GlassSourceBitmap;
+import org.telegram.utils.glass.source.GlassSourceColor;
+import org.telegram.utils.glass.source.GlassSourceWrapped;
 import org.telegram.ui.Components.blur3.utils.BitmapMemoizedMetadata;
 
 public class WallpaperBitmapProvider {
 
-    private final BlurredBackgroundSourceColor sourceColor = new BlurredBackgroundSourceColor();
-    private final BlurredBackgroundSourceBitmap sourceBitmap = new BlurredBackgroundSourceBitmap();
+    private final GlassSourceColor sourceColor = new GlassSourceColor();
+    private final GlassSourceBitmap sourceBitmap = new GlassSourceBitmap();
 
     private static final Rect tmpRect = new Rect();
 
-    public BlurredBackgroundSource updateSourceFromBackgroundViewDrawable(
+    public GlassSource updateSourceFromBackgroundViewDrawable(
         Drawable drawable
     ) {
         if (drawable instanceof ColorDrawable) {
@@ -67,35 +67,35 @@ public class WallpaperBitmapProvider {
         return sourceBitmap;
     }
 
-    public int getNavigationBarColor(BlurredBackgroundSource source) {
-        if (source instanceof BlurredBackgroundSourceColor) {
-            return ((BlurredBackgroundSourceColor) source).getColor();
+    public int getNavigationBarColor(GlassSource source) {
+        if (source instanceof GlassSourceColor) {
+            return ((GlassSourceColor) source).getColor();
         }
 
-        if (source instanceof BlurredBackgroundSourceBitmap) {
-            final Bitmap bitmap = ((BlurredBackgroundSourceBitmap) source).getBitmap();
+        if (source instanceof GlassSourceBitmap) {
+            final Bitmap bitmap = ((GlassSourceBitmap) source).getBitmap();
             return navbarColorFromBitmap.get(bitmap);
         }
 
-        if (source instanceof BlurredBackgroundSourceWrapped) {
-            return getNavigationBarColor(((BlurredBackgroundSourceWrapped) source).getSource());
+        if (source instanceof GlassSourceWrapped) {
+            return getNavigationBarColor(((GlassSourceWrapped) source).getSource());
         }
 
         return 0;
     }
 
-    public int getStatusBarColor(BlurredBackgroundSource source) {
-        if (source instanceof BlurredBackgroundSourceColor) {
-            return ((BlurredBackgroundSourceColor) source).getColor();
+    public int getStatusBarColor(GlassSource source) {
+        if (source instanceof GlassSourceColor) {
+            return ((GlassSourceColor) source).getColor();
         }
 
-        if (source instanceof BlurredBackgroundSourceBitmap) {
-            final Bitmap bitmap = ((BlurredBackgroundSourceBitmap) source).getBitmap();
+        if (source instanceof GlassSourceBitmap) {
+            final Bitmap bitmap = ((GlassSourceBitmap) source).getBitmap();
             return statusBarColorFromBitmap.get(bitmap);
         }
 
-        if (source instanceof BlurredBackgroundSourceWrapped) {
-            return getStatusBarColor(((BlurredBackgroundSourceWrapped) source).getSource());
+        if (source instanceof GlassSourceWrapped) {
+            return getStatusBarColor(((GlassSourceWrapped) source).getSource());
         }
 
         return 0;

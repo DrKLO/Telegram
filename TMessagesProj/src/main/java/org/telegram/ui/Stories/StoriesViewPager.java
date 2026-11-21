@@ -58,6 +58,21 @@ public class StoriesViewPager extends ViewPager {
     private int selectedPositionInPage;
     private int updateVisibleItemPosition = -1;
 
+    private final ArrayList<PeerStoriesView> cachedViews = new ArrayList<>();
+
+    /** The pager is dropped when the story viewer window closes: release what its pages registered globally */
+    public void onDestroy() {
+        for (int i = 0; i < getChildCount(); i++) {
+            final View child = getChildAt(i);
+            if (child instanceof PageLayout && ((PageLayout) child).peerStoryView != null) {
+                ((PageLayout) child).peerStoryView.onDestroy();
+            }
+        }
+        for (int i = 0; i < cachedViews.size(); i++) {
+            cachedViews.get(i).onDestroy();
+        }
+    }
+
     public StoriesViewPager(int account, @NonNull Context context, StoryViewer storyViewer, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.currentAccount = account;
@@ -71,8 +86,6 @@ public class StoriesViewPager extends ViewPager {
                 }
                 return dialogs.size();
             }
-
-            private final ArrayList<PeerStoriesView> cachedViews = new ArrayList<>();
 
             @NonNull
             @Override

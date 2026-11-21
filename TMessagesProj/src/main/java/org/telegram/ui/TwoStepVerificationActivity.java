@@ -57,6 +57,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EditTextSettingsCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -75,6 +76,7 @@ import org.telegram.ui.Components.TransformableLoginButtonView;
 import org.telegram.ui.Components.VerticalPositionAutoAnimator;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Locale;
 
 public class TwoStepVerificationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -170,7 +172,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         super.onFragmentCreate();
         if (!preloaded) preload(null);
         updateRows();
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.twoStepPasswordChanged);
         return true;
     }
 
@@ -208,10 +210,10 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(false);
         if (!passwordEntered || delegate != null) {
-            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
-            actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarWhiteSelector), false);
+            ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundWhite);
+            ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, false);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarWhiteSelector, false);
             actionBar.setCastShadows(false);
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -229,7 +231,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(frameLayout, Theme.key_windowBackgroundWhite);
 
         scrollView = new ScrollView(context);
         scrollView.setFillViewport(true);
@@ -247,14 +249,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         linearLayout.addView(lockImageView, LayoutHelper.createLinear(100, 100, Gravity.CENTER_HORIZONTAL));
 
         titleTextView = new TextView(context);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setTypeface(AndroidUtilities.bold());
         linearLayout.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 24, 8, 24, 0));
 
         subtitleTextView = new TextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+        ThemeBind.textColor(subtitleTextView, Theme.key_windowBackgroundWhiteGrayText6);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         subtitleTextView.setVisibility(View.GONE);
@@ -267,14 +269,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         passwordEditText = new EditTextBoldCursor(context);
         passwordEditText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-        passwordEditText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        passwordEditText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+        ThemeBind.textColor(passwordEditText, Theme.key_windowBackgroundWhiteBlackText);
+        ThemeBind.hintTextColor(passwordEditText, Theme.key_windowBackgroundWhiteHintText);
         passwordEditText.setBackground(null);
         passwordEditText.setSingleLine(true);
         passwordEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         passwordEditText.setTransformationMethod(PasswordTransformationMethod.getInstance());
         passwordEditText.setTypeface(Typeface.DEFAULT);
-        passwordEditText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+        ThemeBind.cursorColor(passwordEditText, Theme.key_windowBackgroundWhiteInputFieldActivated);
         passwordEditText.setCursorWidth(1.5f);
         passwordEditText.setContentDescription(getString(R.string.EnterPassword));
         int padding = dp(16);
@@ -306,14 +308,14 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         });
 
         bottomTextView = new TextView(context);
-        bottomTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+        ThemeBind.textColor(bottomTextView, Theme.key_windowBackgroundWhiteGrayText6);
         bottomTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         bottomTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         bottomTextView.setText(getString(R.string.YourEmailInfo));
         linearLayout.addView(bottomTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 40, 30, 40, 0));
 
         resetWaitView = new TextView(context);
-        resetWaitView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+        ThemeBind.textColor(resetWaitView, Theme.key_windowBackgroundWhiteGrayText6);
         resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         resetWaitView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         linearLayout.addView(resetWaitView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 40, 8, 40, 0));
@@ -337,7 +339,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         cancelResetButton.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
         cancelResetButton.setPadding(dp(32), 0, dp(32), 0);
         cancelResetButton.setText(getString(R.string.CancelReset));
-        cancelResetButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        ThemeBind.textColor(cancelResetButton, Theme.key_windowBackgroundWhiteBlueText4);
         cancelResetButton.setVisibility(View.GONE);
         frameLayout.addView(cancelResetButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, Gravity.BOTTOM, 0, 0, 0, 16));
         cancelResetButton.setOnClickListener(v -> cancelPasswordReset());
@@ -397,7 +399,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 showDialog(alertDialog);
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                    ThemeBind.textColor(button, Theme.key_text_RedBold);
                 }
             }
         });
@@ -430,6 +432,8 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 subtitleTextView.setText(getString(R.string.PleaseEnterCurrentPasswordWithdraw));
             } else if (delegateType == 2) {
                 subtitleTextView.setText(AndroidUtilities.replaceTags(formatString(R.string.PleaseEnterCurrentPasswordGiftTransfer, delegateTypeString)));
+            } else if (delegateType == 3) {
+                subtitleTextView.setText(AndroidUtilities.replaceTags(formatString(R.string.PleaseEnterCurrentPasswordGiftWallet, delegateTypeString)));
             } else {
                 subtitleTextView.setText(getString(R.string.PleaseEnterCurrentPasswordTransfer));
             }
@@ -441,10 +445,10 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
         }
 
         if (passwordEntered) {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundGray);
             fragmentView.setTag(Theme.key_windowBackgroundGray);
         } else {
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
             fragmentView.setTag(Theme.key_windowBackgroundWhite);
         }
 
@@ -534,7 +538,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 cancelResetButton.setVisibility(View.VISIBLE);
                 bottomButton.setVisibility(View.VISIBLE);
             }
-            bottomButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            ThemeBind.textColor(bottomButton, Theme.key_windowBackgroundWhiteBlueText4);
             AndroidUtilities.cancelRunOnUIThread(updateTimeRunnable);
         } else {
             int t = Math.max(1, currentPassword.pending_reset_date - getConnectionsManager().getCurrentTime());
@@ -547,7 +551,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 time = String.format(Locale.US, "%02d:%02d", t / 60, t % 60);
             }
             resetWaitView.setText(LocaleController.formatString("RestorePasswordResetIn", R.string.RestorePasswordResetIn, time));
-            resetWaitView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            ThemeBind.textColor(resetWaitView, Theme.key_windowBackgroundWhiteGrayText6);
             if (bottomButton.getVisibility() != View.GONE) {
                 bottomButton.setVisibility(View.GONE);
             }
@@ -615,7 +619,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     showDialog(dialog);
                     TextView button = (TextView) dialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                        ThemeBind.textColor(button, Theme.key_text_RedBold);
                     }
                 } else {
                     cancelPasswordReset();
@@ -809,7 +813,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                     bottomButton.setVisibility(View.INVISIBLE);
                     updateBottomButton();
                 }
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundGray);
                 fragmentView.setTag(Theme.key_windowBackgroundGray);
             } else {
                 if (listView != null) {
@@ -821,7 +825,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 if (passwordEditText != null) {
                     floatingButton.setButtonVisible(true, false);
                     passwordEditText.setVisibility(View.VISIBLE);
-                    fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
                     fragmentView.setTag(Theme.key_windowBackgroundWhite);
                     titleTextView.setVisibility(View.VISIBLE);
                     bottomButton.setVisibility(View.VISIBLE);
@@ -1180,7 +1184,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
             switch (viewType) {
                 case 0:
                     view = new TextSettingsCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    ThemeBind.backgroundColor(view, Theme.key_windowBackgroundWhite);
                     break;
                 case 1:
                 default:
@@ -1196,7 +1200,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
                 case 0:
                     TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                     textCell.setTag(Theme.key_windowBackgroundWhiteBlackText);
-                    textCell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    ThemeBind.textColor(textCell.getTextView(), Theme.key_windowBackgroundWhiteBlackText);
                     if (position == changePasswordRow) {
                         textCell.setText(getString(R.string.ChangePassword), true);
                     } else if (position == setPasswordRow) {
@@ -1233,35 +1237,16 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextSettingsCell.class, EditTextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundWhite));
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND | ThemeDescription.FLAG_CHECKTAG, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
         themeDescriptions.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CHECKTAG, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
 
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{EditTextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_HINTTEXTCOLOR, new Class[]{EditTextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteHintText));
 
-        themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
 
         themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText6));
-        themeDescriptions.add(new ThemeDescription(bottomTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText6));
-        themeDescriptions.add(new ThemeDescription(bottomButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
         themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
         themeDescriptions.add(new ThemeDescription(passwordEditText, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
 
@@ -1285,7 +1270,7 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
 
         builder.setNegativeButton(getString(R.string.ForceSetPasswordCancel), (a1, a2) -> finishFragment());
         AlertDialog alertDialog = builder.show();
-        ((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE)).setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        ThemeBind.textColor((TextView)alertDialog.getButton(DialogInterface.BUTTON_NEGATIVE), Theme.key_text_RedBold);
     }
 
     public void setBlockingAlert(int otherwiseRelogin) {
@@ -1309,5 +1294,39 @@ public class TwoStepVerificationActivity extends BaseFragment implements Notific
     public boolean isLightStatusBar() {
         int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
         return ColorUtils.calculateLuminance(color) > 0.7f;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            super.onThemeColorsChanged();
+            if (emptyView != null) {
+                emptyView.setProgressBarColor(Theme.getColor(Theme.key_progressCircle));
+            }
+            // passwordEditText cursor: kept by its ThemeBind.cursorColor binding from createView
+            if (floatingButtonIcon != null) {
+                floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
+            }
+            if (radialProgressView != null) {
+                radialProgressView.setProgressColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+            }
+    
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_windowBackgroundWhiteGrayText4);
+        keys.add(Theme.key_text_RedRegular);
+        keys.add(Theme.key_divider);
+        keys.add(Theme.key_listSelector);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
     }
 }

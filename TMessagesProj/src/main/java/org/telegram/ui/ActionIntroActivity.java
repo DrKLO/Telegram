@@ -49,6 +49,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RLottieImageView;
@@ -59,6 +60,7 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ActionIntroActivity extends BaseFragment implements LocationController.LocationFetchCallback {
 
@@ -119,11 +121,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     @Override
     public View createView(Context context) {
         if (actionBar != null) {
-            actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(actionBar, Theme.key_windowBackgroundWhite);
 
             actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-            actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
-            actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
+            ThemeBind.actionBarItemsColor(actionBar, Theme.key_actionBarDefaultIcon, false);
+            ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarDefaultSelector, false);
             actionBar.setCastShadows(false);
             actionBar.setAddToContainer(false);
             actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -376,7 +378,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 }
             }
         };
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundWhite);
         ViewGroup viewGroup = (ViewGroup) fragmentView;
         viewGroup.setOnTouchListener((v, event) -> true);
 
@@ -388,14 +390,14 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         viewGroup.addView(imageView);
 
         titleTextView = new TextView(context);
-        titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
         titleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         titleTextView.setPadding(AndroidUtilities.dp(32), 0, AndroidUtilities.dp(32), 0);
         titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
         viewGroup.addView(titleTextView);
 
         subtitleTextView = new TextView(context);
-        subtitleTextView.setTextColor(Theme.getColor(currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(subtitleTextView, currentType == ACTION_TYPE_CHANGE_PHONE_NUMBER ? Theme.key_featuredStickers_addButton : Theme.key_windowBackgroundWhiteBlackText);
         subtitleTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         subtitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         subtitleTextView.setSingleLine(true);
@@ -405,7 +407,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         viewGroup.addView(subtitleTextView);
 
         descriptionText = new TextView(context);
-        descriptionText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+        ThemeBind.textColor(descriptionText, Theme.key_windowBackgroundWhiteGrayText6);
         descriptionText.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText.setLineSpacing(AndroidUtilities.dp(2), 1);
         descriptionText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -429,19 +431,19 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                 descriptionLayout.addView(linearLayout, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, a != 2 ? 7 : 0));
 
                 descriptionLines[a * 2] = new TextView(context);
-                descriptionLines[a * 2].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(descriptionLines[a * 2], Theme.key_windowBackgroundWhiteBlackText);
                 descriptionLines[a * 2].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 descriptionLines[a * 2].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 descriptionLines[a * 2].setText(String.format(LocaleController.isRTL ? ".%d" : "%d.", a + 1));
                 descriptionLines[a * 2].setTypeface(AndroidUtilities.bold());
 
                 descriptionLines[a * 2 + 1] = new TextView(context);
-                descriptionLines[a * 2 + 1].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(descriptionLines[a * 2 + 1], Theme.key_windowBackgroundWhiteBlackText);
                 descriptionLines[a * 2 + 1].setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
                 descriptionLines[a * 2 + 1].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 if (a == 0) {
-                    descriptionLines[a * 2 + 1].setLinkTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
-                    descriptionLines[a * 2 + 1].setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkSelection));
+                    ThemeBind.linkTextColor(descriptionLines[a * 2 + 1], Theme.key_windowBackgroundWhiteLinkText);
+                    ThemeBind.highlightColor(descriptionLines[a * 2 + 1], Theme.key_windowBackgroundWhiteLinkSelection);
                     String text = LocaleController.getString(R.string.AuthAnotherClientInfo1);
                     SpannableStringBuilder spanned = new SpannableStringBuilder(text);
                     int index1 = text.indexOf('*');
@@ -472,7 +474,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         }
 
         descriptionText2 = new TextView(context);
-        descriptionText2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+        ThemeBind.textColor(descriptionText2, Theme.key_windowBackgroundWhiteGrayText6);
         descriptionText2.setGravity(Gravity.CENTER_HORIZONTAL);
         descriptionText2.setLineSpacing(AndroidUtilities.dp(2), 1);
         descriptionText2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -515,10 +517,10 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         ScaleStateListAnimator.apply(buttonTextView, .02f, 1.2f);
         buttonTextView.setPadding(AndroidUtilities.dp(34), 0, AndroidUtilities.dp(34), 0);
         buttonTextView.setGravity(Gravity.CENTER);
-        buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.textColor(buttonTextView, Theme.key_featuredStickers_buttonText);
         buttonTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         buttonTextView.setTypeface(AndroidUtilities.bold());
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        ThemeBind.selectorBackground(buttonTextView, Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)), null, ThemeBind.of(Theme.key_featuredStickers_addButtonPressed));
         viewGroup.addView(buttonTextView);
         buttonTextView.setOnClickListener(v -> {
             if (getParentActivity() == null) {
@@ -654,10 +656,26 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
         super.onResume();
     }
 
+    private final int[] startMessagingButtonColors = new int[2];
+    private int appliedPressedColor;
+    private boolean startMessagingButtonColorsSet;
+
     private void updateColors() {
-        startMessagingButtonBackground.setColors(new int[]{getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButton2)});
+        final int c0 = getThemedColor(Theme.key_featuredStickers_addButton), c1 = getThemedColor(Theme.key_featuredStickers_addButton2);
+        if (!startMessagingButtonColorsSet || startMessagingButtonColors[0] != c0 || startMessagingButtonColors[1] != c1) {
+            startMessagingButtonColors[0] = c0;
+            startMessagingButtonColors[1] = c1;
+            startMessagingButtonColorsSet = true;
+            startMessagingButtonBackground.setColors(startMessagingButtonColors);
+        }
         buttonTextView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed)));
+        final int pressedColor = Theme.getColor(Theme.key_featuredStickers_addButtonPressed);
+        if (buttonTextView.getBackground() == null) {
+            buttonTextView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), Color.TRANSPARENT, pressedColor));
+        } else if (pressedColor != appliedPressedColor) {
+            Theme.setSelectorDrawableColor(buttonTextView.getBackground(), pressedColor, true);
+        }
+        appliedPressedColor = pressedColor;
 
 
         if (colors == null || imageView == null) {
@@ -707,7 +725,7 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
                             }
                         })
                         .setNegativeButton(LocaleController.getString(R.string.ContactsPermissionAlertNotNow), null)
-                        .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground))
+                        .setTopAnimation(R.raw.permission_request_camera, 72, false, Theme.getColor(Theme.key_dialogTopBackground)).setTopBackgroundColorKey(Theme.key_dialogTopBackground, null)
                         .show();
             }
         }
@@ -741,17 +759,10 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
 
         ThemeDescription.ThemeDescriptionDelegate delegate = this::updateColors;
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, delegate, Theme.key_windowBackgroundWhite));
 
         if (actionBar != null) {
-            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
         }
 
-        themeDescriptions.add(new ThemeDescription(titleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, delegate, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(subtitleTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        themeDescriptions.add(new ThemeDescription(descriptionText, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText6));
 
         themeDescriptions.add(new ThemeDescription(descriptionLines[0], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(descriptionLines[1], ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
@@ -768,5 +779,11 @@ public class ActionIntroActivity extends BaseFragment implements LocationControl
     public boolean isLightStatusBar() {
         int color = Theme.getColor(Theme.key_windowBackgroundWhite, null, true);
         return ColorUtils.calculateLuminance(color) > 0.7f;
+    }
+
+    @Override
+    public void onThemeColorsChanged() {
+        super.onThemeColorsChanged();
+        updateColors();
     }
 }

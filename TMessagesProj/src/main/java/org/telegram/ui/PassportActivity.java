@@ -102,6 +102,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.HeaderCell;
@@ -115,6 +116,7 @@ import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ContextProgressView;
 import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.ForegroundColorSpanThemable;
 import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.HintEditText;
 import org.telegram.ui.Components.LayoutHelper;
@@ -131,6 +133,7 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -451,7 +454,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             int padding = currentActivityType == TYPE_MANAGE ? 21 : 51;
 
             textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setLines(1);
             textView.setMaxLines(1);
@@ -461,7 +464,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? padding : 21), 10, (LocaleController.isRTL ? 21 : padding), 0));
 
             valueTextView = new TextView(context);
-            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteGrayText2);
             valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             valueTextView.setLines(1);
@@ -472,7 +475,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? padding : 21), 35, (LocaleController.isRTL ? 21 : padding), 0));
 
             checkImageView = new ImageView(context);
-            checkImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addedIcon), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(checkImageView, Theme.key_featuredStickers_addedIcon, PorterDuff.Mode.MULTIPLY);
             checkImageView.setImageResource(R.drawable.sticker_added);
             addView(checkImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, 21, 25, 21, 0));
         }
@@ -533,7 +536,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             addView(imageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 8, 21, 0));
 
             textView = new TextView(context);
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(textView, Theme.key_windowBackgroundWhiteBlackText);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             textView.setLines(1);
             textView.setMaxLines(1);
@@ -543,7 +546,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 21 : 81), 10, (LocaleController.isRTL ? 81 : 21), 0));
 
             valueTextView = new TextView(context);
-            valueTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            ThemeBind.textColor(valueTextView, Theme.key_windowBackgroundWhiteGrayText2);
             valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             valueTextView.setLines(1);
@@ -931,10 +934,10 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public boolean onFragmentCreate() {
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploaded);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileUploadFailed);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.twoStepPasswordChanged);
-        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didRemoveTwoStepPassword);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.fileUploaded);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.fileUploadFailed);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.twoStepPasswordChanged);
+        NotificationCenter.getInstance(currentAccount).addWeakObserver(this, NotificationCenter.didRemoveTwoStepPassword);
         return super.onFragmentCreate();
     }
 
@@ -1132,11 +1135,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     }
                     message.setText(spanned);
                     message.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                    message.setLinkTextColor(Theme.getColor(Theme.key_dialogTextLink));
-                    message.setHighlightColor(Theme.getColor(Theme.key_dialogLinkSelection));
+                    ThemeBind.linkTextColor(message, Theme.key_dialogTextLink);
+                    ThemeBind.highlightColor(message, Theme.key_dialogLinkSelection);
                     message.setPadding(AndroidUtilities.dp(23), 0, AndroidUtilities.dp(23), 0);
                     message.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
-                    message.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+                    ThemeBind.textColor(message, Theme.key_dialogTextBlack);
 
                     AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
                     builder.setView(message);
@@ -1266,7 +1269,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         } else {
             fragmentView = new FrameLayout(context);
             FrameLayout frameLayout = (FrameLayout) fragmentView;
-            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            ThemeBind.backgroundColor(fragmentView, Theme.key_windowBackgroundGray);
 
             scrollView = new ScrollView(context) {
                 @Override
@@ -1444,15 +1447,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         for (int a = 0; a < 1; a++) {
             ViewGroup container = new FrameLayout(context);
             linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
 
             inputFields[a] = new EditTextBoldCursor(context);
             inputFields[a].setTag(a);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.hintTextColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setInputType(InputType.TYPE_CLASS_PHONE);
@@ -1496,7 +1499,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         bottomCell = new TextInfoPrivacyCell(context);
-        bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         bottomCell.setText(LocaleController.formatString("PassportEmailVerifyInfo", R.string.PassportEmailVerifyInfo, currentValues.get("email")));
         linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
@@ -1545,19 +1548,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         noPasswordImageView = new ImageView(context);
         noPasswordImageView.setImageResource(R.drawable.no_password);
-        noPasswordImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(noPasswordImageView, Theme.key_chat_messagePanelIcons, PorterDuff.Mode.MULTIPLY);
         linearLayout2.addView(noPasswordImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 13, 0, 0));
 
         noPasswordTextView = new TextView(context);
         noPasswordTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         noPasswordTextView.setGravity(Gravity.CENTER_HORIZONTAL);
         noPasswordTextView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(10), AndroidUtilities.dp(21), AndroidUtilities.dp(17));
-        noPasswordTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+        ThemeBind.textColor(noPasswordTextView, Theme.key_windowBackgroundWhiteGrayText4);
         noPasswordTextView.setText(LocaleController.getString(R.string.TelegramPassportCreatePasswordInfo));
         linearLayout2.addView(noPasswordTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 10, 21, 0));
 
         noPasswordSetTextView = new TextView(context);
-        noPasswordSetTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText5));
+        ThemeBind.textColor(noPasswordSetTextView, Theme.key_windowBackgroundWhiteBlueText5);
         noPasswordSetTextView.setGravity(Gravity.CENTER);
         noPasswordSetTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         noPasswordSetTextView.setTypeface(AndroidUtilities.bold());
@@ -1574,15 +1577,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         for (int a = 0; a < 1; a++) {
             inputFieldContainers[a] = new FrameLayout(context);
             linearLayout2.addView(inputFieldContainers[a], LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-            inputFieldContainers[a].setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(inputFieldContainers[a], Theme.key_windowBackgroundWhite);
 
             inputFields[a] = new EditTextBoldCursor(context);
             inputFields[a].setTag(a);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.hintTextColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
@@ -1622,12 +1625,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         passwordInfoRequestTextView = new TextInfoPrivacyCell(context);
-        passwordInfoRequestTextView.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(passwordInfoRequestTextView, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         passwordInfoRequestTextView.setText(LocaleController.formatString("PassportRequestPasswordInfo", R.string.PassportRequestPasswordInfo));
         linearLayout2.addView(passwordInfoRequestTextView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         passwordForgotButton = new TextView(context);
-        passwordForgotButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        ThemeBind.textColor(passwordForgotButton, Theme.key_windowBackgroundWhiteBlueText4);
         passwordForgotButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         passwordForgotButton.setText(LocaleController.getString(R.string.ForgotPassword));
         passwordForgotButton.setPadding(0, 0, 0, 0);
@@ -2009,7 +2012,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             avatarImageView.setForUserOrChat(botUser, avatarDrawable);
 
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow);
             bottomCell.setText(AndroidUtilities.replaceTags(LocaleController.formatString("PassportRequest", R.string.PassportRequest, UserObject.getFirstName(botUser))));
             bottomCell.getTextView().setGravity(Gravity.CENTER_HORIZONTAL);
             ((FrameLayout.LayoutParams) bottomCell.getTextView().getLayoutParams()).gravity = Gravity.CENTER_HORIZONTAL;
@@ -2018,7 +2021,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString(R.string.PassportRequestedInformation));
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentForm != null) {
@@ -2158,7 +2161,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         if (botUser != null) {
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             bottomCell.setLinkTextColorKey(Theme.key_windowBackgroundWhiteGrayText4);
             if (!TextUtils.isEmpty(currentForm.privacy_policy_url)) {
                 String str2 = LocaleController.formatString("PassportPolicy", R.string.PassportPolicy, UserObject.getFirstName(botUser), botUser.username);
@@ -2175,13 +2178,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             } else {
                 bottomCell.setText(AndroidUtilities.replaceTags(LocaleController.formatString("PassportNoPolicy", R.string.PassportNoPolicy, UserObject.getFirstName(botUser), botUser.username)));
             }
-            bottomCell.getTextView().setHighlightColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
+            ThemeBind.highlightColor(bottomCell.getTextView(), Theme.key_windowBackgroundWhiteGrayText4);
             bottomCell.getTextView().setGravity(Gravity.CENTER_HORIZONTAL);
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
 
         bottomLayout = new FrameLayout(context);
-        bottomLayout.setBackgroundDrawable(Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_passport_authorizeBackground), Theme.getColor(Theme.key_passport_authorizeBackgroundSelected)));
+        ThemeBind.selectorBackground(bottomLayout, Theme.createSelectorWithBackgroundDrawable(Theme.getColor(Theme.key_passport_authorizeBackground), Theme.getColor(Theme.key_passport_authorizeBackgroundSelected)), ThemeBind.of(Theme.key_passport_authorizeBackground), ThemeBind.of(Theme.key_passport_authorizeBackgroundSelected));
         frameLayout.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM));
         bottomLayout.setOnClickListener(view -> {
 
@@ -2404,7 +2407,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         acceptTextView = new TextView(context);
         acceptTextView.setCompoundDrawablePadding(AndroidUtilities.dp(8));
         acceptTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.authorize, 0, 0, 0);
-        acceptTextView.setTextColor(Theme.getColor(Theme.key_passport_authorizeText));
+        ThemeBind.textColor(acceptTextView, Theme.key_passport_authorizeText);
         acceptTextView.setText(LocaleController.getString(R.string.PassportAuthorize));
         acceptTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         acceptTextView.setGravity(Gravity.CENTER);
@@ -2429,22 +2432,22 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString(R.string.PassportProvidedInformation));
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         sectionCell = new ShadowSectionCell(context);
-        sectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(sectionCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
         linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         addDocumentCell = new TextSettingsCell(context);
-        addDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        ThemeBind.selectorBackground(addDocumentCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
         addDocumentCell.setText(LocaleController.getString(R.string.PassportNoDocumentsAdd), true);
         linearLayout2.addView(addDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         addDocumentCell.setOnClickListener(v -> openAddDocumentAlert());
 
         deletePassportCell = new TextSettingsCell(context);
-        deletePassportCell.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-        deletePassportCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        ThemeBind.textColor(deletePassportCell.getTextView(), Theme.key_text_RedRegular);
+        ThemeBind.selectorBackground(deletePassportCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
         deletePassportCell.setText(LocaleController.getString(R.string.TelegramPassportDelete), false);
         linearLayout2.addView(deletePassportCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         deletePassportCell.setOnClickListener(v -> {
@@ -2477,18 +2480,18 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             showDialog(alertDialog);
             TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
             if (button != null) {
-                button.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+                ThemeBind.textColor(button, Theme.key_text_RedBold);
             }
         });
 
         addDocumentSectionCell = new ShadowSectionCell(context);
-        addDocumentSectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(addDocumentSectionCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         linearLayout2.addView(addDocumentSectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         emptyLayout = new LinearLayout(context);
         emptyLayout.setOrientation(LinearLayout.VERTICAL);
         emptyLayout.setGravity(Gravity.CENTER);
-        emptyLayout.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(emptyLayout, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         if (AndroidUtilities.isTablet()) {
             linearLayout2.addView(emptyLayout, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(528) - ActionBar.getCurrentActionBarHeight()));
         } else {
@@ -2497,11 +2500,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         emptyImageView = new ImageView(context);
         emptyImageView.setImageResource(R.drawable.no_passport);
-        emptyImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_sessions_devicesImage), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(emptyImageView, Theme.key_sessions_devicesImage, PorterDuff.Mode.MULTIPLY);
         emptyLayout.addView(emptyImageView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         emptyTextView1 = new TextView(context);
-        emptyTextView1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(emptyTextView1, Theme.key_windowBackgroundWhiteGrayText2);
         emptyTextView1.setGravity(Gravity.CENTER);
         emptyTextView1.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         emptyTextView1.setTypeface(AndroidUtilities.bold());
@@ -2509,7 +2512,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyLayout.addView(emptyTextView1, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 16, 0, 0));
 
         emptyTextView2 = new TextView(context);
-        emptyTextView2.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(emptyTextView2, Theme.key_windowBackgroundWhiteGrayText2);
         emptyTextView2.setGravity(Gravity.CENTER);
         emptyTextView2.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         emptyTextView2.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -2517,9 +2520,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         emptyLayout.addView(emptyTextView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 14, 0, 0));
 
         emptyTextView3 = new TextView(context);
-        emptyTextView3.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        ThemeBind.textColor(emptyTextView3, Theme.key_windowBackgroundWhiteBlueText4);
         emptyTextView3.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
-        emptyTextView3.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), 0x20), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(emptyTextView3, Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4), 0x20), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.alpha(Theme.key_windowBackgroundWhiteBlueText4, 0x20));
         emptyTextView3.setGravity(Gravity.CENTER);
         emptyTextView3.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         emptyTextView3.setTypeface(AndroidUtilities.bold());
@@ -2724,8 +2727,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         if (!TextUtils.isEmpty(currentEmail)) {
             TextSettingsCell settingsCell1 = new TextSettingsCell(context);
-            settingsCell1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-            settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.textColor(settingsCell1.getTextView(), Theme.key_windowBackgroundWhiteBlueText4);
+            ThemeBind.selectorBackground(settingsCell1, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             settingsCell1.setText(LocaleController.formatString("PassportPhoneUseSame", R.string.PassportPhoneUseSame, currentEmail), false);
             linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             settingsCell1.setOnClickListener(v -> {
@@ -2735,7 +2738,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             bottomCell.setText(LocaleController.getString(R.string.PassportPhoneUseSameEmailInfo));
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
@@ -2744,15 +2747,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         for (int a = 0; a < 1; a++) {
             ViewGroup container = new FrameLayout(context);
             linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
 
             inputFields[a] = new EditTextBoldCursor(context);
             inputFields[a].setTag(a);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.hintTextColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             inputFields[a].setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
@@ -2779,7 +2782,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         bottomCell = new TextInfoPrivacyCell(context);
-        bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         bottomCell.setText(LocaleController.getString(R.string.PassportEmailUploadInfo));
         linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
@@ -2810,8 +2813,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         String currentPhone = UserConfig.getInstance(currentAccount).getCurrentUser().phone;
         TextSettingsCell settingsCell1 = new TextSettingsCell(context);
-        settingsCell1.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
-        settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        ThemeBind.textColor(settingsCell1.getTextView(), Theme.key_windowBackgroundWhiteBlueText4);
+        ThemeBind.selectorBackground(settingsCell1, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
         settingsCell1.setText(LocaleController.formatString("PassportPhoneUseSame", R.string.PassportPhoneUseSame, PhoneFormat.getInstance().format("+" + currentPhone)), false);
         linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         settingsCell1.setOnClickListener(v -> {
@@ -2821,13 +2824,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         });
 
         bottomCell = new TextInfoPrivacyCell(context);
-        bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         bottomCell.setText(LocaleController.getString(R.string.PassportPhoneUseSameInfo));
         linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString(R.string.PassportPhoneUseOther));
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         inputFields = new EditTextBoldCursor[3];
@@ -2844,21 +2847,21 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 container = new LinearLayout(context);
                 ((LinearLayout) container).setOrientation(LinearLayout.HORIZONTAL);
                 linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
             } else if (a == FIELD_PHONE) {
                 container = (ViewGroup) inputFields[FIELD_PHONECODE].getParent();
             } else {
                 container = new FrameLayout(context);
                 linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
-                container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
             }
 
             inputFields[a].setTag(a);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.hintTextColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
             if (a == FIELD_PHONECOUNTRY) {
@@ -2903,7 +2906,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (a == FIELD_PHONECODE) {
                 plusTextView = new TextView(context);
                 plusTextView.setText("+");
-                plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                ThemeBind.textColor(plusTextView, Theme.key_windowBackgroundWhiteBlackText);
                 plusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
                 container.addView(plusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 21, 12, 0, 6));
 
@@ -3099,7 +3102,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (a == FIELD_PHONECOUNTRY) {
                 View divider = new View(context);
                 dividers.add(divider);
-                divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
+                ThemeBind.backgroundColor(divider, Theme.key_divider);
                 container.addView(divider, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1, Gravity.LEFT | Gravity.BOTTOM));
             }
         }
@@ -3125,7 +3128,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         bottomCell = new TextInfoPrivacyCell(context);
-        bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         bottomCell.setText(LocaleController.getString(R.string.PassportPhoneUploadInfo));
         linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
@@ -3145,7 +3148,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         topErrorCell = new TextInfoPrivacyCell(context);
-        topErrorCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(topErrorCell, context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow);
         topErrorCell.setPadding(0, AndroidUtilities.dp(7), 0, 0);
         linearLayout2.addView(topErrorCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         checkTopErrorCell(true);
@@ -3165,7 +3168,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
             headerCell = new HeaderCell(context);
             headerCell.setText(LocaleController.getString(R.string.PassportDocuments));
-            headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
             linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             documentsLayout = new LinearLayout(context);
@@ -3173,7 +3176,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             linearLayout2.addView(documentsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             uploadDocumentCell = new TextSettingsCell(context);
-            uploadDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.selectorBackground(uploadDocumentCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             linearLayout2.addView(uploadDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             uploadDocumentCell.setOnClickListener(v -> {
                 uploadingFileType = UPLOADING_TYPE_DOCUMENTS;
@@ -3181,7 +3184,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
 
             if (currentBotId != 0) {
                 noAllDocumentsErrorText = LocaleController.getString(R.string.PassportAddAddressUploadInfo);
@@ -3209,7 +3212,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     stringBuilder.append("\n\n");
                     stringBuilder.append(noAllDocumentsErrorText);
                     text = stringBuilder;
-                    stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_text_RedRegular)), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    stringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_text_RedRegular), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     errorsValues.put("files_all", "");
                 }
             }
@@ -3219,7 +3222,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             if (currentDocumentsType.translation_required) {
                 headerCell = new HeaderCell(context);
                 headerCell.setText(LocaleController.getString(R.string.PassportTranslation));
-                headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
                 linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 translationLayout = new LinearLayout(context);
@@ -3227,7 +3230,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 linearLayout2.addView(translationLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 uploadTranslationCell = new TextSettingsCell(context);
-                uploadTranslationCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                ThemeBind.selectorBackground(uploadTranslationCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
                 linearLayout2.addView(uploadTranslationCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 uploadTranslationCell.setOnClickListener(v -> {
                     uploadingFileType = UPLOADING_TYPE_TRANSLATION;
@@ -3235,7 +3238,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 });
 
                 bottomCellTranslation = new TextInfoPrivacyCell(context);
-                bottomCellTranslation.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                ThemeBind.themedBackground(bottomCellTranslation, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
 
                 if (currentBotId != 0) {
                     noAllTranslationErrorText = LocaleController.getString(R.string.PassportAddTranslationUploadInfo);
@@ -3263,7 +3266,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         stringBuilder.append("\n\n");
                         stringBuilder.append(noAllTranslationErrorText);
                         text = stringBuilder;
-                        stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_text_RedRegular)), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        stringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_text_RedRegular), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                         errorsValues.put("translation_all", "");
                     }
                 }
@@ -3276,7 +3279,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
 
         headerCell = new HeaderCell(context);
         headerCell.setText(LocaleController.getString(R.string.PassportAddressHeader));
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         inputFields = new EditTextBoldCursor[FIELD_ADDRESS_COUNT];
@@ -3329,11 +3332,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             };
             container.setWillNotDraw(false);
             linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
 
             if (a == FIELD_ADDRESS_COUNT - 1) {
                 extraBackgroundView = new View(context);
-                extraBackgroundView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(extraBackgroundView, Theme.key_windowBackgroundWhite);
                 linearLayout2.addView(extraBackgroundView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
             }
 
@@ -3347,15 +3350,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setTag(a);
             inputFields[a].setSupportRtlHint(true);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            ThemeBind.editHintColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.editHeaderHintColor(inputFields[a], Theme.key_windowBackgroundWhiteBlueHeader);
             inputFields[a].setTransformHintToHeader(true);
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
-            inputFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_text_RedRegular));
+            ThemeBind.lineColors(inputFields[a], Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular);
             if (a == FIELD_COUNTRY) {
                 inputFields[a].setOnTouchListener((v, event) -> {
                     if (getParentActivity() == null) {
@@ -3504,11 +3507,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 addDocumentViews(currentDocumentsTypeValue.files);
                 addTranslationDocumentViews(currentDocumentsTypeValue.translation);
             }
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(sectionCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
 
             TextSettingsCell settingsCell1 = new TextSettingsCell(context);
-            settingsCell1.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-            settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.textColor(settingsCell1.getTextView(), Theme.key_text_RedRegular);
+            ThemeBind.selectorBackground(settingsCell1, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             if (currentDocumentsType == null) {
                 settingsCell1.setText(LocaleController.getString(R.string.PassportDeleteInfo), false);
             } else {
@@ -3518,12 +3521,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             settingsCell1.setOnClickListener(v -> createDocumentDeleteAlert());
 
             sectionCell = new ShadowSectionCell(context);
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(sectionCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(sectionCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             if (documentOnly && currentDocumentsType != null) {
-                bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             }
         }
         updateUploadText(UPLOADING_TYPE_DOCUMENTS);
@@ -3555,7 +3558,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (!documentOnly && currentDocumentsType != null) {
             FrameLayout frameLayout = new FrameLayout(getParentActivity());
             CheckBoxCell cell = new CheckBoxCell(getParentActivity(), 1);
-            cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
+            ThemeBind.selectorBackground(cell, Theme.getSelectorDrawable(false), null, ThemeBind.of(Theme.key_listSelector));
             if (currentType.type instanceof TLRPC.TL_secureValueTypeAddress) {
                 cell.setText(LocaleController.getString(R.string.PassportDeleteDocumentAddress), "", true, false);
             } else if (currentType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
@@ -3886,7 +3889,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         topErrorCell = new TextInfoPrivacyCell(context);
-        topErrorCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow));
+        ThemeBind.themedBackground(topErrorCell, context, R.drawable.greydivider_top, Theme.key_windowBackgroundGrayShadow);
         topErrorCell.setPadding(0, AndroidUtilities.dp(7), 0, 0);
         linearLayout2.addView(topErrorCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         checkTopErrorCell(true);
@@ -3898,7 +3901,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             } else {
                 headerCell.setText(LocaleController.getString(R.string.PassportRequiredDocuments));
             }
-            headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
             linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             frontLayout = new LinearLayout(context);
@@ -3906,7 +3909,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             linearLayout2.addView(frontLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             uploadFrontCell = new TextDetailSettingsCell(context);
-            uploadFrontCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.selectorBackground(uploadFrontCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             linearLayout2.addView(uploadFrontCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             uploadFrontCell.setOnClickListener(v -> {
                 uploadingFileType = UPLOADING_TYPE_FRONT;
@@ -3920,7 +3923,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             boolean divider = currentDocumentsType.selfie_required;
 
             uploadReverseCell = new TextDetailSettingsCell(context);
-            uploadReverseCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.selectorBackground(uploadReverseCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             uploadReverseCell.setTextAndValue(LocaleController.getString(R.string.PassportReverseSide), LocaleController.getString(R.string.PassportReverseSideInfo), divider);
             linearLayout2.addView(uploadReverseCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             uploadReverseCell.setOnClickListener(v -> {
@@ -3934,7 +3937,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 linearLayout2.addView(selfieLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 uploadSelfieCell = new TextDetailSettingsCell(context);
-                uploadSelfieCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                ThemeBind.selectorBackground(uploadSelfieCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
                 uploadSelfieCell.setTextAndValue(LocaleController.getString(R.string.PassportSelfie), LocaleController.getString(R.string.PassportSelfieInfo), currentType.translation_required);
                 linearLayout2.addView(uploadSelfieCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 uploadSelfieCell.setOnClickListener(v -> {
@@ -3944,14 +3947,14 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
 
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
             bottomCell.setText(LocaleController.getString(R.string.PassportPersonalUploadInfo));
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             if (currentDocumentsType.translation_required) {
                 headerCell = new HeaderCell(context);
                 headerCell.setText(LocaleController.getString(R.string.PassportTranslation));
-                headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
                 linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 translationLayout = new LinearLayout(context);
@@ -3959,7 +3962,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 linearLayout2.addView(translationLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
                 uploadTranslationCell = new TextSettingsCell(context);
-                uploadTranslationCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+                ThemeBind.selectorBackground(uploadTranslationCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
                 linearLayout2.addView(uploadTranslationCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
                 uploadTranslationCell.setOnClickListener(v -> {
                     uploadingFileType = UPLOADING_TYPE_TRANSLATION;
@@ -3967,7 +3970,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 });
 
                 bottomCellTranslation = new TextInfoPrivacyCell(context);
-                bottomCellTranslation.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                ThemeBind.themedBackground(bottomCellTranslation, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
 
                 if (currentBotId != 0) {
                     noAllTranslationErrorText = LocaleController.getString(R.string.PassportAddTranslationUploadInfo);
@@ -3993,7 +3996,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         stringBuilder.append("\n\n");
                         stringBuilder.append(noAllTranslationErrorText);
                         text = stringBuilder;
-                        stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_text_RedRegular)), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        stringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_text_RedRegular), 0, errorText.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                         errorsValues.put("translation_all", "");
                     }
                 }
@@ -4002,7 +4005,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
         } else if (Build.VERSION.SDK_INT >= 18) {
             scanDocumentCell = new TextSettingsCell(context);
-            scanDocumentCell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.selectorBackground(scanDocumentCell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             scanDocumentCell.setText(LocaleController.getString(R.string.PassportScanPassport), false);
             linearLayout2.addView(scanDocumentCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             scanDocumentCell.setOnClickListener(v -> {
@@ -4058,7 +4061,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             });
 
             bottomCell = new TextInfoPrivacyCell(context);
-            bottomCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(bottomCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
             bottomCell.setText(LocaleController.getString(R.string.PassportScanPassportInfo));
             linearLayout2.addView(bottomCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         }
@@ -4069,7 +4072,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         } else {
             headerCell.setText(LocaleController.getString(R.string.PassportPersonal));
         }
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         int count = currentDocumentsType != null ? FIELD_IDENTITY_COUNT : FIELD_IDENTITY_NODOC_COUNT;
@@ -4124,11 +4127,11 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             };
             container.setWillNotDraw(false);
             linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 64));
-            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
 
             if (a == count - 1) {
                 extraBackgroundView = new View(context);
-                extraBackgroundView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(extraBackgroundView, Theme.key_windowBackgroundWhite);
                 linearLayout2.addView(extraBackgroundView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
             }
 
@@ -4142,15 +4145,15 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             inputFields[a].setTag(a);
             inputFields[a].setSupportRtlHint(true);
             inputFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputFields[a].setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            inputFields[a].setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            ThemeBind.editHintColor(inputFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.editHeaderHintColor(inputFields[a], Theme.key_windowBackgroundWhiteBlueHeader);
             inputFields[a].setTransformHintToHeader(true);
             inputFields[a].setBackgroundDrawable(null);
-            inputFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputFields[a].setCursorWidth(1.5f);
-            inputFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_text_RedRegular));
+            ThemeBind.lineColors(inputFields[a], Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular);
             if (a == FIELD_CITIZENSHIP || a == FIELD_RESIDENCE) {
                 inputFields[a].setOnTouchListener((v, event) -> {
                     if (getParentActivity() == null) {
@@ -4418,7 +4421,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         linearLayout2.addView(sectionCell2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         headerCell = new HeaderCell(context);
-        headerCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        ThemeBind.backgroundColor(headerCell, Theme.key_windowBackgroundWhite);
         linearLayout2.addView(headerCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         inputExtraFields = new EditTextBoldCursor[FIELD_NATIVE_COUNT];
@@ -4471,26 +4474,26 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             };
             container.setWillNotDraw(false);
             linearLayout2.addView(container, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 64));
-            container.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            ThemeBind.backgroundColor(container, Theme.key_windowBackgroundWhite);
 
             if (a == FIELD_NATIVE_COUNT - 1) {
                 extraBackgroundView2 = new View(context);
-                extraBackgroundView2.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                ThemeBind.backgroundColor(extraBackgroundView2, Theme.key_windowBackgroundWhite);
                 linearLayout2.addView(extraBackgroundView2, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 6));
             }
 
             inputExtraFields[a].setTag(a);
             inputExtraFields[a].setSupportRtlHint(true);
             inputExtraFields[a].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            inputExtraFields[a].setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            inputExtraFields[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            inputExtraFields[a].setHeaderHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            ThemeBind.editHintColor(inputExtraFields[a], Theme.key_windowBackgroundWhiteHintText);
+            ThemeBind.textColor(inputExtraFields[a], Theme.key_windowBackgroundWhiteBlackText);
+            ThemeBind.editHeaderHintColor(inputExtraFields[a], Theme.key_windowBackgroundWhiteBlueHeader);
             inputExtraFields[a].setTransformHintToHeader(true);
             inputExtraFields[a].setBackgroundDrawable(null);
-            inputExtraFields[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.cursorColor(inputExtraFields[a], Theme.key_windowBackgroundWhiteBlackText);
             inputExtraFields[a].setCursorSize(AndroidUtilities.dp(20));
             inputExtraFields[a].setCursorWidth(1.5f);
-            inputExtraFields[a].setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), Theme.getColor(Theme.key_text_RedRegular));
+            ThemeBind.lineColors(inputExtraFields[a], Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular);
             inputExtraFields[a].setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
             inputExtraFields[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
 
@@ -4582,8 +4585,8 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
 
             TextSettingsCell settingsCell1 = new TextSettingsCell(context);
-            settingsCell1.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
-            settingsCell1.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+            ThemeBind.textColor(settingsCell1.getTextView(), Theme.key_text_RedRegular);
+            ThemeBind.selectorBackground(settingsCell1, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
             if (currentDocumentsType == null) {
                 settingsCell1.setText(LocaleController.getString(R.string.PassportDeleteInfo), false);
             } else {
@@ -4592,13 +4595,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             linearLayout2.addView(settingsCell1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             settingsCell1.setOnClickListener(v -> createDocumentDeleteAlert());
 
-            nativeInfoCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(nativeInfoCell, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
 
             sectionCell = new ShadowSectionCell(context);
-            sectionCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(sectionCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
             linearLayout2.addView(sectionCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {
-            nativeInfoCell.setBackgroundDrawable(Theme.getThemedDrawableByKey(context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+            ThemeBind.themedBackground(nativeInfoCell, context, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
         }
 
         updateInterfaceStringsForDocumentType();
@@ -4697,7 +4700,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
         }
         if (stringBuilder != null) {
-            stringBuilder.setSpan(new ForegroundColorSpan(Theme.getColor(Theme.key_text_RedRegular)), 0, stringBuilder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            stringBuilder.setSpan(new ForegroundColorSpanThemable(Theme.key_text_RedRegular), 0, stringBuilder.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             topErrorCell.setText(stringBuilder);
             topErrorCell.setVisibility(View.VISIBLE);
         } else if (topErrorCell.getVisibility() != View.GONE) {
@@ -4827,7 +4830,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         final String key;
 
         cell.setTag(document);
-        cell.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        ThemeBind.selectorBackground(cell, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
         String text;
         documentsCells.put(document, cell);
         String hash = getDocumentHash(document);
@@ -4860,7 +4863,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (key == null || documentsErrors == null || (value = documentsErrors.get(key)) == null) {
             value = LocaleController.formatDateForBan(document.secureFile.date);
         } else {
-            cell.valueTextView.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+            ThemeBind.textColor(cell.valueTextView, Theme.key_text_RedRegular);
             errorsValues.put(key, "");
         }
 
@@ -5281,7 +5284,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             }
         }
         view.setValue(value);
-        view.valueTextView.setTextColor(Theme.getColor(isError ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(view.valueTextView, isError ? Theme.key_text_RedRegular : Theme.key_windowBackgroundWhiteGrayText2);
         view.setChecked(!isError && currentActivityType != TYPE_MANAGE && (documentOnly && documentRequiredType != null || !documentOnly && requiredTypeValue != null) && (documentRequiredType == null || documentRequiredTypeValue != null));
     }
 
@@ -5303,9 +5306,9 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 }
 
                 if ((currentBotId != 0 || currentDocumentsType == null) && currentTypeValue != null && !documentOnly || currentDocumentsTypeValue != null) {
-                    sectionCell2.setBackgroundDrawable(Theme.getThemedDrawableByKey(getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    ThemeBind.themedBackground(sectionCell2, getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
                 } else {
-                    sectionCell2.setBackgroundDrawable(Theme.getThemedDrawableByKey(getParentActivity(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    ThemeBind.themedBackground(sectionCell2, getParentActivity(), R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow);
                 }
             }
         } else {
@@ -5326,7 +5329,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                         }
                     }
                 }
-                sectionCell2.setBackgroundDrawable(Theme.getThemedDrawableByKey(getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                ThemeBind.themedBackground(sectionCell2, getParentActivity(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
             }
 
             nativeInfoCell.setText(LocaleController.formatString("PassportNativeInfo", R.string.PassportNativeInfo, country));
@@ -5891,7 +5894,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
     private TextDetailSecureCell addField(Context context, final TLRPC.TL_secureRequiredType requiredType, final ArrayList<TLRPC.TL_secureRequiredType> documentRequiredTypes, boolean documentOnly, boolean last) {
         final int availableDocumentTypesCount = documentRequiredTypes != null ? documentRequiredTypes.size() : 0;
         TextDetailSecureCell view = new TextDetailSecureCell(context);
-        view.setBackgroundDrawable(Theme.getSelectorDrawable(true));
+        ThemeBind.selectorBackground(view, Theme.getSelectorDrawable(true), ThemeBind.of(Theme.key_windowBackgroundWhite), ThemeBind.of(Theme.key_listSelector));
         if (requiredType.type instanceof TLRPC.TL_secureValueTypePersonalDetails) {
             String text;
             if (documentRequiredTypes == null || documentRequiredTypes.isEmpty()) {
@@ -7200,7 +7203,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         this.needActivityResult = needActivityResult;
     }
 
-    private static class ProgressView extends View {
+    private static class ProgressView extends View implements Theme.Colorable {
 
         private Paint paint = new Paint();
         private Paint paint2 = new Paint();
@@ -7223,9 +7226,37 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             canvas.drawRect(0, 0, start, getMeasuredHeight(), paint2);
             canvas.drawRect(start, 0, getMeasuredWidth(), getMeasuredHeight(), paint);
         }
-    }
+    
+        @Override
+        public void updateColors() {
+            try {
+                paint.setColor(Theme.getColor(Theme.key_login_progressInner));
+                paint2.setColor(Theme.getColor(Theme.key_login_progressOuter));
+                invalidate();
+        
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
+}
 
-    public class PhoneConfirmationView extends SlideView implements NotificationCenter.NotificationCenterDelegate {
+    public class PhoneConfirmationView extends SlideView implements NotificationCenter.NotificationCenterDelegate, Theme.Colorable {
+
+        @Override
+        public void updateColors() {
+            try {
+                if (codeField == null) {
+                    return;
+                }
+                for (int a = 0; a < codeField.length; a++) {
+                    if (codeField[a] != null) {
+                        codeField[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
 
         private String phone;
         private String phoneHash;
@@ -7264,12 +7295,12 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
             setOrientation(VERTICAL);
 
             confirmTextView = new TextView(context);
-            confirmTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            ThemeBind.textColor(confirmTextView, Theme.key_windowBackgroundWhiteGrayText6);
             confirmTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             confirmTextView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
 
             titleTextView = new TextView(context);
-            titleTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            ThemeBind.textColor(titleTextView, Theme.key_windowBackgroundWhiteBlackText);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
             titleTextView.setTypeface(AndroidUtilities.bold());
             titleTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
@@ -7299,19 +7330,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 if (verificationType == 1) {
                     blackImageView = new ImageView(context);
                     blackImageView.setImageResource(R.drawable.sms_devices);
-                    blackImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(blackImageView, Theme.key_windowBackgroundWhiteBlackText, PorterDuff.Mode.MULTIPLY);
                     frameLayout.addView(blackImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
                     blueImageView = new ImageView(context);
                     blueImageView.setImageResource(R.drawable.sms_bubble);
-                    blueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionBackground), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(blueImageView, Theme.key_chats_actionBackground, PorterDuff.Mode.MULTIPLY);
                     frameLayout.addView(blueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
                     titleTextView.setText(LocaleController.getString(R.string.SentAppCodeTitle));
                 } else {
                     blueImageView = new ImageView(context);
                     blueImageView.setImageResource(R.drawable.sms_code);
-                    blueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_actionBackground), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(blueImageView, Theme.key_chats_actionBackground, PorterDuff.Mode.MULTIPLY);
                     frameLayout.addView(blueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 0, 0, 0));
 
                     titleTextView.setText(LocaleController.getString(R.string.SentSmsCodeTitle));
@@ -7333,7 +7364,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
                 }
             };
-            timeText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+            ThemeBind.textColor(timeText, Theme.key_windowBackgroundWhiteGrayText6);
             timeText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             if (verificationType == 3) {
                 timeText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -7355,7 +7386,7 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(100), MeasureSpec.AT_MOST));
                 }
             };
-            problemText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+            ThemeBind.textColor(problemText, Theme.key_windowBackgroundWhiteBlueText4);
             problemText.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             problemText.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(10));
             problemText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -7500,13 +7531,13 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
                 for (int a = 0; a < length; a++) {
                     final int num = a;
                     codeField[a] = new EditTextBoldCursor(getContext());
-                    codeField[a].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    codeField[a].setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    ThemeBind.textColor(codeField[a], Theme.key_windowBackgroundWhiteBlackText);
+                    ThemeBind.cursorColor(codeField[a], Theme.key_windowBackgroundWhiteBlackText);
                     codeField[a].setCursorSize(AndroidUtilities.dp(20));
                     codeField[a].setCursorWidth(1.5f);
 
                     Drawable pressedDrawable = getResources().getDrawable(R.drawable.search_dark_activated).mutate();
-                    pressedDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.drawableColorFilter(this, pressedDrawable, Theme.key_windowBackgroundWhiteInputFieldActivated, PorterDuff.Mode.MULTIPLY);
 
                     codeField[a].setBackgroundDrawable(pressedDrawable);
                     codeField[a].setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -7926,23 +7957,64 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    private int appliedLineColor, appliedActiveLineColor, appliedErrorLineColor;
+
+    @Override
+    public void onThemeColorsChanged() {
+        try {
+            if (scrollView != null) {
+                AndroidUtilities.setScrollViewEdgeEffectColor(scrollView, Theme.getColor(Theme.key_actionBarDefault));
+            }
+            final boolean withLines = currentActivityType == TYPE_ADDRESS || currentActivityType == TYPE_IDENTITY;
+            final int lineColor = Theme.getColor(Theme.key_windowBackgroundWhiteInputField);
+            final int activeLineColor = Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated);
+            final int errorLineColor = Theme.getColor(Theme.key_text_RedRegular);
+            final boolean linesChanged = withLines && (lineColor != appliedLineColor || activeLineColor != appliedActiveLineColor || errorLineColor != appliedErrorLineColor);
+            updateInputFieldsColors(inputFields, withLines, linesChanged);
+            updateInputFieldsColors(inputExtraFields, withLines, linesChanged);
+            if (linesChanged) {
+                appliedLineColor = lineColor;
+                appliedActiveLineColor = activeLineColor;
+                appliedErrorLineColor = errorLineColor;
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static void updateInputFieldsColors(EditTextBoldCursor[] fields, boolean withLines, boolean linesChanged) {
+        if (fields == null) {
+            return;
+        }
+        for (int a = 0; a < fields.length; a++) {
+            final EditTextBoldCursor field = fields[a];
+            if (field == null) {
+                continue;
+            }
+            ThemeBind.cursorColor(field, Theme.key_windowBackgroundWhiteBlackText);
+            if (withLines) {
+                ThemeBind.editHintColor(field, Theme.key_windowBackgroundWhiteHintText);
+                ThemeBind.editHeaderHintColor(field, Theme.key_windowBackgroundWhiteBlueHeader);
+                if (linesChanged) {
+                    final int l = field.getPaddingLeft(), t = field.getPaddingTop(), r = field.getPaddingRight(), b = field.getPaddingBottom();
+                    ThemeBind.lineColors(field, Theme.key_windowBackgroundWhiteInputField, Theme.key_windowBackgroundWhiteInputFieldActivated, Theme.key_text_RedRegular);
+                    if (field.getPaddingLeft() != l || field.getPaddingTop() != t || field.getPaddingRight() != r || field.getPaddingBottom() != b) {
+                        field.setPadding(l, t, r, b);
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> arrayList = new ArrayList<>();
 
-        arrayList.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
         arrayList.add(new ThemeDescription(scrollView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_actionBarDefault));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_actionBarDefaultIcon));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_actionBarDefaultSelector));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCH, null, null, null, null, Theme.key_actionBarDefaultSearch));
         arrayList.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SEARCHPLACEHOLDER, null, null, null, null, Theme.key_actionBarDefaultSearchPlaceholder));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{View.class}, Theme.dividerPaint, null, null, Theme.key_divider));
 
-        arrayList.add(new ThemeDescription(extraBackgroundView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         if (extraBackgroundView2 != null) {
-            arrayList.add(new ThemeDescription(extraBackgroundView2, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         }
 
         for (int a = 0; a < dividers.size(); a++) {
@@ -7952,36 +8024,19 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         for (HashMap.Entry<SecureDocument, SecureDocumentCell> entry : documentsCells.entrySet()) {
             SecureDocumentCell cell = entry.getValue();
             arrayList.add(new ThemeDescription(cell, ThemeDescription.FLAG_SELECTORWHITE, new Class[]{SecureDocumentCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-            arrayList.add(new ThemeDescription(cell, 0, new Class[]{SecureDocumentCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-            arrayList.add(new ThemeDescription(cell, 0, new Class[]{SecureDocumentCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         }
 
         arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_SELECTORWHITE, new Class[]{TextDetailSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{TextDetailSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
 
         arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_SELECTORWHITE, new Class[]{TextSettingsCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{TextSettingsCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{TextSettingsCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
 
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{ShadowSectionCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
 
         arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_SELECTORWHITE, new Class[]{TextDetailSecureCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextDetailSecureCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextDetailSecureCell.class}, null, null, null, Theme.key_divider));
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextDetailSecureCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailSecureCell.class}, new String[]{"checkImageView"}, null, null, null, Theme.key_featuredStickers_addedIcon));
 
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
 
-        arrayList.add(new ThemeDescription(linearLayout2, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
-        arrayList.add(new ThemeDescription(linearLayout2, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
         if (inputFields != null) {
             for (int a = 0; a < inputFields.length; a++) {
                 arrayList.add(new ThemeDescription((View) inputFields[a].getParent(), ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-                arrayList.add(new ThemeDescription(inputFields[a], ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-                arrayList.add(new ThemeDescription(inputFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
                 arrayList.add(new ThemeDescription(inputFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
                 arrayList.add(new ThemeDescription(inputFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
                 arrayList.add(new ThemeDescription(inputFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
@@ -7999,8 +8054,6 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         if (inputExtraFields != null) {
             for (int a = 0; a < inputExtraFields.length; a++) {
                 arrayList.add(new ThemeDescription((View) inputExtraFields[a].getParent(), ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
-                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CURSORCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
-                arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteHintText));
                 arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_HINTTEXTCOLOR | ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
                 arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_windowBackgroundWhiteInputField));
                 arrayList.add(new ThemeDescription(inputExtraFields[a], ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_windowBackgroundWhiteInputFieldActivated));
@@ -8009,27 +8062,27 @@ public class PassportActivity extends BaseFragment implements NotificationCenter
         }
 
         arrayList.add(new ThemeDescription(emptyView, ThemeDescription.FLAG_PROGRESSBAR, null, null, null, null, Theme.key_progressCircle));
-        arrayList.add(new ThemeDescription(noPasswordImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_messagePanelIcons));
-        arrayList.add(new ThemeDescription(noPasswordTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText4));
-        arrayList.add(new ThemeDescription(noPasswordSetTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText5));
-        arrayList.add(new ThemeDescription(passwordForgotButton, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
 
-        arrayList.add(new ThemeDescription(plusTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
 
-        arrayList.add(new ThemeDescription(acceptTextView, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_passport_authorizeText));
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_BACKGROUNDFILTER, null, null, null, null, Theme.key_passport_authorizeBackground));
         arrayList.add(new ThemeDescription(bottomLayout, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_passport_authorizeBackgroundSelected));
 
-        arrayList.add(new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressInner2));
-        arrayList.add(new ThemeDescription(progressView, 0, null, null, null, null, Theme.key_contextProgressOuter2));
-        arrayList.add(new ThemeDescription(progressViewButton, 0, null, null, null, null, Theme.key_contextProgressInner2));
-        arrayList.add(new ThemeDescription(progressViewButton, 0, null, null, null, null, Theme.key_contextProgressOuter2));
 
-        arrayList.add(new ThemeDescription(emptyImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_sessions_devicesImage));
-        arrayList.add(new ThemeDescription(emptyTextView1, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        arrayList.add(new ThemeDescription(emptyTextView2, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
-        arrayList.add(new ThemeDescription(emptyTextView3, ThemeDescription.FLAG_TEXTCOLOR, null, null, null, null, Theme.key_windowBackgroundWhiteBlueText4));
 
         return arrayList;
+    }
+
+    /** theme editor: colors this page shows (former ThemeDescription keys) */
+    @Override
+    public void addThemeColorKeys(HashSet<Integer> keys) {
+        super.addThemeColorKeys(keys);
+        keys.add(Theme.key_contextProgressOuter2);
+        keys.add(Theme.key_contextProgressInner2);
+        keys.add(Theme.key_featuredStickers_addedIcon);
+        keys.add(Theme.key_windowBackgroundWhiteValueText);
+        keys.add(Theme.key_actionBarDefaultSelector);
+        keys.add(Theme.key_actionBarDefaultTitle);
+        keys.add(Theme.key_actionBarDefaultIcon);
+        keys.add(Theme.key_actionBarDefault);
     }
 }
