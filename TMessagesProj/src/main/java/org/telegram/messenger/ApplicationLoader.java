@@ -9,6 +9,7 @@
 package org.telegram.messenger;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Application;
 import android.content.BroadcastReceiver;
@@ -48,6 +49,7 @@ import org.telegram.ui.LauncherIconController;
 
 import java.io.File;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ApplicationLoader extends Application {
 
@@ -60,7 +62,6 @@ public class ApplicationLoader extends Application {
 
     private static ConnectivityManager connectivityManager;
     private static volatile boolean applicationInited = false;
-    private static volatile  ConnectivityManager.NetworkCallback networkCallback;
     private static long lastNetworkCheckTypeTime;
     private static int lastKnownNetworkType = -1;
 
@@ -203,20 +204,21 @@ public class ApplicationLoader extends Application {
 
         try {
             connectivityManager = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            Runnable refresh = ApplicationLoader::notifyNetworkChanged;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                DefaultNetworkMonitor monitor = new DefaultNetworkMonitor();
+                try {
+                    connectivityManager.registerDefaultNetworkCallback(monitor);
+                    refresh = monitor::refresh;
+                } catch (RuntimeException e) {
+                    FileLog.e(e);
+                }
+            }
+            final Runnable onNetworkChanged = refresh;
             BroadcastReceiver networkStateReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
-                    try {
-                        currentNetworkInfo = connectivityManager.getActiveNetworkInfo();
-                    } catch (Throwable ignore) {
-
-                    }
-
-                    boolean isSlow = isConnectionSlow();
-                    for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                        ConnectionsManager.getInstance(a).checkConnection();
-                        FileLoader.getInstance(a).onNetworkChanged(isSlow);
-                    }
+                    onNetworkChanged.run();
                 }
             };
             IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -445,25 +447,118 @@ public class ApplicationLoader extends Application {
                     connectivityManager = (ConnectivityManager) ApplicationLoader.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE);
                 }
                 currentNetworkInfo = connectivityManager.getActiveNetworkInfo();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    if (networkCallback == null) {
-                        networkCallback = new ConnectivityManager.NetworkCallback() {
-                            @Override
-                            public void onAvailable(@NonNull Network network) {
-                                lastKnownNetworkType = -1;
-                            }
-
-                            @Override
-                            public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
-                                lastKnownNetworkType = -1;
-                            }
-                        };
-                        connectivityManager.registerDefaultNetworkCallback(networkCallback);
-                    }
-                }
             } catch (Throwable ignore) {
 
             }
+        }
+    }
+
+    private static void notifyNetworkChanged() {
+        ensureCurrentNetworkGet(true);
+        lastKnownNetworkType = -1;
+        boolean isSlow = isConnectionSlow();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            ConnectionsManager.getInstance(a).checkConnection();
+            FileLoader.getInstance(a).onNetworkChanged(isSlow);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    private static class DefaultNetworkMonitor extends ConnectivityManager.NetworkCallback {
+        // Only the main thread reads or updates the last state reported by either source.
+        private boolean reported;
+        private boolean dispatchPending;
+        private Network lastNetwork;
+        private NetworkCapabilities lastCapabilities;
+        private NetworkInfo lastInfo;
+
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            // From O, the initial capabilities immediately follow onAvailable.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                applicationHandler.post(this::refresh);
+            }
+        }
+
+        @Override
+        public void onLost(@NonNull Network network) {
+            applicationHandler.post(() -> {
+                if (network.equals(lastNetwork)) {
+                    reported = false;
+                    refresh();
+                }
+            });
+        }
+
+        @Override
+        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities capabilities) {
+            applicationHandler.post(() -> refresh(network, capabilities));
+        }
+
+        private void refresh() {
+            refresh(null, null);
+        }
+
+        private void refresh(Network changedNetwork, NetworkCapabilities changedCapabilities) {
+            Network network;
+            NetworkCapabilities capabilities;
+            try {
+                network = connectivityManager.getActiveNetwork();
+                if (changedNetwork != null && !changedNetwork.equals(network)) {
+                    return;
+                }
+                capabilities = changedNetwork != null ? changedCapabilities
+                        : network == null ? null : connectivityManager.getNetworkCapabilities(network);
+            } catch (RuntimeException e) {
+                FileLog.e(e);
+                reported = false;
+                scheduleDispatch();
+                return;
+            }
+            ensureCurrentNetworkGet(true);
+            lastKnownNetworkType = -1;
+            NetworkInfo info = currentNetworkInfo;
+            if (reported && Objects.equals(network, lastNetwork)
+                    && sameRoute(capabilities, lastCapabilities) && sameNetworkInfo(info, lastInfo)) {
+                return;
+            }
+            reported = true;
+            lastNetwork = network;
+            lastCapabilities = capabilities;
+            lastInfo = info;
+            scheduleDispatch();
+        }
+
+        private void scheduleDispatch() {
+            // One check handles a burst, even if the route changes back before it runs.
+            if (!dispatchPending) {
+                dispatchPending = true;
+                applicationHandler.post(() -> {
+                    dispatchPending = false;
+                    notifyNetworkChanged();
+                });
+            }
+        }
+
+        private static boolean sameRoute(NetworkCapabilities a, NetworkCapabilities b) {
+            if (a == null || b == null) {
+                return a == b;
+            }
+            // A VPN can keep its Network while switching between underlying transports.
+            return a.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == b.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                    && a.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == b.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    && a.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == b.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                    && a.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == b.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && a.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == b.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        }
+
+        private static boolean sameNetworkInfo(NetworkInfo a, NetworkInfo b) {
+            if (a == null || b == null) {
+                return a == b;
+            }
+            return a.getType() == b.getType() && a.getSubtype() == b.getSubtype()
+                    && a.getState() == b.getState() && a.isRoaming() == b.isRoaming()
+                    && a.isAvailable() == b.isAvailable();
         }
     }
 
