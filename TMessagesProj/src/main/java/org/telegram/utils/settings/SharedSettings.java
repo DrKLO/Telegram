@@ -43,6 +43,24 @@ public final class SharedSettings {
     public static final EnumSetting<SimpleActionBarDoneButton.Shape> headerDoneButtonShape =
         EnumSetting.of("header_done_button_shape", SimpleActionBarDoneButton.Shape.TEXT);
 
+    // ButterGram: ghost mode
+    public static final BooleanSetting buttergramGhostRead =
+        BooleanSetting.of("buttergram_ghost_read", false);
+
+    public static final BooleanSetting buttergramGhostTyping =
+        BooleanSetting.of("buttergram_ghost_typing", false);
+
+    public static final BooleanSetting buttergramGhostOnline =
+        BooleanSetting.of("buttergram_ghost_online", false);
+
+    // ButterGram: keep messages deleted remotely
+    public static final BooleanSetting buttergramSaveDeleted =
+        BooleanSetting.of("buttergram_save_deleted", false);
+
+    // ButterGram: interface customization
+    public static final BooleanSetting buttergramHidePremiumRows =
+        BooleanSetting.of("buttergram_hide_premium_rows", false);
+
     private SharedSettings() {
     }
 }

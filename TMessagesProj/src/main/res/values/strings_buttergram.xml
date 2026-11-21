@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ButterGramSettings">ButterGram Settings</string>
+    <string name="ButterGramGhostMode">Ghost mode</string>
+    <string name="ButterGramGhostRead">Don\'t mark messages as read</string>
+    <string name="ButterGramGhostTyping">Hide \"typing…\" status</string>
+    <string name="ButterGramGhostOnline">Don\'t show online status</string>
+    <string name="ButterGramGhostInfo">Other people won\'t see that you read their messages, are typing or are online. Messages stay unread for them until you turn this off and open the chat again.</string>
+    <string name="ButterGramMessages">Messages</string>
+    <string name="ButterGramSaveDeleted">Keep deleted messages</string>
+    <string name="ButterGramSaveDeletedInfo">Messages that other people delete will stay in your chats on this device. Messages you delete yourself are still removed.</string>
+    <string name="ButterGramInterface">Interface</string>
+    <string name="ButterGramHidePremiumRows">Hide Premium, Stars, Business and Gifts</string>
+    <string name="ButterGramAppearance">Appearance</string>
+</resources>

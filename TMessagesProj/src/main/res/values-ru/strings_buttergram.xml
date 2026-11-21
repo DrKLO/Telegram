@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ButterGramSettings">Настройки ButterGram</string>
+    <string name="ButterGramGhostMode">Режим призрака</string>
+    <string name="ButterGramGhostRead">Не отмечать сообщения прочитанными</string>
+    <string name="ButterGramGhostTyping">Скрывать статус «печатает…»</string>
+    <string name="ButterGramGhostOnline">Не показывать статус «онлайн»</string>
+    <string name="ButterGramGhostInfo">Другие не увидят, что вы прочитали сообщения, печатаете или находитесь онлайн. Для собеседников сообщения останутся непрочитанными, пока вы не выключите режим и не откроете чат заново.</string>
+    <string name="ButterGramMessages">Сообщения</string>
+    <string name="ButterGramSaveDeleted">Сохранять удалённые сообщения</string>
+    <string name="ButterGramSaveDeletedInfo">Сообщения, которые удалили другие, останутся в ваших чатах на этом устройстве. Сообщения, удалённые вами самим, по-прежнему удаляются.</string>
+    <string name="ButterGramInterface">Интерфейс</string>
+    <string name="ButterGramHidePremiumRows">Скрыть Premium, Звёзды, Бизнес и Подарки</string>
+    <string name="ButterGramAppearance">Оформление</string>
+</resources>
