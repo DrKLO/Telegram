@@ -10210,7 +10210,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             final String product = params == null ? null : params.getString("product");
             final String phone = params == null ? null : params.getString("phoneFormated");
             final String phoneHash = params == null ? null : params.getString("phoneHash");
-            final String support_email_email = params == null ? null : params.getString("support_email_email");
+            final String support_email_address = params == null ? null : params.getString("support_email_address");
             final String support_email_subject = params == null ? null : params.getString("support_email_subject");
             final String currency = params == null ? null : params.getString("currency");
             final long amount = params == null ? 0 : params.getLong("amount");
@@ -10233,8 +10233,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                             Intent mailer = new Intent(Intent.ACTION_SENDTO);
                             mailer.setData(Uri.parse("mailto:"));
-                            if (!TextUtils.isEmpty(support_email_email)) {
-                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{support_email_email});
+                            if (!TextUtils.isEmpty(support_email_address)) {
+                                mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{support_email_address});
                             } else {
                                 mailer.putExtra(Intent.EXTRA_EMAIL, new String[]{"sms@telegram.org"});
                             }
